@@ -1,0 +1,7 @@
+INSTRUMENT,,,,,,,,,,,INSTRUMENTALIAS,,/INSTRUMENTALIAS,LEG,,,,,,,,,,,,,/LEG,/INSTRUMENT
+PAY_OFFSET_METHOD,MTM_FROM_FEED,QUOTATION_SEQNBR.NAME,GENERIC,INSID,OTC,CONTR_SIZE,CURR.INSID,SPOT_BANKING_DAYS_OFFSET,EXTERN_ID1,INSTYPE,TYPE.ALIAS_TYPE_NAME,ALIAS,,PAY_CALNBR.CALID,END_DATE_METHOD,TYPE,DAYCOUNT_METHOD,INTEREST_PAYMENT_TIME,PAYLEG,START_PERIOD,NOMINAL_AT_END,END_PERIOD,CURR.INSID,PAY_DAY_METHOD,NOMINAL_FACTOR,ROLLING_CONVENTION,,
+Business Days,Yes,Coupon,Yes,SGD/SORA/1M,Yes,1,SGD,0,SDSOAA,RateIndex,BB_TICKER,SDSOAA Curncy,,Singapore,Relative Start,Fixed,Act/365,In Arrears,No,0d,Yes,1m,SGD,Following,1,None,,
+Business Days,Yes,Coupon,Yes,SGD/SORA/1Y,Yes,1,SGD,0,SDSOA1,RateIndex,BB_TICKER,SDSOA1 Curncy,,Singapore,Relative Start,Fixed,Act/365,In Arrears,No,0d,Yes,1y,SGD,Following,1,None,,
+Business Days,Yes,Coupon,Yes,SGD/SORA/3M,Yes,1,SGD,0,SDSOAC,RateIndex,BB_TICKER,SDSOAC Curncy,,Singapore,Relative Start,Fixed,Act/365,In Arrears,No,0d,Yes,3m,SGD,Following,1,None,,
+Business Days,Yes,Coupon,Yes,SGD/SORA/6M,Yes,1,SGD,0,SDSOAF,RateIndex,BB_TICKER,SDSOAF Curncy,,Singapore,Relative Start,Fixed,Act/365,In Arrears,No,0d,Yes,6m,SGD,Following,1,None,,
+Business Days,Yes,Coupon,Yes,SGD/SORA/ON,Yes,1,SGD,0,SIBCSORA,RateIndex,BB_TICKER,SIBCSORA Index,,Singapore,Relative Start,Fixed,Act/365,In Arrears,No,0d,Yes,1d,SGD,Following,1,None,,

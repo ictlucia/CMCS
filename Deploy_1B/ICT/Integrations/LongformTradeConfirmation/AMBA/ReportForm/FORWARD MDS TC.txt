@@ -1,0 +1,42 @@
+[MESSAGE]
+  TYPE=INSERT_TEXTOBJECT
+  VERSION=1.0
+  TIME=2024-02-07 07:19:33
+  SOURCE=FAMBAMessageGenerator
+  [TEXTOBJECT]
+    TYPE=Customizable
+    DATA={\
+    "MSWordTemplates": [\
+        {\
+            "name": "TC FORWARD MDS",\
+            "type": "LongFormTPL",\
+            "version": "10",\
+            "checksumFields": {\
+                "RegularFields": [],\
+                "LoopFields": []\
+            }\
+        }\
+    ],\
+    "PrimeSheetTemplates": [\
+        {\
+            "name": "TC FORWARD MDS",\
+            "classType": "Confirmation Sheet",\
+            "type": "Primary",\
+            "insertItem": "",\
+            "insertQuery": ""\
+        },\
+        {\
+            "name": "TC FORWARD MDS",\
+            "classType": "Confirmation Sheet",\
+            "type": "Supplement",\
+            "insertItem": "Confirmation",\
+            "insertQuery": ""\
+        }\
+    ],\
+    "FormattedColumnSet": []\
+}
+    NAME=FORWARD MDS TC
+    SIZE=746
+    SUBTYPE=ReportForm
+  [/TEXTOBJECT]
+[/MESSAGE]

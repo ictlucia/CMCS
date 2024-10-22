@@ -1,0 +1,2 @@
+<?xml version='1.0' encoding='ISO-8859-1'?>
+<FAelTask><acm_version>2022.2.0, Jun  7 2022</acm_version><version>0 $Id$</version><update_time>2023-05-23 04:08:06</update_time><object_name>BPS_NOSTRO_GL</object_name><owner>ARENASYS</owner><protection>3072</protection><module>BPSNostroGL</module><context>Standard</context><parameter>log_level=DEBUG;archive_path=;sourceFolder=C:\TEMP\BPS;log_folder=;</parameter><historylength /><description /><logfilename /><group /><groupstatus>None</groupstatus><historylengthunit>None</historylengthunit></FAelTask>

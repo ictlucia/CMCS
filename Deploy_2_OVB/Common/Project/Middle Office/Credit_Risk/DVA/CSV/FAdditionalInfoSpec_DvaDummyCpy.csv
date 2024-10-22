@@ -1,0 +1,3 @@
+ADDITIONALINFOSPEC,,,,,/ADDITIONALINFOSPEC
+DATA_TYPE.GRP,DATA_TYPE.TYPE,DESCRIPTION,FIELD_NAME,REC_TYPE,
+RecordRef,Party,"Dummy counterparty to be used for DVA, representing the Bank entity itself.",DvaDummyCpy,YieldCurve,

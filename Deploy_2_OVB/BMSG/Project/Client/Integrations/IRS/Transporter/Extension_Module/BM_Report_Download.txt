@@ -1,0 +1,219 @@
+#
+# Front Arena exported extension module.
+# source          ""
+# timestamp (utc) "2024-03-05 12:45:40"
+# ***** DO NOT EDIT! *****
+#
+name        "BM_Report_Download"
+description "$Id$"
+
+groups {
+}
+
+decls[FMenuExtension] {
+}
+
+clx FSessionManagerFrame [FMenuExtension] {
+  Reporting =
+  Function=Report_Downloader.StartApplication
+  MenuType=Application
+  ModuleName=Reporting
+  ParentMenu=Tools
+  RibbonPosition=Reporting Menu
+
+
+}
+
+decls[FParameters] {
+}
+
+clx FObject [FParameters] {
+  DBParam =
+  DATABASE=NTCSSTGDB;
+  DRIVER={SQL Server};
+  PWD='UEBzc3cwcmROdGNzIw=='
+  query_folder=DummyCptyTradeFiler
+  SERVER=10.243.200.59,1433;
+  UID=AdminNTCS
+
+
+  ReportPar =
+  IrsProfile=Back Office
+  passwd='UEBzc3cwcmROdGNzIw=='
+  Profile=Front Office, Middle Office, Back Office
+  server=10.243.243.54
+  user=AdminReportSG
+
+
+}
+
+decls[FPythonCode] {
+}
+
+clx FObject [FPythonCode] {
+  Report_Downloader
+"""----------------------------------------------------------------------------------------------------
+MODULE:
+    Report_Downloader
+
+DESCRIPTION:
+    Module to download all report for FO, MO. BO from server by using FTP with SSL
+
+-------------------------------------------------------------------------------------------------------"""
+import ftplib
+import os
+import ParametersReader
+import FRunScriptGUI
+import socket
+import pyodbc
+import base64
+import acm
+import io
+import sys
+import UserProfileUtils as up
+from datetime import datetime
+
+folderPicker = FRunScriptGUI.DirectorySelection()
+    
+ael_gui_parameters = {
+  'windowCaption' : 'Report Downloader',
+  'runButtonLabel':'&&Go',
+  'runButtonTooltip':'Execute',
+  'hideExtraControls':True,
+  'closeWhenFinished':False,
+  'InsertItemsShowExpired':False
+}
+
+listdata = []
+file = []
+run = False
+selectedDate = None
+selectedReport = None
+groupProfile = None
+groupnm = None
+
+DB = ParametersReader.get_params("DBParam") 
+ftpPar = ParametersReader.get_params("ReportPar")
+
+
+
+def getfolder(profile, isProfile):
+    global listdata, groupnm
+    paswrd = base64.b64decode(DB['PWD']).decode("utf-8")
+    cnxn = pyodbc.connect('DRIVER='+DB['DRIVER'] + ';SERVER='+DB['SERVER'] + ';DATABASE='+DB['DATABASE'] + ';UID='+DB['UID']  +';PWD='+ paswrd)
+    cursor = cnxn.cursor()
+    query = """SET NOCOUNT ON; EXEC SP_GetFolderReport @list=?, @profile=?"""
+    param = (profile, isProfile)
+    cursor.execute(query, param)
+    data = cursor.fetchall()
+    if isProfile == 0:
+        for row in data:
+            listdata += row
+    else:
+        for row in data:
+            groupnm = row[0]
+    
+def getreportname(index, fieldValues):
+    global selectedReport
+    if run:
+        selectedReport = fieldValues[index]
+        return fieldValues
+
+def getfile(index, fieldValues):
+    global run
+    if run:
+        selectedDate = fieldValues[2]
+        getfolder(selectedReport,1)
+        ael_variables[3][3] = ftp(selectedReport, selectedDate)
+        return fieldValues
+    run = True
+
+def ftp(selectedReport, selectedDate):
+    session = ftplib.FTP_TLS(ftpPar['server'])
+    #session.set_debuglevel(2)
+    session.login(ftpPar['user'], base64.b64decode(ftpPar['passwd']).decode("utf-8"))
+    #session.login(user,passwd)
+    session.prot_p()
+    session.af = socket.AF_INET6
+    session.cwd(groupnm)
+    session.cwd(selectedReport)
+    dateformat = datetime.strptime(selectedDate, '%Y-%m-%d').strftime('%Y%m%d')
+    try:
+        try:
+            session.nlst()
+            datename = 'report' + dateformat
+            session.cwd(datename)
+            file = session.nlst()
+        except:
+            session.nlst()
+            datename = 'report' + dateformat[2:]
+            session.cwd(datename)
+            file = session.nlst()
+    except:
+        print('Data For ' + selectedDate + ' is Not Found!') 
+    return file
+    
+def getprofile():
+    pfldata = ParametersReader.get_params("ReportPar")
+    profile = pfldata['Profile'].split(", ")
+    profilenm = []  
+    for x in profile:
+        isallow = up.is_component_in_user_profile(str(x))        
+        if isallow == 1:
+            profilenm.append(x)
+    getfolder(str(profilenm),0)
+    return profilenm
+
+getprofile()
+
+def StartApplication(param):    
+    shell = acm.UX.SessionManager().Shell()
+    dataprofile = getprofile()
+    if len(dataprofile) != 0: 
+        acm.RunModuleWithParameters("Report_Downloader", acm.GetDefaultContext())        
+    else :
+        acm.UX().Dialogs().MessageBoxInformation(shell, "user doesn't have access right for this menu")    
+
+ael_variables = [
+        ['inputFolder', 'Folder Path', folderPicker, None, folderPicker, 1, 1, 'The file path from where the files will be picked.', None, 1],
+        ['ReportName', 'Report Name', 'string', listdata, None, 1, None, 'Rekon Name', getreportname, 1, ''],
+        ['Date','Date (YYYY-MM-DD)','date',None,acm.Time.DateNow(),1, None, 'Date Of Rekon', getfile, 1, ''],
+        ['File','File','string',file,None,1, None, 'Folder Name', None, 1, ''],
+        ]
+
+def ael_main(var):
+    reportnm = var["ReportName"]
+    getfolder(var["ReportName"], 0)
+    DownloadFTP(var["inputFolder"], var["ReportName"], var["Date"], var["File"])
+
+
+def DownloadFTP(inputFolder, ReportName, date, File):
+    with ftplib.FTP_TLS(ftpPar['server']) as session:                    #Connect to FTP
+        session.login(ftpPar['user'], base64.b64decode(ftpPar['passwd']).decode("utf-8"))                            #Input User and Password
+        #session.set_debuglevel(2)
+        session.prot_p()
+        session.af = socket.AF_INET6
+        session.set_pasv(True)                                         #Set Secure Connection
+        session.cwd(groupnm)
+        session.cwd(ReportName)                                         #Change Folder Rekon
+        try:
+            dateformat = datetime.strptime(str(date), '%m/%d/%Y').strftime('%Y%m%d')
+        except:
+            dateformat = datetime.strptime(str(date), '%d/%m/%Y').strftime('%Y%m%d')
+
+        try:
+            datename = 'report' + dateformat
+            session.cwd(datename)
+        except:
+            dateformat=str(dateformat).strip('-')
+            datename = 'report' + dateformat[2:]
+            session.cwd(datename)
+    
+        filename = os.path.join(str(inputFolder),str(File))                                                  
+        with open( filename, 'wb') as my_file:                          #Open a local file to store the downloaded file
+            session.retrbinary('RETR ' + str(File), my_file.write, 1024)#Download File
+
+...
+
+}
+

@@ -1,0 +1,1149 @@
+#
+# Front Arena exported extension module.
+# source          ""
+# timestamp (utc) "2024-10-15 14:33:16"
+# ***** DO NOT EDIT! *****
+#
+name        "PS_DepositSwap"
+description "$Id$"
+
+groups {
+}
+
+decls[FCustomApplicationDefinition] {
+}
+
+clx FObject [FCustomApplicationDefinition] {
+  Deposit Swap =
+  CreationFunction=
+  HostApplication=
+  HostObjectType=
+  HostPath=
+  Name=DepositSwap
+  ObjectTypes=FDealPackage
+  ProfileComponent=DepositSwap
+
+
+}
+
+decls[FCustomInstrumentDefinition] {
+}
+
+clx FObject [FCustomInstrumentDefinition] {
+  DepositSwap =
+  Caption=Deposit Swap
+  DealPackageDefinition=
+  DefaultInstrumentName=DepSwap
+  DefaultInstrumentUpdateHook=
+  DefaultTradeUpdateHook=
+  DisabledControls=
+  ExoticFixingsHook=
+  ExtendsConfiguration=Deposit/Loan
+  FavoriteEnabledControls=
+  FilterCriteria=Instrument.AdditionalInfo.StructureType=Deposit Swap
+  HelpFileIndex=
+  InstantiatedAs=Concrete
+  InstrumentIcon=
+  LabelOverrides=
+  PanesExotic=
+  PanesInstrument=
+  PanesTrade=
+  ParentMenu=
+  PricingDefaultColumns=
+  PricingManualRefresh=
+  PricingShowRowHeaders=
+  ReplaceApplication=
+  SetUpFunction=
+  ShowPlaceExcluded=
+  ShowPlaceInDetail=
+  ShowPlaceInSlim=
+  SubMenu=
+  UpdateControls=
+  VisiblePanes=
+
+
+}
+
+decls[FDealPackageDefinition] {
+}
+
+clx FObject [FDealPackageDefinition] {
+  MDSTradeActionClose =
+  CustomApplication=
+  DefinitionClass=SP_MDSCloseCommand.MDSTradeActionClose
+  Description=
+  DisplayName=Trade Action Close (MDS)
+  Type=Transient
+
+
+  SP_DepositSwap =
+  CustomApplication=Deal Package
+  DefinitionClass=SP_DepositSwap.DepositSwapDefinition
+  Description=
+  DisplayName=Deposit Swap
+  Type=Normal
+
+
+}
+
+decls[FExtensionValue] {
+}
+
+clx FObject [FExtensionValue] {
+  CustomLayout_SP_DepositSwapDealPackageGeneral
+hbox(;
+    vbox(;
+        name;
+        vbox[Currency Pair;
+            source_currency;
+            alternate_currency;
+        ];
+        hbox(;
+            vbox{;
+              near_premium;
+              near_valueDay;
+              near_spot;
+              near_amount;
+            };
+            vbox{;
+              far_premium;
+              far_valueDay;
+              far_spot;
+              far_amount;
+            };
+        );
+        vbox{;
+            vbox[Deposit Data;
+                hbox(;
+                    vbox{;
+                        leg_legType;
+                        deposit_fixedRate;
+                        hbox(;
+                            deposit_rollingPeriod;
+                            leg_rollingPeriodBase;
+                            leg_resets;
+                        );
+                    };
+                    vbox{;
+                        leg_zeroCouponFixedPeriod;
+                        leg_floatRateReference;
+                        deposit_dayCount;
+                        tradeText1;
+                    };
+                );
+            ];
+        };
+    );
+    hbox[Trade Data;
+        vbox{;
+            tradeTime;
+            tradeValueDay;
+            trades_acquireDay;
+            depositPortfolio;
+            fxNearPortfolio;
+            fxFarPortfolio;
+            tradeTrader;
+            trades_AddInfo_DealerCode;
+            trades_AddInfo_DocumentType;
+            trades_AddInfo_TransactionPurpose;
+        };
+        vbox{;
+            
+            tradeAcquirer;
+            tradeCounterParty;
+            trades_status;
+            tradesOptKey1;
+            tradesOptKey2;
+            tradesOptKey3;
+            tradesOptKey4;
+            hbox(;
+                    fill;
+                    tradePayments;
+            );
+        };
+    ];
+);
+    
+...
+
+  CustomLayout_SP_DepositSwapDealPackageTrades
+vbox(;
+    depositB2B;
+    vbox(;
+        vbox(;
+            vbox[;
+                b2bNearSwapEnabled;
+                hbox(;
+                    vbox(;
+                        b2bNearLegPrice;
+                        b2bNearLegMargin;
+                    );
+                    vbox(;
+                        b2bNearLegPrf;
+                        b2bNearLegAcq;
+                    );
+                );
+            ];
+            vbox[;
+                b2bFarSwapEnabled;
+                hbox(;
+                    vbox(;
+                        b2bFarLegPrice;
+                        b2bFarLegMargin;
+                    );
+                    vbox(;
+                        b2bFarLegPrf;
+                        b2bFarLegAcq;
+                    );
+                );
+            ];
+        );
+    ];
+);
+...
+
+  CustomPanes_SP_DepositSwapDealPackage
+CustomLayout_SP_DepositSwapDealPackageGeneral,General;CustomLayout_SP_DepositSwapDealPackageTrades,B2B
+...
+
+}
+
+decls[FMenuExtension] {
+}
+
+clx FFrame [FMenuExtension] {
+  SP_DepositSwap =
+  DisplayName=Deposit Swap
+  Function=SP_DepositSwap.StartDepSwap
+  MenuType=Application
+  ParentMenu=Trading/Structured Products
+  ProfileComponent=DepositSwap
+  Standard=Yes
+
+
+}
+
+decls[FNumFormatter] {
+}
+
+clx FObject [FNumFormatter] {
+  MDSSevenDecimal =
+  DenominatedValueDateTimeFormatter=
+  DigitGrouping=
+  DigitGroupingSymbol=
+  Epsilon=
+  Expression=
+  Format=
+  Fractions=
+  InputScaleFactor=
+  InputScaleFactorLimit=
+  Inverse=
+  MaximumSignificantDigits=
+  MinimumSignificantDigits=
+  Mnemonic=''=0.0:Input
+  NumDecimals=7
+  ScaleFactor=
+  ShowInf=false
+  Tick=
+  TruncateTrailingZeros=false
+  USTreasuryInput=
+
+
+}
+
+decls[FPythonCode] {
+}
+
+clx FObject [FPythonCode] {
+  SP_DepositSwap
+
+import acm
+
+try:
+    from StructuredProductsCommonAddInfo import SP_CommonAddInfoDealPackageDefinitionWithPreDeal
+except ImportError:
+    try:
+        from StructureProductsPreDealUtils import DealPackageDefinitionWithPreDeal as SP_CommonAddInfoDealPackageDefinitionWithPreDeal
+    except ImportError:
+        from DealPackageDevKit import DealPackageDefinition as SP_CommonAddInfoDealPackageDefinitionWithPreDeal
+
+try:
+    from StructuredProductsCommonAddInfo import CommonTradeDefinition
+except ImportError:
+    from CompositeAttributesLib import TradeDefinition as CommonTradeDefinition
+
+from DealPackageDevKit import DealPackageUserException, Settings, ReturnDomainDecorator, InstrumentPart, Object, Action, TradeStatusChoices, PortfolioChoices, \
+                              AcquirerChoices, CounterpartyChoices, TradeActions
+from DealPackageUtil import UnDecorate
+from ChoicesExprCommon import listChoicesWithEmpty
+
+from CompositeLegDefinition import LegDefinition
+from CompositeTradeDefinition import TradeDefinition
+from CompositeAttributesLib import PaymentsDialog
+from CompositeTradeComponents import TradeB2B
+from CompositeCashFlowComponents import Deposit
+from SP_MDSCloseCommand import MDSCloseCommand as CloseCommand
+
+from SP_BusinessCalculations import BankingDayPeriodToDateFromStartDate
+
+class ReducedCommonTradeDefinition(CommonTradeDefinition):
+    def CommonAttributes(self):
+        return ['counterparty', 'yourRef', 'trader', 'settleCategoryChlItem', 'status', 'optKey1', 'optKey2', 'optKey3', 'optKey4']
+
+def StartDepSwap(eii):
+    acm.UX().SessionManager().StartApplication('Deal Package', 'SP_DepositSwap')
+
+default_instrument = acm.FCurrency['EUR']
+default_currency = acm.FCurrency['USD']
+
+def DayCountChoices():
+    return [e for e in acm.FEnumeration['enum(DaycountMethod)'].Enumerators()]
+
+@Settings(ShowGraphInitially=False, GraphApplicable=False)
+@TradeActions(close = CloseCommand(statusAttr='trades_status', nominal='closing_nominals'))
+class DepositSwapDefinition(SP_CommonAddInfoDealPackageDefinitionWithPreDeal):
+
+    currency_pair = default_instrument.CurrencyPair(default_currency)
+    currency_pair = acm.FBusinessLogicDecorator.WrapObject(currency_pair)
+    src_currency = default_currency
+    alt_currency = default_instrument
+    formatter = acm.FNumFormatter('')
+    #-----------------------------
+    # Visible Traits
+    #-----------------------------
+
+    name = Object(objMapping = InstrumentPart('DealPackage.InstrumentPackage.Name'),
+                                label = 'Name',
+                                toolTip = 'Name of Instrument Package' )
+    
+    #-----------------------------
+    # FX Swap data
+    #-----------------------------
+
+    source_currency = Object(label = 'Source Currency',
+                        objMapping = 'OrigCurrency',
+                        visible = True,
+                        choiceListSource = '@Currency1Choices')
+
+    alternate_currency = Object(label = 'Alternate Currency',
+                        objMapping = 'SubsCurrency',
+                        visible = True,
+                        choiceListSource = '@Currency1Choices')
+
+    near_amount = Object(label = '@AlternateLabel',
+                        objMapping = 'NearAmount',
+                        #onChanged = '@NearLegChanged',
+                        defaultValue = 1e6)
+
+    near_valueDay = Object(label = 'Value Day',
+                        defaultValue = '@DefaultNearValueDate',
+                        objMapping = 'NearValueDate',
+                        transform = '@ExpiryPeriodToDate')
+
+    near_spot = Object(label = 'Spot',
+                        #objMapping = 'FxSwapNearLegTrade.Price',
+                        objMapping = 'NearSpot',
+                        formatter = 'MDSSevenDecimal',)
+
+    near_premium = Object(label = '@SourceLabel',
+                        objMapping = 'NearPremium')
+
+    far_amount = Object(label = '@AlternateLabel',
+                        editable = False,
+                        objMapping = 'FarAmount')
+
+    far_valueDay = Object(label = 'End Value Day',
+                        defaultValue = '@DefaultFarValueDate',
+                        objMapping = 'FarValueDate',
+                        transform = '@ExpiryPeriodToDate',
+                        onChanged = '@DepositChanged')
+
+    far_spot = Object(label = 'Spot',
+                        objMapping = 'FxSwapFarLegTrade.Price',
+                        formatter = 'MDSSevenDecimal',)
+
+    far_premium = Object(label = '@SourceLabel',
+                        editable = False,
+                        objMapping = 'FarPremium')
+
+    closing_nominals = Object(label = '@SourceLabel',
+                        objMapping = 'ClosingNominals',
+                        visible = False)
+
+    #-----------------------------
+    # Deposit data
+    #-----------------------------
+    
+    deposit = Deposit(depositName = 'DepositInstrument',
+                        depositLegName = 'DepositLeg')
+
+    trades = ReducedCommonTradeDefinition(trade = 'DepositTrade')
+
+    trade = TradeDefinition(trade = 'DepositTrade')
+
+    leg = LegDefinition(leg = 'DepositLeg', trade = 'DepositTrade')
+
+    deposit_dayCount = Object(label = 'Day Count',
+                        objMapping = 'DepositDayCount',
+                        choiceListSource = DayCountChoices(),
+                        onChanged = '@DepositChanged')
+
+    deposit_fixedRate = Object(label = 'Fixed Rate',
+                        objMapping = 'DepositFixedRate',
+                        onChanged = '@DepositChanged',
+                        visible = '@LegIsFixed')
+
+    deposit_rollingPeriod = Object(label = 'Rolling Period',
+                        objMapping = 'DepositRollingPeriod',
+                        onChanged = '@DepositChanged')
+
+    currency = Object(label = 'Currency',
+                        objMapping = InstrumentPart('DepositInstrument.Currency'),
+                        defaultValue = default_instrument)
+
+    tradeText1 = Object(objMapping = 'Trades.Text1',
+                        label = 'Deposit Account No')
+
+    trades_status = Object(objMapping = 'Trades.Status',
+                        label = 'Status')
+
+    trades_acquireDay = Object(objMapping = 'AcquireDay',
+                        label = 'Acquire Day')
+
+    tradesOptKey1 = Object(objMapping = 'TradesOptKey1',
+                        choiceListSource = listChoicesWithEmpty('Branch'),
+                        label = 'Branch')
+
+    tradesOptKey2 = Object(objMapping = 'TradesOptKey2',
+                        choiceListSource = listChoicesWithEmpty('Interface'),
+                        label = 'Interface')
+
+    tradesOptKey3 = Object(objMapping = 'TradesOptKey3',
+                        choiceListSource = listChoicesWithEmpty('Product Type'),
+                        label = 'Product Type')
+
+    tradesOptKey4 = Object(objMapping = 'TradesOptKey4',
+                        choiceListSource = listChoicesWithEmpty('Category'),
+                        label = 'Category')
+
+    deposit_cashAmount = Object(objMapping = 'DepositCashAmount',
+                        visible = False)
+
+    #-----------------------------
+    # Trade attributes
+    #-----------------------------
+
+    tradeTime = Object(objMapping = 'TradesTime',
+                            label = 'Trade Time')
+    
+    tradeStatus = Object(objMapping = 'Trades.Status',
+                            choiceListSource = TradeStatusChoices(),
+                            label = 'Trade Status')
+    
+    tradeValueDay = Object(objMapping = 'TradeValueDay',
+                            label = 'Value Day',
+                            defaultValue = '0d',
+                            transform = '@BankingDayPeriodToDateFromTradeTimePlusSpot')
+
+    tradeTrader = Object(objMapping = 'Trades.Trader',
+                            choiceListSource = acm.FUser.Instances(),
+                            label = 'Trader')
+
+    depositPortfolio = Object(objMapping = 'DepositTrade.Portfolio',
+                            choiceListSource = PortfolioChoices(),
+                            label = 'Deposit Portfolio')
+
+    fxNearPortfolio = Object(objMapping = 'FxSwapNearLegTrade.Portfolio',
+                            choiceListSource = PortfolioChoices(),
+                            label = 'Swap Near Portfolio')
+
+    fxFarPortfolio = Object(objMapping = 'FxSwapFarLegTrade.Portfolio',
+                            choiceListSource = PortfolioChoices(),
+                            label = 'Swap Far Portfolio')
+
+    tradeAcquirer = Object(objMapping = 'Trades.Acquirer',
+                            choiceListSource = AcquirerChoices(),
+                            label = 'Acquirer')
+    
+    tradeCounterParty = Object(objMapping = 'Trades.Counterparty',
+                            choiceListSource = CounterpartyChoices(),
+                            label = 'Counterparty')
+
+    tradePayments = PaymentsDialog(trade = 'LeadTrade')
+
+    #-----------------------------
+    # Visible
+    #-----------------------------
+
+    def LegIsFixed(self, *args):
+        return self.DepositLeg().LegType() == 'Fixed'
+
+    #--------------------------
+    # Deposit B2B parameters
+    #--------------------------
+
+    depositB2B = TradeB2B(uiLabel = 'Deposit',
+                            b2bTradeParamsName = 'DepositB2BParams')
+
+    b2bDepositEnabled = Object(defaultValue = False,
+                            label = 'Deposit B2B Cover',
+                            objMapping = 'DepositB2BParams.SalesCoverEnabled',
+                            visible = True)
+
+    #--------------------------
+    # Swap Near B2B parameters
+    #--------------------------
+
+    b2bNearSwapEnabled = Object(defaultValue=False,
+                                label='B2B Cover Near Leg',
+                                objMapping='FXSwapNearLegB2B.SalesCoverEnabled')
+
+    b2bNearLegMargin = Object(label='Margin',
+                                objMapping='NearLegMargin',
+                                formatter='FullPrecision',
+                                enabled='@IsNearLegB2B')
+                            
+    b2bNearLegPrice = Object(defaultValue=0.0,
+                                label='Trader Price',
+                                objMapping='NearLegPrice',
+                                formatter='FullPrecision',
+                                enabled='@IsNearLegB2B')
+                            
+    b2bNearLegPrf = Object(label='Trader Portfolio',
+                                objMapping='FXSwapNearLegB2B.TradersPortfolio',
+                                choiceListSource=PortfolioChoices(),
+                                enabled='@IsNearLegB2B',
+                                onChanged='@SetChanged')
+             
+    b2bNearLegAcq = Object(label='Trader Acquirer',
+                                objMapping='FXSwapNearLegB2B.TradersAcquirer',
+                                choiceListSource=AcquirerChoices(),
+                                enabled='@IsNearLegB2B',
+                                onChanged='@SetChanged')
+
+    #--------------------------
+    # Swap Far B2B parameters
+    #--------------------------
+
+    b2bFarSwapEnabled = Object(defaultValue=False,
+                                label='B2B Cover Far Leg',
+                                objMapping='FXSwapFarLegB2B.SalesCoverEnabled')
+
+    b2bFarLegMargin = Object(label='Margin',
+                                objMapping='FarLegMargin',
+                                formatter='FullPrecision',
+                                enabled='@IsFarLegB2B')
+                            
+    b2bFarLegPrice = Object(defaultValue=0.0,
+                                label='Trader Price',
+                                objMapping='FarLegPrice',
+                                formatter='FullPrecision',
+                                enabled='@IsFarLegB2B')
+                            
+    b2bFarLegPrf = Object(label='Trader Portfolio',
+                                objMapping='FXSwapFarLegB2B.TradersPortfolio',
+                                choiceListSource=PortfolioChoices(),
+                                enabled='@IsFarLegB2B',
+                                onChanged='@SetChanged')
+             
+    b2bFarLegAcq = Object(label='Trader Acquirer',
+                                objMapping='FXSwapFarLegB2B.TradersAcquirer',
+                                choiceListSource=AcquirerChoices(),
+                                enabled='@IsFarLegB2B',
+                                onChanged='@SetChanged')
+
+    #-----------------------------
+    # Access methods
+    #-----------------------------
+
+    def LeadTrade(self, *rest):
+        return self.DealPackage().TradeAt('Trade')
+
+    def DepositTrade(self, *rest):
+        return self.DealPackage().TradeAt('Trade')
+
+    def FxSwapNearLegTrade(self, *rest):
+        return self.DealPackage().TradeAt('FXSwapNear')
+
+    def FxSwapFarLegTrade(self, *rest):
+        return self.DealPackage().TradeAt('FXSwapFar')
+
+    def Trade(self, *args):
+        return self.DepositTrade()
+
+    def Trades(self, *rest):
+        return self.DealPackage().Trades()
+
+    def DepositInstrument(self, *rest):
+        return self.DealPackage().InstrumentAt('Trade')
+
+    def DepositLeg(self):
+        return self.DepositInstrument().FirstEditLeg()
+
+    #-----------------------------------------
+    # Interface override
+    #-----------------------------------------
+
+    def OnInit(self, *args):
+        super().OnInit(*args)
+
+    def OnOpen(self, *args, **kwargs):
+        self.alt_currency = self.DepositInstrument().Currency()
+        self.currency_pair = self.FxSwapNearLegTrade().CurrencyPair()
+        if self.currency_pair.Currency1() == self.alt_currency:
+            self.src_currency = self.currency_pair.Currency2()
+        else:
+            self.src_currency = self.currency_pair.Currency1()
+        super().OnOpen(*args, **kwargs)
+
+    def CustomPanes(self):
+        return self.GetCustomPanesFromExtValue('CustomPanes_SP_DepositSwapDealPackage')
+
+    def AssemblePackage(self):
+        # prevent popups by giving all questions default answers
+        prevGUI = self.DealPackage().GUI()
+        self.DealPackage().ReplaceGUI(acm.FBusinessLogicGUIDefault())
+
+        fx_rate = acm.FX.CreateFxRate(default_instrument, default_currency)
+        price = fx_rate.used_price()
+        spot_date = fx_rate.spot_date()
+        end_date = acm.Time.DateAdjustPeriod(acm.Time.DateToday(), '1m')
+        deposit = acm.DealCapturing().CreateNewInstrument('DepositSwap')
+        deposit_trade = acm.DealCapturing().CreateNewTrade(deposit)
+        self.DealPackage().AddTrade(deposit_trade, 'Trade')
+        deposit_trade = self.DepositTrade()
+        deposit_trade.ValueDay(spot_date)
+        deposit_trade.AcquireDay(spot_date)
+        deposit = deposit_trade.Instrument()
+
+        deposit.Currency(default_instrument)
+        deposit.ExpiryDate(end_date)
+        deposit.FirstFixedLeg().EndDate(end_date)
+        deposit.StartDate(spot_date)
+        deposit.FirstFixedLeg().StartDate(spot_date)
+
+        fx_cash = acm.DealCapturing().CreateNewInstrument('FX Cash')
+        fx_trade_n = acm.DealCapturing().CreateNewTrade(fx_cash)
+        fx_trade_n.Instrument(default_instrument)
+        fx_trade_n.Currency(default_currency)
+        fx_trade_n.ValueDay(spot_date)
+        fx_trade_n.ReferencePrice(price)
+        fx_trade_n.Price(price)
+        fx_trade_n.Quantity(1e6)
+        fx_trade_n.Premium(-fx_trade_n.Quantity() / price)
+        
+        self.DealPackage().AddTrade(fx_trade_n, 'FXSwapNear')
+
+        fx_cash = acm.DealCapturing().CreateNewInstrument('FX Cash')
+        fx_trade_f = acm.DealCapturing().CreateNewTrade(fx_cash)
+        fx_trade_f.Instrument(default_instrument)
+        fx_trade_f.Currency(default_currency)
+        fx_trade_f.ValueDay(end_date)
+        fx_trade_f.ReferencePrice(price)
+        fx_trade_f.Price(price)
+        fx_trade_f.Quantity(1e6)
+        fx_trade_f.Premium(-fx_trade_f.Quantity() / price)
+        self.DealPackage().AddTrade(fx_trade_f, 'FXSwapFar')
+        
+        # restore the GUI
+        self.DealPackage().ReplaceGUI(prevGUI)
+
+    def AttributeOverrides(self, overrideAccumulator):
+        overrideAccumulator({
+            'far_amount': dict(defaultValue = self.CalcFarAmount()),
+            'deposit_startDate': dict(label = 'Start Date', editable = False, defaultValue = self.FxSwapNearLegTrade().ValueDay()),
+            'deposit_endDate': dict(editable = False),
+            'tradesOptKey3': dict(defaultValue='SP'),
+            'tradesOptKey4': dict(defaultValue='MDS'),
+        })
+
+    def IsShowModeInstrumentDetail(self, *args):
+        return True
+
+    def GetCurrencyPairPointValue(self):
+        curr_pair = self.FxSwapNearLegTrade().CurrencyPair()
+        return curr_pair.PointValue()
+
+    #-----------------------------
+    # B2B
+    #-----------------------------
+
+    def DepositB2B(self):
+        return self.B2BTradeParamsAt('Trade')
+
+    def DepositB2BParams(self):
+        return self.B2BTradeParamsAt('Trade')
+
+    def FXSwapNearLegB2B(self):
+        return self.FxConstellationParamsAt('FXSwapNear')
+
+    def IsNearLegB2B(self, *args):
+        return self.b2bNearSwapEnabled
+
+    def FXSwapFarLegB2B(self):
+        return self.FxConstellationParamsAt('FXSwapFar')
+
+    def IsFarLegB2B(self, *args):
+        return self.b2bFarSwapEnabled
+
+    #-----------------------------
+    # Attribute Access
+    #-----------------------------
+    @staticmethod
+    def WrapObject(object):
+        return acm.FBusinessLogicDecorator.WrapObject(object)
+
+    @ReturnDomainDecorator('FCurrency')
+    def OrigCurrency(self, value = 'Reading'):
+        if value == 'Reading':
+            return self.WrapObject(self.src_currency)
+        try:
+            if value == self.alt_currency:
+                if value.Name() == 'USD':
+                    self.alt_currency = acm.FCurrency['AUD']
+                else:
+                    self.alt_currency = acm.FCurrency['USD']
+            self.currency_pair = value.CurrencyPair(self.alt_currency)
+            self.src_currency = value
+
+            if value == self.currency_pair.Currency1():
+                self.FxSwapNearLegTrade().Instrument(value)
+                self.FxSwapFarLegTrade().Instrument(value)
+                self.FxSwapNearLegTrade().Currency(self.alt_currency)
+                self.FxSwapFarLegTrade().Currency(self.alt_currency)
+            else:
+                self.FxSwapNearLegTrade().Currency(value)
+                self.FxSwapFarLegTrade().Currency(value)
+                self.FxSwapNearLegTrade().Instrument(self.alt_currency)
+                self.FxSwapFarLegTrade().Instrument(self.alt_currency)
+
+            fx_rate = acm.FX.CreateFxRate(self.currency_pair.Currency1(), self.currency_pair.Currency2())
+            price = fx_rate.used_price()
+            self.FxSwapNearLegTrade().ReferencePrice(price)
+            self.FxSwapNearLegTrade().Price(price)
+            self.FxSwapNearLegTrade().Quantity(-self.FxSwapNearLegTrade().Premium() / price)
+
+            self.FxSwapFarLegTrade().Price(price)
+            self.FxSwapFarLegTrade().ReferencePrice(price)
+            self.FxSwapFarLegTrade().Quantity(-self.FxSwapFarLegTrade().Premium() / price)
+        except Exception as e:
+            print(str(e))
+
+    @ReturnDomainDecorator('FCurrency')
+    def SubsCurrency(self, value = 'Reading'):
+        if value == 'Reading':
+            return self.WrapObject(self.alt_currency)
+        try:
+            if value == self.src_currency:
+                if value.Name() == 'USD':
+                    self.src_currency = acm.FCurrency['AUD']
+                else:
+                    self.src_currency = acm.FCurrency['USD']
+            self.currency_pair = value.CurrencyPair(self.src_currency)
+            self.alt_currency = value
+
+            self.currency_pair = value.CurrencyPair(self.OrigCurrency())
+            if value == self.currency_pair.Currency1():
+                self.FxSwapNearLegTrade().Instrument(value)
+                self.FxSwapFarLegTrade().Instrument(value)
+                self.FxSwapNearLegTrade().Currency(self.src_currency)
+                self.FxSwapFarLegTrade().Currency(self.src_currency)
+            else:
+                self.FxSwapNearLegTrade().Currency(value)
+                self.FxSwapFarLegTrade().Currency(value)
+                self.FxSwapNearLegTrade().Instrument(self.src_currency)
+                self.FxSwapFarLegTrade().Instrument(self.src_currency)
+
+            fx_rate = acm.FX.CreateFxRate(self.currency_pair.Currency1(), self.currency_pair.Currency2())
+            price = fx_rate.used_price()
+            self.FxSwapNearLegTrade().ReferencePrice(price)
+            self.FxSwapNearLegTrade().Price(price)
+            self.FxSwapNearLegTrade().Quantity(-self.FxSwapNearLegTrade().Premium() / price)
+
+            self.FxSwapFarLegTrade().Price(price)
+            self.FxSwapFarLegTrade().ReferencePrice(price)
+            self.FxSwapFarLegTrade().Quantity(-self.FxSwapFarLegTrade().Premium() / price)
+
+            self.DepositInstrument().Currency(self.alt_currency)
+            self.DepositTrade().Currency(self.alt_currency)
+        except Exception as e:
+            print(str(e))
+
+    def NearAmount(self, value = 'Reading'):
+        if value == 'Reading':
+            if self.src_currency == self.currency_pair.Currency1():
+                return self.FxSwapNearLegTrade().Premium()
+            return self.FxSwapNearLegTrade().Quantity()
+        if self.src_currency == self.currency_pair.Currency1():
+            self.FxSwapNearLegTrade().Premium(self.formatter.Parse(value))
+        else:
+            self.FxSwapNearLegTrade().Quantity(self.formatter.Parse(value))
+        self.NearLegChanged()
+
+    def NearPremium(self, value = 'Reading'):
+        if value == 'Reading':
+            if self.src_currency == self.currency_pair.Currency1():
+                return self.FxSwapNearLegTrade().Quantity()
+            return self.FxSwapNearLegTrade().Premium()
+        if self.src_currency == self.currency_pair.Currency1():
+            self.FxSwapNearLegTrade().Quantity(self.formatter.Parse(value))
+        else:
+            self.FxSwapNearLegTrade().Premium(self.formatter.Parse(value))
+        self.NearLegChanged()
+
+    def FarAmount(self, value = 'Reading'):
+        if value == 'Reading':
+            if self.src_currency == self.currency_pair.Currency1():
+                return self.FxSwapFarLegTrade().Premium()
+            return self.FxSwapFarLegTrade().Quantity()
+        if self.src_currency == self.currency_pair.Currency1():
+            self.FxSwapFarLegTrade().Premium(self.formatter.Parse(value))
+        else:
+            self.FxSwapFarLegTrade().Quantity(self.formatter.Parse(value))
+
+    def FarPremium(self, value = 'Reading'):
+        if value == 'Reading':
+            if self.src_currency == self.currency_pair.Currency1():
+                return self.FxSwapFarLegTrade().Quantity()
+            return self.FxSwapFarLegTrade().Premium()
+        if self.src_currency == self.currency_pair.Currency1():
+            self.FxSwapFarLegTrade().Quantity(self.formatter.Parse(value))
+        else:
+            self.FxSwapFarLegTrade().Premium(self.formatter.Parse(value))
+
+    def DepositFixedRate(self, value = 'Reading'):
+        deposit_leg = self.DepositLeg()
+        if deposit_leg.LegType() != 'Fixed':
+            return 0
+        if str(value).find('@') == 0:
+            return getattr(self, value.replace('@', ''))()
+        if value == 'Reading':
+            return self.DepositLeg().FixedRate()
+        self.DepositLeg().FixedRate(value)
+        self.DepositChanged()
+
+    def DepositRollingPeriod(self, value = 'Reading'):
+        deposit_leg = self.DepositLeg()
+        if str(value).find('@') == 0:
+            return getattr(self, value.replace('@', ''))()
+        if value == 'Reading':
+            return self.DepositLeg().RollingPeriod()
+        self.DepositLeg().RollingPeriod(value)
+        self.DepositChanged()
+
+    def DepositDayCount(self, value = 'Reading'):
+        if value == 'Reading':
+            return self.DepositLeg().DayCountMethod()
+        self.DepositLeg().DayCountMethod(value)
+
+    def TradesOptKey1(self, value = 'Reading'):
+        if value == 'Reading':
+            opt_key = self.DepositTrade().OptKey1()
+            if opt_key is None:
+                return ''
+            return opt_key.Name()
+        self.DepositTrade().OptKey1(value)
+        self.FxSwapNearLegTrade().OptKey1(value)
+        self.FxSwapFarLegTrade().OptKey1(value)
+
+    def TradesOptKey2(self, value = 'Reading'):
+        if value == 'Reading':
+            opt_key = self.DepositTrade().OptKey2()
+            if opt_key is None:
+                return ''
+            return opt_key.Name()
+        self.DepositTrade().OptKey2(value)
+        self.FxSwapNearLegTrade().OptKey2(value)
+        self.FxSwapFarLegTrade().OptKey2(value)
+
+    def TradesOptKey3(self, value = 'Reading'):
+        if value == 'Reading':
+            opt_key = self.DepositTrade().OptKey3()
+            if opt_key is None:
+                return ''
+            return opt_key.Name()
+        self.DepositTrade().OptKey3(value)
+        self.FxSwapNearLegTrade().OptKey3(value)
+        self.FxSwapFarLegTrade().OptKey3(value)
+
+    def TradesOptKey4(self, value = 'Reading'):
+        if value == 'Reading':
+            opt_key = self.DepositTrade().OptKey4()
+            if opt_key is None:
+                return ''
+            return opt_key.Name()
+        self.DepositTrade().OptKey4(value)
+        self.FxSwapNearLegTrade().OptKey4(value)
+        self.FxSwapFarLegTrade().OptKey4(value)
+
+    def NearValueDate(self, value = 'Reading'):
+        if value == 'Reading':
+            return self.FxSwapNearLegTrade().ValueDay()
+        if str(value).find('@') == 0:
+            value = getattr(self, str(value).replace('@', ''))() 
+        self.FxSwapNearLegTrade().ValueDay(value)
+        self.DepositInstrument().StartDate(value)
+        self.DepositTrade().ValueDay(value)
+        self.DepositTrade().AcquireDay(value)
+        self.DepositLeg().StartDate(value)
+        return value
+
+    def FarValueDate(self, value = 'Reading'):
+        if value == 'Reading':
+            return self.FxSwapFarLegTrade().ValueDay()
+        if str(value).find('@') == 0:
+            value = getattr(self, value.replace('@', ''))()
+        self.FxSwapFarLegTrade().ValueDay(value)
+        self.FxSwapFarLegTrade().AcquireDay(value)
+        self.DepositLeg().EndDate(value)
+        self.DepositInstrument().ExpiryDate(value)
+        return value
+
+    def AcquireDay(self, value = 'Reading'):
+        if value == 'Reading':
+            return self.DepositTrade().AcquireDay()
+        self.DepositTrade().AcquireDay(value)
+        self.FxSwapNearLegTrade().AcquireDay(value)
+        return self.DepositTrade().AcquireDay()
+
+    def TradesTime(self, value = 'Reading'):
+        if value == 'Reading':
+            return self.DepositTrade().TradeTime()
+        self.DepositTrade().TradeTime(value)
+        if acm.Time.DateDifference(value, self.FxSwapNearLegTrade().ValueDay()) > 0:
+            value = self.FxSwapNearLegTrade().ValueDay()
+        self.FxSwapNearLegTrade().TradeTime(value)
+        if acm.Time.DateDifference(value, self.FxSwapFarLegTrade().ValueDay()) > 0:
+            value = self.FxSwapFarLegTrade().ValueDay()
+        self.FxSwapFarLegTrade().TradeTime(value)
+
+    def TradeValueDay(self, value = 'Reading'):
+        if value == 'Reading':
+            return self.DepositTrade().ValueDay()
+        self.DepositTrade().ValueDay(value)
+        self.FxSwapNearLegTrade().ValueDay(value)
+
+    def DepositCashAmount(self, value = 'Reading'):
+        if value == 'Reading':
+            return self.DepositTrade().CashAmount()
+        self.DepositTrade().CashAmount(value)
+
+    def ClosingNominals(self, value = 'Reading'):
+        if value == 'Reading':
+            return self.NearPremium()
+        self.NearPremium(value)
+        self.FarAmount(self.DepositTrade().EndCash())
+
+    def NearLegMargin(self, value = 'Reading'):
+        point_value = self.GetCurrencyPairPointValue()
+        if value == 'Reading':
+            return self.FXSwapNearLegB2B().PointsPriceMargin() / point_value
+        value = float(value)
+        b2b = self.FXSwapNearLegB2B()
+        b2b.NearPriceMargin(value * point_value)
+        b2b.PointsPriceMargin(value * point_value)
+        self.SetChanged()
+
+    def NearLegPrice(self, value = 'Reading'):
+        point_value = self.GetCurrencyPairPointValue()
+        if value == 'Reading':
+            near_leg_margin = self.NearLegMargin()
+            return self.FxSwapNearLegTrade().Price() - (float(near_leg_margin) * point_value)
+        value = float(value)
+        margin = (self.FxSwapNearLegTrade().Price() - value)
+        b2b = self.FXSwapNearLegB2B()
+        b2b.NearPriceMargin(margin)
+        b2b.PointsPriceMargin(margin)
+        self.SetChanged()
+
+    def FarLegMargin(self, value = 'Reading'):
+        point_value = self.GetCurrencyPairPointValue()
+        if value == 'Reading':
+            return self.FXSwapFarLegB2B().PointsPriceMargin() / point_value
+        value = float(value)
+        b2b = self.FXSwapFarLegB2B()
+        b2b.NearPriceMargin(value * point_value)
+        b2b.PointsPriceMargin(value * point_value)
+        self.SetChanged()
+
+    def FarLegPrice(self, value = 'Reading'):
+        point_value = self.GetCurrencyPairPointValue()
+        if value == 'Reading':
+            far_leg_margin = self.FarLegMargin()
+            return self.FxSwapFarLegTrade().Price() - (float(far_leg_margin) * point_value)
+        value = float(value)
+        margin = (self.FxSwapFarLegTrade().Price() - value)
+        b2b = self.FXSwapFarLegB2B()
+        b2b.NearPriceMargin(margin)
+        b2b.PointsPriceMargin(margin)
+        self.SetChanged()
+    
+    def NearSpot(self, value = 'Reading'):
+        if value == 'Reading':
+            return self.FxSwapNearLegTrade().Price()
+        self.FxSwapNearLegTrade().Price(self.formatter.Parse(value))
+        self.NearLegChanged()
+
+    def SetChanged(self, *args, **kwargs):
+        self.DealPackage().Touch()
+        self.DealPackage().Changed()
+
+    #-----------------------------
+    # Default Values
+    #-----------------------------
+
+    def DefaultNearValueDate(self, *args):
+        curr_pair = self.FxSwapNearLegTrade().CurrencyPair()
+        return curr_pair.spot_date()
+
+    def DefaultFarValueDate(self, *args):
+        curr_pair = self.FxSwapNearLegTrade().CurrencyPair()
+        one_month = acm.Time.DateAdjustPeriod(acm.Time.DateToday(), '1m')
+        return curr_pair.spot_date(one_month)
+
+    def SourceLabel(self, *args):
+        return self.src_currency.Name()
+
+    def AlternateLabel(self, *args):
+        return self.alt_currency.Name()
+
+    def CalcFarAmount(self, *args):
+        return -self.DepositTrade().EndCash()
+
+    #-----------------------------
+    # On Changed
+    #-----------------------------
+
+    def NearLegChanged(self, *args):
+        near_quantity = self.NearAmount()
+        self.DepositTrade().Nominal(-near_quantity)
+        self.DepositTrade().CashAmount(-near_quantity)
+        self.DepositTrade().Premium(near_quantity)
+        self.DepositInstrument().ContractSize(-near_quantity)
+        self.DepositChanged(*args)
+
+    def DepositChanged(self, *args):
+        end_cash = self.DepositTrade().EndCash()
+        if self.src_currency == self.currency_pair.Currency1():
+            self.FxSwapFarLegTrade().Premium(-end_cash)
+        else:
+            self.FxSwapFarLegTrade().Quantity(-end_cash)
+
+    #-----------------------------
+    # Transform
+    #-----------------------------
+
+    def BankingDayPeriodToDateFromTradeTimePlusSpot(self, attrName, newDate, *rest):
+        date = newDate
+        if acm.Time().PeriodSymbolToDate(newDate):
+            tradeDate = acm.Time.AsDate(self.tradeTime)
+            ins = self.DepositInstrument()
+            tradeDatePlusSpot = ins.SpotDate(tradeDate)
+            return BankingDayPeriodToDateFromStartDate(self.DepositTrade().Currency().Calendar(), tradeDatePlusSpot, newDate)
+        return date
+
+    def ExpiryPeriodToDate(self, traitName, value):
+        if acm.Time.PeriodSymbolToDate(value):
+            trade = self.FxSwapNearLegTrade()
+            ccyPair = trade.Currency().CurrencyPair(trade.Instrument())
+            startDate = ccyPair.SpotDate(acm.Time.DateToday())
+            return ccyPair.ExpiryDate(startDate, value)
+        return value
+
+    #-----------------------------
+    # Choices
+    #-----------------------------
+
+    def Currency1Choices(self, *args):
+        return acm.FCurrency.Instances()
+
+    def Currency2Choices(self, *args):
+        curr1 = self.SubsCurrency().DecoratedObject()
+        all = acm.FCurrency.Instances()
+        all.Remove(curr1)
+        return all
+
+...
+
+  SP_MDSCloseCommand
+import acm
+
+from DealPackageUtil import CreateCleanPackageCopy, SetStatus
+from DealPackageDevKit import CloseCommand
+from DealPackageTradeActionCommands import AsFArray
+from SP_CommonCloseCommand import SP_TradeActionClose, SetCloseAttribute
+from DealPackageDevKit import Object
+
+class MDSCloseCommand(CloseCommand):
+    def Invoke(self, *args):
+        newDp = acm.DealPackage.NewAsDecorator('MDSTradeActionClose', self.DealPackage().GUI(), self.KeyWordArguments())
+        return AsFArray(newDp)
+
+class MDSTradeActionClose(SP_TradeActionClose):
+    acquireDay     =  Object(     label='Acquire Day',
+                                  objMapping='LeadTradeAcquireDay',
+                                  onChanged='@RefreshDealPackages',
+                                  editable=False,
+                                  enabled=False)
+
+    valueDay       =  Object(     label='Value Day',
+                                  objMapping='LeadTradeValueDay',
+                                  onChanged='@RefreshDealPackages',
+                                  transform = '@TransformPeriodToDate')
+
+    openEndStatus = Object(objMapping = 'OpenEndStatus')
+
+    terminationDate = Object(objMapping = 'TerminationDate')
+
+    def LeadTradeAcquireDay(self, *rest):
+        return self.LeadTrade().AcquireDay()
+        
+    def LeadTradeValueDay(self, *rest):
+        return self.LeadTrade().ValueDay()
+
+    def AssemblePackage(self, arguments):
+        self._args = arguments
+        origDp = arguments.At('dealPackage')
+        origEdit = origDp.Edit()
+        self.DealPackage().AddChildDealPackage(origEdit, 'original')
+        close = self.CreateCleanPackageCopy(origDp)
+        self.SetB2BFields(origDp, close)
+
+        near_leg = close.TradeAt('FXSwapNear')
+        if acm.Time.DateDifference(near_leg.ValueDay(), near_leg.TradeTime()) < 0:
+            near_leg.TradeTime(near_leg.ValueDay())
+        far_leg = close.TradeAt('FXSwapFar')
+        if acm.Time.DateDifference(far_leg.ValueDay(), far_leg.TradeTime()) < 0:
+            far_leg.TradeTime(far_leg.ValueDay())
+
+        origEdit.AddAsLifeCyclePackage(close, self.ClosePackageKey(newKey = True), self.CloseEventType())   
+        SetStatus(close, arguments)
+        acm.DealPackageActions.InvokeCloseTradeHook(origDp.Edit(), close)
+
+    def SetB2BFields(self, origDp, close):
+        # Set B2B fields on closing DP
+        if origDp.GetAttribute('b2bDepositEnabled') is True:
+            close.SetAttribute('b2bDepositEnabled', True)
+            for attrName in ['depositB2BPrice', 'depositB2BAcq', 'depositB2BPort']:
+                SetCloseAttribute(origDp, close, attrName)
+        if origDp.GetAttribute('b2bNearSwapEnabled') is True:
+            close.SetAttribute('b2bNearSwapEnabled', True)
+            for attrName in ['b2bNearLegPrice', 'b2bNearLegPrf', 'b2bNearLegAcq']:
+                SetCloseAttribute(origDp, close, attrName)
+        if origDp.GetAttribute('b2bFarSwapEnabled') is True:
+            close.SetAttribute('b2bFarSwapEnabled', True)
+            for attrName in ['b2bFarLegPrice', 'b2bFarLegPrf', 'b2bFarLegAcq']:
+                SetCloseAttribute(origDp, close, attrName)
+
+    def OpenEndStatus(self, value = 'Reading'):
+        if value == 'Reading':
+            a = self.OrigDealPackage().InstrumentAt('Trade').OpenEnd()
+
+    def TerminationDate(self, value = 'Reading'):
+        if value == 'Reading':
+            a = self.acquireDay
+
+...
+
+}
+

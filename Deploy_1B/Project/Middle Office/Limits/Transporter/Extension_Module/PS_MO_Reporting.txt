@@ -1,0 +1,1536 @@
+#
+# Front Arena exported extension module.
+# source          ""
+# timestamp (utc) "2024-08-15 07:34:10"
+# ***** DO NOT EDIT! *****
+#
+name        "PS_MO_Reporting"
+description "$Id$"
+
+groups {
+}
+
+decls[FColumnDefinition] {
+  "Alert Watermark Yesterday" ( "sheet columns.alertsheet" ) "";
+  "Applied Rule Days to Expiry" ( "sheet columns.alertsheet" ) "";
+}
+
+clx FTradingSheet [FColumnDefinition] {
+  Alert Watermark Yesterday =
+  ExtensionAttribute=watermerkValueYesterday
+  GroupLabel=Rule Result
+  LabelList=Alert Watermark Yesterday
+
+
+  Applied Rule Days to Expiry =
+  ExtensionAttribute=appliedRuleDaysToExpiry
+  GroupLabel=Rule
+  LabelList=Applied Rule Days to Expiry;Days to Expiry
+
+
+}
+
+decls[FCustomFunction] {
+}
+
+clx FObject [FCustomFunction] {
+  getWatermarkValue =
+  Definition=getWatermarkValue(FAlert alert, date date): double
+  Function=MO_Report_Utils.getWatermarkValue
+
+
+}
+
+decls[FCustomMethod] {
+}
+
+clx FTrade [FCustomMethod] {
+  GetMandiriLevelProduct =
+  Definition=GetMandiriLevelProduct: string read
+  Function=MO_Report_Utils.GetMandiriLevelProduct
+
+
+}
+
+decls[FExtensionAttribute] {
+}
+
+clx FAlert [FExtensionAttribute] {
+  appliedRuleDaysToExpiry = switch(object.AppliedRule.EndDate, 
+  nil->0, 
+  default->dateDifference(object.AppliedRule.EndDate, valuationDate));
+  watermerkValueYesterday = getWatermarkValue(object, yesterday);
+}
+
+decls[FPythonCode] {
+}
+
+clx FObject [FPythonCode] {
+  Compliance_Rule_Inspector
+
+import acm, ael
+from FLogger import FLogger
+from FExposureRuleInterface import ExposureRuleInterface, ExposureRuleInspector
+from FExposureRuleParameters import CreateExposureRuleParameters
+from FPositionAndRiskRuleParameters import CreatePositionAndRiskRuleParameters
+import FSheetUtils
+import FGrouperUtils
+
+logFileName = 'Compliance_Rule_Inspector_%s.log' % acm.Time.DateToday().replace('-', '')
+
+log = FLogger.GetLogger('PriceCopy')
+logLevels = [ FLogger.INFO, FLogger.ERROR, FLogger.WARNING, FLogger.DEBUG ]
+
+def LogLevelNameToNumber(level):
+    if level == FLogger.INFO:    return 1
+    if level == FLogger.DEBUG:   return 2
+    if level == FLogger.WARNING: return 3
+    if level == FLogger.ERROR:   return 4   
+    return 1
+
+def PickFolder():
+    res = acm.FFileSelection()
+    res.PickDirectory(True)
+    return res
+
+class MultiExposureRuleInterface(ExposureRuleInterface):
+    def OnDetailsMultiple(self, app, appliedRules, grname='', alert=None):
+        param_list = []
+        if appliedRules:
+            for appliedRule in appliedRules:
+                if appliedRule.ComplianceRule().DefinitionInfo() == 'Exposure':
+                    params = CreateExposureRuleParameters(appliedRule)
+                elif appliedRule.ComplianceRule().DefinitionInfo() == 'PositionAndRiskControl':
+                    params = CreatePositionAndRiskRuleParameters(appliedRule)
+                else:
+                    raise Exception('Interface not implemented for {} rule'.format(appliedRule.ComplianceRule().DefinitionInfo()))
+                
+                param_list.append(params)
+            MultiExposureRuleInspector(params, alert).Display(app, param_list, grname)
+        else:
+            pass
+            #raise Exception("No targets have been defined")
+
+class MultiExposureRuleInspector(ExposureRuleInspector):
+    def ReadFilteredPortfolioFolder(self, param):
+        filteredPortfolioItem = param.Entity()
+        if filteredPortfolioItem.IsKindOf(acm.FASQLQuery):
+            folder = acm.FASQLQueryFolder()
+            folder.AsqlQuery(filteredPortfolioItem)
+            #folder.Name(param._Portfolio().Name())
+            folder_name = '{} | {}'.format(param.appliedRule.ComplianceRule().Name(), param.Target().Name())
+            folder.Name(folder_name)
+            return folder
+        else:
+            return filteredPortfolioItem
+            
+    def InsertMultipleTargets(self, param_list, grname=''):
+        if grname:        
+            grouper = FGrouperUtils.GetGrouper(grname, acm.FPortfolioSheet)
+        else:
+            grouper = None
+            
+        for param in param_list:
+            fold = self.ReadFilteredPortfolioFolder(param)
+            
+            if self._RelativeNodeShouldBeInserted():
+                items = [self._relativeToParams.Entity()]
+                items.append(fold)
+            else:
+                items = []
+                items.append(fold)
+            self._sheet.InsertObject(items, 'IOAP_LAST')
+                        
+            tree = self._sheet.RowTreeIterator(0).Tree()
+            
+            
+            FSheetUtils.AddColumn(self._sheet, 'Portfolio Name')
+            FSheetUtils.AddColumn(self._sheet, 'Instrument Name')
+            if grouper:            
+                FSheetUtils.ApplyGrouperInstanceToSheet(self._sheet, grouper)
+            FSheetUtils.ExpandTree(self._sheet, 2)
+            
+            self.SortRows()
+    
+        
+    def Display(self, app, param_list, grname=''):
+        #app = self.LaunchApplication()
+        self._sheet = self.InsertSheet(app)
+        self.InsertMultipleTargets(param_list, grname)
+
+ttLogFolder     = "Select where to store the log file"
+ttLogToConsole  = "Whether logging should be done in the Log Console or not."
+
+ael_variables = [
+        # [VariableName,
+        #       DisplayName,
+        #       Type, CandidateValues, Default,
+        #       Mandatory, Multiple, Description, InputHook, Enabled]        
+        ['compliance_rules',
+                'Compliance rules',
+                'FComplianceRule', None, None,
+                1, 1, 'Select compliance rules', None, None],
+        ['grname',
+                'Grouper',
+                'string', None, 'Mandiri Level Product', 0, 0],
+        ['logToConsole',
+                'Log to console_Logging',
+                'int', [1, 0], 1,
+                1, 0, ttLogToConsole],
+        ['logfolder',
+                'Log folder_Logging',
+                PickFolder(), None, PickFolder(),
+                0, 1, ttLogFolder, 0, None],
+        ['logLevel',
+                'Log level_Logging',
+                'string', logLevels, FLogger.INFO, 2, 0]
+]
+
+def ael_main(params):
+    compliance_rules = params['compliance_rules']
+    grname = params['grname']
+    
+    app = acm.StartApplication('Trading Manager', None)
+    
+    #applied_rules = []
+    compliance_rules_dict = {}
+    
+    for comp_rule in compliance_rules:
+        applied_rules = []
+        for ar in comp_rule.AppliedRules():
+            if not ar.Inactive():
+                applied_rules.append(ar)
+        compliance_rules_dict[comp_rule] = applied_rules    
+
+        interface = MultiExposureRuleInterface()
+        if applied_rules:
+            interface.OnDetailsMultiple(app, applied_rules, grname)
+
+...
+
+  MO_Report_Formatters
+
+import csv
+import acm
+from ICTMODULES_FOR_HTML_AND_XSLFO_GENERATOR import create_html_table, create_xsl_fo_table
+from datetime import datetime
+
+class MO_Report_Formatter(object):
+    titles = []
+    
+    columns_oper = []
+    columns_ir = []
+    additional_columns = []
+    
+    
+    def __init__(self, mo_report_transformer, report_name):
+        self.report_name = report_name
+        self.transformer = mo_report_transformer
+        self.headers = mo_report_transformer.headers
+        self.rows = []
+        self.rows.append(mo_report_transformer.field_row)
+        for row in mo_report_transformer.rows:
+            self.rows.append(row)
+        self.titles = list(mo_report_transformer.headers.keys())
+        self.all_line_items = mo_report_transformer.all_line_items
+    
+    def create_base_table(self):
+        pass
+    
+    def generate_fo_content(self):
+        pass
+    
+    def process(self):
+        self.create_base_table()
+        self.apply_report_specific_formatting()
+        self.generate_fo_content()
+
+class MO_Report_Formatter_HTML(MO_Report_Formatter):   
+    def create_base_table(self):
+        self.base_table = create_html_table(self.titles, self.rows)
+    
+    
+class MO_Report_Formatter_XSL(MO_Report_Formatter):
+    report_name = 'Report'
+    beginning ="""<?xml version="1.1" encoding="utf-8"?>
+<fo:root xmlns:fo="http://www.w3.org/1999/XSL/Format">
+ <fo:layout-master-set>
+  <fo:simple-page-master master-name="my_page" margin="0.5in">
+   <fo:region-body/>
+  </fo:simple-page-master>
+ </fo:layout-master-set>
+ <fo:page-sequence master-reference="my_page">
+  <fo:flow flow-name="xsl-region-body">
+    <fo:block font-weight="bold" font-size="30px" margin-bottom="30px">Report</fo:block>
+"""
+    
+    end = """ </fo:flow>
+ </fo:page-sequence>
+</fo:root>
+    """
+    fo_content = ''
+    
+    def create_base_table(self):
+        self.base_table = create_xsl_fo_table(self.titles, self.rows)
+    
+    def generate_fo_content(self):
+        self.fo_content = self.beginning + self.base_table + self.end        
+    
+    
+class MO5_Report_Formatter_HTML(MO_Report_Formatter_HTML):
+    titles = ['','NOP Operational', 'NOP IR Related']
+    report_name = 'MO05 - Market Risk - Net Open Position Limit'
+    
+    columns_oper = ["Plain Vanilla", "CCS", "Par FWD", "Other Structured Product"]
+    columns_ir = ["Surat Berharga/Fixed Income", "IRS", "Bond Forward", "Bond Option", "Forward Rate Agreement"]
+    additional_columns = ['Total', 'Limit', '%', 'Status']
+        
+    def apply_report_specific_formatting(self):
+        i = 0
+        for col_name, fieldnames in self.headers.items():
+            if i == 0:
+                span = len(fieldnames)
+            else:
+                span = len(fieldnames) + 1
+            self.base_table = self.base_table.replace('<th>'+col_name+'</th>', '<th colspan="'+str(span)+'" style="background-color: #66ccff;">'+col_name+'</th>')
+            i+=1
+            
+            for oper in fieldnames:
+                self.base_table = self.base_table.replace('<td>'+oper+'</td>', '<td style="background-color: #66ccff;"><b>'+oper+'</b></td>')        
+
+        #Hierarchy Portfolio
+        for port_name in self.all_line_items:
+            self.base_table = self.base_table.replace(f'<td>{port_name}</td>', f'<td style="text-align: left;">{port_name}</td>') #Portfolios should already be part of rows
+
+        #Html table customization
+        current_date2 = "Report Date: " + datetime.now().strftime("%d-%m-%Y")
+        
+        self.base_table = self.base_table.replace('<td>Green</td>', '<td style="background-color: #00cc66;"></td>')
+        self.base_table = self.base_table.replace('<td>Yellow</td>', '<td style="background-color: #ffcc00;"></td>')
+        self.base_table = self.base_table.replace('<td>Red</td>', '<td style="background-color: #ff0000;"></td>')
+        self.base_table = self.base_table.replace('&', '&amp;')
+        self.base_table = self.base_table.replace('%', '&#37;')
+        self.base_table = self.base_table.replace('border: 1px solid #dddddd;', 'border: 1px solid #000000;') #Not sure if this is doing anything
+        self.base_table = self.base_table.replace('<table>','<h1 style="text-align: left;">'+ current_date2 +'</h1><h2 style="text-align: left;">USD Equivalent - Refinitiv SPOT Marketplace</h2><table>')
+    
+    
+class MO5_Report_Formatter_XSL(MO_Report_Formatter_XSL):
+    titles = ['','NOP Operational', 'NOP IR Related']
+    report_name = 'MO05 - Market Risk - Net Open Position Limit'
+    
+    columns_oper = ["Plain Vanilla", "CCS", "Par FWD", "Other Structured Product"]
+    columns_ir = ["Surat Berharga/Fixed Income", "IRS", "Bond Forward", "Bond Option", "Forward Rate Agreement"]
+    additional_columns = ['Total', 'Limit', '%', 'Status']
+        
+    beginning ="""<?xml version="1.1" encoding="utf-8"?>
+<fo:root xmlns:fo="http://www.w3.org/1999/XSL/Format">
+ <fo:layout-master-set>
+  <fo:simple-page-master master-name="my_page" margin="0.5in" page-width="89.1cm" page-height="21cm">
+   <fo:region-body/>
+  </fo:simple-page-master>
+ </fo:layout-master-set>
+ <fo:page-sequence master-reference="my_page">
+  <fo:flow flow-name="xsl-region-body">
+    <fo:block font-weight="bold" font-size="30px" margin-bottom="30px">MO05 - Market Risk - Net Open Position Limit</fo:block>
+"""
+    
+    def apply_report_specific_formatting(self):
+        current_date2 = "Report Date: " + datetime.now().strftime("%d-%m-%Y")
+        
+        i = 0
+        for col_name, fieldnames in self.headers.items():
+            if i == 0:
+                span = len(fieldnames)
+            else:
+                span = len(fieldnames) + 1
+            self.base_table = self.base_table.replace('<fo:table-cell padding="8pt" border-width="1px" border-style="solid"><fo:block>{}</fo:block></fo:table-cell>'.format(col_name), 
+        f'<fo:table-cell padding="8pt" border-width="1px" border-style="solid" background-color="#66ccff" text-align="center" number-columns-spanned="{span}"><fo:block>{col_name}</fo:block></fo:table-cell>')
+            i+=1
+            for oper in fieldnames:
+                self.base_table = self.base_table.replace('<fo:table-cell border-width="1px" border-style="solid" padding="8pt"><fo:block>'+oper+'</fo:block></fo:table-cell>',
+            '<fo:table-cell border-width="1px" border-style="solid" padding="8pt" background-color="#66ccff" font-weight="bold" text-align="center"><fo:block>'+oper+'</fo:block></fo:table-cell>')
+
+        #Hierarchy Portfolio
+        for port_name in self.all_line_items:
+            self.base_table = self.base_table.replace(
+                f'<fo:table-cell border-width="1px" border-style="solid" padding="8pt"><fo:block>{port_name}</fo:block></fo:table-cell>',
+                f'<fo:table-cell border-width="1px" border-style="solid" padding="8pt" text-align="left"><fo:block>{port_name}</fo:block></fo:table-cell>'
+                )
+
+        #XSLFO table customization
+        self.base_table = self.base_table.replace('<fo:table-cell border-width="1px" border-style="solid" padding="8pt"><fo:block>Green</fo:block></fo:table-cell>',
+        '<fo:table-cell border-width="1px" border-style="solid" padding="8pt" background-color="#00cc66"><fo:block></fo:block></fo:table-cell>')
+        self.base_table = self.base_table.replace('<fo:table-cell border-width="1px" border-style="solid" padding="8pt"><fo:block>Yellow</fo:block></fo:table-cell>',
+        '<fo:table-cell border-width="1px" border-style="solid" padding="8pt" background-color="#ffcc00"><fo:block></fo:block></fo:table-cell>')
+        self.base_table = self.base_table.replace('<fo:table-cell border-width="1px" border-style="solid" padding="8pt"><fo:block>Red</fo:block></fo:table-cell>',
+        '<fo:table-cell border-width="1px" border-style="solid" padding="8pt" background-color="#ff0000"><fo:block></fo:block></fo:table-cell>')
+        self.base_table = self.base_table.replace('&', '&amp;')
+        self.base_table = self.base_table.replace('%', '&#37;')
+
+        self.base_table = self.base_table.replace('<fo:simple-page-master master-name="my_page" margin="0.5in">', '<fo:simple-page-master master-name="my_page" margin="0.5in" page-height="25in" page-width="80in">')
+        self.base_table = self.base_table.replace('<fo:block font-weight="bold" font-size="30px" margin-bottom="30px">'+self.report_name+'</fo:block>',
+        '<fo:block font-weight="bold" font-size="30px" margin-bottom="30px" text-align="center">'+self.report_name+'</fo:block>'+
+        '<fo:block font-weight="bold" font-size="30px" margin-bottom="30px" text-align="left">'+current_date2+'</fo:block>'+
+        '<fo:block font-weight="bold" font-size="24px" margin-bottom="30px" text-align="left">USD Equivalent - Refinitiv SPOT Marketplace</fo:block>')
+        self.base_table = self.base_table.replace('</fo:table-header>', '</fo:table-row>')
+        self.base_table = self.base_table.replace('<fo:table-body>', '')
+        self.base_table = self.base_table.replace('<fo:table-header background-color="#666666" color="#ffffff" font-weight="bold">', 
+        '<fo:table-body>\n\t<fo:table-row font-weight="bold">')
+        self.base_table = self.base_table.replace('<fo:table-cell padding="8pt" border-width="1px" border-style="solid"><fo:block></fo:block></fo:table-cell>', 
+        '<fo:table-cell padding="8pt" border-width="1px" border-style="solid" background-color="#ff9966" text-align="center" number-rows-spanned="2"><fo:block></fo:block></fo:table-cell>')
+
+
+class MO12_Report_Formatter_HTML(MO_Report_Formatter_HTML):
+    report_name = 'MO12 - Credit Risk - Counterparty Limit Utilization'
+        
+    def apply_report_specific_formatting(self):
+        i = 0
+        for col_name, fieldnames in self.headers.items():
+            if i == 0:
+                span = len(fieldnames)
+            else:
+                span = len(fieldnames) - 1
+            self.base_table = self.base_table.replace('<th>'+col_name+'</th>', '<th colspan="'+str(len(fieldnames))+'" style="background-color: #66ccff;">'+col_name+'</th>')
+            i+=1
+            
+            for oper in fieldnames:
+                self.base_table = self.base_table.replace('<td>'+oper+'</td>', '<td style="background-color: #66ccff;"><b>'+oper+'</b></td>')
+            
+        for cp_name in self.all_line_items:
+            self.base_table = self.base_table.replace(f'<td>{cp_name}</td>', f'<td style="text-align: left;">{cp_name}</td>')
+
+        #Html table customization
+        current_date2 = "Report Date: " + datetime.now().strftime("%d-%m-%Y")
+        
+        self.base_table = self.base_table.replace('<td>Green</td>', '<td style="background-color: #00cc66;"></td>')
+        self.base_table = self.base_table.replace('<td>Yellow</td>', '<td style="background-color: #ffcc00;"></td>')
+        self.base_table = self.base_table.replace('<td>Red</td>', '<td style="background-color: #ff0000;"></td>')
+        self.base_table = self.base_table.replace('&', '&amp;')
+        self.base_table = self.base_table.replace('%', '&#37;')
+        self.base_table = self.base_table.replace('border: 1px solid #dddddd;', 'border: 1px solid #000000;') #Not sure if this is doing anything
+        self.base_table = self.base_table.replace('<table>','<h1 style="text-align: left;">'+ current_date2 +'</h1><h2 style="text-align: left;">USD Equivalent - Refinitiv SPOT Marketplace</h2><table>')
+
+class MO12_Report_Formatter_XSL(MO_Report_Formatter_XSL):
+    report_name = 'MO12 - Credit Risk - Counterparty Limit Utilization'
+    
+    beginning ="""<?xml version="1.1" encoding="utf-8"?>
+<fo:root xmlns:fo="http://www.w3.org/1999/XSL/Format">
+ <fo:layout-master-set>
+  <fo:simple-page-master master-name="my_page" margin="0.5in" page-width="89.1cm" page-height="21cm">
+   <fo:region-body/>
+  </fo:simple-page-master>
+ </fo:layout-master-set>
+ <fo:page-sequence master-reference="my_page">
+  <fo:flow flow-name="xsl-region-body">
+    <fo:block font-weight="bold" font-size="30px" margin-bottom="30px">MO12 - Credit Risk - Counterparty Limit Utilization</fo:block>
+"""
+        
+    def apply_report_specific_formatting(self):
+        current_date2 = "Report Date: " + datetime.now().strftime("%d-%m-%Y")
+        
+        i = 0
+        for col_name, fieldnames in self.headers.items():
+            if i == 0:
+                span = len(fieldnames)
+            else:
+                span = len(fieldnames) - 1
+            self.base_table = self.base_table.replace('<fo:table-cell padding="8pt" border-width="1px" border-style="solid"><fo:block>{}</fo:block></fo:table-cell>'.format(col_name), 
+        f'<fo:table-cell padding="8pt" border-width="1px" border-style="solid" background-color="#66ccff" text-align="center" number-columns-spanned="{span}"><fo:block>{col_name}</fo:block></fo:table-cell>')
+            i+=1
+        
+            for oper in fieldnames:
+                self.base_table = self.base_table.replace('<fo:table-cell border-width="1px" border-style="solid" padding="8pt"><fo:block>'+oper+'</fo:block></fo:table-cell>',
+            '<fo:table-cell border-width="1px" border-style="solid" padding="8pt" background-color="#66ccff" font-weight="bold" text-align="center"><fo:block>'+oper+'</fo:block></fo:table-cell>')
+
+        for cp_name in self.all_line_items:
+            self.base_table = self.base_table.replace(
+                '<fo:table-cell border-width="1px" border-style="solid" padding="8pt"><fo:block>{}</fo:block></fo:table-cell>'.format(cp_name),
+                '<fo:table-cell border-width="1px" border-style="solid" padding="8pt" text-align="left"><fo:block>{}</fo:block></fo:table-cell>'.format(cp_name)
+                )
+
+        #XSLFO table customization
+        self.base_table = self.base_table.replace('<fo:table-cell border-width="1px" border-style="solid" padding="8pt"><fo:block>Green</fo:block></fo:table-cell>',
+        '<fo:table-cell border-width="1px" border-style="solid" padding="8pt" background-color="#00cc66"><fo:block></fo:block></fo:table-cell>')
+        self.base_table = self.base_table.replace('<fo:table-cell border-width="1px" border-style="solid" padding="8pt"><fo:block>Yellow</fo:block></fo:table-cell>',
+        '<fo:table-cell border-width="1px" border-style="solid" padding="8pt" background-color="#ffcc00"><fo:block></fo:block></fo:table-cell>')
+        self.base_table = self.base_table.replace('<fo:table-cell border-width="1px" border-style="solid" padding="8pt"><fo:block>Red</fo:block></fo:table-cell>',
+        '<fo:table-cell border-width="1px" border-style="solid" padding="8pt" background-color="#ff0000"><fo:block></fo:block></fo:table-cell>')
+        self.base_table = self.base_table.replace('&', '&amp;')
+        self.base_table = self.base_table.replace('%', '&#37;')
+
+        self.base_table = self.base_table.replace('<fo:simple-page-master master-name="my_page" margin="0.5in">', '<fo:simple-page-master master-name="my_page" margin="0.5in" page-height="25in" page-width="80in">')
+        self.base_table = self.base_table.replace('<fo:block font-weight="bold" font-size="30px" margin-bottom="30px">'+self.report_name+'</fo:block>',
+        '<fo:block font-weight="bold" font-size="30px" margin-bottom="30px" text-align="center">'+self.report_name+'</fo:block>'+
+        '<fo:block font-weight="bold" font-size="30px" margin-bottom="30px" text-align="left">'+current_date2+'</fo:block>'+
+        '<fo:block font-weight="bold" font-size="24px" margin-bottom="30px" text-align="left">Non Bank FX Counterpartz Limit Report</fo:block>')
+        self.base_table = self.base_table.replace('</fo:table-header>', '</fo:table-row>')
+        self.base_table = self.base_table.replace('<fo:table-body>', '')
+        self.base_table = self.base_table.replace('<fo:table-header background-color="#666666" color="#ffffff" font-weight="bold">', 
+        '<fo:table-body>\n\t<fo:table-row font-weight="bold">')
+        self.base_table = self.base_table.replace('<fo:table-cell padding="8pt" border-width="1px" border-style="solid"><fo:block></fo:block></fo:table-cell>', 
+        '<fo:table-cell padding="8pt" border-width="1px" border-style="solid" background-color="#ff9966" text-align="center" number-rows-spanned="2"><fo:block></fo:block></fo:table-cell>')
+
+...
+
+  MO_Report_Transformers
+import csv
+import json
+import os
+from copy import deepcopy
+import locale
+
+locale.setlocale(locale.LC_NUMERIC, 'English')
+
+def csv_string_to_dict_list(csv_string):
+    dict_list = []
+    lines = csv_string.splitlines()
+    reader = csv.DictReader(lines, delimiter=',')
+    for row_dict in reader:
+        dict_list.append(row_dict)
+    return dict_list
+
+
+def get_portfolio_dict_value(portf_dict, key1, fallback=0.0, format=True):
+    try:
+        val = portf_dict[key1]
+    except KeyError:
+        val = fallback
+    
+    try:
+        val = float(val)
+        if format:
+            val = format_float(val)
+    except Exception as e:
+        print(e)
+    
+    return val
+
+def format_float(value):
+    try:
+        formatted = locale.format('%.2f', value, True)
+    except Exception as e:
+        formatted = value
+    return formatted
+
+def calculateOneDayChange(row):
+    str_today = row['Total']
+    str_yesterday = row['Yesterday']
+    try:
+        today = float(str_today)
+    except Exception as e:
+        print(e)
+        today = 0.0
+    try:
+        yesterday = float(str_yesterday)
+    except Exception as e:
+        print(e)
+        yesterday = 0.0
+    
+    return today - yesterday
+
+def calculateLimitStatusColor(days_str):
+    res = 'Red'
+    try:
+        days = int(days_str)
+    except Exception as e:
+        return res
+    if days > 30:
+        return 'Green'
+    elif days >= 0:
+        return 'Yellow'
+    else:
+        return 'Red'
+
+#CLASSES
+
+class TM_Report(object):
+    row_id = 'Row'
+    target_id_tm = 'Name' #Used to match targets (parties) between OM and TM
+    target_id_om = 'Target' #Used to match targets (parties) between OM and TM
+    
+    def __init__(self, dict_list):
+        self.dict_list = dict_list
+        self.get_compliance_rule_name()
+        self.get_column_name()
+        self.aggregate_rows = []
+        self.aggregate_rows = []
+        self.tm_dicts = {}
+    
+    def get_compliance_rule_name(self):
+        row1 = self.dict_list[0]
+        self.compliance_rule_name = row1['Name'].split(' | ')[0]
+    
+    def get_column_name(self):
+        row1 = self.dict_list[0]
+        for k in row1.keys():
+            if k and k not in ['Row', 'Name', 'Instrument']:
+                self.values_col = k
+    
+    def remove_instrument_rows(self):
+        for row_dict in self.dict_list:
+            if not row_dict['Instrument']: #Filter instrument rows, portfolio and grouper rows will have this column empty
+                self.aggregate_rows.append(row_dict)
+    
+    def flatten_report(self):
+        target_dicts = {}
+        for row_dict in  self.aggregate_rows:
+            row_name = row_dict[self.row_id]
+            folder_name = row_dict['Name']
+            target_name = row_dict['Name'].split(' | ')[1]
+            subject_name = target_name #If subject_type is portfolio
+            
+            try:
+                target_dict = target_dicts[target_name]
+            except KeyError:
+                target_dict = {}
+                
+                
+                
+            try:
+                subject_dict = target_dict[subject_name]
+            except KeyError:
+                subject_dict = {}
+                subject_dict['Name'] = target_name
+                subject_dict['Total'] = 0.0
+                subject_dict['Total_Aggregated'] = 0.0
+                subject_dict['Column'] = self.values_col
+            
+            if row_name == folder_name: #This is the portfolio row
+                try:
+                    subject_dict['Total'] = float(row_dict[self.values_col])
+                except Exception as e:
+                    subject_dict['Total'] = row_dict[self.values_col]
+            else: #This is a grouper row
+                try:
+                    val = float(row_dict[self.values_col])
+                except Exception as e:
+                    val = 0.0
+
+                subject_dict[row_name] = val
+                subject_dict['Total_Aggregated'] += val
+            
+            target_dict[subject_name] = subject_dict
+            target_dicts[target_name] = target_dict
+        self.tm_dicts = target_dicts
+        return target_dicts
+    
+    def print_report_dicts(self):
+        for target_name, target_dict in self.tm_dicts.items():
+            for subject_name, subject_dict in target_dict.items():
+                for k, v in subject_dict.items():
+                    print(k, v)
+    
+    def align_dict_keys(self):
+        keys = []
+        for target_name, target_dict in self.tm_dicts.items():
+            for subject_name, subject_dict in target_dict.items():
+                for k in subject_dict.keys():
+                    keys.append(k)
+        keys = list(set(keys))
+        
+        for target_name, target_dict in self.tm_dicts.items():
+            for subject_name, subject_dict in target_dict.items():
+                for k in keys:
+                    if k not in list(subject_dict.keys()):
+                        subject_dict[k] = ''
+                target_dict[subject_name] = subject_dict
+            self.tm_dicts[target_name] = target_dict
+    
+    def write_tm_dicts_to_json(self, json_path):
+        with open(json_path, 'w', newline='') as f:
+            json.dump(self.tm_dicts, f, indent=4)
+    
+    
+            
+
+class MO_Report_Transformer(object):
+    def __init__(self, working_folder, tm_report_name, om_report_name, report_name, debug=True):
+        self.working_folder = working_folder
+        self.tm_report_name = tm_report_name
+        self.om_report_name = om_report_name
+        self.report_name = report_name
+        file_transformed = '{}_transformed.csv'.format(self.report_name)
+        self.path_transformed = os.path.join(self.working_folder, file_transformed)
+        self.debug = debug
+        self.get_path_tm_report()
+        self.get_path_om_report()
+        self.tm_reports = []
+        self.tm_dicts = {}
+        self.om_dicts = {}
+        self.combined_dicts = {}
+        self.horizontal_dicts = {}
+        self.report_data = {}
+        self.all_line_items = []
+        self.title_row = []
+        self.field_row = []
+        self.rows = []
+        self.headers = {}
+    
+    def get_path_tm_report(self):
+        self.path_tm_report = os.path.join(self.working_folder, self.tm_report_name)
+    
+    def get_path_om_report(self):
+        self.path_om_report = os.path.join(self.working_folder, self.om_report_name)   
+
+    def separate_tm_reports(self):
+        with open(self.path_tm_report, 'r') as f:
+            reader = f.readlines()
+            report_string = ''
+            for row in reader:
+                if row.startswith('Row'):
+                    if report_string:
+                        dict_list = csv_string_to_dict_list(report_string)
+                        rep = TM_Report(dict_list)
+                        self.tm_reports.append(rep)
+                    report_string = ''
+                    report_string = report_string + row
+                else:
+                    report_string = report_string + row
+            dict_list = csv_string_to_dict_list(report_string)
+            rep = TM_Report(dict_list)
+            self.tm_reports.append(rep)
+    
+    def process_tm_reports(self):
+        for rep in self.tm_reports:
+            rep.remove_instrument_rows()
+            rep.flatten_report()
+            rep.align_dict_keys()
+            
+            path_json = os.path.join(self.working_folder, 'TM_{}.json'.format(rep.compliance_rule_name))
+            '''try:
+                rep.write_tm_dicts_to_json(path_json)
+            except Exception as e:
+                print(e)'''
+    
+    def read_om_data(self):
+        with open(self.path_om_report, 'r') as f:
+            reader = csv.DictReader(f, delimiter=',')
+
+            for row_dict in reader:
+                target_name = row_dict[self.target_id_om]
+                rule_name = row_dict['Rule']
+                subject_name = row_dict['Subject']                
+                
+                if rule_name:
+                    try:
+                        rule_dict = self.om_dicts[rule_name]
+                    except KeyError:
+                        rule_dict = {}                      
+                    if target_name:
+                        try:
+                            target_dict = rule_dict[target_name]
+                        except KeyError:
+                            target_dict = {}
+                        
+                        if subject_name:
+                            try:
+                                subject_dict = target_dict[subject_name]
+                                if subject_dict['State'] == 'Receded': #Clear out the data from the other alert if you it is receded and you have a different one
+                                    subject_dict = {}
+                            except KeyError:
+                                subject_dict = {}
+                                
+                            subject_dict['Limit'] = row_dict['Adjusted Value']
+                            subject_dict['Current Value'] = row_dict['Current Value']
+                            subject_dict['Utilization %'] = row_dict['Utilization %']
+                            subject_dict['Breach Type'] = row_dict['Type']
+                            subject_dict['State'] = row_dict['State']
+                            subject_dict['Group ID'] = row_dict['AppliedRule.Target.Id2']
+                            subject_dict['Yesterday'] = row_dict['Alert Watermark Yesterday']
+                            subject_dict['End'] = row_dict['End']
+                            subject_dict['Days to Expiry'] = row_dict['Applied Rule Days to Expiry']
+                            
+                            target_dict[subject_name] = subject_dict
+                        rule_dict[target_name] = target_dict
+                    self.om_dicts[rule_name] = rule_dict
+        return self.om_dicts
+    
+    def write_om_dicts_to_json(self):
+        for rule_name, rule_dict in self.om_dicts.items():
+            json_path = os.path.join(self.working_folder, 'OM_{}.json'.format(rule_name))
+            with open(json_path, 'w', newline='') as f:
+                json.dump(rule_dict, f, indent=4)
+    
+    def enrich_om_data(self):
+        to_delete_rep = []
+        for rep in self.tm_reports:
+            try:
+                om_rule_dict = self.om_dicts[rep.compliance_rule_name]
+            except KeyError:
+                om_rule_dict = {}
+                to_delete_rep.append(rep) #If there is no corresponding Operations Manager data then the report should be deleted.
+            if om_rule_dict:
+                targets_to_delete = []
+                for target_name, target_dict in rep.tm_dicts.items():
+                    try:
+                        om_target_dict = om_rule_dict[target_name]
+                    except KeyError:
+                        targets_to_delete.append(target_name) #If there is no data for this target then the target should be deleted. Probably the Applied Rule is inactive
+                        om_target_dict = {}
+                    if om_target_dict:
+                        subjects_to_delete = []
+                        for subject_name, subject_dict in target_dict.items():
+                            try:
+                                om_subject_dict = om_target_dict[subject_name]
+                            except KeyError:
+                                subjects_to_delete.append(subject_name) #If there is no data for this subject then delete it
+                                om_subject_dict = {}
+                            if om_subject_dict:
+                                for k, v in om_subject_dict.items():
+                                    subject_dict[k] = v                            
+                            target_dict[subject_name] = subject_dict
+                        
+                        for subject_name in subjects_to_delete:
+                            del target_dict[subject_name]
+                            
+                        rep.tm_dicts[target_name] = target_dict
+            
+                for target_name in targets_to_delete:
+                    del rep.tm_dicts[target_name]
+                        
+        new_tm_reports = []
+        for rep in self.tm_reports:
+            if rep not in to_delete_rep:
+                new_tm_reports.append(rep)
+        self.tm_reports = new_tm_reports
+    
+    def collect_combined_reports(self):
+        for rep in self.tm_reports:
+            self.combined_dicts[rep.compliance_rule_name] = rep.tm_dicts
+    
+    def write_combined_dicts_to_json(self):
+        json_path = os.path.join(self.working_folder, '{}_combined.json'.format(self.report_name))
+        with open(json_path, 'w', newline='') as f:
+            json.dump(self.combined_dicts, f, indent=4)
+    
+    def horizontal_split(self):
+        pass
+    
+    def align_line_items_for_report(self): #This makes sure that all rows will have values for all columns in the final report
+        for col_name_report, col_dict in self.horizontal_dicts.items():
+            col_rows_dict = {}
+            this_col_rows = {}
+            for line_name, line_dict in col_dict.items():
+                self.all_line_items.append(line_name)
+        
+        self.all_line_items = list(set(self.all_line_items))
+        
+        for col_name, col_dict in self.horizontal_dicts.items():
+            for line_item in self.all_line_items:
+                try:
+                    line_item_col_dict = col_dict[line_item]
+                except KeyError:
+                    line_item_col_dict = {}
+
+                    line_item_col_dict['Name'] = line_item
+                
+                col_dict[line_item] = line_item_col_dict
+            self.horizontal_dicts[col_name] = col_dict
+        
+    def write_horizontal_dicts_to_json(self):
+        json_path = os.path.join(self.working_folder, '{}_columns.json'.format(self.report_name))
+        with open(json_path, 'w', newline='') as f:
+            json.dump(self.horizontal_dicts, f, indent=4)
+            
+    def extract_report_data(self):        
+        for col_name, col_dict in self.horizontal_dicts.items():
+            col_dict_extracted = {}
+            col_name_report = self.col_name_mappings[col_name]
+            for line_item, line_dict in col_dict.items():
+                new_row = {}
+                #new_row['{} {}'.format(col_name_report, 'Name')] = line_item
+                for k in line_dict.keys():
+                    if k not in self.ignore_keys:
+                        if k == 'Total':
+                            #new_k = '{} {}'.format(col_name_report, k)
+                            new_row['Utilization'] = get_portfolio_dict_value(line_dict, k, fallback=0.0)
+                        elif k == 'Limit':
+                            new_row[k] = get_portfolio_dict_value(line_dict, k, fallback=0.0)
+                        elif k == 'Breach Type':
+                            #new_k = '{} {}'.format(col_name_report, 'Status')
+                            if line_dict['Breach Type'] == 'Warning':
+                                if line_dict['State'] == 'Active':
+                                    new_row['Status'] = 'Yellow'
+                                else:
+                                    new_row['Status'] = 'Green'
+                            elif line_dict['Breach Type'] == 'Violation':
+                                if line_dict['State'] == 'Active':
+                                    new_row['Status'] = 'Red'
+                                else:
+                                    new_row['Status'] = 'Green'
+                            else:
+                                new_row['Status'] = 'Green'
+                        elif k == 'Utilization %':
+                            #new_k = '{} {}'.format(col_name_report, '%')
+                            if not line_dict['Total']:
+                                tot = 0.0
+                            else:
+                                tot = get_portfolio_dict_value(line_dict, 'Total', fallback=0.0, format=False)
+                            lim = get_portfolio_dict_value(line_dict, 'Limit', fallback=0.0, format=False)
+                            if lim:
+                                new_row['% Utilization'] = format_float(tot / lim * 100.0)
+                            else:
+                                new_row['% Utilization'] = 0.0
+                        elif k == 'Group ID':
+                            new_row[k] = line_dict[k]
+                        elif k == 'End':
+                            #new_k = '{} {}'.format(col_name_report, 'End')
+                            new_row['Limit Expiry'] = line_dict[k]
+
+                        elif k == 'Yesterday':
+                            #new_k = '{} {}'.format(col_name_report, 'One Day Change')
+                            new_row['1 Day Change'] = format_float(calculateOneDayChange(line_dict))
+                        elif k == 'Days to Expiry':
+                            #new_k = '{} {}'.format(col_name_report, 'Status')
+                            new_row['Status Limit Expiry'] = calculateLimitStatusColor(line_dict['Days to Expiry'])
+                        else:
+                            #new_k = k
+                            new_row[k] = format_float(line_dict[k])
+                    col_dict_extracted[line_item] = new_row
+                self.report_data[col_name_report] = col_dict_extracted
+    
+    def write_report_data_to_json(self):
+        json_path = os.path.join(self.working_folder, '{}_report_data.json'.format(self.report_name))
+        with open(json_path, 'w', newline='') as f:
+            json.dump(self.report_data, f, indent=4)
+            
+    
+    def build_report_rows(self):
+        for line_item in sorted(self.all_line_items):
+            row = [line_item]
+            for col_name, col_dict in self.report_data.items():
+                col_fields = ['Name']
+                for k, v in col_dict[line_item].items():
+                    if k != 'Name':
+                        row.append(v)
+                        col_fields.append(k)                
+                self.headers[col_name] = col_fields
+            self.rows.append(row)
+    
+    def export_report_data_to_csv(self):
+        with open(self.path_transformed, 'w', newline='') as f:
+            writer = csv.writer(f, delimiter='|')
+            #writer.writeheader()
+            self.title_row = list(self.headers.keys())
+            writer.writerow(self.title_row)
+            
+            self.field_row = ['Name']
+            for col_name, field_list in self.headers.items():
+                for f in field_list:
+                    if f != 'Name':
+                        self.field_row.append(f)
+            
+            writer.writerow(self.field_row)
+            
+            for row in self.rows:
+                writer.writerow(row)
+    
+    def transform(self):
+        self.separate_tm_reports()
+        self.process_tm_reports()
+        self.read_om_data()
+        #if self.debug:
+        #    self.write_om_dicts_to_json()
+        self.enrich_om_data()
+        self.collect_combined_reports()
+        if self.debug:
+            self.write_combined_dicts_to_json()
+        self.horizontal_split()
+        self.align_line_items_for_report()
+        if self.debug:
+            self.write_horizontal_dicts_to_json()
+        self.extract_report_data()
+        if self.debug:
+            self.write_report_data_to_json()
+        self.build_report_rows()
+        self.export_report_data_to_csv()
+        
+
+class MO5_Report_Transformer(MO_Report_Transformer):
+    row_id = 'Row'
+    target_id_tm = 'Name' #Used to match targets (portfolios) between OM and TM
+    target_id_om = 'Target' #Used to match targets (portfolios) between OM and TM
+    values_col = 'Final NOP Portfolio(old)' #Column that is used for calculation of limit
+    
+    col_name_mappings = {
+        'NOP Operasional' : "NOP Operational",
+        'NOP IR' : 'NOP IR Related'
+    }
+    
+    ignore_keys = ['Total_Aggregated', 'Column', 'Group ID', 'State', 'Current Value', 'End', 'Days to Expiry', 'Yesterday']
+    
+    title_order = ['NOP Operational', 'NOP IR Related']
+    column_order = {
+        'NOP Operational' : ['Name', 'Plain Vanilla', 'CCS', 'Par FWD', 'Other Structured Products', 'Total', 'Limit', '%', 'Status'], 
+        'NOP IR Related' : ['Surat Berharga/Fixed Income', 'IRS', 'Bond Forward', 'Bond Option', 'Forward Rate Agreement', 'Total', 'Limit', '%', 'Status']
+    }
+    
+    def extract_report_data(self):        
+        for col_name, col_dict in self.horizontal_dicts.items():
+            col_dict_extracted = {}
+            col_name_report = self.col_name_mappings[col_name]
+            for line_item, line_dict in col_dict.items():
+                new_row = {}
+                #new_row['{} {}'.format(col_name_report, 'Name')] = line_item
+                for k in line_dict.keys():
+                    if k not in self.ignore_keys:
+                        if k == 'Total':
+                            #new_k = '{} {}'.format(col_name_report, k)
+                            new_row['Total'] = get_portfolio_dict_value(line_dict, k, fallback=0.0)
+                        elif k == 'Limit':
+                            new_row[k] = get_portfolio_dict_value(line_dict, k, fallback=0.0)
+                        elif k == 'Breach Type':
+                            #new_k = '{} {}'.format(col_name_report, 'Status')
+                            if line_dict['Breach Type'] == 'Warning':
+                                if line_dict['State'] == 'Active':
+                                    new_row['Status'] = 'Yellow'
+                                else:
+                                    new_row['Status'] = 'Green'
+                            elif line_dict['Breach Type'] == 'Violation':
+                                if line_dict['State'] == 'Active':
+                                    new_row['Status'] = 'Red'
+                                else:
+                                    new_row['Status'] = 'Green'
+                            else:
+                                new_row['Status'] = 'Green'
+                        elif k == 'Utilization %':
+                            #new_k = '{} {}'.format(col_name_report, '%')
+                            if not line_dict['Total']:
+                                tot = 0.0
+                            else:
+                                tot = get_portfolio_dict_value(line_dict, 'Total', fallback=0.0, format=False)
+                            lim = get_portfolio_dict_value(line_dict, 'Limit', fallback=0.0, format=False)
+                            if lim:
+                                new_row['%'] = format_float(tot / lim * 100.0)
+                            else:
+                                new_row['%'] = 0.0
+                        elif k == 'Group ID':
+                            new_row[k] = line_dict[k]
+                        elif k == 'End':
+                            #new_k = '{} {}'.format(col_name_report, 'End')
+                            new_row['Limit Expiry'] = line_dict[k]
+
+                        elif k == 'Yesterday':
+                            #new_k = '{} {}'.format(col_name_report, 'One Day Change')
+                            new_row['1 Day Change'] = format_float(calculateOneDayChange(line_dict))
+                        elif k == 'Days to Expiry':
+                            #new_k = '{} {}'.format(col_name_report, 'Status')
+                            new_row['Status Limit Expiry'] = calculateLimitStatusColor(line_dict['Days to Expiry'])
+                        else:
+                            #new_k = k
+                            new_row[k] = format_float(line_dict[k])
+                    col_dict_extracted[line_item] = new_row
+                self.report_data[col_name_report] = col_dict_extracted
+    
+    def horizontal_split(self):
+        for rule_name, rule_dict in self.combined_dicts.items():
+            for target_name, target_dict in rule_dict.items():
+                for subject_name, subject_dict in target_dict.items():
+                    try:
+                        col_dict = self.horizontal_dicts[rule_name]
+                    except KeyError:
+                        col_dict = {}
+            
+                    col_dict[subject_name] = subject_dict
+                    self.horizontal_dicts[rule_name] = col_dict
+    
+    def build_report_rows(self):
+        for line_item in sorted(self.all_line_items):
+            row = []
+            for title in self.title_order:
+                col_dict = self.report_data[title]
+                line_dict = col_dict[line_item]
+                col_order = self.column_order[title]
+                for k in col_order:
+                    try:
+                        v = line_dict[k]
+                    except KeyError:
+                        v = ''
+                    row.append(v)
+                self.headers[title] = col_order
+            self.rows.append(row)
+    
+
+class MO12_Report_Transformer(MO_Report_Transformer):
+    row_id = 'Row'
+    target_id_tm = 'Name' #Used to match targets (parties) between OM and TM
+    target_id_om = 'Target' #Used to match targets (parties) between OM and TM
+    values_col = 'Counterparty CEM Limit' #Column that is used for calculation of limit
+    values_col2 = 'Net Exposure'
+    
+    col_name_mappings = {
+        "Counterparty CEM Limit" : "Credit Equivalent",
+        "Currency Notional" : "Notional"
+    }
+    ignore_keys = ['Total_Aggregated', 'Column', 'Group ID', 'State', 'Current Value']
+    fieldnames = {
+        "Counterparty CEM Limit" : ['Name', 'Limit', 'Total', 'One Day Change', '%', 'Status', 'End', 'Status']
+    }
+    
+    title_order_default = ['Notional', 'Credit Equivalent']
+    
+    column_order_default = {
+        'Notional' : ['Limit', 'Utilization', '1 Day Change', '% Utilization', 'Status', 'Limit Expiry', 'Status Limit Expiry'], 
+        'Credit Equivalent' : ['Limit', 'Utilization', '1 Day Change', '% Utilization', 'Status', 'Limit Expiry', 'Status Limit Expiry']
+    }
+    
+    def horizontal_split(self):
+        for rule_name, rule_dict in self.combined_dicts.items():
+            for target_name, target_dict in rule_dict.items():
+                for subject_name, subject_dict in target_dict.items():
+                    col = subject_dict['Column']
+                    try:
+                        col_dict = self.horizontal_dicts[col]
+                    except KeyError:
+                        col_dict = {}
+                    
+                    col_dict[subject_name] = subject_dict
+                    self.horizontal_dicts[col] = col_dict
+    
+    '''def adjust_column_order(self):
+        new_col_order = {}
+        new_title_order = []
+        for title in self.title_order_default:
+            try:
+                col_dict = self.report_data[title]
+                new_title_order.append(title)
+                this_title_order = ['Name']
+                for k in self.column_order_default[title]:
+                    this_title_order.append(k)
+                new_col_order[title] = this_title_order
+            except KeyError:
+                pass
+        self.column_order = new_col_order
+        self.title_order = new_title_order
+    
+    def build_report_rows(self):
+        self.adjust_column_order()
+        for line_item in sorted(self.all_line_items):
+            row = []
+            for title in self.title_order:
+                col_dict = self.report_data[title]
+                line_dict = col_dict[line_item]
+                col_order = self.column_order[title]
+                for k in col_order:
+                    try:
+                        v = line_dict[k]
+                    except KeyError:
+                        v = ''
+                    row.append(v)
+                self.headers[title] = col_order
+            self.rows.append(row)'''
+
+...
+
+  MO_Report_Utils
+
+import acm
+
+level_product_mapping = {
+    '[Trade Set] BasketRepo/Deposit Loan' : 'BasketRepo/Deposit Loan',
+    '[Trade Set] Bond Forward' : 'Bond Forward',
+    '[Trade Set] Bond Option' : 'Bond Option',
+    '[Trade Set] Bonds' : 'Surat Berharga/Fixed Income',
+    '[Trade Set] Cross Currency Swap' : 'CCS',
+    '[Trade Set] Forward Rate Agreement' : 'Forward Rate Agreement',
+    '[Trade Set] Fund' : 'Fund',
+    '[Trade Set] FX Option' : 'Option',
+    '[Trade Set] Interest Rate Swap' : 'IRS',
+    '[Trade Set] Other Structured Product' : 'Other Structured Product',
+    '[Trade Set] Par Forward' : 'Par FWD',
+    '[Trade Set] Plain Vanilla' : 'Plain Vanilla',
+    
+}
+
+def getQueryDict(mapping):
+    query_dict = {}
+
+    for k, v in level_product_mapping.items():
+        sq = acm.FStoredASQLQuery[k]
+        query_dict[k] = sq.Query()
+    return query_dict
+
+query_dict = getQueryDict(level_product_mapping)
+
+
+def GetMandiriLevelProduct(trade):
+    res = 'None'
+    for sq_name, query in query_dict.items():
+        try:
+            if query.IsSatisfiedByUseAttributes(trade):
+                res = level_product_mapping[sq_name]
+                break
+        except Exception as e:
+            print(e)
+            res = 'Error'
+    return res
+
+def getWatermarkValue(alert, date):
+    wat = 0.0
+    
+    if alert.ThresholdValue().ResultsHistory():
+        res_hist = alert.ThresholdValue().ResultsHistory().Last()
+        if res_hist:
+            values_hist = acm.FRuleValueHistory.Select("resultHistory = {}".format(res_hist.Oid()))
+            for v in values_hist.Reverse():
+                if v.End().startswith(date):
+                    wat = v.WatermarkValue()
+                    break
+    return wat
+
+...
+
+  MO05_Report_Generation
+
+import acm, ael
+import csv
+from FLogger import FLogger
+from MO_Report_Transformers import MO5_Report_Transformer
+from MO_Report_Formatters import MO5_Report_Formatter_HTML, MO5_Report_Formatter_XSL
+from ICTMODULES_FOR_HTML_AND_XSLFO_GENERATOR import create_html_file, get_current_date, get_current_hour, generate_pdf_from_fo_file, generate_file_for_other_extension
+from datetime import datetime
+
+import os
+
+def create_xsl_fo_file(file_name, file_path, xsl_fo_content, title, current_datetime, folder_with_file_name=False):
+    if folder_with_file_name:
+        folder_path = file_path+"\\"+file_name+"\\"+current_datetime
+    else:
+        date,month,year=current_datetime[:2],current_datetime[2:4],current_datetime[4:]
+        folder_path = file_path + "\\report" + year+month+date
+    try:
+        os.makedirs(folder_path)
+    except:
+        pass
+
+    file_url = folder_path+"\\"+file_name+".fo"
+    f = open(file_url, "w")
+    f.write(xsl_fo_content)
+    f.close()
+    return file_url 
+
+
+logFileName = 'PriceCopy_%s.log' % acm.Time.DateToday().replace('-', '')
+
+log = FLogger.GetLogger('PriceCopy')
+logLevels = [ FLogger.INFO, FLogger.ERROR, FLogger.WARNING, FLogger.DEBUG ]
+        
+
+def LogLevelNameToNumber(level):
+    if level == FLogger.INFO:    return 1
+    if level == FLogger.DEBUG:   return 2
+    if level == FLogger.WARNING: return 3
+    if level == FLogger.ERROR:   return 4   
+    return 1
+
+def PickFolder():
+    res = acm.FFileSelection()
+    res.PickDirectory(True)
+    return res
+
+ttWorkingFolder = 'Folder where the raw reports from Trading and Operations Manager have been exported'
+ttTMReport = 'Name of Trading Manager workbook created with ComplianceRuleInspector script'
+ttOMReport = 'Name of Operations Manager workbook containing all active alerts'
+ttLogFolder     = "Select where to store the log file"
+ttLogToConsole  = "Whether logging should be done in the Log Console or not."
+ttReportName = "Name for the report"
+
+ael_variables = [
+        # [VariableName,
+        #       DisplayName,
+        #       Type, CandidateValues, Default,
+        #       Mandatory, Multiple, Description, InputHook, Enabled]
+        ['working_folder',
+                'Working folder',
+                PickFolder(), None, PickFolder(),
+                1, 1, ttWorkingFolder, 0, None],
+        ['tm_report1',
+                'Trading Manager Workbook',
+                'string', None, None,
+                1, 0, ttTMReport, None, None],
+        ['om_report1',
+                'Operations Manager Workbook',
+                'string', None, None,
+                1, 0, ttOMReport, None, None],
+        ['report_name',
+                'Report name',
+                'string', None, 'MO05 - Market Risk - Net Open Position Limit',
+                1, 0, ttReportName, None, None],
+        ['logToConsole',
+                'Log to console_Logging',
+                'int', [1, 0], 1,
+                1, 0, ttLogToConsole],
+        ['logfolder',
+                'Log folder_Logging',
+                PickFolder(), None, PickFolder(),
+                0, 1, ttLogFolder, 0, None],
+        ['logLevel',
+                'Log level_Logging',
+                'string', logLevels, FLogger.INFO, 2, 0]
+]
+
+
+def ael_main(params):
+    working_folder = params['working_folder'].SelectedDirectory().AsString()
+    tm_report1 = params['tm_report1']
+    om_report1 = params['om_report1']
+    report_name = params['report_name']
+    
+    taskTM = acm.FAelTask['PsRvm_MO_TM_Export']
+
+    params = taskTM.Parameters()
+    params.AtPut('wbName', tm_report1)
+    params.AtPut('File Path', working_folder)
+    params.AtPut('File Name', tm_report1)
+    taskTM.Parameters(params)
+    taskTM.Execute()
+    
+    taskOM = acm.FAelTask['PsRvm_MO_OM_Export']
+    params = taskOM.Parameters()
+    params.AtPut('File Path', working_folder)
+    params.AtPut('File Name', om_report1)
+    taskOM.Parameters(params)
+    taskOM.Execute()
+    
+    tm_csv_name = '{}.csv'.format(tm_report1)
+    om_csv_name = '{}.csv'.format(om_report1)
+
+    mo5_transformer1 = MO5_Report_Transformer(working_folder, tm_csv_name, om_csv_name, report_name)
+    mo5_transformer1.transform()
+
+    mo5_formatter_html = MO5_Report_Formatter_HTML(mo5_transformer1, report_name)
+    mo5_formatter_html.process()
+
+    mo5_formatter_xsl = MO5_Report_Formatter_XSL(mo5_transformer1, report_name)
+    mo5_formatter_xsl.process()
+    
+    
+    current_hour = get_current_hour("")
+    current_date = get_current_date("")    
+
+    html_file = create_html_file(mo5_formatter_html.report_name + " " +current_date+current_hour, working_folder, [mo5_formatter_html.base_table], mo5_formatter_html.report_name , current_date)
+    
+    generate_file_for_other_extension( html_file, '.xls' )
+
+    xsl_fo_file = create_xsl_fo_file(mo5_formatter_xsl.report_name + " " +current_date+current_hour, working_folder, mo5_formatter_xsl.fo_content, mo5_formatter_xsl.report_name, current_date)
+    generate_pdf_from_fo_file(xsl_fo_file)
+
+...
+
+  MO12_Report_Generation
+
+import acm, ael
+import csv
+from FLogger import FLogger
+from MO_Report_Transformers import MO12_Report_Transformer
+from MO_Report_Formatters import MO12_Report_Formatter_HTML, MO12_Report_Formatter_XSL
+from ICTMODULES_FOR_HTML_AND_XSLFO_GENERATOR import create_html_file, get_current_date, get_current_hour, generate_pdf_from_fo_file, generate_file_for_other_extension
+from datetime import datetime
+from MO_Report_Transformers import MO_Report_Transformer, get_portfolio_dict_value, format_float
+from MO_Report_Formatters import MO_Report_Formatter_HTML, MO_Report_Formatter_XSL
+
+import os
+
+def create_xsl_fo_file(file_name, file_path, xsl_fo_content, title, current_datetime, folder_with_file_name=False):
+    if folder_with_file_name:
+        folder_path = file_path+"\\"+file_name+"\\"+current_datetime
+    else:
+        date,month,year=current_datetime[:2],current_datetime[2:4],current_datetime[4:]
+        folder_path = file_path + "\\report" + year+month+date
+    try:
+        os.makedirs(folder_path)
+    except:
+        pass
+
+    file_url = folder_path+"\\"+file_name+".fo"
+    f = open(file_url, "w")
+    f.write(xsl_fo_content)
+    f.close()
+    return file_url 
+
+
+logFileName = 'PriceCopy_%s.log' % acm.Time.DateToday().replace('-', '')
+
+log = FLogger.GetLogger('PriceCopy')
+logLevels = [ FLogger.INFO, FLogger.ERROR, FLogger.WARNING, FLogger.DEBUG ]         
+        
+
+def LogLevelNameToNumber(level):
+    if level == FLogger.INFO:    return 1
+    if level == FLogger.DEBUG:   return 2
+    if level == FLogger.WARNING: return 3
+    if level == FLogger.ERROR:   return 4   
+    return 1
+
+def PickFolder():
+    res = acm.FFileSelection()
+    res.PickDirectory(True)
+    return res
+
+ttWorkingFolder = 'Folder where the raw reports from Trading and Operations Manager have been exported'
+ttTMReport = 'Name of Trading Manager workbook created with ComplianceRuleInspector script'
+ttOMReport = 'Name of Operations Manager workbook containing all active alerts'
+ttLogFolder     = "Select where to store the log file"
+ttLogToConsole  = "Whether logging should be done in the Log Console or not."
+ttReportName = "Name for the report"
+
+ael_variables = [
+        # [VariableName,
+        #       DisplayName,
+        #       Type, CandidateValues, Default,
+        #       Mandatory, Multiple, Description, InputHook, Enabled]
+        ['working_folder',
+                'Working folder',
+                PickFolder(), None, PickFolder(),
+                1, 1, ttWorkingFolder, 0, None],
+        ['tm_report1',
+                'Trading Manager Workbook',
+                'string', None, None,
+                1, 0, ttTMReport, None, None],
+        ['om_report1',
+                'Operations Manager Workbook',
+                'string', None, None,
+                1, 0, ttOMReport, None, None],
+        ['report_name',
+                'Report name',
+                'string', None, 'MO12 - Credit Risk - Counterparty Limit Utilization',
+                1, 0, ttReportName, None, None],
+        ['logToConsole',
+                'Log to console_Logging',
+                'int', [1, 0], 1,
+                1, 0, ttLogToConsole],
+        ['logfolder',
+                'Log folder_Logging',
+                PickFolder(), None, PickFolder(),
+                0, 1, ttLogFolder, 0, None],
+        ['logLevel',
+                'Log level_Logging',
+                'string', logLevels, FLogger.INFO, 2, 0]
+]
+
+
+def ael_main(params):
+    working_folder = params['working_folder'].SelectedDirectory().AsString()
+    tm_report1 = params['tm_report1']
+    om_report1 = params['om_report1']
+    report_name = params['report_name']
+    
+    taskTM = acm.FAelTask['PsRvm_MO_TM_Export']
+
+    params = taskTM.Parameters()
+    params.AtPut('wbName', tm_report1)
+    params.AtPut('File Path', working_folder)
+    params.AtPut('File Name', tm_report1)
+    taskTM.Parameters(params)
+    taskTM.Execute()
+    
+    taskOM = acm.FAelTask['PsRvm_MO_OM_Export']
+    params = taskOM.Parameters()
+    params.AtPut('File Path', working_folder)
+    params.AtPut('File Name', om_report1)
+    taskOM.Parameters(params)
+    taskOM.Execute()
+    
+    tm_csv_name = '{}.csv'.format(tm_report1)
+    om_csv_name = '{}.csv'.format(om_report1)
+
+    mo12_transformer1 = MO12_Report_Transformer(working_folder, tm_csv_name, om_csv_name, report_name)
+    mo12_transformer1.transform()
+    
+    
+    mo12_formatter_html = MO12_Report_Formatter_HTML(mo12_transformer1, report_name)
+    mo12_formatter_html.process()
+
+    mo12_formatter_xsl = MO12_Report_Formatter_XSL(mo12_transformer1, report_name)
+    mo12_formatter_xsl.process()
+    
+    
+    current_hour = get_current_hour("")
+    current_date = get_current_date("")    
+
+    html_file = create_html_file(mo12_formatter_html.report_name + " " +current_date+current_hour, working_folder, [mo12_formatter_html.base_table], mo12_formatter_html.report_name , current_date)
+    
+    generate_file_for_other_extension( html_file, '.xls' )
+
+    xsl_fo_file = create_xsl_fo_file(mo12_formatter_xsl.report_name + " " +current_date+current_hour, working_folder, mo12_formatter_xsl.fo_content, mo12_formatter_xsl.report_name, current_date)
+    generate_pdf_from_fo_file(xsl_fo_file)
+
+...
+
+}
+
+decls[FXSLTemplate] {
+  "FCommaTemplate_RemoveHeaderInfo" ( "aef reporting.secondary templates" "aef reporting.secondary templates csv" ) "";
+}
+
+clx FObject [FXSLTemplate] {
+  FCommaTemplate_RemoveHeaderInfo
+<?xml version='1.0'?>
+<!DOCTYPE xsl:stylesheet [
+  <!ENTITY comma "<xsl:text>,</xsl:text>">
+  <!ENTITY lf "<xsl:text>&#10;</xsl:text>">
+]>
+
+<xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
+<xsl:output method="text" encoding="ISO-8859-1"/>
+<xsl:strip-space elements="*"/>
+
+<!-- this version includes only the data and the row label i.e. no report title or row headers etc. -->
+
+<!-- Filter out header data -->
+<xsl:template match="node()|@*">
+  <xsl:copy>
+    <xsl:apply-templates select="node()|@*"/>
+  </xsl:copy>
+</xsl:template>
+<xsl:template match="Name|Type|StartTime|Time|LocalTime|ArenaDataServer"/>
+
+
+<xsl:template match="Table">Row&comma;
+<xsl:for-each select="Columns/Column">
+    <xsl:value-of select="Label"/>&comma;
+</xsl:for-each>
+&lf;
+<xsl:apply-templates select="Rows/Row"/>
+</xsl:template>
+
+<xsl:template match="Row">
+    <xsl:value-of select="Label"/>&comma;
+    <xsl:for-each select="Cells/Cell">
+        <xsl:call-template name="CellData" />&comma;
+    </xsl:for-each>
+    &lf;
+    <xsl:apply-templates select="Rows/Row"/>
+</xsl:template>
+
+
+<xsl:template name="CellData">
+        <xsl:choose>
+            <xsl:when test="RawData">
+                <xsl:value-of select="RawData"/>
+            </xsl:when>
+            <xsl:when test="FormattedData">
+                <xsl:value-of select="FormattedData"/>
+            </xsl:when>
+            <xsl:when test="DefaultData">
+                <xsl:choose>
+                        <xsl:when test="ValueType">
+                                <xsl:text>#</xsl:text>
+                        </xsl:when>
+                        <xsl:otherwise>
+                                <xsl:value-of select="DefaultData"/>
+                        </xsl:otherwise>
+                </xsl:choose>
+            </xsl:when>
+            <xsl:otherwise>
+                  <xsl:message terminate="yes"><xsl:text>No dataformat turned on</xsl:text></xsl:message>
+            </xsl:otherwise>
+        </xsl:choose>
+</xsl:template>
+
+</xsl:stylesheet>
+
+...
+
+}
+

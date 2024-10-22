@@ -1,0 +1,348 @@
+#
+# Front Arena exported extension module.
+# source          ""
+# timestamp (utc) "2024-10-05 10:54:55.8"
+# ***** DO NOT EDIT! *****
+#
+name        "PS_AccountingRepoReclass"
+description "$Id$"
+
+groups {
+}
+
+decls[FColumnDefinition] {
+  "Repo Reclass Accounting Date Today" ( "accounting dates.instrumentandportfolio" "sheet columns.portfoliosheet" ) "";
+  "Repo Reclass Accrued Acc Curr RTM" ( "default accounting columns.tradeandcombinations" "sheet columns.portfoliosheet" ) "";
+  "Repo Reclass Accrued RTM" ( "default accounting columns.tradeandcombinations" "sheet columns.portfoliosheet" ) "";
+  "Repo Reclass Carrying Amount Normal" ( "default accounting columns.tradeandcombinations" "sheet columns.portfoliosheet" ) "";
+  "Repo Reclass Carrying Amount RTM" ( "default accounting columns.tradeandcombinations" "sheet columns.portfoliosheet" ) "";
+  "Repo Reclass Collateral Fraction" ( "sheet columns.portfoliosheet" ) "";
+  "Repo Reclass Collateral Fraction Normal" ( "sheet columns.portfoliosheet" ) "";
+  "Repo Reclass Collateral Position" ( "sheet columns.portfoliosheet" ) "";
+  "Repo Reclass Collateral Position Normal" ( "sheet columns.portfoliosheet" ) "";
+  "Repo Reclass Coupon Amount RTM" ( "default accounting columns.moneyflow" "sheet columns.moneyflowsheet" ) "";
+  "Repo Reclass Depreciation" ( "sheet columns.portfoliosheet" ) "";
+  "Repo Reclass Depreciation Acc Curr RTM" ( "default accounting columns.tradeandcombinations" "sheet columns.portfoliosheet" ) "";
+  "Repo Reclass Depreciation RTM" ( "sheet columns.portfoliosheet" ) "";
+  "Repo Reclass MtM Normal" ( "default accounting columns.tradeandcombinations" "sheet columns.portfoliosheet" ) "";
+  "Repo Reclass MtM RTM" ( "default accounting columns.tradeandcombinations" "sheet columns.portfoliosheet" ) "";
+  "Trades In Position" ( "sheet columns.portfoliosheet" ) "";
+}
+
+clx FTradingSheet [FColumnDefinition] {
+  Repo Reclass Accounting Date Today =
+  ExtensionAttribute=repoReclassDateToday
+  GroupLabel=Repo Reclass
+  LabelList=Repo Reclass Accounting Date Today
+  Name=Repo Reclass Accounting Date Today
+
+
+  Repo Reclass Accrued Acc Curr RTM =
+  Description=[Mandiri custom] Repo Reclassification Accrued Interest to be reclassified, from collateral trade entires to original inventory positions, to be used for offset in creating Accounting Journal entires. Column will show results in Accounting Currency (Valuation Parameters>Accounting Currency). [Column specific to Collateral Trade AddInfo=Repo to Maturity]
+  ExtensionAttribute=repoReclassAccruedInterestAccountingCurrRTM
+  GroupLabel=Repo Reclass
+  LabelList=Repo Reclass Accrued Acc Curr RTM
+  Name=Repo Reclass Accrued Acc Curr RTM
+
+
+  Repo Reclass Accrued RTM =
+  Description=[Mandiri custom] Repo Reclassification Accrued Interest to be reclassified, from collateral trade entires to original inventory positions, to be used for offset in creating Accounting Journal entires. [Column specific to Collateral Trade AddInfo=Repo to Maturity]
+  ExtensionAttribute=repoReclassAccruedInterestRepoToMaturityIncremental
+  GroupLabel=Repo Reclass
+  LabelList=Repo Reclass Accrued RTM
+  Name=Repo Reclass Accrued RTM
+  Parameters=PosCurrChoice
+
+
+  Repo Reclass Carrying Amount Normal =
+  Description=[Mandiri custom] Repo Reclassification Carrying Amount to be reclassified, from collateral trade entires to original inventory positions, to be used for offset in creating Accounting Journal entires. [Column specific to Collateral Trade AddInfo=Normal Repo]
+  ExtensionAttribute=repoReclassCarryingAmountNormal
+  GroupLabel=Repo Reclass
+  LabelList=Repo Reclass Carrying Amount Normal
+  Name=Repo Reclass Carrying Amount Normal
+
+
+  Repo Reclass Carrying Amount RTM =
+  Description=[Mandiri custom] Repo Reclassification Carrying Amount to be reclassified, from collateral trade entires to original inventory positions, to be used for offset in creating Accounting Journal entires. [Column specific to Collateral Trade AddInfo=Repo to Maturity]
+  ExtensionAttribute=repoReclassCarryingAmountRTM
+  GroupLabel=Repo Reclass
+  LabelList=Repo Reclass Carrying Amount RTM
+  Name=Repo Reclass Carrying Amount RTM
+
+
+  Repo Reclass Collateral Fraction =
+  Description=[Mandiri custom] Repo Reclassification Collateral to Original Position Fraction.
+  ExtensionAttribute=repoReclassCollToPositionFraction
+  GroupLabel=Repo Reclass
+  LabelList=Repo Reclass Collateral Fraction
+  Name=Repo Reclass Collateral Fraction
+
+
+  Repo Reclass Collateral Fraction Normal =
+  Description=[Mandiri custom] Repo Reclassification Collateral to Original Position Fraction. [Column specific to Collateral Trade AddInfo=Normal Repo]
+  ExtensionAttribute=repoReclassCollToPositionFractionNormalRepo
+  GroupLabel=Repo Reclass
+  LabelList=Repo Reclass Collateral Fraction Normal
+  Name=Repo Reclass Collateral Fraction Normal
+
+
+  Repo Reclass Collateral Position =
+  DenominatorType=DisplayCurrency
+  Description=[Mandiri custom] Repo Reclassification Collateral Position for Position Row.
+  ExtensionAttribute=repoCollateralPositionForPositionRowCurr
+  Format=Imprecise
+  GroupLabel=Repo Reclass
+  LabelList=Repo Reclass Collateral Position
+  Name=Repo Reclass Collateral Position
+  ValueDomain=denominatedvalue
+
+
+  Repo Reclass Collateral Position Normal =
+  DenominatorType=DisplayCurrency
+  Description=[Mandiri custom] Repo Reclassification Collateral Position for Position Row. [Column specific to Collateral Trade AddInfo=Normal Repo]
+  ExtensionAttribute=repoCollateralPositionForPositionRowCurrNormalRepo
+  Format=Imprecise
+  GroupLabel=Repo Reclass
+  LabelList=Repo Reclass Collateral Position Normal
+  Name=Repo Reclass Collateral Position Normal
+  ValueDomain=denominatedvalue
+
+
+  Repo Reclass Coupon Amount RTM =
+  Description=[Mandiri custom] Repo Reclassification Coupon Amount to be reclassified, from collateral trade entires to original inventory positions. [Column specific to Collateral Trade AddInfo=Repo to Maturity]
+  ExtensionAttribute=repoReclassCouponRTM
+  GroupLabel=Repo Reclass
+  LabelList=Repo Reclass Coupon Amount RTM
+  Name=Repo Reclass Coupon Amount RTM
+
+
+  Repo Reclass Depreciation =
+  Description=[Mandiri custom] Repo Reclassification Depreciation to be reclassified, from collateral trade entires to original inventory positions, to be used for offset in creating Accounting Journal entires.
+  ExtensionAttribute=repoReclassDepreciation
+  GroupLabel=Repo Reclass
+  LabelList=Repo Reclass Depreciation
+  Name=Repo Reclass Depreciation
+
+
+  Repo Reclass Depreciation Acc Curr RTM =
+  Description=[Mandiri custom] Repo Reclassification Depreciation to be reclassified, from collateral trade entires to original inventory positions, to be used for offset in creating Accounting Journal entires. Column will show results in Accounting Currency (Valuation Parameters>Accounting Currency). [Column specific to Collateral Trade AddInfo=Repo to Maturity]
+  ExtensionAttribute=repoReclassDepreciationAccountingCurrRTM
+  GroupLabel=Repo Reclass
+  LabelList=Repo Reclass Depreciation Acc Curr RTM
+  Name=Repo Reclass Depreciation Acc Curr RTM
+
+
+  Repo Reclass Depreciation RTM =
+  Description=[Mandiri custom] Repo Reclassification Depreciation to be reclassified, from collateral trade entires to original inventory positions, to be used for offset in creating Accounting Journal entires. [Column specific to Collateral Trade AddInfo=Repo to Maturity]
+  ExtensionAttribute=repoReclassDepreciationRepoToMaturity
+  GroupLabel=Repo Reclass
+  LabelList=Repo Reclass Depreciation RTM
+  Name=Repo Reclass Depreciation RTM
+
+
+  Repo Reclass MtM Normal =
+  Description=[Mandiri custom] Repo Reclassification MtM to be reclassified, from collateral trade entires to original inventory positions, to be used for offset in creating Accounting Journal entires. [Column specific to Collateral Trade AddInfo=Normal Repo]
+  ExtensionAttribute=repoReclassMtMNormal
+  GroupLabel=Repo Reclass
+  LabelList=Repo Reclass MtM Normal
+  Name=Repo Reclass MtM Normal
+
+
+  Repo Reclass MtM RTM =
+  Description=[Mandiri custom] Repo Reclassification MtM to be reclassified, from collateral trade entires to original inventory positions, to be used for offset in creating Accounting Journal entires. [Column specific to Collateral Trade AddInfo=Repo to Maturity]
+  ExtensionAttribute=repoReclassMtMRTM
+  GroupLabel=Repo Reclass
+  LabelList=Repo Reclass MtM RTM
+  Name=Repo Reclass MtM RTM
+
+
+  Trades In Position =
+  Description=[Mandiri custom] List of trades within the position.
+  ExtensionAttribute=tradesInPosition
+  GroupLabel=Repo Reclass
+  LabelList=Trades In Position
+  Name=Trades In Position
+
+
+}
+
+decls[FCustomFunction] {
+}
+
+clx FObject [FCustomFunction] {
+  getRepoCollateralPositionForPositionRow =
+  Definition=getRepoCollateralPositionForPositionRow(FCollection _originalPositionTradeList, string _repoType, date date): double read
+  Function=RepoCollateralReclassification.getRepoCollateralPositionForPositionRow
+
+
+}
+
+decls[FExtensionAttribute] {
+}
+
+clx FInstrumentAndTrades [FExtensionAttribute] {
+  profitAndLossLiveFXRateInstrumentsToAccountingCurr = CreateFxRate(profitAndLossValuesCurrencies, accountingCurrencySymbol);
+  profitAndLossLiveFXRatesToAccountingCurr = select(pLPeriodFXIsReportDate, 
+  true->profitAndLossLiveFXRateInstrumentsToAccountingCurr :* "profitAndLossLiveFXRate" [allowMarkToMarketPrice := true, fxForwardDate = profitAndLossFXRateForwardDate], 
+  false->profitAndLossLiveFXRateInstrumentsToAccountingCurr :* "profitAndLossFXRate" [profitAndLossFXRateDate, profitAndLossFXRateForwardDate, allowMarkToMarketPrice := true]);
+  profitAndLossMtMFXRateInstrumentsToAccountingCurr = CreateFxRate(theoreticalValueCurrencies, accountingCurrency);
+  profitAndLossMtMFXRatesToAccountingCurr = profitAndLossMtMFXRateInstrumentsToAccountingCurr :* "fxSpotRate" [displayCurrency = accountingCurrency, fxHistoricalDate = profitAndLossEndDate, useMarkToMarketPriceToday = true, allowMarkToMarketPrice = true];
+}
+
+clx FMoneyFlowAndTrades [FExtensionAttribute] {
+  lastBankingDayFromPayDate = accountingCurrencyCalendar.AdjustBankingDays(payDate, -1);
+  repoCollateralPositionCurrRTMMF = convertToCurrency(repoCollateralPositionRTMMF, profitAndLossLiveFXRates, displayCurrencySymbol, filterUnit);
+  repoCollateralPositionRTMMF = denominatedvalue(getRepoCollateralPositionForPositionRow(tradesInPosition, "Repo to Maturity", lastBankingDayFromPayDate), instrument.Currency, , );
+  repoPositionMF = denominatedvalue(py("RepoCollateralReclassification", context).getInventoryPositionForMFRow(tradesInPosition, lastBankingDayFromPayDate), instrument.Currency, , );
+  repoReclassCollToPositionFractionRTMRepoMF = repoCollateralPositionCurrRTMMF / riskPositionDisplayMF;
+  repoReclassCouponRTM = select(object.MoneyFlow.Type == "Coupon", 
+  true->projectedMoneyFlow * repoReclassCollToPositionFractionRTMRepoMF, 
+  default->nil);
+  riskPositionDisplayMF = convertToCurrency(repoPositionMF, profitAndLossLiveFXRates, displayCurrencySymbol, filterUnit);
+}
+
+clx FObject [FExtensionAttribute] {
+  lastBankingDayFromToday = accountingCurrencyCalendar.AdjustBankingDays(profitAndLossEndDate, -1);
+}
+
+clx FSingleInstrumentAndTrades [FExtensionAttribute] {
+  repoCollateralPositionForPositionRow = denominatedvalue(getRepoCollateralPositionForPositionRow(tradesInPosition, "Total", profitAndLossEndDate), instrument.Currency, , );
+  repoCollateralPositionForPositionRowCurr = convertToCurrency(repoCollateralPositionForPositionRow, profitAndLossLiveFXRates, displayCurrencySymbol, filterUnit);
+  repoCollateralPositionForPositionRowCurrNormalRepo = convertToCurrency(repoCollateralPositionForPositionRowNormalRepo, profitAndLossLiveFXRates, displayCurrencySymbol, filterUnit);
+  repoCollateralPositionForPositionRowCurrRTMRepo = convertToCurrency(repoCollateralPositionForPositionRowRTMRepo, profitAndLossLiveFXRates, displayCurrencySymbol, filterUnit);
+  repoCollateralPositionForPositionRowNormalRepo = denominatedvalue(getRepoCollateralPositionForPositionRow(tradesInPosition, "Normal Repo", profitAndLossEndDate), instrument.Currency, , );
+  repoCollateralPositionForPositionRowRTMRepo = denominatedvalue(getRepoCollateralPositionForPositionRow(tradesInPosition, "Repo to Maturity", profitAndLossEndDate), instrument.Currency, , );
+  repoReclassAccrued = switch(repoReclassIncrementalAccrued > 0, 
+  true->repoReclassIncrementalAccrued, 
+  default->shift(accrued, snoop(accrued, "profitAndLossReportDate"), ["Today"]));
+  repoReclassAccruedInterest = repoReclassCollToPositionFraction * repoReclassAccrued;
+  repoReclassAccruedInterestAccountingCurrRTM = convertToCurrency(denominatedvalue(round(repoReclassAccruedInterestRepoToMaturity, 2), displayCurrency, , ), profitAndLossMtMFXRatesToAccountingCurr, accountingCurrency, filterUnit);
+  repoReclassAccruedInterestRepoToMaturity = repoReclassCollToPositionFractionRTMRepo * repoReclassAccrued;
+  repoReclassAccruedInterestRepoToMaturityIncremental = repoReclassCollToPositionFractionRTMRepo * repoReclassIncrementalAccrued;
+  repoReclassCarryingAmount = riskPositionDisplay - remainingPremium;
+  repoReclassCarryingAmountNormal = repoReclassCollToPositionFractionNormalRepo * repoReclassCarryingAmount;
+  repoReclassCarryingAmountRTM = repoReclassCollToPositionFractionRTMRepo * repoReclassCarryingAmount;
+  repoReclassCollToPositionFraction = repoCollateralPositionForPositionRowCurr / riskPositionDisplay;
+  repoReclassCollToPositionFractionNormalRepo = repoCollateralPositionForPositionRowCurrNormalRepo / riskPositionDisplay;
+  repoReclassCollToPositionFractionRTMRepo = repoCollateralPositionForPositionRowCurrRTMRepo / riskPositionDisplay;
+  repoReclassDateToday = dateToday;
+  repoReclassDepreciation = repoReclassCollToPositionFraction * repoReclassDeprecRPL;
+  repoReclassDepreciationAccountingCurrRTM = convertToCurrency(denominatedvalue(round(repoReclassDepreciationRepoToMaturity, 2), displayCurrency, , ), profitAndLossMtMFXRatesToAccountingCurr, accountingCurrency, filterUnit);
+  repoReclassDepreciationRepoToMaturity = repoReclassCollToPositionFractionRTMRepo * repoReclassDeprecRPL;
+  repoReclassDeprecRPL = deprecRPLColumn - object:deprecRPLColumn [profitAndLossEndDate = lastBankingDayFromToday];
+  repoReclassIncrementalAccrued = repoReclassIncrementalAccruedToday - repoReclassIncrementalAccruedPreviousDay;
+  repoReclassIncrementalAccruedPreviousDay = scenarioaxis(shift(accrued, snoop(accrued, "profitAndLossReportDate"), ["Today"]), <["profitAndLossEndDate"], , , yesterdayForAcc>);
+  repoReclassIncrementalAccruedToday = shift(accrued, snoop(accrued, "profitAndLossReportDate"), ["Today"]);
+  repoReclassMtM = bookValue - instrumentAccrued;
+  repoReclassMtMNormal = repoReclassCollToPositionFractionNormalRepo * repoReclassMtM;
+  repoReclassMtMRTM = repoReclassCollToPositionFractionRTMRepo * repoReclassMtM;
+  yesterdayForAcc = accountingCurrencyCalendar.AdjustBankingDays(profitAndLossEndDate, -1);
+}
+
+decls[FPythonCode] {
+}
+
+clx FObject [FPythonCode] {
+  RepoCollateralReclassification
+
+"""----------------------------------------------------------------------------
+
+MODULE
+    RepoCollateralReclassification
+
+DESCRIPTION
+    Mandiri Custom
+    Determine position amount (notional) of collateral pledged to repurchase transactions; where collateral transactions
+    are acquired from an existing fornt office portoflio of sercurities positions (the inventory portoflio).
+    The position amount ultimately is used to calcualted the fraction (ratio) of the original inventory
+    that has been pledged to repurchase transactions; so as to calcaulte accounting journal adjustements
+    for measures such as Accrued Interest and Depreciation.
+
+TO DO   
+    [2023 01 11] Parameterize the ultimate calcualtion column. 
+    This would avoid having to duplicate the ADLF tree for 'Normal Repo' and 'Repo to Maturity'
+    
+    [2023 01 10] The function is not responsive to real-time updatges. 
+    Hence trading manager columns using this function will not update as the database updates.
+    [2023 01 10] Performance improvements:
+        select funciton can be improved to select on AddInfo of the colalteral trade. 
+        This will avoid select large data set, then lopping through data set 
+        and evaluating if statements.
+        
+        => poissibly the best is to use a StoredQuery, and use string replace to replace:
+            - instrument name
+            - portoflio
+            - repo type
+    [2023 01 10] include filter to exclude trades where Trade.ReaquireDate < today < Trade.ReaquireDate:        
+
+ASSUMPTIONS
+    [2023 01 11] 
+    Support for multi-currency collateral.
+    Currenlty getRepoCollateralPositionForPositionRow assumes that the collateral nominal is the same currency
+    as the original bond position. This assumes seems intuative, considering that the collateral and original position
+    are in the same issued security.
+    
+FOOTPRINT
+    [2023 01 11] richard.milford@fisglobal.com
+
+----------------------------------------------------------------------------"""
+
+import acm
+import FLogger
+
+def getRepoCollateralPositionForPositionRow(_originalPositionTradeList,_repoType,date):
+
+    referencePositionTrade = _originalPositionTradeList.AsArray().First()
+    #print("d0,%s" %[_originalPositionTradeList,_repoType])
+    
+    refInstrumentName = referencePositionTrade.Instrument().Name()
+    refPortfolioName = referencePositionTrade.Portfolio().Name()
+    #print("d1,%s" %[refInstrumentName,refPortfolioName])
+
+    collateralTradesInInstrument = acm.FTrade.Select("instrument = '%s' and tradeCategory = '%s'" %(refInstrumentName,'Collateral'))
+    #collateralTradesInInstrument = acm.FTrade.Select("instrument = '%s' and tradeCategory = '%s' and trade.AddInfoValue('RepoType') = '%s'" %(refInstrumentName,'Collateral','Normal Repo'))
+    #print("d2,%s" %[refInstrumentName,collateralTradesInInstrument])
+    
+    #if refPortfolioName == "MANDIRI_259_Inventory_A": print('d1',collateralTradesInInstrument)
+    collateralTotalNotionalForThisPosition = 0
+    for collTrade in collateralTradesInInstrument:
+        #print("d3,%s" %[collTrade.Oid(),collateralTotalNotionalForThisPosition])
+        if collTrade.Status() in ['BO Confirmed','FO Confirmed','BO-BO Confirmed'] and collTrade.AddInfoValue('BondPortfolio') != None:
+            #print("d4,%s" %[collTrade.Oid(),collateralTotalNotionalForThisPosition])
+            if collTrade.AddInfoValue('BondPortfolio').Name() == refPortfolioName:
+                #print("d5,%s" %[collTrade.Oid(),collateralTotalNotionalForThisPosition])
+                if (collTrade.ReAcquireDay() == '') or (collTrade.ReAcquireDay() > date):
+                    #print("d6,%s" %[collTrade.Oid(),collateralTotalNotionalForThisPosition])
+                    if collTrade.ValueDay() <= date:
+                        if (collTrade.AddInfoValue('RepoType') == str(_repoType)) or (_repoType == 'Total'):
+                            #print("d7,%s" %[collTrade.Oid(),collateralTotalNotionalForThisPosition])
+                            collateralTotalNotionalForThisPosition = collateralTotalNotionalForThisPosition + collTrade.Nominal()
+
+
+    return collateralTotalNotionalForThisPosition
+    
+def getInventoryPositionForMFRow(_originalPositionTradeList,date):
+
+    referencePositionTrade = _originalPositionTradeList.AsArray().First()
+    
+    refInstrumentName = referencePositionTrade.Instrument().Name()
+    refPortfolioName = referencePositionTrade.Portfolio().Name()
+
+    inventoryTradesInInstrument = acm.FTrade.Select("instrument = '%s' and tradeCategory = '%s'" %(refInstrumentName,'None'))
+    
+    #if refPortfolioName == "MANDIRI_259_Inventory_A": print('d1',collateralTradesInInstrument)
+    inventoryTotalNotionalForThisPosition = 0
+    for invTrade in inventoryTradesInInstrument:
+        if invTrade.Status() in ['BO Confirmed','FO Confirmed','BO-BO Confirmed']:
+            if invTrade.Portfolio().Name() == refPortfolioName:
+                if invTrade.Instrument().ExpiryDate() > date:
+                    if invTrade.ValueDay() <= date:
+                        inventoryTotalNotionalForThisPosition = inventoryTotalNotionalForThisPosition + invTrade.Nominal()
+
+
+    return inventoryTotalNotionalForThisPosition
+
+...
+
+}
+

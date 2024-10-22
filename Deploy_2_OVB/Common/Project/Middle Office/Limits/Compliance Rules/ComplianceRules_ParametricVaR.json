@@ -1,0 +1,99 @@
+[
+    {
+        "FTransaction": {
+            "Objects": [
+                {
+                    "FComplianceRule": {
+                        "Definition": {
+                            "ref(RuleDefinition.Exposure)": {
+                                "Column": {
+                                    "ref(FStandardColumnCreator)": {
+                                        "Configuration": {
+                                            "ref(FColumnCreatorConfiguration)": {
+                                                "ref(FDictionary)": {
+                                                    "columnParameters": {
+                                                        "ref(FVariantDictionary)": {
+                                                            "AggCurrChoice": "Fixed Curr",
+                                                            "FixedCurr": {
+                                                                "ref(FCurrency)": "USD"
+                                                            },
+                                                            "ParametricValueAtRiskRiskFactorCollectionAttribute": {
+                                                                "ref(FSymbol)": "Risk Factor Type"
+                                                            },
+                                                            "ParametricValueAtRiskRiskFactorCollectionAttributeValue": {
+                                                                "ref(FSymbol)": "FX"
+                                                            },
+                                                            "ParametricValueAtRiskRiskFactorSetup": null,
+                                                            "PortfolioParametricValueAtRiskCommentChar": ",",
+                                                            "PortfolioParametricValueAtRiskConfidenceIntervalRiskFactorSetup": 95.0,
+                                                            "PortfolioParametricValueAtRiskDelimiterChar": ",",
+                                                            "PortfolioParametricValueAtRiskIDFieldDelimiterChar": ",",
+                                                            "PortfolioValueAtRiskBaseColumn": "Theoretical Total Profit/Loss",
+                                                            "PortfolioValueAtRiskCorrelationFile": {
+                                                                "FFileSelection": "!enc!(7II<'@A.#<Y(7C:Q5/!;L(P#+WS%5$_@`PN()150I2>D0JW7KK,K2Q\"4CE&:O\\>-65L%703DZ8=XV>_Y^>G3%2:HH$,#&A&9P6W-8C7:*U/B3L5:*-X(H0JT4\"*AH$^&G;D:B!N`RZ$2C,FM-7C^=\"QAX9'I@/NQPB4[*$;D^RHKKKR*AS6E)][AG>-^I@@@69'[=CF;\\Z9!ZIE83PHV:$]]X#L1K]MT#/:JKOBDPI,YSN!KW2AZD,R\\/ZCC3\\,8+/*#Q[(Y]O9RW(^7R[R!/R179T_$<V=D8&][\\[W+\\XR#;8@=%-N^!<N^_R4'/ZN^`+S91-&"
+                                                            },
+                                                            "PortfolioValueAtRiskHoldingPeriodInDays": 10,
+                                                            "PortfolioValueAtRiskVolatilityFile": {
+                                                                "FFileSelection": "!enc!(7II<'@A.#<Y(7C:Q5/!;L(P#+WS%5$_@`PN()150I2>D0JW7KK,K2Q\"4CE&:O\\>-65L%703DZ8=XV>_Y^>G3%2:HH$,#&A&9P6W-8C7:*U/B3L5:*-X(H0JT4\"*AH$^&G;D:B!N`RZ$2C,FM-7C^=\"QAX9'I@/NQPB4[*$;D^RHKKKR*AS6E)][AG>-^I@@@69'[=CF;\\Z9!ZIE83PHV:$]]X#L1K]MT#/:JKOBDPI,YSN!KW2AZD,R\\/ZCC3\\,8+/*#Q[(Y]O9RW(^7R[R!/R179T_$<V=D8&][\\[W+\\XR#;8@=%-N^!<N^_R4'/ZN^`+S91-&"
+                                                            },
+                                                            "PosCurrChoice": "Fixed Curr"
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        "ContextSym": {
+                                            "ref(FSymbol)": "Standard"
+                                        },
+                                        "OriginalColumnId": {
+                                            "ref(FSymbol)": "Portfolio Parametric Value at Risk Risk Factor Setup"
+                                        }
+                                    }
+                                },
+                                "ColumnIndex": 0,
+                                "CompoundQueryLogicalOperator": "AND",
+                                "FilterQuery": null,
+                                "ForEach": "",
+                                "PythonFilterMethodName": "",
+                                "RelativeTo": false,
+                                "RelativeToColumn": null,
+                                "RelativeToColumnIndex": 0,
+                                "StoredTimeBuckets": null
+                            }
+                        },
+                        "DefinitionInfo": "Exposure",
+                        "Description": "",
+                        "Name": "Standard_Parametric_VaR",
+                        "RuleCategory": {
+                            "ref(FChoiceList)": {
+                                "List": "Compliance Rule Category",
+                                "Name": "Pre-Deal"
+                            }
+                        }
+                    }
+                },
+                {
+                    "FThreshold": {
+                        "ComparisonType": "Greater",
+                        "ComplianceRule": {
+                            "ref(FComplianceRule)": "Standard_Parametric_VaR"
+                        },
+                        "Coordinates": {
+                            "ref(FStaticArray)": []
+                        },
+                        "Description": "",
+                        "Parent": null,
+                        "Relative": false,
+                        "Type": {
+                            "ref(FChoiceList)": {
+                                "List": "Threshold Type",
+                                "Name": "Warning"
+                            }
+                        },
+                        "Value": 0.0
+                    }
+                }
+            ]
+        }
+    }
+]

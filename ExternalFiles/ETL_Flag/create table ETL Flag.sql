@@ -1,0 +1,19 @@
+USE [NTCSSTGDB]
+GO
+
+/****** Object:  Table [dbo].[ETL_FLAG]    Script Date: 4/17/2024 3:02:24 PM ******/
+SET ANSI_NULLS ON
+GO
+
+SET QUOTED_IDENTIFIER ON
+GO
+
+CREATE TABLE [dbo].[ETL_FLAG](
+	[EXPORT_DATE] [datetime] NOT NULL,
+	[EXPORT_FLAG] [char](1) NOT NULL,
+	[ETL_FLAG] [char](1) NULL,
+	[PROCESSING_DATE] [datetime] NULL
+) ON [PRIMARY]
+GO
+
+

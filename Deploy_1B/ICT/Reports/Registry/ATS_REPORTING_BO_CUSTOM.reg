@@ -1,0 +1,7 @@
+Windows Registry Editor Version 5.00
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Front\Front Arena\ATS\FA_INSTANCE_NAME]
+"username"="ATS_REPORTING_BO_CUSTOM"
+"password"="intas"
+"group"="BO_CUSTOM_REPORTING"
+"Unicode"="1"

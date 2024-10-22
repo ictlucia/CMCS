@@ -1,0 +1,186 @@
+#
+# Front Arena exported extension module.
+# source          ""
+# timestamp (utc) "2024-03-14 07:23:28.4"
+# ***** DO NOT EDIT! *****
+#
+name        "PS_AutoTradeTransition"
+description ""
+
+groups {
+}
+
+decls[FParameters] {
+}
+
+clx FObject [FParameters] {
+  AutoTradeTransition =
+  retail portfolios=Wholesale FX Branch, Retail FX Branch
+  unconditional interfaces=RETM, BBG_VCON, BORIS, MDRI, RRTM, RINT, RETB, BBG_FXGO, RTNS, MDRX
+
+
+}
+
+decls[FPythonCode] {
+}
+
+clx FObject [FPythonCode] {
+  AutoTradeTransition
+import FRunScriptGUI
+import FLogger
+import os
+import traceback
+import acm
+import InterfaceUtils
+
+FOLDER_PICKER = FRunScriptGUI.DirectorySelection()
+LOG_FILE_NAME = "AutoTradeTransitionLog".format(acm.Time.DateToday().replace('-', ''))
+APP_NAME = 'AutoTradeTransition'
+LOG_LEVELS = [FLogger.FLogger.INFO, FLogger.FLogger.ERROR, FLogger.FLogger.WARNING, FLogger.FLogger.DEBUG]
+
+
+def getSetting(name):
+    params = acm.GetDefaultContext().GetExtension('FParameters', 'FObject', 'AutoTradeTransition').Value()
+    setting = params.At(name)
+
+    return setting.Text() if setting else None
+
+
+def splitCSVLine(line):
+    return [val.strip() for val in line.split(',')] if line else []
+
+
+unconditionalInterfaces = set(splitCSVLine(getSetting('unconditional interfaces')))
+retailPortfolios        = set(splitCSVLine(getSetting('retail portfolios')))
+
+
+def initialize_logging(params, logfile_name, app_name):
+    logfile = None
+    
+    try:
+        logFolder = params['log_folder']
+        logfolderString = logFolder.SelectedDirectory().AsString()
+        
+        if logfolderString and logfile_name:
+            logfile = os.path.join(logfolderString, logfile_name)
+
+        logLevel = params['log_level']
+        log_to_console = params['log_to_console']
+        level = InterfaceUtils.LogLevelNameToNumber(logLevel)
+        logger = FLogger.FLogger(level=level,
+                                 name="AutoTradeTransition",
+                                 logToPrime=True,
+                                 logToFileAtSpecifiedPath=logfile,
+                                 logToConsole=log_to_console)
+        
+        return logger
+    except Exception as err:
+        print('Error in initializing logger {}'.format(err))
+        print(traceback.format_exc())
+
+
+def getTrades(params):
+    queryName = params['queryName']
+    storedQuery = acm.FStoredASQLQuery.Select(f'name="{queryName}"')[0]
+    
+    return storedQuery.Query().Select()
+
+
+def shouldMoveStatus(trade):
+    if trade.Status() == 'FO Confirmed':
+        optKey2 = trade.OptKey2()
+        optKey3 = trade.OptKey3()
+        optKey4 = trade.OptKey4()
+
+        if optKey3 and optKey3.Name() == 'SP':
+            return False
+        elif optKey2:
+            if optKey2.Name() == 'SMART_FX':
+                dateDiff   = acm.Time.DateDifference(trade.ValueDay(), acm.Time.DateToday())
+                reconState = trade.AdditionalInfo().SmartFXReconState()
+                
+                return dateDiff > 0 and reconState == 'Acknowledged' and not (optKey4 and optKey4.Name() == 'TOD')
+            elif optKey2.Name() in unconditionalInterfaces:
+                return True
+        else:
+            prf = trade.Portfolio()
+            return prf and prf.Name() in retailPortfolios
+    
+    return False
+
+
+def perform(params, logger):
+    trades = getTrades(params)
+    
+    for trade in trades:
+        if shouldMoveStatus(trade):
+            trade_id = trade.Oid()
+            commit_done = False
+            
+            logger.LOG("Processing trade {}".format(trade_id))
+            
+            try:
+                acm.BeginTransaction()
+                
+                if trade.IsFxSwap():
+                    if trade.IsFxSwapNearLeg():
+                        trade_fr = trade.FxSwapFarLeg()
+                        clone_trade1 = trade_fr.Clone()
+                        clone_trade1.Status('BO Confirmed')
+                        trade_fr.Apply(clone_trade1)
+                        
+                        clone_trade2 = trade.Clone()
+                        clone_trade2.Status('BO Confirmed')
+                        trade.Apply(clone_trade2)
+                        trade_fr.Commit()
+                        trade.Commit()
+                        commit_done = True                        
+                    else:
+                        logger.LOG("Trade {} is skipped as it is not swap near leg.".format(trade_id))
+                else:                    
+                    clone_trade = trade.Clone()
+                    clone_trade.Status('BO Confirmed')
+                    trade.Apply(clone_trade)
+                    trade.Commit()
+                    commit_done = True
+                
+                acm.CommitTransaction()
+                
+                if commit_done:
+                    logger.LOG("Trade {} is moved to BO Confirmed".format(trade_id))
+            except Exception as e:
+                acm.AbortTransaction()
+                logger.ELOG('Could not update trade status to BO Confirmed for {}'.format(trade_id))
+                logger.ELOG(e)
+
+
+class ReportGUI(FRunScriptGUI.AelVariablesHandler):
+    def __init__(self):
+        queries = [query.Name() for query in acm.FStoredASQLQuery.Select("subType='FTrade'")]
+        queries.sort()
+
+        vars = [
+            ['queryName', 'Query Folder Name', 'string', queries, 'AutoTradeTransition', 1, 0, 'Name of a stored query',
+             None, 1],
+            ['log_folder', 'Log Folder_Logging', FOLDER_PICKER, None, FOLDER_PICKER, 0, 1,
+             'Select where to store the log file', 0, None],
+            ['log_level', 'Log Level_Logging', 'string', LOG_LEVELS, FLogger.FLogger.DEBUG, 1, 0],
+            ['log_to_console', 'Log to console_Logging', 'int', [1, 0], 1, 1, 0,
+             'Whether logging should be done in the Log Console or not.']]
+        
+        FRunScriptGUI.AelVariablesHandler.__init__(self, vars)
+
+
+def ael_main(params):
+    logger1 = initialize_logging(params, LOG_FILE_NAME, APP_NAME)
+    perform(params, logger1)
+
+
+ael_gui_parameters = {'windowCaption': 'AutoTradeTransition'}
+ael_variables = ReportGUI()
+
+
+...
+
+}
+

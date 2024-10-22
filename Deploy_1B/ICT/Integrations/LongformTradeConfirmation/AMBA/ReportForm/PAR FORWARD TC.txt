@@ -1,0 +1,117 @@
+[MESSAGE]
+  TYPE=INSERT_TEXTOBJECT
+  VERSION=1.0
+  TIME=2024-02-07 07:22:58
+  SOURCE=FAMBAMessageGenerator
+  [TEXTOBJECT]
+    TYPE=Customizable
+    DATA={\
+    "MSWordTemplates": [\
+        {\
+            "name": "TC PAR FORWARD",\
+            "type": "LongFormTPL",\
+            "version": "23",\
+            "checksumFields": {\
+                "RegularFields": [\
+                    {\
+                        "fieldName": "Counterparty"\
+                    },\
+                    {\
+                        "fieldName": "LongFormCurrency1"\
+                    },\
+                    {\
+                        "fieldName": "Nominal1"\
+                    },\
+                    {\
+                        "fieldName": "LongFormCurrency2"\
+                    },\
+                    {\
+                        "fieldName": "Premium1"\
+                    },\
+                    {\
+                        "fieldName": "LongFormMarketPrice"\
+                    },\
+                    {\
+                        "fieldName": "LongFormTradeDate"\
+                    },\
+                    {\
+                        "fieldName": "Valuedate1"\
+                    },\
+                    {\
+                        "fieldName": "Nominal2"\
+                    },\
+                    {\
+                        "fieldName": "Premium2"\
+                    },\
+                    {\
+                        "fieldName": "Valuedate2"\
+                    },\
+                    {\
+                        "fieldName": "Nominal3"\
+                    },\
+                    {\
+                        "fieldName": "Premium3"\
+                    },\
+                    {\
+                        "fieldName": "Valuedate3"\
+                    },\
+                    {\
+                        "fieldName": "Nominal4"\
+                    },\
+                    {\
+                        "fieldName": "Premium4"\
+                    },\
+                    {\
+                        "fieldName": "Valuedate4"\
+                    },\
+                    {\
+                        "fieldName": "Nominal5"\
+                    },\
+                    {\
+                        "fieldName": "Premium5"\
+                    },\
+                    {\
+                        "fieldName": "Valuedate5"\
+                    }\
+                ],\
+                "LoopFields": []\
+            }\
+        }\
+    ],\
+    "PrimeSheetTemplates": [\
+        {\
+            "name": "TCParForward",\
+            "classType": "Confirmation Sheet",\
+            "type": "Primary",\
+            "insertItem": "",\
+            "insertQuery": ""\
+        },\
+        {\
+            "name": "TCParForward",\
+            "classType": "Confirmation Sheet",\
+            "type": "Supplement",\
+            "insertItem": "Confirmation",\
+            "insertQuery": ""\
+        },\
+        {\
+            "name": "TQAParForward",\
+            "classType": "Confirmation Sheet",\
+            "type": "Supplement",\
+            "insertItem": "Confirmation",\
+            "insertQuery": ""\
+        },\
+        {\
+            "name": "TCParForward - 1",\
+            "classType": "Confirmation Sheet",\
+            "type": "Supplement",\
+            "insertItem": "Confirmation",\
+            "insertQuery": ""\
+        }\
+    ],\
+    "FormattedColumnSet": []\
+}
+    NAME=PAR FORWARD TC
+    SIZE=3095
+    SUBTYPE=ReportForm
+  [/TEXTOBJECT]
+[/MESSAGE]

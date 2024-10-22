@@ -1,0 +1,335 @@
+TEXTOBJECT,,,,,/TEXTOBJECT
+SIZE,DATA,NAME,SUBTYPE,TYPE,
+15850,"<?xml version='1.0' encoding='UTF-8'?>\
+<FrontArenaPrimeSheetExport>\
+<!--PRIME Version: 2022.4.15-->\
+<FDictionary type =""AcmDomain"">\
+  <Element>\
+  <FAssociation type =""AcmDomain"">\
+    <associationKey type =""Property"">\
+      <FSymbol type =""AcmDomain"">\
+        <Text type =""Property"">\
+          <string type =""AcmDomain"">Query</string>\
+        </Text>\
+      </FSymbol>\
+    </associationKey>\
+    <associationValue type =""Property"">\
+      <FASQLQuery type =""AcmDomain"">\
+        <asqlNodes type =""Property"">\
+          <FArray type =""AcmDomain"">\
+            <Element>\
+            <FASQLOpNode type =""AcmDomain"">\
+              <asqlNodes type =""Property"">\
+                <FArray type =""AcmDomain"">\
+                  <Element>\
+                  <FASQLOpNode type =""AcmDomain"">\
+                    <asqlNodes type =""Property"">\
+                      <FArray type =""AcmDomain"">\
+                        <Element>\
+                        <FASQLAttrNode type =""AcmDomain"">\
+                          <asqlAttribute type =""Property"">\
+                            <FASQLAttribute type =""AcmDomain"">\
+                              <attributeString type =""Property"">\
+                                <FString type =""AcmDomain"">\
+                                  <Text type =""Property"">\
+                                    <string type =""AcmDomain"">Portfolio.Name</string>\
+                                  </Text>\
+                                </FString>\
+                              </attributeString>\
+                            </FASQLAttribute>\
+                          </asqlAttribute>\
+                          <asqlValue type =""Property"">\
+                            <FString type =""AcmDomain"">\
+                              <Text type =""Property"">\
+                                <string type =""AcmDomain"">Banknotes Branch Settlement</string>\
+                              </Text>\
+                            </FString>\
+                          </asqlValue>\
+                          <asqlOperator type =""Property"">\
+                            <int type =""AcmDomain"">1</int>\
+                          </asqlOperator>\
+                          <scaleFactor type =""Property"">\
+                            <double type =""AcmDomain"">NaN</double>\
+                          </scaleFactor>\
+                        </FASQLAttrNode>\
+                        </Element>\
+                        <Element>\
+                        <FASQLAttrNode type =""AcmDomain"">\
+                          <asqlAttribute type =""Property"">\
+                            <FASQLAttribute type =""AcmDomain"">\
+                              <attributeString type =""Property"">\
+                                <FString type =""AcmDomain"">\
+                                  <Text type =""Property"">\
+                                    <string type =""AcmDomain"">Portfolio.Name</string>\
+                                  </Text>\
+                                </FString>\
+                              </attributeString>\
+                            </FASQLAttribute>\
+                          </asqlAttribute>\
+                          <asqlValue type =""Property"">\
+                            <FString type =""AcmDomain"">\
+                              <Text type =""Property"">\
+                                <string type =""AcmDomain"">Banknotes Interbank</string>\
+                              </Text>\
+                            </FString>\
+                          </asqlValue>\
+                          <asqlOperator type =""Property"">\
+                            <int type =""AcmDomain"">1</int>\
+                          </asqlOperator>\
+                          <scaleFactor type =""Property"">\
+                            <double type =""AcmDomain"">NaN</double>\
+                          </scaleFactor>\
+                        </FASQLAttrNode>\
+                        </Element>\
+                        <Element>\
+                        <FASQLOpNode type =""AcmDomain"">\
+                          <asqlNodes type =""Property"">\
+                            <FArray type =""AcmDomain"">\
+                            </FArray>\
+                          </asqlNodes>\
+                          <asqlOperator type =""Property"">\
+                            <int type =""AcmDomain"">0</int>\
+                          </asqlOperator>\
+                          <asqlNodeName type =""Property"">\
+                            <FString type =""AcmDomain"">\
+                              <Text type =""Property"">\
+                                <string type =""AcmDomain"">includeSubportfolios</string>\
+                              </Text>\
+                            </FString>\
+                          </asqlNodeName>\
+                          <not type =""Property"">\
+                            <bool type =""AcmDomain"">false</bool>\
+                          </not>\
+                          <parameterInfoData type =""Property"">\
+                            <FDictionary type =""AcmDomain"">\
+                              <Element>\
+                              <FAssociation type =""AcmDomain"">\
+                                <associationKey type =""Property"">\
+                                  <FSymbol type =""AcmDomain"">\
+                                    <Text type =""Property"">\
+                                      <string type =""AcmDomain"">methodChainFull</string>\
+                                    </Text>\
+                                  </FSymbol>\
+                                </associationKey>\
+                                <associationValue type =""Property"">\
+                                  <FString type =""AcmDomain"">\
+                                    <Text type =""Property"">\
+                                      <string type =""AcmDomain"">Portfolio.Name</string>\
+                                    </Text>\
+                                  </FString>\
+                                </associationValue>\
+                              </FAssociation>\
+                              </Element>\
+                            </FDictionary>\
+                          </parameterInfoData>\
+                        </FASQLOpNode>\
+                        </Element>\
+                      </FArray>\
+                    </asqlNodes>\
+                    <asqlOperator type =""Property"">\
+                      <int type =""AcmDomain"">1</int>\
+                    </asqlOperator>\
+                    <asqlNodeName type =""Property"">\
+                      <FString type =""AcmDomain"">\
+                        <Text type =""Property"">\
+                          <string type =""AcmDomain""></string>\
+                        </Text>\
+                      </FString>\
+                    </asqlNodeName>\
+                    <not type =""Property"">\
+                      <bool type =""AcmDomain"">false</bool>\
+                    </not>\
+                  </FASQLOpNode>\
+                  </Element>\
+                  <Element>\
+                  <FASQLOpNode type =""AcmDomain"">\
+                    <asqlNodes type =""Property"">\
+                      <FArray type =""AcmDomain"">\
+                        <Element>\
+                        <FASQLAttrNode type =""AcmDomain"">\
+                          <asqlAttribute type =""Property"">\
+                            <FASQLAttribute type =""AcmDomain"">\
+                              <attributeString type =""Property"">\
+                                <FString type =""AcmDomain"">\
+                                  <Text type =""Property"">\
+                                    <string type =""AcmDomain"">Status</string>\
+                                  </Text>\
+                                </FString>\
+                              </attributeString>\
+                            </FASQLAttribute>\
+                          </asqlAttribute>\
+                          <asqlValue type =""Property"">\
+                            <FEnumValue type =""AcmDomain"">\
+                              <enumeration type =""Property"">\
+                                <FDomain type =""AcmDomain"">\
+                                  <DomainName type =""Property"">\
+                                    <string type =""AcmDomain"">enum(TradeStatus)</string>\
+                                  </DomainName>\
+                                </FDomain>\
+                              </enumeration>\
+                              <tag type =""Property"">\
+                                <FString type =""AcmDomain"">\
+                                  <Text type =""Property"">\
+                                    <string type =""AcmDomain"">BO Confirmed</string>\
+                                  </Text>\
+                                </FString>\
+                              </tag>\
+                              <value type =""Property"">\
+                                <int type =""AcmDomain"">3</int>\
+                              </value>\
+                            </FEnumValue>\
+                          </asqlValue>\
+                          <asqlOperator type =""Property"">\
+                            <int type =""AcmDomain"">0</int>\
+                          </asqlOperator>\
+                          <scaleFactor type =""Property"">\
+                            <double type =""AcmDomain"">NaN</double>\
+                          </scaleFactor>\
+                        </FASQLAttrNode>\
+                        </Element>\
+                        <Element>\
+                        <FASQLAttrNode type =""AcmDomain"">\
+                          <asqlAttribute type =""Property"">\
+                            <FASQLAttribute type =""AcmDomain"">\
+                              <attributeString type =""Property"">\
+                                <FString type =""AcmDomain"">\
+                                  <Text type =""Property"">\
+                                    <string type =""AcmDomain"">Status</string>\
+                                  </Text>\
+                                </FString>\
+                              </attributeString>\
+                            </FASQLAttribute>\
+                          </asqlAttribute>\
+                          <asqlValue type =""Property"">\
+                            <FEnumValue type =""AcmDomain"">\
+                              <enumeration type =""Property"">\
+                                <FDomain type =""AcmDomain"">\
+                                  <DomainName type =""Property"">\
+                                    <string type =""AcmDomain"">enum(TradeStatus)</string>\
+                                  </DomainName>\
+                                </FDomain>\
+                              </enumeration>\
+                              <tag type =""Property"">\
+                                <FString type =""AcmDomain"">\
+                                  <Text type =""Property"">\
+                                    <string type =""AcmDomain"">BO-BO Confirmed</string>\
+                                  </Text>\
+                                </FString>\
+                              </tag>\
+                              <value type =""Property"">\
+                                <int type =""AcmDomain"">4</int>\
+                              </value>\
+                            </FEnumValue>\
+                          </asqlValue>\
+                          <asqlOperator type =""Property"">\
+                            <int type =""AcmDomain"">0</int>\
+                          </asqlOperator>\
+                          <scaleFactor type =""Property"">\
+                            <double type =""AcmDomain"">NaN</double>\
+                          </scaleFactor>\
+                        </FASQLAttrNode>\
+                        </Element>\
+                        <Element>\
+                        <FASQLAttrNode type =""AcmDomain"">\
+                          <asqlAttribute type =""Property"">\
+                            <FASQLAttribute type =""AcmDomain"">\
+                              <attributeString type =""Property"">\
+                                <FString type =""AcmDomain"">\
+                                  <Text type =""Property"">\
+                                    <string type =""AcmDomain"">Status</string>\
+                                  </Text>\
+                                </FString>\
+                              </attributeString>\
+                            </FASQLAttribute>\
+                          </asqlAttribute>\
+                          <asqlValue type =""Property"">\
+                            <FEnumValue type =""AcmDomain"">\
+                              <enumeration type =""Property"">\
+                                <FDomain type =""AcmDomain"">\
+                                  <DomainName type =""Property"">\
+                                    <string type =""AcmDomain"">enum(TradeStatus)</string>\
+                                  </DomainName>\
+                                </FDomain>\
+                              </enumeration>\
+                              <tag type =""Property"">\
+                                <FString type =""AcmDomain"">\
+                                  <Text type =""Property"">\
+                                    <string type =""AcmDomain"">FO Confirmed</string>\
+                                  </Text>\
+                                </FString>\
+                              </tag>\
+                              <value type =""Property"">\
+                                <int type =""AcmDomain"">2</int>\
+                              </value>\
+                            </FEnumValue>\
+                          </asqlValue>\
+                          <asqlOperator type =""Property"">\
+                            <int type =""AcmDomain"">0</int>\
+                          </asqlOperator>\
+                          <scaleFactor type =""Property"">\
+                            <double type =""AcmDomain"">NaN</double>\
+                          </scaleFactor>\
+                        </FASQLAttrNode>\
+                        </Element>\
+                      </FArray>\
+                    </asqlNodes>\
+                    <asqlOperator type =""Property"">\
+                      <int type =""AcmDomain"">1</int>\
+                    </asqlOperator>\
+                    <asqlNodeName type =""Property"">\
+                      <FString type =""AcmDomain"">\
+                        <Text type =""Property"">\
+                          <string type =""AcmDomain""></string>\
+                        </Text>\
+                      </FString>\
+                    </asqlNodeName>\
+                    <not type =""Property"">\
+                      <bool type =""AcmDomain"">false</bool>\
+                    </not>\
+                  </FASQLOpNode>\
+                  </Element>\
+                </FArray>\
+              </asqlNodes>\
+              <asqlOperator type =""Property"">\
+                <int type =""AcmDomain"">0</int>\
+              </asqlOperator>\
+              <asqlNodeName type =""Property"">\
+                <FString type =""AcmDomain"">\
+                  <Text type =""Property"">\
+                    <string type =""AcmDomain""></string>\
+                  </Text>\
+                </FString>\
+              </asqlNodeName>\
+              <not type =""Property"">\
+                <bool type =""AcmDomain"">false</bool>\
+              </not>\
+            </FASQLOpNode>\
+            </Element>\
+          </FArray>\
+        </asqlNodes>\
+        <asqlOperator type =""Property"">\
+          <int type =""AcmDomain"">0</int>\
+        </asqlOperator>\
+        <asqlNodeName type =""Property"">\
+          <FString type =""AcmDomain"">\
+            <Text type =""Property"">\
+              <string type =""AcmDomain""></string>\
+            </Text>\
+          </FString>\
+        </asqlNodeName>\
+        <not type =""Property"">\
+          <bool type =""AcmDomain"">false</bool>\
+        </not>\
+        <asqlQueryClass type =""Property"">\
+          <FDomain type =""AcmDomain"">\
+            <DomainName type =""Property"">\
+              <string type =""AcmDomain"">FTrade</string>\
+            </DomainName>\
+          </FDomain>\
+        </asqlQueryClass>\
+      </FASQLQuery>\
+    </associationValue>\
+  </FAssociation>\
+  </Element>\
+</FDictionary>\
+</FrontArenaPrimeSheetExport>",FO47,FTrade,FASQL Query,

@@ -1,0 +1,27 @@
+#
+# Front Arena exported extension module.
+# source          ""
+# timestamp (utc) "2024-07-04 16:44:21.1"
+# ***** DO NOT EDIT! *****
+#
+name        "ATS_ACCOUNTING"
+description ""
+
+groups {
+}
+
+decls[FExtensionAttribute] {
+}
+
+clx FInstrument [FExtensionAttribute] {
+  profitLossTradeStatusInclusionMaskDefault = 4112;
+}
+
+clx FObject [FExtensionAttribute] {
+  tradeStatusInclusionMaskDefault = 4112;
+}
+
+clx FUndefinedObject [FExtensionAttribute] {
+  tradeStatusInclusionMaskDefault = 4112;
+}
+

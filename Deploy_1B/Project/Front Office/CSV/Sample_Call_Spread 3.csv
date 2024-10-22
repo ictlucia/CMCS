@@ -1,0 +1,10 @@
+INSTRUMENTPACKAGE,,DEALPACKAGEINSLINK,,,/DEALPACKAGEINSLINK,/INSTRUMENTPACKAGE
+DEFINITION,NAME,INSADDR.INSID,NAME,TYPE,,
+FXOptionDealPackage,Call Spread Leg 1,USD/C/IDR/P/230307/14200,fxoTrade,Trade,,
+FXOptionDealPackage,Call Spread Leg 2,USD/C/IDR/P/230307/14500,fxoTrade,Trade,,
+FXOptionDealPackage,Call Spread Leg 3,USD/C/IDR/P/231209/15000.00,fxoTrade,Trade,,
+FXOptionDealPackage,Call Spread Leg 4,USD/C/IDR/P/231209/15500.00,fxoTrade,Trade,,
+FXOptionDealPackage,Call Spread Leg 5,USD/C/IDR/P/240107/15000.00,fxoTrade,Trade,,
+FXOptionDealPackage,Call Spread Leg 6,USD/C/IDR/P/240107/15500.00,fxoTrade,Trade,,
+FXOptionDealPackage,Call Spread Leg 7,USD/C/IDR/P/240107/15500.00/H,fxoTrade,Trade,,
+FXOptionDealPackage,Call Spread Leg 8,USD/C/IDR/P/240107/20000/H,fxoTrade,Trade,,

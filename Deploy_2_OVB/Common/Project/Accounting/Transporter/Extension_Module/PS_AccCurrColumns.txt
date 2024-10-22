@@ -1,0 +1,502 @@
+#
+# Front Arena exported extension module.
+# source          ""
+# timestamp (utc) "2024-10-03 19:40:16"
+# ***** DO NOT EDIT! *****
+#
+name        "PS_AccCurrColumns"
+description "$Id$"
+
+groups {
+}
+
+decls[FColumnDefinition] {
+  "Accounting MtM less Accrued Interest Acc Curr" ( "default accounting columns.tradeandcombinations" "sheet columns.tradesheet" ) "";
+  "BoFxRateCurrTwo" ( "sheet columns.tradesheet" ) "";
+  "Fee Realized Non-Attributable Linear Acc Curr" ( "default accounting columns.tradeandcombinations" "sheet columns.tradesheet" ) "";
+  "Fee Realized Non-Attributable Linear IDR" ( "default accounting columns.tradeandcombinations" "sheet columns.tradesheet" ) "";
+  "Portfolio Book Unrealized Profit and Loss Acc Curr" ( "default accounting columns.tradeandcombinations" "sheet columns.tradesheet" ) "";
+  "Portfolio Book Unrealized Profit and Loss IDR" ( "default accounting columns.tradeandcombinations" "sheet columns.tradesheet" ) "";
+  "Portfolio Realized Deprec P/L split by Attributable Fee (IDR)" ( "default accounting columns.tradeandcombinations" "sheet columns.tradesheet" ) "";
+  "Portfolio Realized Deprec P/L split by Price (Acc Curr)" ( "default accounting columns.tradeandcombinations" "sheet columns.tradesheet" ) "";
+  "Portfolio Realized Deprec P/L split by Price (IDR)" ( "default accounting columns.tradeandcombinations" "sheet columns.tradesheet" ) "";
+  "Portfolio Theoretical Value Acc Curr" ( "default accounting columns.tradeandcombinations" "sheet columns.tradesheet" ) "";
+  "Portfolio Theoretical Value IDR" ( "default accounting columns.tradeandcombinations" "sheet columns.tradesheet" ) "";
+  "Portfolio Theoretical Value No Premium" ( "default accounting columns.tradeandcombinations" "sheet columns.tradesheet" ) "";
+  "Portfolio Theoretical Value No Premium IDR" ( "default accounting columns.tradeandcombinations" "sheet columns.tradesheet" ) "";
+  "Portfolio Theoretical Value No Premium MMLD" ( "default accounting columns.tradeandcombinations" "sheet columns.tradesheet" ) "";
+  "Portfolio Theoretical Value No Premium MMLD IDR" ( "default accounting columns.tradeandcombinations" "sheet columns.tradesheet" ) "";
+  "Portfolio Unrealized Profit and Loss Acc Curr" ( "default accounting columns.tradeandcombinations" "sheet columns.tradesheet" ) "";
+  "Portfolio Unrealized Profit and Loss IDR" ( "default accounting columns.tradeandcombinations" "sheet columns.tradesheet" ) "";
+  "Portfolio Value Acc Curr" ( "default accounting columns.tradeandcombinations" "sheet columns.tradesheet" ) "";
+  "Portfolio Value IDR" ( "default accounting columns.tradeandcombinations" "sheet columns.tradesheet" ) "";
+  "PSAK Accrued Acc Curr" ( "default accounting columns.tradeandcombinations" "sheet columns.tradesheet" ) "";
+  "PSAK Accrued IDR" ( "default accounting columns.tradeandcombinations" "sheet columns.tradesheet" ) "";
+  "PSAK Cash Analysis Projected Acc Curr" ( "default accounting columns.moneyflow" "sheet columns.moneyflowsheet" ) "";
+  "PSAK Cash Analysis Projected IDR" ( "default accounting columns.moneyflow" "sheet columns.moneyflowsheet" ) "";
+  "PSAK FI Interest Income Acc Curr" ( "default accounting columns.moneyflow" "sheet columns.moneyflowsheet" ) "";
+  "PSAK FI Interest Income IDR" ( "default accounting columns.moneyflow" "sheet columns.moneyflowsheet" ) "";
+  "PSAK FX Revaluation Amt Acc Curr" ( "default accounting columns.moneyflow" "sheet columns.moneyflowsheet" ) "";
+  "PSAK Instrument Accrued IDR Swaps" ( "default accounting columns.tradeandcombinations" "sheet columns.tradesheet" ) "";
+  "PSAK Instrument Accrued Swaps Acc Curr" ( "default accounting columns.tradeandcombinations" "sheet columns.tradesheet" ) "";
+  "PSAK Nominal Amt Acc Curr" ( "default accounting columns.tradeandcombinations" "sheet columns.tradesheet" ) "";
+  "PSAK Nominal Amt Currency One Acc Curr" ( "default accounting columns.moneyflow" "sheet columns.moneyflowsheet" ) "";
+  "PSAK Nominal Amt Currency One Trade Acc Curr" ( "sheet columns.tradesheet" ) "";
+  "PSAK Nominal Amt IDR" ( "default accounting columns.tradeandcombinations" "sheet columns.tradesheet" ) "";
+  "PSAK Pure RPL Acc Curr" ( "default accounting columns.taxlotclosing" "sheet columns.tradesheet" ) "";
+  "PSAK Pure RPL IDR" ( "default accounting columns.taxlotclosing" "default accounting columns.tradeandcombinations" "sheet columns.tradesheet" ) "";
+  "PSAK Realized Depreciation Acc Curr" ( "default accounting columns.tradeandcombinations" "sheet columns.tradesheet" ) "";
+  "PSAK Realized Depreciation IDR" ( "default accounting columns.tradeandcombinations" "sheet columns.tradesheet" ) "";
+  "Realized Deprec PL split Attributable Fee Acc Curr" ( "default accounting columns.tradeandcombinations" "sheet columns.tradesheet" ) "";
+  "Realized Deprec PL split by Modification PV Fee Acc Curr" ( "default accounting columns.tradeandcombinations" "sheet columns.tradesheet" ) "";
+}
+
+clx FTradeRow [FColumnDefinition] {
+  accountingMtmLessAccruedAccCurr = convertToCurrency(denominatedvalue(round(accountingMtmLessAccrued, 2), displayCurrency, , ), profitAndLossMtMFXRatesToAccountingCurr, accountingCurrency, filterUnit); =
+
+
+}
+
+clx FTradingSheet [FColumnDefinition] {
+  Accounting MtM less Accrued Interest Acc Curr =
+  BuildForCashRows=True
+  Description=Accounting MtM less Accrued Interest denominated in Accounting Currency (Valuation Parameters Accounting Currency). Equal to Theoretical Value (MtM for IRS and CCS) less Accruend Interest (Accrued insterst for current cashflow period).
+  ExtensionAttribute=accountingMtmLessAccruedAccCurr
+  GroupLabel=Accounting
+  InheritsFrom=Portfolio Profit and Loss Base (Historical FX parametrization)
+  LabelList=Accounting MtM less Accrued Acc Curr
+  Name=Accounting MtM less Accrued Interest Acc Curr
+
+
+  BoFxRateCurrTwo =
+  ExtensionAttribute=boFxRateCurrTwo
+  GroupLabel=Accounting
+  Name=BoFxRateCurrTwo
+
+
+  Fee Realized Non-Attributable Linear Acc Curr =
+  Description=Fee Realized Non-Attributable Linear Acc Curr
+  ExtensionAttribute=feeRealizedLinearAmortAccCurr
+  GroupLabel=Accounting EIR Custom
+  LabelList=Fee Realized Non-Attributable Linear Acc Curr
+  Name=Fee Realized Non-Attributable Linear Acc Curr
+
+
+  Fee Realized Non-Attributable Linear IDR =
+  Description=Fee Realized Non-Attributable Linear IDR
+  ExtensionAttribute=feeRealizedLinearAmortAccCurr
+  GroupLabel=Accounting EIR Custom
+  LabelList=Fee Realized Non-Attributable Linear IDR
+  Name=Fee Realized Non-Attributable Linear IDR
+
+
+  Portfolio Book Unrealized Profit and Loss Acc Curr =
+  BuildForCashRows=True
+  ExtensionAttribute=bookUPLAccCurr
+  GroupLabel=Accounting
+  LabelList=BUPL Acc Curr;Book Unrealized P/L Acc Curr;Book Unrealized Profit and Loss Acc Curr
+  Name=Book Unrealized Profit/Loss Acc Curr
+
+
+  Portfolio Book Unrealized Profit and Loss IDR =
+  BuildForCashRows=True
+  ExtensionAttribute=bookUPLAccCurr
+  GroupLabel=Accounting
+  LabelList=BUPL IDR;Book Unrealized P/L IDR;Book Unrealized Profit and Loss IDR
+  Name=Book Unrealized Profit/Loss IDR
+
+
+  Portfolio Realized Deprec P/L split by Attributable Fee (IDR) =
+  Description=The realized profit and loss stemming from depreciation for a position or portfolio, apportioned by Attributable Fee (Accounting CCY).
+  ExtensionAttribute=deprecRPLColumnSplitAttributableFeeAccCurr
+  GroupLabel=Accounting EIR Custom
+  InheritsFrom=Portfolio Profit and Loss Base (Historical FX parametrization)
+  LabelList=Deprec Split (Attributable Fee) (Acc Curr);Realized Deprec P/L split by Attributable Fee (Acc Curr);Realized Depreciated Profit/Loss split by Attributable Fee (Acc Curr)
+  Name=Realized Deprec PL split Attributable Fee Acc Curr
+
+
+  Portfolio Realized Deprec P/L split by Price (Acc Curr) =
+  Description=The realized profit and loss stemming from depreciation for a position or portfolio, split by Original Premium Discount (Accounting CCY).
+  ExtensionAttribute=deprecRPLColumnSplitDiscountAccCurr
+  GroupLabel=Accounting EIR Custom
+  InheritsFrom=Portfolio Profit and Loss Base (Historical FX parametrization)
+  LabelList=Deprec Split (Price) (Acc Curr);Realized Deprec P/L split by Price (Acc Curr);Realized Depreciated Profit/Loss split by Price (Acc Curr)
+  Name=Realized Depreciated Profit/Loss split by Price (Acc Curr)
+
+
+  Portfolio Realized Deprec P/L split by Price (IDR) =
+  Description=The realized profit and loss stemming from depreciation for a position or portfolio, split by Original Premium Discount (Accounting CCY).
+  ExtensionAttribute=deprecRPLColumnSplitDiscountAccCurr
+  GroupLabel=Accounting EIR Custom
+  InheritsFrom=Portfolio Profit and Loss Base (Historical FX parametrization)
+  LabelList=Deprec Split (Price) (IDR);Realized Deprec P/L split by Price (IDR);Realized Depreciated Profit/Loss split by Price (IDR)
+  Name=Realized Depreciated Profit/Loss split by Price (IDR)
+
+
+  Portfolio Theoretical Value Acc Curr =
+  BuildForCashRows=True
+  ExtensionAttribute=theoreticalValueAccCurr
+  GroupLabel=Accounting
+  InheritsFrom=Portfolio Profit and Loss Base (Historical FX parametrization)
+  LabelList=ThVal Acc Curr;Theoretical Value Accounting Currency
+  Name=Theoretical Value Acc Curr
+
+
+  Portfolio Theoretical Value IDR =
+  BuildForCashRows=True
+  ExtensionAttribute=theoreticalValueAccCurr
+  GroupLabel=Accounting
+  InheritsFrom=Portfolio Profit and Loss Base (Historical FX parametrization)
+  LabelList=ThVal IDR;Theoretical Value IDR
+  Name=Theoretical Value IDR
+
+
+  Portfolio Theoretical Value No Premium =
+  BuildForCashRows=True
+  Description=Theoretical value for the position without premium. Expressed as a present value or as a spot value depending on the valuation parameter setting Report Date.
+  ExtensionAttribute=theoreticalValueNoPremium
+  GroupLabel=Accounting
+  InheritsFrom=Portfolio Risk Column With Display Currency Parameterization
+  LabelList=ThVal No Premium;Theor Value No Premium
+  Name=Theoretical Value No Premium
+  Parameters=TimeApportionmentType;PosCurrChoice;AggCurrChoice;FixedCurr
+  SolverCategories=TopValue
+  SolverDefaultParameter=theoreticalDefaultSolverParameter
+
+
+  Portfolio Theoretical Value No Premium IDR =
+  BuildForCashRows=True
+  ExtensionAttribute=theoreticalValueNoPremiumAccCurr
+  GroupLabel=Accounting
+  InheritsFrom=Portfolio Profit and Loss Base (Historical FX parametrization)
+  LabelList=ThVal No Premium IDR;Theoretical Value No Premium IDR
+  Name=Theoretical Value No Premium IDR
+
+
+  Portfolio Theoretical Value No Premium MMLD =
+  BuildForCashRows=True
+  Description=Theoretical value for the position without premium. Expressed as a present value or as a spot value depending on the valuation parameter setting Report Date.
+  ExtensionAttribute=theoreticalValueNoPremiumMMLD
+  GroupLabel=Accounting
+  InheritsFrom=Portfolio Risk Column With Display Currency Parameterization
+  LabelList=ThVal No Premium MMLD;Theor Value No Premium MMLD
+  Name=Theoretical Value No Premium MMLD
+  Parameters=TimeApportionmentType;PosCurrChoice;AggCurrChoice;FixedCurr
+  SolverCategories=TopValue
+  SolverDefaultParameter=theoreticalDefaultSolverParameter
+
+
+  Portfolio Theoretical Value No Premium MMLD IDR =
+  BuildForCashRows=True
+  ExtensionAttribute=theoreticalValueNoPremiumMMLDAccCurr
+  GroupLabel=Accounting
+  InheritsFrom=Portfolio Profit and Loss Base (Historical FX parametrization)
+  LabelList=ThVal No Premium MMLD IDR;Theoretical Value No Premium MMLD IDR
+  Name=Theoretical Value No Premium MMLD IDR
+
+
+  Portfolio Unrealized Profit and Loss Acc Curr =
+  BuildForCashRows=True
+  ExtensionAttribute=uPLColumnAccCurr
+  GroupLabel=Accounting
+  LabelList=UPL Acc Curr;Unrealized P/L Acc Curr;Unrealized Profit and Loss Acc Curr
+  Name=Unrealized Profit/Loss Acc Curr
+
+
+  Portfolio Unrealized Profit and Loss IDR =
+  BuildForCashRows=True
+  ExtensionAttribute=uPLColumnAccCurr
+  GroupLabel=Accounting
+  LabelList=UPL IDR;Unrealized P/L IDR;Unrealized Profit and Loss IDR
+  Name=Unrealized Profit/Loss IDR
+
+
+  Portfolio Value Acc Curr =
+  BuildForCashRows=True
+  ExtensionAttribute=markToMarketPeriodValueAccCurr
+  GroupLabel=Accounting
+  LabelList=MtM Value Acc Curr;Portfolio Value Acc Curr
+  Name=Mark to Market Value Acc Curr
+
+
+  Portfolio Value IDR =
+  BuildForCashRows=True
+  ExtensionAttribute=markToMarketPeriodValueAccCurr
+  GroupLabel=Accounting
+  LabelList=MtM Value IDR;Portfolio Value IDR
+  Name=Mark to Market Value IDR
+
+
+  PSAK Accrued Acc Curr =
+  BuildForCashRows=True
+  Description=PSAK Accrued Acc Curr
+  ExtensionAttribute=PSAKAccruedAccCurr
+  GroupLabel=Accounting
+  Name=PSAK Accrued Acc Curr
+
+
+  PSAK Accrued IDR =
+  BuildForCashRows=True
+  Description=PSAK Accrued IDR
+  ExtensionAttribute=PSAKAccruedAccCurr
+  GroupLabel=Accounting
+  Name=PSAK Accrued IDR
+
+
+  PSAK Cash Analysis Projected Acc Curr =
+  Description=Cash Analysis Projected in Acc Curr
+  ExtensionAttribute=PSAKCashProjectedAccCurr
+  GroupLabel=Accounting
+  Name=PSAK Cash Analysis Projected Acc Curr
+
+
+  PSAK Cash Analysis Projected IDR =
+  Description=Cash Analysis Projected in IDR
+  ExtensionAttribute=PSAKCashProjectedAccCurr
+  GroupLabel=Accounting
+  Name=PSAK Cash Analysis Projected IDR
+
+
+  PSAK FI Interest Income Acc Curr =
+  Description=PSAK FI Interest Income Acc Curr
+  ExtensionAttribute=PSAKFIInterestIncomeAccCurr
+  GroupLabel=Accounting
+  Name=PSAK FI Interest Income Acc Curr
+
+
+  PSAK FI Interest Income IDR =
+  Description=PSAK FI Interest Income IDR
+  ExtensionAttribute=PSAKFIInterestIncomeAccCurr
+  GroupLabel=Accounting
+  Name=PSAK FI Interest Income IDR
+
+
+  PSAK FX Revaluation Amt Acc Curr =
+  ExtensionAttribute=PSAKFxRevaluationAmount
+  GroupLabel=Accounting
+  Name=PSAK FX Revaluation Amt Acc Curr
+
+
+  PSAK Instrument Accrued IDR Swaps =
+  BuildForCashRows=True
+  Description=PSAK Instrument Accrued IDR for Swaps
+  ExtensionAttribute=PSAKInstrumentAccruedAccCurrSwaps
+  GroupLabel=Accounting
+  Name=PSAK Instrument Accrued IDR Swaps
+
+
+  PSAK Instrument Accrued Swaps Acc Curr =
+  BuildForCashRows=True
+  Description=PSAK Instrument Accrued Acc Curr for Swaps
+  ExtensionAttribute=PSAKInstrumentAccruedAccCurrSwaps
+  GroupLabel=Accounting
+  Name=PSAK Instrument Accrued Acc Curr Swaps
+
+
+  PSAK Nominal Amt Acc Curr =
+  BuildForCashRows=True
+  Description=PSAK Nominal Amt Accounting in Acc Curr
+  ExtensionAttribute=PSAKNominalAmtAccAccCurr
+  GroupLabel=Accounting
+  Name=PSAK Nominal Amt Acc Curr
+
+
+  PSAK Nominal Amt Currency One Acc Curr =
+  ExtensionAttribute=PSAKNominalAmtAccCurrOne
+  GroupLabel=Accounting
+  Name=PSAK Nominal Amt Currency One Acc Curr
+
+
+  PSAK Nominal Amt Currency One Trade Acc Curr =
+  ExtensionAttribute=PSAKNominalAmtAccCurrOneTrade
+  GroupLabel=Accounting
+  Name=PSAK Nominal Amt Currency One Trade Acc Curr
+
+
+  PSAK Nominal Amt IDR =
+  BuildForCashRows=True
+  Description=PSAK Nominal Amt Accounting in IDR
+  ExtensionAttribute=PSAKNominalAmtAccAccCurr
+  GroupLabel=Accounting
+  Name=PSAK Nominal Amt IDR
+
+
+  PSAK Pure RPL Acc Curr =
+  BuildForCashRows=True
+  Description=PSAK Pure RPL Acc Curr
+  ExtensionAttribute=PSAKPureRPLAccCurr
+  GroupLabel=Accounting
+  Name=PSAK Pure RPL Acc Curr
+
+
+  PSAK Pure RPL IDR =
+  BuildForCashRows=True
+  Description=PSAK Pure RPL IDR
+  ExtensionAttribute=PSAKPureRPLAccCurr
+  GroupLabel=Accounting
+  Name=PSAK Pure RPL IDR
+
+
+  PSAK Realized Depreciation Acc Curr =
+  BuildForCashRows=True
+  Description=PSAK Realized Depreciation Acc Curr
+  ExtensionAttribute=PSAKRealizedDepreciationAccCurr
+  GroupLabel=Accounting
+  Name=PSAK Realized Depreciation Acc Curr
+
+
+  PSAK Realized Depreciation IDR =
+  BuildForCashRows=True
+  Description=PSAK Realized Depreciation IDR
+  ExtensionAttribute=PSAKRealizedDepreciationAccCurr
+  GroupLabel=Accounting
+  Name=PSAK Realized Depreciation IDR
+
+
+  Realized Deprec PL split Attributable Fee Acc Curr =
+  Description=The realized profit and loss stemming from depreciation for a position or portfolio, apportioned by Attributable Fee (Accounting CCY).
+  ExtensionAttribute=deprecRPLColumnSplitAttributableFeeAccCurr
+  GroupLabel=Accounting EIR Custom
+  InheritsFrom=Portfolio Profit and Loss Base (Historical FX parametrization)
+  LabelList=Deprec Split (Attributable Fee) (Acc Curr);Realized Deprec P/L split by Attributable Fee (Acc Curr);Realized Depreciated Profit/Loss split by Attributable Fee (Acc Curr)
+  Name=Realized Deprec PL split Attributable Fee Acc Curr
+
+
+  Realized Deprec PL split by Modification PV Fee Acc Curr =
+  Description=The realized profit and loss stemming from depreciation for a position or portfolio, split to Modification PV Fee (Accounting CCY).
+  ExtensionAttribute=deprecRPLColumnSplitModificationPvFeeAccCurr
+  GroupLabel=Accounting EIR Custom
+  InheritsFrom=Portfolio Profit and Loss Base (Historical FX parametrization)
+  LabelList=Deprec Split (Modification PV Fee) (Acc Curr);Realized Deprec P/L split based on Modification PV Fee (Acc Curr);Realized Depreciated Profit/Loss split based on Modification PV Fee (Acc Curr)
+  Name=Realized Deprec PL split by Modification PV Fee Acc Curr
+
+
+}
+
+decls[FExtensionAttribute] {
+}
+
+clx FFxRate [FExtensionAttribute] {
+  mtmProfitAndLossFXRate = scenarioaxis(profitAndLossFXRate, <["useMarkToMarketPriceToday"], , , [true]>, <["instrumentRightDate"], , , [valuationDateTime]>);
+}
+
+clx FInstrumentAndTrades [FExtensionAttribute] {
+  profitAndLossMtMFXRatesToAccountingCurr = profitAndLossMtMFXRateInstrumentsToAccountingCurr :* "mtmProfitAndLossFXRate" [profitAndLossFXRateDate = profitAndLossEndDate, allowMarkToMarketPrice = true];
+  PSAKInstrumentAccruedAccCurrSwaps = convertToCurrency(denominatedvalue(round(instrumentAccrued, 2), displayCurrency, , ), profitAndLossMtMFXRatesToAccountingCurr, accountingCurrency, filterUnit);
+}
+
+clx FMoneyFlowAndTrades [FExtensionAttribute] {
+  PSAKCashProjectedAccCurr = select(object.MoneyFlow.Currency.Name == accountingCurrency.Name, 
+  true->projectedMoneyFlow, 
+  default->convertToCurrency(denominatedvalue(round(projectedMoneyFlow.Number, 2), displayCurrency, , ), profitAndLossMtMFXRatesToAccountingCurr, accountingCurrency, filterUnit));
+  PSAKFIInterestIncomeAccCurr = select(object.MoneyFlow.Currency.Name == accountingCurrency.Name, 
+  true->PSAKFIInterestIncomeAFS, 
+  default->convertToCurrency(denominatedvalue(round(PSAKFIInterestIncomeAFS, 2), displayCurrency, , ), profitAndLossMtMFXRatesToAccountingCurr, accountingCurrency, filterUnit));
+  PSAKFxRevaluationAmount = select(object.MoneyFlow.Currency.Name == accountingCurrency.Name, 
+  true->nil, 
+  default->select(object.MoneyFlow.Instrument.InsType, 
+    "Curr"->denominatedvalue(projectedMoneyFlow.Number * PSAKFxRevaluationRate, accountingCurrency, , ), 
+    "CurrSwap"->denominatedvalue(projectedMoneyFlow.Number * PSAKFxRevaluationRate, accountingCurrency, , ), 
+    default->nil));
+  PSAKFxRevaluationRate = select(object.MoneyFlow.Currency.Name == accountingCurrency.Name, 
+  true->1, 
+  default->select(object.MoneyFlow.Instrument.InsType, 
+    "Curr"->select(object.MoneyFlow.Type, 
+      "Premium 2"->select((trade.CurrencyPair.Currency1.Name == accountingCurrency.Name) or (trade.CurrencyPair.Currency2.Name == accountingCurrency.Name), 
+        true->getAccCurrHistoricalRate(object.MoneyFlow.Currency, "EOD_MtM", profitAndLossEndDate, "Settle") - trade.Price, 
+        default->getAccCurrHistoricalRate(object.MoneyFlow.Currency, "EOD_MtM", profitAndLossEndDate, "Settle") - boFxRate), 
+      "Premium"->getAccCurrHistoricalRate(object.MoneyFlow.Currency, "EOD_MtM", profitAndLossEndDate, "Settle") - py("AccountingColumnUtils", context).GetColumnValueClean(trade, "BoFxRateCurrTwo"), 
+      default->nil), 
+    "CurrSwap"->select(object.MoneyFlow.Type, 
+      "Fixed Amount"->select((trade.CurrencyPair.Currency1.Name == accountingCurrency.Name) or (trade.CurrencyPair.Currency2.Name == accountingCurrency.Name), 
+        true->getAccCurrHistoricalRate(object.MoneyFlow.Currency, "EOD_MtM", profitAndLossEndDate, "Settle") - py("AccountingColumnUtils", context).currSwapDealPrice(trade), 
+        default->select(py("AccountingColumnUtils", context).cCSMFCurrOne(trade, object.MoneyFlow), 
+          true->getAccCurrHistoricalRate(object.MoneyFlow.Currency, "EOD_MtM", profitAndLossEndDate, "Settle") - boFxRate, 
+          default->getAccCurrHistoricalRate(object.MoneyFlow.Currency, "EOD_MtM", profitAndLossEndDate, "Settle") - py("AccountingColumnUtils", context).GetColumnValueClean(trade, "BoFxRateCurrTwo"))), 
+      default->nil), 
+    default->nil));
+  PSAKNominalAmtAccCurrOne = select(instrument.InsType, 
+  "Curr"->select((trade.CurrencyPair.Currency1.Name == accountingCurrency.Name) or (trade.CurrencyPair.Currency2.Name == accountingCurrency.Name), 
+    true->nil, 
+    false->select(trade.CurrencyPair.Currency1.Name == object.MoneyFlow.Currency.Name, 
+      true->select(object.MoneyFlow.Type, 
+        "Premium"->denominatedvalue(projectedMoneyFlow.Number * boFxRate, accountingCurrency, , ), 
+        "Premium 2"->denominatedvalue(projectedMoneyFlow.Number * boFxRate, accountingCurrency, , ), 
+        default->nil), 
+      default->nil)), 
+  "CurrSwap"->select((trade.CurrencyPair.Currency1.Name == accountingCurrency.Name) or (trade.CurrencyPair.Currency2.Name == accountingCurrency.Name), 
+    true->nil, 
+    false->select(accountingCurrencyPair.Currency1.Name == object.MoneyFlow.Currency.Name, 
+      true->select(object.MoneyFlow.Type, 
+        "Fixed Amount"->denominatedvalue(projectedMoneyFlow.Number * boFxRate, accountingCurrency, , ), 
+        default->nil), 
+      default->nil), 
+    default->nil));
+}
+
+clx FPayment [FExtensionAttribute] {
+  premiumPaymentAmount = object:convertSourceValuesToTargetCurrency [sourceValue = premiumPaymentAmountPmtCurrency, targetToCurrency = trade:currency, currency:priceSource, currency:doSplitAll];
+  premiumPaymentAmountPmtCurrency = select(object.Type, 
+  "Premium"->denominatedvalue(object.Amount, currency, , ), 
+  default->denominatedvalue(0, currency, , ));
+  trade = object.Trade;
+}
+
+clx FTaxLotClosing [FExtensionAttribute] {
+  profitAndLossMtMFXRateInstrumentsToAccountingCurr = CreateFxRate(currency(units(pureRPLColumn)), accountingCurrency);
+  profitAndLossMtMFXRatesToAccountingCurr = profitAndLossMtMFXRateInstrumentsToAccountingCurr :* "mtmProfitAndLossFXRate" [profitAndLossFXRateDate = profitAndLossEndDate, allowMarkToMarketPrice = true];
+  PSAKPureRPLAccCurr = convertToCurrency(denominatedvalue(round(pureRPLColumn.Number, 2), closingTrade.Currency, , ), profitAndLossMtMFXRatesToAccountingCurr, accountingCurrency, nil);
+}
+
+clx FTrade [FExtensionAttribute] {
+  closingPercentage = object.Nominal / contractTrade:object.Nominal;
+  contractTrade = object.ContractTrade;
+  premiumPaymentAmount = sumOf(payments :* "premiumPaymentAmount");
+}
+
+clx FTradeRow [FExtensionAttribute] {
+  accountingMtmLessAccruedAccCurr = convertToCurrency(denominatedvalue(round(accountingMtmLessAccrued, 2), displayCurrency, , ), profitAndLossMtMFXRatesToAccountingCurr, accountingCurrency, filterUnit);
+  boFxRateCurrTwo = select(accountingCurrencyPair.Currency2.Name == accountingCurrency.Name, 
+  true->1, 
+  default->select(trade.Instrument.InsType, 
+    "Curr"->abs(PSAKNominalAmtAccCurrOneTradePast.Number / nominalAmountAccountingCurrency2Past.Number), 
+    "CurrSwap"->abs(PSAKNominalAmtAccCurrOneTradePast.Number / nominalAmountAccountingCCSCurrTwoPast.Number), 
+    default->nil));
+  bookUPLAccCurr = convertToCurrency(denominatedvalue(round(bookUPLColumn.Number, 2), displayCurrency, , ), profitAndLossMtMFXRatesToAccountingCurr, accountingCurrency, filterUnit);
+  closingPercentage = trade:closingPercentage;
+  contractTrade = trade:contractTrade;
+  deprecRPLColumnSplitAttributableFeeAccCurr = convertToCurrency(denominatedvalue(round(deprecRPLColumnSplitAttributableFee, 2), displayCurrency, , ), profitAndLossMtMFXRatesToAccountingCurr, accountingCurrency, filterUnit);
+  deprecRPLColumnSplitDiscountAccCurr = convertToCurrency(denominatedvalue(round(deprecRPLColumnSplitDiscount, 2), displayCurrency, , ), profitAndLossMtMFXRatesToAccountingCurr, accountingCurrency, filterUnit);
+  deprecRPLColumnSplitModificationPvFeeAccCurr = convertToCurrency(deprecRPLColumnSplitModificationPvFee, profitAndLossMtMFXRatesToAccountingCurr, accountingCurrency, filterUnit);
+  feeRealizedLinearAmortAccCurr = convertToCurrency(denominatedvalue(round(feeRealizedLinearAmort, 2), displayCurrency, , ), profitAndLossMtMFXRatesToAccountingCurr, accountingCurrency, filterUnit);
+  markToMarketPeriodValueAccCurr = convertToCurrency(denominatedvalue(round(markToMarketPeriodValue.Number, 2), displayCurrency, , ), profitAndLossMtMFXRatesToAccountingCurr, accountingCurrency, filterUnit);
+  premiumPaymentAmount = trade:premiumPaymentAmount;
+  PSAKAccruedAccCurr = convertToCurrency(denominatedvalue(round(accruedFixedIncome, 2), displayCurrency, , ), profitAndLossMtMFXRatesToAccountingCurr, accountingCurrency, filterUnit);
+  PSAKInstrumentAccruedAccCurrSwaps = convertToCurrency(denominatedvalue(round(instrumentAccrued, 2), displayCurrency, , ), profitAndLossMtMFXRatesToAccountingCurr, accountingCurrency, filterUnit);
+  PSAKNominalAmtAccAccCurr = convertToCurrency(denominatedvalue(round(nominalAmountAccounting.Number, 2), displayCurrency, , ), profitAndLossMtMFXRatesToAccountingCurr, accountingCurrency, filterUnit);
+  PSAKNominalAmtAccCurrOneTrade = select(accountingCurrencyPair.Currency2.Name == accountingCurrency.Name, 
+  true->nil, 
+  default->select(trade.Instrument.InsType, 
+    "Curr"->denominatedvalue(nominalAmountAccounting.Number * boFxRate, accountingCurrency.Name, , ), 
+    "CurrSwap"->denominatedvalue(nominalAmountAccountingCCSCurrOne.Number * boFxRate, accountingCurrency.Name, , ), 
+    default->nil));
+  PSAKNominalAmtAccCurrOneTradePast = getColumnValueAsOfPastDate(trade, "PSAK Nominal Amt Currency One Trade Acc Curr", tradeDate);
+  PSAKPureRPLAccCurr = convertToCurrency(denominatedvalue(round(pureRPLColumn.Number, 2), displayCurrency, , ), profitAndLossMtMFXRatesToAccountingCurr, accountingCurrency, filterUnit);
+  PSAKRealizedDepreciationAccCurr = convertToCurrency(denominatedvalue(round(deprecAmount.Number, 2), displayCurrency, , ), profitAndLossMtMFXRatesToAccountingCurr, accountingCurrency, filterUnit);
+  theoreticalValueAccCurr = convertToCurrency(denominatedvalue(round(theoreticalValue.Number, 2), displayCurrency, , ), profitAndLossMtMFXRatesToAccountingCurr, accountingCurrency, filterUnit);
+  theoreticalValueNoPremium = select(instrument:isExpired, 
+  true->denominatedvalue(0, trade:currency, , ), 
+  default->select(trade:object.Type, 
+    "Closing"->-1 * (theoreticalValueTradeCurrency - closingPercentage * stripDateTimePart(contractTrade:object.PremiumDv) - closingPercentage * denominatedvalue(notANumberIsZero(contractTrade:forwardPremium), trade:currency, , )), 
+    default->-1 * (theoreticalValueTradeCurrency - stripDateTimePart(trade:object.PremiumDv) - denominatedvalue(notANumberIsZero(forwardPremium), trade:currency, , ))));
+  theoreticalValueNoPremiumAccCurr = convertToCurrency(denominatedvalue(round(theoreticalValueNoPremium.Number, 2), displayCurrency, , ), profitAndLossMtMFXRatesToAccountingCurr, accountingCurrency, filterUnit);
+  theoreticalValueNoPremiumMMLD = select(instrument:isExpired, 
+  true->denominatedvalue(0, trade:currency, , ), 
+  default->select(trade:object.Type, 
+    "Closing"->-1 * (theoreticalValueTradeCurrency - closingPercentage * contractTrade:premiumPaymentAmount), 
+    default->-1 * (theoreticalValueTradeCurrency - premiumPaymentAmount)));
+  theoreticalValueNoPremiumMMLDAccCurr = convertToCurrency(denominatedvalue(round(theoreticalValueNoPremiumMMLD.Number, 2), displayCurrency, , ), profitAndLossMtMFXRatesToAccountingCurr, accountingCurrency, filterUnit);
+  theoreticalValueTradeCurrency = convertToCurrency(theoreticalValues, theoreticalValueFxRates, trade:currency);
+  uPLColumnAccCurr = convertToCurrency(denominatedvalue(round(uPLColumn.Number, 2), displayCurrency, , ), profitAndLossMtMFXRatesToAccountingCurr, accountingCurrency, filterUnit);
+}
+

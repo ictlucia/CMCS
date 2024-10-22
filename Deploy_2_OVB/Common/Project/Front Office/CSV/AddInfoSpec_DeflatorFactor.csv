@@ -1,0 +1,4 @@
+ADDITIONALINFOSPEC,,,,,,,/ADDITIONALINFOSPEC
+SUBREC_MASK1,DATA_TYPE.GRP,DESCRIPTION,DATA_TYPE.TYPE,FIELD_NAME,REC_TYPE,DEFAULT_VALUE,
+192,Standard,DeflatorFactorA,Double,DeflatorFactorA,Instrument,1,
+192,Standard,DeflatorFactorB,Double,DeflatorFactorB,Instrument,0,

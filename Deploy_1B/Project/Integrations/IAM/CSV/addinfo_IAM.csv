@@ -1,0 +1,10 @@
+ADDITIONALINFOSPEC,,,,,/ADDITIONALINFOSPEC
+DATA_TYPE.GRP,DESCRIPTION,DATA_TYPE.TYPE,FIELD_NAME,REC_TYPE,
+Standard,Contact,String,Contact,User,
+Standard,Department,String,Department,User,
+Standard,Directorate,String,Directorate,User,
+Standard,Group,String,Group,User,
+Standard,Position,String,Position,User,
+Standard,Section,String,Section,User,
+Standard,User Branch Code,String,Subarea,User,
+Standard,User Branch Name,String,SubareaDesc,User,

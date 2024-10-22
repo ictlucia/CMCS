@@ -1,0 +1,1210 @@
+#
+# Front Arena exported extension module.
+# source          ""
+# timestamp (utc) "2024-04-04 05:08:12.0"
+# ***** DO NOT EDIT! *****
+#
+name        "PS_PreDealSPBase"
+description ""
+
+groups {
+}
+
+decls[FPythonCode] {
+}
+
+clx FObject [FPythonCode] {
+  DealPackageUxCommandItems
+from __future__ import print_function
+from __future__ import division
+from __future__ import absolute_import
+import acm
+import FUxCore
+import DealPackageUxDialogs
+from TransactionHistory import OpenTransactionHistoryForInstrumentAndTrades, ShowTransactionHistoryForObject
+from FTimeStampsCustomDialog import StartDialog as StartTimeStampsDialog
+from FProtectionCustomDialog import StartDialog as StartProtectionDialog
+from DealPackageUtil import UnDecorate
+
+class CommandItemBase(FUxCore.MenuItem):
+    
+    def SetApplication(self, application):
+        self.m_app = application
+        
+    def DealPackage(self):
+        return self.Application().DealPackage()
+
+    def DealPackageHasTraits(self):
+        return self.Application().HasTraits()
+    
+    def Applicable(self):
+        return True
+        
+    def Enabled(self):
+        return True
+    
+    def Checked(self):
+        return False
+    
+    def Application(self):
+        return self.m_app
+        
+    def DealPackageHelper(self):
+        return self.Application().DealPackageHelper()
+        
+''' 
+ Inherit from this class to make sure ribbon is REMOVED when 
+  deal package has traits         
+  '''
+class NonTraitBasedCommandItem(CommandItemBase):
+    def Applicable(self):
+        return not self.DealPackageHasTraits()
+     
+''' 
+ Inherit from this class to make sure ribbon is SHOWN ONLY when 
+  deal package has traits        
+  '''
+class TraitBasedSpecificCommandItem(CommandItemBase):
+    def Applicable(self):
+        return self.Application().HasTraits()
+
+
+'''
+    ALL COMMAND ITEMS
+'''
+class RemoveCommandItem(NonTraitBasedCommandItem):
+    def Invoke(self,cd):
+        selection = self.Application().Sheet().Selection()
+        
+        for trade in selection.SelectedTrades():
+            self.Application().RemoveTrade(trade)
+
+class InsDefDialogCommandItem(NonTraitBasedCommandItem):
+    def __init__(self, viewOnly):
+        self._viewOnly = viewOnly
+    
+    def Applicable(self):
+        return self.DealPackageHasTraits() == self._viewOnly
+
+    def Invoke(self,cd):
+        selection = self.Application().Sheet().Selection()
+        if selection.SelectedTrades().Size() == 1:
+            viewMode = "View" if self.DealPackageHasTraits() else "Ok"
+            dialog = DealPackageUxDialogs.DealPackageEditDialog( self.Application().Shell(), selection.SelectedTrades().At(0), viewMode )
+            dialog.ShowDealPackageEditDialog()
+
+class NewTradeCommandItem(NonTraitBasedCommandItem):
+    def Invoke(self,cd):
+        dialog = DealPackageUxDialogs.DealPackageNewTradeDialog( self.Application().Shell() )
+        trade = dialog.ShowDealPackageNewTradeDialog()
+        if trade:
+            self.Application().AddTrade(trade)
+            
+class NewTradeFromInsCommandItem(NonTraitBasedCommandItem):
+    def Invoke(self,cd):
+        dialog = DealPackageUxDialogs.DealPackageNewTradeFromInsDialog( self.Application().Shell() )
+        trade = dialog.ShowDealPackageNewTradeFromInsDialog()
+        if trade:
+            self.Application().AddTrade(trade)
+
+class AddCommandItem(NonTraitBasedCommandItem):
+    def Invoke(self,cd):
+        trades = acm.UX().Dialogs().SelectObjectsInsertItems(self.Application().Shell(), 'FTrade', True)
+        if trades:
+            for trade in trades:
+                self.Application().AddTrade(trade)
+            
+class VoidCommandItem(NonTraitBasedCommandItem):
+    def Invoke(self,cd):
+        try:
+            self.Application().DealPackageHelper().VoidTrades()
+        except Exception as e:
+            dialog = DealPackageUxDialogs.DealPackageExceptionDialog(self.Application().Shell(), e)
+            dialog.ShowDealPackageExceptionDialog()
+            
+class DeleteCommandItem(NonTraitBasedCommandItem):
+    def Invoke(self,cd):
+        selection = self.Application().Sheet().Selection()
+        
+        if selection.SelectedTrades():
+            question = "Are you sure you want to delete the selected trade(s)?"
+            reallyDelete = acm.UX().Dialogs().MessageBoxOKCancel(self.Application().Shell(), "Question", question) == 'Button1'
+            if reallyDelete:
+                self.Application().BlockUpdates()
+                for trade in selection.SelectedTrades():
+                    try:
+                        self.Application().DeleteTrade(trade)
+                    except Exception as e:
+                        dialog = DealPackageUxDialogs.DealPackageExceptionDialog(self.Application().Shell(), e)
+                        dialog.ShowDealPackageExceptionDialog()
+                        
+                self.Application().Revert()
+                if self.Application().DealPackageHelper().IsDealPackageEmpty():
+                    dialog = DealPackageUxDialogs.DealPackageDeleteDialog(self.Application().Shell())
+                    if dialog.ShowDealPackageDeleteDialog():
+                        self.Application().DeleteDealPackage()
+
+class Rename(NonTraitBasedCommandItem):
+    def Invoke(self,cd):
+        self.Application().OnFileRename()
+    
+    def Enabled(self):
+        return self.Application().OnFileRenameEnabled()
+
+class SaveDefaultSettings(CommandItemBase):
+    def Invoke(self,cd):
+        package = self.DealPackage()
+        shell = self.Application().Shell()
+        self.Application().SheetPane().SaveDefaultSettings(package, shell)
+
+class RestoreDefaultSettings(CommandItemBase):
+    def Invoke(self,cd):
+        package = self.DealPackage()
+        shell = self.Application().Shell()
+        self.Application().SheetPane().RestoreDefaultSettings(package, shell)
+        self.Application().OnSetEntity()
+        
+class AutoRefreshCalc(TraitBasedSpecificCommandItem):
+    def Invoke(self,cd):
+        enabled = self.Application().GetAttribute("autoRefreshCalc")
+        self.DealPackage().SetAttribute("autoRefreshCalc", True != enabled)
+        
+    def Checked(self):
+        return self.Application().GetAttribute("autoRefreshCalc")
+        
+class RefreshCalc(TraitBasedSpecificCommandItem):
+    def Invoke(self,cd):
+        dp = self.DealPackage()
+        val = self.Application().GetAttribute("refreshCalcCounter")
+        dp.SetAttribute("refreshCalcCounter", (val + 1))
+    
+    def Enabled(self):
+        return not self.Application().GetAttribute("autoRefreshCalc")        
+
+class CashAnalysisViewer(CommandItemBase):
+    def Invoke(self,cd):
+        dp = UnDecorate( self.DealPackage() )
+        shell = self.Application().Shell()
+        acm.DealCapturing().UX().CashAnalysisViewerModalDialog(shell, dp)
+
+class MarginingSetViewer(CommandItemBase):
+
+    def MarginingSetTrade(self):
+        dp = UnDecorate( self.DealPackage() )
+        leadTrade = dp.LeadTrade()
+        if leadTrade:
+            originator = leadTrade.Originator()
+            if originator.StorageId() > 0:
+                return originator
+        return None
+
+    def Invoke(self, cd):
+        trade = self.MarginingSetTrade()
+        if trade:
+            shell = self.Application().Shell()
+            acm.DealCapturing().UX().MarginingSetViewerDialog(shell, trade)
+
+    def Enabled(self):
+        trade = self.MarginingSetTrade()
+        return (trade and trade.MarginingSets().Size() > 0)
+
+class ConnectedTradesViewer(CommandItemBase):
+
+
+    def Invoke(self,cd):
+        def IsIncluded(trade, tradeArray):
+            included = False
+            if not tradeArray.Includes(trade):
+                origTrade = trade.OriginalOrSelf()
+                for ta in tradeArray:
+                    origTa = ta.OriginalOrSelf()
+                    if origTa == origTrade:
+                        included = True
+                        break
+            else:
+                included = True
+            return included
+
+        def AsArray(trade, tradeConnections):
+            tradeArray = acm.FArray()        
+            tradeArray.Add(trade)
+            for connection in tradeConnections:
+                fromTrade = connection.FromTrade()
+                toTrade   = connection.ToTrade()
+                if not IsIncluded(fromTrade, tradeArray):
+                    tradeArray.Add(fromTrade)
+                if not IsIncluded(toTrade, tradeArray):
+                    tradeArray.Add(toTrade)            
+            return tradeArray
+
+        dp = UnDecorate( self.DealPackage() )
+        trade = dp.LeadTrade()
+        if trade:
+            trade = trade.Originator()
+            full_array = acm.FSet()
+            tradeConnections = trade.TradeConnections()
+            deal_package_symbol = acm.FSymbol('Deal Package')
+            for tradeConnection in tradeConnections:
+                if tradeConnection.Type() == deal_package_symbol:
+                    from_trade = tradeConnection.FromTrade()
+                    to_trade = tradeConnection.ToTrade()
+                    if from_trade == trade:
+                        deal_package_connections = to_trade.TradeConnections()
+                        full_array.AddAll(AsArray(to_trade, deal_package_connections))
+                        group_trades = acm.FTrade.Select('groupTrdnbr = %i' % to_trade.Oid())
+                        full_array.AddAll(group_trades)
+                    else:
+                        deal_package_connections = from_trade.TradeConnections()
+                        full_array.AddAll(AsArray(from_trade, deal_package_connections))
+                        group_trades = acm.FTrade.Select('groupTrdnbr = %i' % from_trade.Oid())
+                        full_array.AddAll(group_trades)
+            tradeArray = AsArray(trade, tradeConnections)
+            full_array.AddAll(tradeArray)
+            shell = self.Application().Shell()
+            acm.DealCapturing().UX().ConnectedTradesViewerDialog(shell, full_array.AsArray().SortByProperty('Oid'))
+
+class VerticalRiskViewer(CommandItemBase):
+    def Invoke(self,cd):
+        risktViewerItem = self.DealPackage()
+        if self.DealPackage().IsDeal():
+            risktViewerItem = UnDecorate( self.DealPackage().Trades().First() )
+            if risktViewerItem.IsInfant():
+                risktViewerItem = risktViewerItem.Instrument()
+        shell = self.Application().Shell()
+        acm.DealCapturing().UX().VerticalRiskViewerDialog(shell, risktViewerItem.Originator())
+        
+    def Enabled(self):
+        dp = self.DealPackage()
+        enabled = not dp.InstrumentPackage().Originator().IsInfant()
+        if not enabled:
+            instruments = dp.Instruments()
+            if not instruments.IsEmpty():
+                enabled = not instruments.First().Originator().IsInfant()
+        return enabled
+
+class DynamicRiskViewer(CommandItemBase):
+    def Invoke(self,cd):
+        shell = self.Application().Shell()
+        import DynamicRiskViewer
+        DynamicRiskViewer.CreateDialogX(shell, self.Application())
+        
+
+class RegenerateCashFlows(CommandItemBase):
+    def GetCashFlowInstrumentDecorator(self):
+        cfIns = None
+        ins = self.DealPackage().Instruments().First()
+        if ins.IsKindOf('FCashFlowInstrument'):
+            cfIns = ins
+        else:
+            und = ins.Underlying()
+            if und and und.IsKindOf('FCashFlowInstrument'):
+                cfIns = acm.FBusinessLogicDecorator.WrapObject(und, ins.GUI())
+        return cfIns
+        
+    def Invoke(self,cd):
+        shell = self.Application().Shell()
+        ins = self.GetCashFlowInstrumentDecorator()
+        regenerated = acm.DealCapturing().UX().RegenerateCashFlowsDialog(shell, ins)
+        if regenerated:
+            self.DealPackage().SetAttribute('triggerRefreshCounter', self.DealPackage().GetAttribute('triggerRefreshCounter') + 1)
+            ins.Instrument().Touch()
+            ins.Instrument().Changed()
+            
+    def Enabled(self):
+        ins = UnDecorate(self.GetCashFlowInstrumentDecorator())
+        return ins and not ins.IsInfant()
+        
+class TimeStamps(CommandItemBase):
+    def Invoke(self,cd):
+        shell = self.Application().Shell()
+        if self.DealPackage().IsKindOf('FEditableObject'):  
+            StartTimeStampsDialog(shell, self.DealPackage().Object().Originator())
+        elif self.DealPackage().IsDeal():
+            obj = UnDecorate( self.DealPackage().Trades().First() )
+            if obj.IsInfant():
+                obj = obj.Instrument()
+            acm.DealCapturing().UX().TimeStampsDialog(shell, obj.Originator())
+        else:
+            StartTimeStampsDialog(shell, self.DealPackage().Originator())
+
+class ShowChanges(CommandItemBase):
+    def Invoke(self,cd):
+        shell = self.Application().Shell()
+        if self.DealPackage().IsKindOf('FEditableObject'):  
+            obj = self.DealPackage().Object()
+        elif self.DealPackage().IsDeal():
+            obj = UnDecorate( self.DealPackage().Trades().First() )
+            if obj.IsInfant():
+                obj = obj.Instrument()
+        else:
+            obj = self.DealPackage()
+        acm.DealCapturing().UX().ShowChangesDialog(shell, obj)
+    
+    def Enabled(self):
+        return self.Application().OnFileSaveEnabled()
+
+class Protection(CommandItemBase):
+    def Invoke(self,cd):
+        shell = self.Application().Shell()
+        if self.DealPackage().IsKindOf('FEditableObject'):  
+            owner, protection = StartProtectionDialog(shell, self.DealPackage().Object().Owner(), self.DealPackage().Object().Protection())
+            self.DealPackage().Object().Owner(owner)
+            self.DealPackage().Object().Protection(protection)
+        elif self.DealPackage().IsDeal():
+            trade = UnDecorate( self.DealPackage().Trades().First() )
+            acm.DealCapturing().UX().ProtectionDialog(shell, trade.Instrument(), trade, self.OnChanged)
+        else:
+            owner, protection = StartProtectionDialog(shell, self.DealPackage().Owner(), self.DealPackage())
+            self.DealPackage().Owner(owner)
+            self.DealPackage().Protection(protection)
+    
+    def OnChanged(self):
+        trade = UnDecorate( self.DealPackage().Trades().First() )
+        ins = trade.Instrument()
+        if trade.IsInfant():
+            ins.Touch()
+            ins.Changed()
+        else:
+            ins.Touch()
+            trade.Touch()
+            trade.Changed()
+
+class TradeProperties(CommandItemBase):
+    def Invoke(self,cd):
+        trade = UnDecorate( self.DealPackage().Trades().First() )
+        trade.Inspect()
+
+class AbstractProxyShowHideBase(CommandItemBase):
+    def Proxy(self):
+        pass
+
+    def Applicable(self):
+        return self.Proxy().Applicable()
+
+    def Invoke(self,cd):
+        self.Proxy().ToggleEnableDockWnd()
+    
+    def Checked(self):
+        return self.Proxy().DockWndEnabled()
+
+class ToggleShowGraph(AbstractProxyShowHideBase):
+    def Proxy(self):
+        return self.Application().DockedViewsManager().GraphProxy()
+        
+class ToggleShowPricing(AbstractProxyShowHideBase):
+    def Proxy(self):
+        return self.Application().DockedViewsManager().SheetProxy()
+
+class ToggleSlimDetailedMode(TraitBasedSpecificCommandItem):
+    
+    def __init__(self, slimKey):
+        self._slimDetailedKey = slimKey
+        
+    def Invoke(self,cd):
+        uiDict = self.Application().GetAttribute('uiViewModeIsSlim')
+        newValue = uiDict.At(self._slimDetailedKey) != True
+        self.DealPackage().SetAttribute('uiViewModeIsSlim', {self._slimDetailedKey : newValue})
+        self.Application().DealPackagePane().UpdateAppearance()
+    
+    def Checked(self):
+        return not self.Application().GetAttribute('uiViewModeIsSlim').At(self._slimDetailedKey)
+
+class SaveBase(CommandItemBase):
+    
+    def SetSaveConfigParams(self, configParams):
+        self.m_saveConfigParams = configParams
+        
+class Save(SaveBase):
+
+    def Invoke(self, cd):
+        saveConfig = acm.FDealPackageSaveConfiguration()
+        allTradesAreNew = self.DealPackage().AllTradesAreNew()
+        saveConfig.DealPackage('Exclude' if allTradesAreNew else self.m_saveConfigParams[0])
+        saveConfig.InstrumentPackage(self.m_saveConfigParams[1])
+        self.Application().OnFileSave(saveConfig)
+
+    def Enabled(self):
+        return self.Application().OnFileSaveEnabled()
+    
+class SaveNew(SaveBase):
+
+    def Invoke(self, cd):
+        saveConfig = acm.FDealPackageSaveConfiguration()
+        saveConfig.DealPackage(self.m_saveConfigParams[0]) 
+        saveConfig.InstrumentPackage(self.m_saveConfigParams[1])
+        self.Application().OnFileSaveNew(saveConfig)
+    
+    def _IsIpInfant(self):
+        if self.DealPackage().IsTransient():
+            infant = False
+            for t in self.DealPackage().Trades():
+                infant = infant or t.Instrument().IsInfant()
+        else:
+            infant = self.DealPackage().InstrumentPackage().IsInfant()
+        return infant
+    
+    def Enabled(self):
+        isSaveNewTradeButton = self.m_saveConfigParams[1] == "Exclude"
+        return (self.Application().OnFileSaveNewEnabled()
+               and not (isSaveNewTradeButton and self._IsIpInfant()))
+
+class Template(CommandItemBase):
+    
+    def __init__(self, template):
+        self.m_template = template
+        
+    def Invoke(self, cd):
+        deal = acm.Deal.New(self.m_template.Name())
+        if deal:
+            self.Application().HandleObject(deal)
+
+class New(CommandItemBase):
+
+    def Invoke(self, cd):
+        self.Application().OnFileNew()
+
+    def Enabled(self):
+        return self.Application().OnFileNewEnabled()
+
+class TradeActions(CommandItemBase):
+
+    def Invoke(self, cd):
+        pass
+    
+    def Applicable(self):
+        return not self.DealPackage().TradeActionKeys().IsEmpty()
+        
+class MakeInstrument(CommandItemBase):
+
+    def Invoke(self, cd):
+        pass
+    
+    def Applicable(self):
+        return not self.DealPackage().MakeInstrumentKeys().IsEmpty()
+        
+class CommandActions(CommandItemBase):
+
+    def Invoke(self, cd):
+        pass
+    
+    def Applicable(self):
+        return True
+
+class TogglePanesBase(CommandItemBase):
+
+    def Invoke(self, cd):
+        pass
+    
+    def Applicable(self):
+        return len(self.Application().GetAttribute('customPanes')) > 1
+
+class TogglePanes(CommandItemBase):
+
+    def __init__(self, name):
+        self.name = name
+
+    def Invoke(self,cd):
+        visible = self.Application().IsPaneVisible(self.name)
+        self.Application().ShowPane(self.name, visible == False)
+    
+    def Checked(self):
+        return self.Application().IsPaneVisible(self.name)
+    
+class CustomActions(CommandItemBase):
+
+    def Invoke(self, cd):
+        pass
+    
+    def Applicable(self):
+        applicable = False
+        if hasattr(self.DealPackage(), 'CustomActionKeys'):
+            applicable = not self.DealPackage().CustomActionKeys().IsEmpty()
+        return applicable
+        
+class ToggleShowInstrParts(CommandItemBase):
+    def Invoke(self,cd):
+        if self.IsDeal():
+            self.Builder().ShowInstrumentParts(not self.Builder().ShowInstrumentParts())
+        self.DealPackage().SetAttribute("sheetNeedsRefresh", True)
+        
+    def Checked(self):
+        if self.Builder():
+            if self.IsDeal():
+                return self.Builder().ShowInstrumentParts()
+        
+    def Enabled(self):
+        return self.Builder() != None
+        
+    def Builder(self):
+        sheet = self.Application().Sheet()
+        return sheet.GridBuilder() if sheet else None
+    
+    def IsDeal(self):
+        return 'Deal' == self.DealPackage().Definition().CustomApplicationName()
+
+class ToggleShowLegs(CommandItemBase):
+    def Invoke(self,cd):
+        if self.IsDeal():
+            self.Builder().ExpandLegParts(not self.Builder().ExpandLegParts())
+        else:
+            self.Builder().IncludeLegParts(not self.Builder().IncludeLegParts())
+        self.DealPackage().SetAttribute("sheetNeedsRefresh", True)
+        
+    def Checked(self):
+        if self.Builder():
+            if self.IsDeal():
+                return self.Builder().ExpandLegParts()
+            else:
+                return self.Builder().IncludeLegParts()
+        
+    def Enabled(self):
+        return self.Builder() != None
+        
+    def Builder(self):
+        sheet = self.Application().Sheet()
+        return sheet.GridBuilder() if sheet else None
+    
+    def IsDeal(self):
+        return 'Deal' == self.DealPackage().Definition().CustomApplicationName()
+
+class CashFlowTable(CommandItemBase):
+    def Invoke(self,cd):
+        trdOrIns = None
+        trd = UnDecorate(self.DealPackage().Trades().First().Originator())
+        ins = UnDecorate(self.DealPackage().Instruments().First().Originator())
+        if not trd.IsInfant():
+            trdOrIns = trd
+        elif not ins.IsInfant():
+            trdOrIns = ins
+        acm.StartApplication("Cash Flow Table", trdOrIns)
+        
+        
+class ValuationInformation(CommandItemBase):
+    def Invoke(self,cd):
+        trade = UnDecorate(self.DealPackage().Trades().First())
+        shell = self.Application().Shell()
+        acm.DealCapturing().UX().StartValuationInformation(shell, trade)
+        
+class PriceEntry(CommandItemBase):
+    def Invoke(self,cd):
+        acm.StartApplication("Price Entry", UnDecorate(self.DealPackage().Instruments().First().Originator()))
+
+  
+class TransactionHistory(CommandItemBase):
+    def Invoke(self,cd):
+        shell = self.Application().Shell()
+        if self.DealPackage().IsKindOf('FEditableObject'):  
+            ShowTransactionHistoryForObject(self.DealPackage().Object(), shell)
+        elif self.DealPackage().IsDeal():
+            ins = self.DealPackage().Instruments().First()
+            trade = self.DealPackage().Trades().First()
+            OpenTransactionHistoryForInstrumentAndTrades(ins, trade, shell)
+        else:
+            ShowTransactionHistoryForObject(self.DealPackage(), shell)
+            
+        
+class PartyDefinition(CommandItemBase):
+    def Invoke(self,cd):
+        cpty = self.DealPackage().Trades().First().Counterparty()
+        acm.StartApplication('Party Definition', cpty)
+
+
+class PostTradeReportEntry(CommandItemBase):
+    def Invoke(self,cd):
+        tradeOrInstrument = self.DealPackage().Trades().First().Trade()
+        if tradeOrInstrument.IsInfant():
+            tradeOrInstrument = tradeOrInstrument.Instrument()
+        if tradeOrInstrument.IsInfant():
+            tradeOrInstrument = None
+        acm.StartApplication('Post Trade Report Entry', tradeOrInstrument.Originator() if tradeOrInstrument else None)
+
+
+class GenerateDefaultId(CommandItemBase):
+    def GetCustomInsDef(self):
+        customInsDefs = acm.GetDefaultContext().GetAllExtensions(acm.FCustomInstrumentDefinition, None, True, True, '', '', False)
+        definition = self.DealPackage().Definition()
+        for customInsDef in customInsDefs:
+            if customInsDef.Value().DealPackageDefinition():
+                if customInsDef.Value().DealPackageDefinition() == definition.Name():
+                    return customInsDef.Value()
+        return None
+    
+    def Invoke(self,cd):
+        customInsDef = self.GetCustomInsDef()
+        self.DealPackage().Instruments().First().Name = customInsDef.DefaultInstrumentName(True)
+        self.DealPackage().SetAttribute('triggerRefreshCounter', self.DealPackage().GetAttribute('triggerRefreshCounter') + 1)
+    
+def InstrumentSelectedCb( shell, instrument, pSelf ):
+    pSelf.m_instrument = instrument
+    
+class ImportLegs(CommandItemBase):
+    def Invoke(self,cd):
+        shell = self.Application().Shell()
+        self.m_instrument = None
+        acm.UX().Dialogs().SelectInstrument(shell, "none", InstrumentSelectedCb, self)
+        if self.m_instrument:
+            self.DealPackage().GetAttribute('importLegs')(self.m_instrument)
+        
+class PriceLinkSpecification(CommandItemBase):
+    def Invoke(self,cd):
+        name = None
+        instrument = self.DealPackage().Instruments().First().Instrument().Originator()
+        if not instrument.IsInfant():
+            name = instrument.Name()
+        acm.StartApplication('PriceLinkSpecification', name)
+
+
+class IssuerDefinition(CommandItemBase):
+    def Issuer(self):
+        issuer = None
+        ins = self.DealPackage().Instruments().First()
+        if ins.IsKindOf('FCreditDefaultSwap'):
+            ins = ins.Underlying()
+        if ins:
+            issuer = ins.Issuer()
+        return issuer
+
+    def Invoke(self,cd):
+        acm.StartApplication('Party Definition', self.Issuer())
+
+    def Enabled(self):
+        return self.Issuer() != None
+        
+
+
+class DividendEstimation(CommandItemBase):
+    def Invoke(self,cd):
+        stock = self.DealPackage().Instruments().First()
+        acm.StartApplication('Dividend Estimation', stock)
+
+
+class SelectDeliverables(CommandItemBase):
+    def Invoke(self,cd):
+        ins = self.DealPackage().Instruments().First().Originator()
+        acm.StartApplication('Select Deliverables', UnDecorate(ins))
+    
+    def Applicable(self):
+        isApplicable = False
+        ins = self.DealPackage().Instruments().First()
+        if ins.UnderlyingType() in ('Bond', 'Bill'):
+            isApplicable = True
+        return isApplicable
+
+    def Enabled(self):
+        isEnabled = False
+        underlying = self.DealPackage().Instruments().First().Underlying()
+        if underlying and underlying.Notional():
+            isEnabled = True
+        return isEnabled
+
+
+class Underlying(CommandItemBase):
+    def Invoke(self,cd):
+        underlying = UnDecorate(self.DealPackage().Instruments().First().Underlying().Originator())
+        acm.StartApplication('Instrument Definition', underlying)
+    
+    def Applicable(self):
+        insType = self.DealPackage().Instruments().First().Originator().InsType()
+        return acm.DealCapturing().HasUnderlying(insType)
+
+    def Enabled(self):
+        isEnabled = False
+        underlying = self.DealPackage().Instruments().First().Underlying()
+        if underlying:
+            isEnabled = True
+        return isEnabled
+   
+
+class OpenInOption(CommandItemBase):
+    def Invoke(self,cd):
+        toOpen = self._InstrumentOrTradeToOpen()
+        initData = acm.DealCapturing().UX().InitDataFromTemplate(toOpen, 'Option')
+        acm.StartApplication('Instrument Definition', initData)
+    
+    def Applicable(self):
+        orig = self.DealPackage().Instruments().First().Originator()
+        return 'Option' == orig.InsType()
+        
+    def Enabled(self):
+        orig = self.DealPackage().Instruments().First().Originator()
+        return not orig.IsInfant()
+        
+    def _InstrumentOrTradeToOpen(self):
+        toOpen = None
+        trade = UnDecorate(self.DealPackage().Trades().First().Originator())
+        if not trade.IsInfant():
+            toOpen = trade
+        else:
+            instrument = UnDecorate(self.DealPackage().Instruments().First().Originator())
+            if not instrument.IsInfant():
+                toOpen = instrument
+        return toOpen
+        
+class OpenInEngineeringTrade(CommandItemBase):
+    # -- Interface
+    #
+    def Invoke(self, *args):
+        objectToOpen = self.GetInsOrTradeOpen()
+        initData = acm.DealCapturing().UX().InitDataFromTemplate(
+            objectToOpen, 'Engineering Trade')
+        acm.StartApplication('Instrument Definition', initData)
+    
+    def Applicable(self):
+        applicable = self.InsOriginator().InsType() in('FreeDefCF', 'Portfolio Swap')
+        return applicable
+        
+    def Enabled(self):
+        enabled = not self.InsOriginator().IsInfant()
+        return enabled
+        
+    # -- Private
+    #
+    def InsOriginator(self):
+        return self.DealPackage().Instruments().First().Originator()
+
+    def TradeOriginator(self):
+        return self.DealPackage().Trades().First().Originator()
+    
+    def GetInsOrTradeOpen(self):
+        toOpen = None
+        if not self.TradeOriginator().IsInfant():
+            toOpen = UnDecorate(self.TradeOriginator())
+        elif not self.InsOriginator().IsInfant():
+            toOpen = UnDecorate(self.InsOriginator())
+        return toOpen
+    
+class TriggerRef(CommandItemBase):
+    def Invoke(self,cd):
+        triggerRef = UnDecorate(self.DealPackage().Instruments().First().LongestLeg().TriggerReference())
+        acm.StartApplication('Instrument Definition', triggerRef)
+    
+    def Applicable(self):
+        insType = self.DealPackage().Instruments().First().Originator().InsType()
+        return insType == 'Autocallable'
+        
+
+class SalesTradingDialogs(CommandItemBase):
+
+    def SetApplication(self, application):
+        self.m_app = application
+        self.ValidateModuleInContext()
+
+    def HasOriginalDealPackage(self):
+        hasOriginal = False
+        if self.DealPackage().IsDeal():
+            trade = self.DealPackage().Trades().First()
+            hasOriginal = trade.Originator().StorageId() > 0
+        else:
+            hasOriginal = self.DealPackage().Originator().StorageId() > 0
+        return hasOriginal
+        
+    def OriginalDealPackage(self):
+        original = None
+        if self.DealPackage().IsDeal():
+            trades = self.DealPackage().Trades()
+            trade = trades.First().Originator() if trades.Size() > 0 else None
+            if trade and trade.StorageId() > 0:
+                original = trade
+        else:
+            originator = self.DealPackage().Originator()
+            if originator.StorageId() > 0:
+                original = acm.FDealPackage[originator.StorageId()]
+        return original
+
+    def MultiTradingAndOriginalInstrumentPackage(self):
+        original = None
+        if self.DealPackage().IsDeal():
+            trades = self.DealPackage().Trades()
+            instrument = trades.First().Instrument().Originator() if trades.Size() > 0 else None
+            if instrument and instrument.StorageId() > 0:
+                original = instrument
+        else:        
+            originator = None
+            if self.DealPackage().GetAttribute('multiTradingEnabled'):
+                originator = self.DealPackage().InstrumentPackage().Originator()
+            if originator and originator.StorageId() > 0:
+                original = acm.FInstrumentPackage[originator.StorageId()]
+        return original
+                    
+    def Enabled(self):
+        enabled = False
+        if self.MultiTradingAndOriginalInstrumentPackage() or self.HasOriginalDealPackage():
+            enabled = True
+        return enabled
+     
+    def Applicable(self):
+        return self._moduleInContext      
+              
+class OpenQuoteRequestDialog(SalesTradingDialogs):
+
+    def ValidateModuleInContext(self):
+        try:
+            import RFQUtils
+            import SalesRFQDialog
+            self._moduleInContext = True
+        except:
+            self._moduleInContext = False
+    
+    def Applicable(self):
+        applicable = False
+        if self._moduleInContext:
+            from RFQUtils import QuoteRequest
+            tradeOrDp = self.DealPackage().Trades().First() if self.DealPackage().IsDeal() else self.DealPackage()
+            applicable = QuoteRequest.AllowLinkedQuoteRequests(tradeOrDp)
+        return applicable
+
+    def Invoke(self, cd):
+        import SalesRFQDialog
+        object = self.OriginalDealPackage() if self.HasOriginalDealPackage() else self.MultiTradingAndOriginalInstrumentPackage()
+        initialAttrs = {'rfq_request_mode': 'Linked'}
+        salesTradingInteraction = self.DealPackage().GetAttribute('salesTradingInteraction')
+        # The 'object' passed to the StartSalesRFQDialog is the original deal package. The quotedLeg attribute will almost always be transient 
+        # and thus only existing on the current clone. It must therefore be set here as an initial attribute rather than in the RFQRequestComposite code
+        if salesTradingInteraction and salesTradingInteraction.At('quotedLegAttr'): 
+            initialAttrs['rfq_request_quotedLeg'] = self.DealPackage().GetAttribute(salesTradingInteraction.At('quotedLegAttr'))
+        SalesRFQDialog.StartSalesRFQDialog(
+            self.Application().Shell(), object, sourceAsTemplate=False, initialAttrs=initialAttrs, eventType='Opening')
+            
+class OpenSoftFirmDialog(SalesTradingDialogs):
+
+    def ValidateModuleInContext(self):
+        try:
+            import RFQUtils
+            import SalesRFQDialog
+            self._moduleInContext = True
+        except:
+            self._moduleInContext = False
+    
+    def Applicable(self):
+        applicable = False
+        if self._moduleInContext:
+            from RFQUtils import QuoteRequest
+            tradeOrDp = self.DealPackage().Trades().First() if self.DealPackage().IsDeal() else self.DealPackage()
+            applicable = QuoteRequest.AllowTradingOnlyQuoteRequests(tradeOrDp)
+        return applicable
+
+    def Invoke(self, cd):
+        import SalesRFQDialog
+        object = self.OriginalDealPackage() if self.HasOriginalDealPackage() else self.MultiTradingAndOriginalInstrumentPackage()
+        SalesRFQDialog.StartSalesRFQDialog(
+            self.Application().Shell(), object, sourceAsTemplate=False, initialAttrs={'rfq_request_mode': 'Soft'}, eventType='Opening')
+            
+class CloseWithQuoteRequest(SalesTradingDialogs):
+    def ValidateModuleInContext(self):
+        try:
+            import SalesRFQDialog
+            self._moduleInContext = True
+        except:
+            self._moduleInContext = False
+
+    def OriginalTrade(self):
+        orig = self.OriginalDealPackage()
+        if orig and orig.IsKindOf(acm.FDealPackage):
+            orig = orig.LeadTrade()
+        return orig
+    
+    def Enabled(self):
+        return self.OriginalTrade() is not None
+
+    def Invoke(self, cd):
+        import SalesRFQDialog
+        message = acm.TradeActionUtil().ValidateTradeToClose(self.OriginalTrade())
+        if not message:
+            SalesRFQDialog.StartSalesRFQDialog(
+            self.Application().Shell(), self.OriginalTrade(), sourceAsTemplate=False, initialAttrs={'rfq_request_mode': 'Linked'}, eventType='Close')
+        else:
+            dialog = DealPackageUxDialogs.DealPackageExceptionDialog(self.Application().Shell(), message)
+            dialog.ShowDealPackageExceptionDialog() 
+        
+        
+class QuoteRequestHistory(SalesTradingDialogs):
+    def ValidateModuleInContext(self):
+        try:
+            import QuoteRequestHistoryViewer
+            self._moduleInContext = True
+        except:
+            self._moduleInContext = False
+
+    def Trade(self):
+        return self.OriginalDealPackage().LeadTrade() if self.OriginalDealPackage().IsKindOf(acm.FDealPackage) else self.OriginalDealPackage()
+
+    def Invoke(self, cd):
+        from QuoteRequestHistoryViewer import OpenQuoteRequestHistoryViewerFromTrade
+        OpenQuoteRequestHistoryViewerFromTrade(self.Trade(), self.Application().Shell())
+        
+    def Applicable(self):
+        return True
+        
+    def Enabled(self):
+        enabled = False
+        if self.OriginalDealPackage():
+            from QuoteRequestHistoryViewer import GetQuoteRequestId
+            trade = self.Trade()
+            enabled = bool(trade and GetQuoteRequestId(trade))
+        return enabled
+        
+class OpenSalesOrderDialog(SalesTradingDialogs):
+
+    def ValidateModuleInContext(self):
+        try:
+            import SalesOrderDialog
+            self._moduleInContext = True
+        except:
+            self._moduleInContext = False
+
+    def Invoke(self, cd):
+        import SalesOrderDialog
+        object = self.OriginalDealPackage() if self.HasOriginalDealPackage() else self.MultiTradingAndOriginalInstrumentPackage()
+        SalesOrderDialog.StartSalesOrderDialog(self.Application().Shell(), object)
+
+class SalesOrderHistory(SalesTradingDialogs):
+    def ValidateModuleInContext(self):
+        try:
+            import SalesOrderHistoryViewer
+            self._moduleInContext = True
+        except:
+            self._moduleInContext = False
+
+    def Trade(self):
+        return self.OriginalDealPackage().LeadTrade() if self.OriginalDealPackage().IsKindOf(acm.FDealPackage) else self.OriginalDealPackage()
+
+    def Invoke(self, cd):
+        from SalesOrderHistoryViewer import OpenSalesOrderHistoryViewerFromTrade
+        OpenSalesOrderHistoryViewerFromTrade(self.Trade(), self.Application().Shell())
+        
+    def Applicable(self):
+        return True
+        
+    def Enabled(self):
+        enabled = False
+        if self.OriginalDealPackage():
+            from SalesOrderHistoryViewer import GetSalesOrderId
+            trade = self.Trade()
+            enabled = bool(trade and GetSalesOrderId(trade))
+        return enabled
+
+...
+
+  SP_CommonCloseCommand
+
+import acm
+
+from DealPackageTradeActionClose import TradeActionClose
+from DealPackageUtil import SetStatus
+
+def SetCloseAttribute(origDp, close, attrName):
+    val = origDp.GetAttribute(attrName)
+    close.SetAttribute(attrName, val)
+
+class SP_TradeActionClose(TradeActionClose):
+    def AssemblePackage(self, arguments):
+        self._args = arguments
+        origDp = arguments.At('dealPackage')
+        origEdit = origDp.Edit()
+        self.DealPackage().AddChildDealPackage(origEdit, 'original')
+        close = self.CreateCleanPackageCopy(origDp)
+        self.UpdateAcquireAndValueDay(close)
+        self.SetB2BFields(origDp, close)
+
+        origEdit.AddAsLifeCyclePackage(close, self.ClosePackageKey(newKey = True), self.CloseEventType())   
+        SetStatus(close, arguments)
+        acm.DealPackageActions.InvokeCloseTradeHook(origDp.Edit(), close)
+
+...
+
+  StructuredProductsCommonAddInfo
+
+import acm
+import ChoicesExprCommon
+from DealPackageDevKit import Object, DealPackageDefinition, ReturnDomainDecorator
+from CompositeAttributesLib import TradeDefinition
+from CompositeAddInfoDefinition import AddInfoDefinition
+from DealPackageUtil import UnDecorate
+
+try:
+    from StructureProductsPreDealUtils import DealPackageDefinitionWithPreDeal
+except ImportError:
+    from DealPackageDevKit import DealPackageDefinition as DealPackageDefinitionWithPreDeal
+
+class CommonAddInfoDefition(AddInfoDefinition):
+    @ReturnDomainDecorator('string')
+    def EditValue(self, value = '*Reading*'):
+        if self.SelectedSpec():
+            if value == '*Reading*':
+                value = self.Object().AddInfoValue(self.SelectedSpec())
+                if hasattr(value, 'Name'):
+                    value = value.Name()
+                return value
+            object = self.Object()
+            if object.ClassName() in [acm.FSymbol('FTradeLogicDecorator'), acm.FSymbol('FTrade')]:
+                sub_types = self.SelectedSpec().SubTypes()
+                if sub_types:
+                    ins_type = object.Instrument().InsType()
+                    if ins_type not in sub_types:
+                        mess = 'Cannot set add info %s on instrument type %s' % (self.SelectedSpec().Name(), ins_type)
+                        print(mess)
+                        shell = acm.UX().SessionManager().Shell()
+                        acm.UX().Dialogs().MessageBoxInformation(shell, mess, 'Error')
+
+                        return
+
+                deal_package = self.Object().DealPackage()
+                if deal_package:
+                    for trade in deal_package.Trades():
+                        trade.AddInfoValue(self.SelectedSpec(), value)
+                else:
+                    self.Object().AddInfoValue(self.SelectedSpec(), value)
+                    if value is None:
+                        self._selectedSpec = acm.FAdditionalInfoSpec()
+            else:
+                self.Object().AddInfoValue(self.SelectedSpec(), value)
+                if value is None:
+                    self._selectedSpec = acm.FAdditionalInfoSpec()
+
+class CommonTradeDefinition(TradeDefinition):
+
+    def CommonAttributes(self):
+        return ['counterparty', 'yourRef', 'valueDay', 'acquireDay', 'trader', 'settleCategoryChlItem', 'status', 'tradeTime', 'optKey1', 'optKey2', 'optKey3', 'optKey4']
+
+    def Attributes(self):
+        allAttributes = super().Attributes()
+        attributes = {}
+        for attr in self.CommonAttributes():
+            attributes[attr] = allAttributes[attr]
+        return attributes
+        
+    def AttributeOverrides(self, overrideAccumulator):
+        for attr in self.CommonAttributes():
+            overrideAccumulator({attr: dict(onChanged=self.UniqueCallback('@Synchronize'))})
+            
+    def Synchronize(self, *args):
+        for trade in self.Owner().Trades():
+            if trade != self.Trade():
+                trade = UnDecorate(trade)
+                for attr in self.CommonAttributes():
+                    attr = attr[:1].upper() + attr[1:]
+                    value = getattr(self.Trade(), attr)()
+                    setattr(trade, attr, value)
+
+class SP_CommonAddInfoBase(DealPackageDefinition):
+    trades_AddInfo_DealerCode = Object(label = 'Dealer Code',
+                                objMapping = 'TradesAddInfoDealerCode',
+                                visible = True)
+
+    trades_AddInfo_DocumentType = Object(label = 'Document Type',
+                                objMapping = 'TradesAddInfoDocumentType',
+                                choiceListSource = '@GetDocumentTypeChoices',
+                                visible = True)
+
+    trades_AddInfo_TransactionPurpose = Object(label = 'Transaction Purpose',
+                                objMapping = 'TradesAddInfoTransactionPurpose',
+                                choiceListSource = '@GetDocumentTransactionPurposeChoices',
+                                visible = True)
+
+    @staticmethod
+    def GetDocumentTypeChoices(*rest):
+        return ChoicesExprCommon.listChoicesWithEmpty('DocumentType')
+
+    @staticmethod
+    def GetDocumentTransactionPurposeChoices(*rest):
+        return ChoicesExprCommon.listChoicesWithEmpty('TransactionPurpose')
+
+    def TradesAddInfoDealerCode(self, value = '*READING*'):
+        if value == '*READING*':
+            return self.LeadTrade().AdditionalInfo().DealerCode()
+        for trade in self.DealPackage().Trades():
+            trade.AdditionalInfo().DealerCode(value)
+
+    def TradesAddInfoDocumentType(self, value = '*READING*'):
+        if value == '*READING*':
+            return self.LeadTrade().AdditionalInfo().DocumentType()
+        for trade in self.DealPackage().Trades():
+            trade.AdditionalInfo().DocumentType(value)
+
+    def TradesAddInfoTransactionPurpose(self, value = '*READING*'):
+        if value == '*READING*':
+            return self.LeadTrade().AdditionalInfo().TransactionPurpose()
+        for trade in self.DealPackage().Trades():
+            trade.AdditionalInfo().TransactionPurpose(value)
+
+class SP_CommonAddInfo(SP_CommonAddInfoBase):
+    pass
+
+class SP_CommonAddInfoDealPackageDefinitionWithPreDeal(SP_CommonAddInfoBase, DealPackageDefinitionWithPreDeal):
+    pass
+
+
+...
+
+  StructureProductsPreDealUtils
+
+import acm
+from DealPackageUx import DealPackageUx
+from DealPackageDevKit import DealPackageDefinition
+from StructuredProductBase import ProductBase
+from ComplianceCheckProgressDialog import ComplianceCheckProgressDialog
+
+def findApp(deal_package):
+    session_manager = acm.UX.SessionManager()
+    for app in session_manager.RunningApplications():
+        if app.IsKindOf('FUxLayoutApplicationFrame'):
+            custom_app = app.CustomLayoutApplication()
+            if hasattr(custom_app, 'DealPackage'):
+                app_deal_package = custom_app.DealPackage().OriginalOrSelf()
+                if not app_deal_package.IsKindOf(acm.FDealPackage):
+                    continue
+                if app_deal_package.Oid() == deal_package.OriginalOrSelf().Oid():
+                    return app
+    return session_manager
+
+def findShell(deal_package):
+    app = findApp(deal_package)
+    return app.Shell()
+
+class DealPackageUxWithPreDeal(DealPackageUx):
+    def LaunchPreDeal(self):
+        trade = self.DealPackage().LeadTrade().DecoratedObject().OriginalOrSelf()
+        if trade.Status() in ('Reserved', 'Limit Check'):
+            deal_package = self.DealPackage().DecoratedObject() if hasattr(self.DealPackage(), 'DecoratedObject') else self.DealPackage()
+            app = findApp(deal_package.OriginalOrSelf())
+            shell = app.Shell()
+            dial =  ComplianceCheckProgressDialog(trade, app)
+            acm.UXDialogs.ShowCustomDialog(shell, dial.CreateLayout(), dial)
+
+    def OnFileSaveNew(self, config = None):
+        super().OnFileSaveNew(config)
+        self.LaunchPreDeal()
+
+    def OnFileSave(self, config = None):
+        super().OnFileSave(config)
+        self.LaunchPreDeal()
+
+class ProductBaseWithPreDeal(ProductBase):
+    def OnSave(self, saveConfig):
+        ret = super().OnSave(saveConfig)
+        trade = self.LeadTrade()
+        if trade.Status() in ('Reserved', 'Limit Check'):
+            deal_package = self.DealPackage().DecoratedObject() if hasattr(self.DealPackage(), 'DecoratedObject') else self.DealPackage()
+            app = findApp(deal_package.OriginalOrSelf())
+            shell = app.Shell()
+            dial =  ComplianceCheckProgressDialog(trade.OriginalOrSelf().OriginalOrSelf().OriginalOrSelf(), app)
+            acm.UXDialogs.ShowCustomDialog(shell, dial.CreateLayout(), dial)
+        return ret
+
+class DealPackageDefinitionWithPreDeal(DealPackageDefinition):
+    def OnSave(self, saveConfig):
+        ret = super().OnSave(saveConfig)
+        trade = self.LeadTrade()
+        if trade.Status() in ('Reserved', 'Limit Check'):
+            deal_package = self.DealPackage().DecoratedObject() if hasattr(self.DealPackage(), 'DecoratedObject') else self.DealPackage()
+            app = findApp(deal_package.OriginalOrSelf())
+            shell = app.Shell()
+            dial =  ComplianceCheckProgressDialog(trade.OriginalOrSelf().OriginalOrSelf().OriginalOrSelf(), app)
+            acm.UXDialogs.ShowCustomDialog(shell, dial.CreateLayout(), dial)
+        return ret
+
+
+...
+
+}
+

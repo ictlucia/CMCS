@@ -1,0 +1,42 @@
+[MESSAGE]
+  TYPE=INSERT_TASK
+  VERSION=1.0
+  TIME=2024-04-04 10:12:33
+  SOURCE=FAMBAMessageGenerator
+  [TASK]
+    CONTEXT=Standard
+    GROUP.NAME=BO_REPORTING
+    MODULE=BO81 - PPE EBUS Sebagai Pedagang (Overseas Branch)
+    NAME=BO81 - PPE EBUS Sebagai Pedagang (Overseas Branch).xls
+    PARAMETER=output_file=.xls;file_path=c:\\;report_name=BO81 - PPE EBUS Sebagai Pedagang (Overseas Branch);
+    SIZE=94
+    [TASKSCHEDULE]
+      CALNBR.CALID=Jakarta
+      ENABLED=Yes
+      RIB=Yes
+      SCHEDULE=1:M:1,1:O,1000:20240101
+      SEQNBR=1186
+    [/TASKSCHEDULE]
+  [/TASK]
+[/MESSAGE]
+[MESSAGE]
+  TYPE=INSERT_TASK
+  VERSION=1.0
+  TIME=2024-04-04 10:12:33
+  SOURCE=FAMBAMessageGenerator
+  [TASK]
+    CONTEXT=Standard
+    GROUP.NAME=BO_REPORTING
+    MODULE=BO82 - PPE EBUS Sebagai Perantara (Overseas Branch)
+    NAME=BO82 - PPE EBUS Sebagai Perantara (Overseas Branch).xls
+    PARAMETER=output_file=.xls;file_path=c:\\;report_name=BO82 - PPE EBUS Sebagai Perantara (Overseas Branch);
+    SIZE=95
+    [TASKSCHEDULE]
+      CALNBR.CALID=Jakarta
+      ENABLED=Yes
+      RIB=Yes
+      SCHEDULE=1:M:1,1:O,1000:20240101
+      SEQNBR=1187
+    [/TASKSCHEDULE]
+  [/TASK]
+[/MESSAGE]

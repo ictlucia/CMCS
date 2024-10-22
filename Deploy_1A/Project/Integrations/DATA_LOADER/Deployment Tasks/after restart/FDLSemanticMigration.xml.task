@@ -1,0 +1,2 @@
+<?xml version='1.0' encoding='ISO-8859-1'?>
+<FAelTask><acm_version>2022.2.1, Jun 29 2022</acm_version><version>0 $Id$</version><update_time>2022-10-19 12:37:27</update_time><object_name>FDLSemanticMigration</object_name><owner>ARENASYS</owner><protection>3072</protection><module>FDLSemanticMigration</module><context>Standard</context><parameter>semantic=;fromFXSLTemplate=0;providerType=Bloomberg;</parameter><historylength /><description /><logfilename /><group /><groupstatus>None</groupstatus><historylengthunit>None</historylengthunit></FAelTask>

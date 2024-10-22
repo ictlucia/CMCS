@@ -1,0 +1,517 @@
+#
+# Front Arena exported extension module.
+# source          ""
+# timestamp (utc) "2023-11-29 13:50:57.3"
+# ***** DO NOT EDIT! *****
+#
+name        "PS_IPSLimits"
+description ""
+
+groups {
+}
+
+decls[FParameters] {
+}
+
+clx FObject [FParameters] {
+  IPSLimitOnboardingConfig =
+  CertificateFile=C:\Projects\FADealPostingWebServer\test_cer.crt
+  KeyFile=C:\Projects\FADealPostingWebServer\test_key.key
+  listeningURL=IPSLimitOnboarding
+  ServerPort=8086
+
+
+}
+
+decls[FPythonCode] {
+}
+
+clx FObject [FPythonCode] {
+  IPSLimitOnboardingInServer
+"""--------------------------------------------------------------------------------------------------
+MODULE:
+    IPSLimitOnboardingInServer : Module for handing the server functions
+
+DESCRIPTION: This module uses flask and provides functions for handling webserver functions from client.
+-------------------------------------------------------------------------------------------------------"""
+from flask import Flask, request
+from IPSLimitOnboardingMapper import IPSDataRequestProcessor, IPSDataResponseManager
+import traceback, ParametersReader
+
+app = Flask(__name__)
+
+ips_config = ParametersReader.get_params('IPSLimitOnboardingConfig')
+litening_url = ips_config['listeningURL']
+
+
+@app.route("/", methods=['GET'])
+def welcome():
+    """
+    This function handles the default client request
+    :return: string
+    """
+    return "Welcome to FrontArena webserver for handling IPS Limit Onboarding !"
+
+
+@app.route("/{}".format(litening_url), methods=['POST'])
+def updatelimit():
+    """
+    This function handles the IPS Limit data from client.
+    :return: JSON object
+    """
+    try:
+        json_data = request.get_json()
+        ips_obj = IPSDataRequestProcessor(json_data)
+        try:
+			print('Input {}'.format(json_data))
+            print('Processing input for application numbers {}'.format(ips_obj.get_object_information()))
+            response_data = ips_obj.process_data()
+        except Exception as err:
+            print(traceback.format_exc())
+            response_data_obj = IPSDataResponseManager()
+            response_data_obj.add_reponse_object('', '', '', str(IPSDataResponseManager.RESPONSE_CODE_FAIL),str(err))
+            response_data = response_data_obj.get_json_object()
+    except Exception as err:
+        print(traceback.format_exc())
+        response_data_obj = IPSDataResponseManager()
+        response_data_obj.add_reponse_object('', '', '', str(IPSDataResponseManager.RESPONSE_CODE_FAIL),str(err))
+        response_data = response_data_obj.get_json_object()
+
+    return response_data
+
+...
+
+  IPSLimitOnboardingMapper
+"""-----------------------------------------------------------------------------------------------------
+MODULE
+    IPSLimitOnboardingMapper
+
+DESCRIPTION: This module provides the base class for providing mapping of JSON data to AppliedRule.
+
+-------------------------------------------------------------------------------------------------------"""
+import acm, json, ael, traceback
+
+
+class IPSRequestData(object):
+    def __init__(self, data_dict):
+        """
+        This function initializes member variables
+        :param data_dict: python dictionary
+        """
+        self._applicationNumber = data_dict.get("applicationNumber")
+        self._cifNumber = data_dict.get("cifNumber")
+        self._sourceSystem = data_dict.get("sourceSystem")
+        self._actionCode = data_dict.get("actionCode")
+        self._complianceRuleName = data_dict.get("complianceRuleName")
+        self._currencyCode = data_dict.get("currencyCode")
+        self._targetType = data_dict.get("targetType")
+        self._threshold = data_dict.get("threshold")
+        self._startDate = data_dict.get("startDate")
+        self._endDate = data_dict.get("endDate")
+        self._agreementCode = data_dict.get("agreementCode")
+        self._agreementDate = data_dict.get("agreementDate")
+        self._renewalCode = data_dict.get("renewalCode")
+        self._renewalDate = data_dict.get("renewalDate")
+        self._requestId = data_dict.get("requestId")
+
+        for type, value in self._threshold.items():
+            if type == 'thresholdType':
+                self._thresholdType = value
+            if type == 'thresholdValue':
+                self._thresholdValue = float(value)
+
+
+class IPSDataRequestProcessor(object):
+    ACTION_CODE_ADD = 'A'
+    ACTION_CODE_UPDATE = 'U'
+    ACTION_CODE_INCREASE = 'I'
+    ACTION_CODE_DECREASE = 'D'
+
+    def __init__(self, _data_dict):
+        """
+            Initialise member variables
+            :param python dict: dictionary
+        """
+        self._base_data = _data_dict.get('limitRequest')
+        self._agreement_number_add_info = acm.FAdditionalInfoSpec['AgreementNumber']
+        self._agreement_date_add_info = acm.FAdditionalInfoSpec['AgreementDate']
+        self._renewal_number_add_info = acm.FAdditionalInfoSpec['RenewalNumber']
+        self._renewal_date_add_info = acm.FAdditionalInfoSpec['RenewalDate']
+        self._application_no_add_info = acm.FAdditionalInfoSpec['ApplicationNumber']
+        self._limit_objects = list()
+        self._populate_object()
+
+    def _populate_object(self):
+        """
+        This function populates the objects list
+        :return:
+        """
+        if not self._base_data:
+            raise Exception("Request is not as per the expected format.")
+        for limit_data in self._base_data:
+            self._limit_objects.append(IPSRequestData(limit_data))
+
+    def get_object_information(self):
+        application_numbers = [obj._applicationNumber for obj in self._limit_objects]
+        return ', '.join(application_numbers)
+
+    def get_fixed_currency(self, compliance_rule):
+        fixed_curr_name = None
+        error_log = ''
+        rule_def = compliance_rule.Definition()
+        if rule_def:
+            if hasattr(rule_def, 'Column'):
+                col = rule_def.Column()
+                if col:
+                    config = col.Configuration()
+                    if config:
+                        param_dict = config.ParamDict()
+                        if param_dict:
+                            var_dict = param_dict.At('columnParameters')
+                            if var_dict:
+                                fixed_curr = var_dict.At('FixedCurr')
+                                if fixed_curr:
+                                    fixed_curr_name = fixed_curr.Name()
+                                else:
+                                    error_log = 'Fixed currency not found.'
+                            else:
+                                error_log = 'Variant dict not found.'
+                        else:
+                            error_log = 'Param dict not found.'
+                    else:
+                        error_log = 'Configuration not found.'
+                else:
+                    error_log = 'Column not found.'
+        else:
+            error_log = 'Rule definition not found.'
+
+        return fixed_curr_name, error_log
+
+    def _extract_and_validate_data(self, request_data_obj):
+        """
+        This function extracts and validates input data against object in ADS
+        :param request_data_obj: IPSRequestData objects
+        :return: tuple of integer, string, FParty and FAppliedRule
+        """
+        response_message = ''
+        response_code = IPSDataResponseManager.RESPONSE_CODE_SUCCESS
+        party = None
+        applied_rule = None
+        try:
+            comp_rule = acm.FComplianceRule[request_data_obj._complianceRuleName]
+            if comp_rule is None:
+                response_message += ' Compliance rule {} does not exist in FA.'.format(
+                    request_data_obj._complianceRuleName)
+                response_code = IPSDataResponseManager.RESPONSE_CODE_FAIL
+            else:
+                if self.get_fixed_currency(comp_rule)[0] != request_data_obj._currencyCode:
+                    response_message += " Currency in request '{}' and FrontArena ComplianceRule '{}' don't match.".format(
+                        request_data_obj._currencyCode,self.get_fixed_currency(comp_rule)[0])
+                    response_code = IPSDataResponseManager.RESPONSE_CODE_FAIL
+
+            party = acm.FParty.Select01('hostId = {}'.format(request_data_obj._cifNumber), None)
+            if party:
+                if comp_rule:
+                    applied_rule = acm.FAppliedRule.Select01(
+                        "complianceRule='{}' and targetType = '{}' and targetId={}".format(
+                            request_data_obj._complianceRuleName, request_data_obj._targetType, party.Oid()), None)
+
+                    if request_data_obj._actionCode not in [IPSDataRequestProcessor.ACTION_CODE_ADD,
+                                                            IPSDataRequestProcessor.ACTION_CODE_DECREASE,
+                                                            IPSDataRequestProcessor.ACTION_CODE_UPDATE,
+                                                            IPSDataRequestProcessor.ACTION_CODE_INCREASE]:
+                        response_message += ' Invalid actionCode {}'.format(request_data_obj._actionCode)
+                        response_code = IPSDataResponseManager.RESPONSE_CODE_FAIL
+                    else:
+                        if not applied_rule and request_data_obj._actionCode in [
+                            IPSDataRequestProcessor.ACTION_CODE_DECREASE,
+                            IPSDataRequestProcessor.ACTION_CODE_UPDATE,
+                            IPSDataRequestProcessor.ACTION_CODE_INCREASE]:
+                            response_message += ' Applied rule does not exist in FA.'
+                            response_code = IPSDataResponseManager.RESPONSE_CODE_FAIL
+                        elif applied_rule and request_data_obj._actionCode == IPSDataRequestProcessor.ACTION_CODE_ADD:
+                            response_message += ' Applied rule already exists in FA.'
+                            response_code = IPSDataResponseManager.RESPONSE_CODE_FAIL
+            else:
+                response_message += ' CIF does not exist in FA.'
+                response_code = IPSDataResponseManager.RESPONSE_CODE_FAIL
+        except Exception as err:
+            print(traceback.format_exc())
+            response_message += ' Error while validating values. {}'.format(err)
+            response_code = IPSDataResponseManager.RESPONSE_CODE_FAIL
+
+        return response_code, response_message, party, applied_rule
+
+    def _update_threshold_value(self, applied_rule, request_data_obj):
+        """
+        This functiion updates the threshold value
+        :param applied_rule: FAppliedRule
+        :param request_data_obj: IPSRequestData
+        :return: Tuple of integer and string
+        """
+        response_message = ''
+        response_code = IPSDataResponseManager.RESPONSE_CODE_SUCCESS
+        try:
+            for threshold_obj in applied_rule.ThresholdValues():
+                if threshold_obj.Threshold().Type().Name() == request_data_obj._thresholdType:
+                    if request_data_obj._actionCode == IPSDataRequestProcessor.ACTION_CODE_DECREASE:
+                        threshold_obj.Value(threshold_obj.Value() - request_data_obj._thresholdValue)
+                    else:
+                        threshold_obj.Value(threshold_obj.Value() + request_data_obj._thresholdValue)
+                    threshold_obj.Commit()
+                    applied_rule.Commit()
+                    response_message = 'Success'
+                    break
+        except Exception as err:
+            print(traceback.format_exc())
+            response_message += ' Error while updating applied rule threshold values. {}'.format(err)
+            response_code = IPSDataResponseManager.RESPONSE_CODE_FAIL
+
+        return response_code, response_message
+
+    def _update_applied_rule(self, applied_rule, request_data_obj):
+        """
+        This function updates the existing applied rule
+        :param applied_rule: FAppliedRue
+        :param request_data_obj: IPSRequestData
+        :return: Tuple of integer and string
+        """
+        response_message = ''
+        response_code = IPSDataResponseManager.RESPONSE_CODE_SUCCESS
+        try:
+            for th in applied_rule.ThresholdValues():
+                if th.Threshold().Type().Name() == request_data_obj._thresholdType:
+                    threshold_obj = th
+                    threshold_obj.Value(request_data_obj._thresholdValue)
+                    threshold_obj.Commit()
+                    response_message = 'Success'
+                    break
+
+            applied_rule.StartDate(request_data_obj._startDate)
+            applied_rule.EndDate(request_data_obj._endDate)
+            applied_rule.AddInfoValue(self._application_no_add_info, request_data_obj._applicationNumber)
+            applied_rule.AddInfoValue(self._agreement_date_add_info, request_data_obj._agreementDate)
+            applied_rule.AddInfoValue(self._renewal_number_add_info, request_data_obj._renewalCode)
+            applied_rule.AddInfoValue(self._renewal_date_add_info, request_data_obj._renewalDate)
+            applied_rule.AddInfoValue(self._agreement_number_add_info, request_data_obj._agreementCode)
+
+            applied_rule.Commit()
+        except Exception as err:
+            print(traceback.format_exc())
+            response_message += ' Error while updating applied rule. {}'.format(err)
+            response_code = IPSDataResponseManager.RESPONSE_CODE_FAIL
+
+        return response_code, response_message
+
+    def _add_applied_rule(self, request_data_obj, party):
+        """
+        This function add a new FAppliedRule
+        :param request_data_obj: IPSRequestData
+        :param party: FParty
+        :return: Tuple of integer and string
+        """
+        response_message = ''
+        response_code = IPSDataResponseManager.RESPONSE_CODE_SUCCESS
+        try:
+            compliance_rule = acm.FComplianceRule[request_data_obj._complianceRuleName]
+            if compliance_rule:
+                try:
+                    applied_rule = acm.FAppliedRule()
+                    applied_rule.RegisterInStorage()
+                    applied_rule.ComplianceRule(compliance_rule)
+                    applied_rule.Target(party)
+                    applied_rule.StartDate(request_data_obj._startDate)
+                    applied_rule.EndDate(request_data_obj._endDate)
+                    applied_rule.AddInfoValue(self._application_no_add_info, request_data_obj._applicationNumber)
+                    applied_rule.AddInfoValue(self._agreement_date_add_info, request_data_obj._agreementDate)
+                    applied_rule.AddInfoValue(self._renewal_number_add_info, request_data_obj._renewalCode)
+                    applied_rule.AddInfoValue(self._renewal_date_add_info, request_data_obj._renewalDate)
+                    applied_rule.AddInfoValue(self._agreement_number_add_info, request_data_obj._agreementCode)
+
+                    for th in compliance_rule.Thresholds():
+                        thv = applied_rule.NewThresholdValue()
+                        thv.Threshold(th)
+                        if th.Type().Name() == request_data_obj._thresholdType:
+                            thv.Value(request_data_obj._thresholdValue)
+                        thv.Commit()
+                    applied_rule.Commit()
+                    response_message = 'Success'
+                except Exception as err:
+                    print(traceback.format_exc())
+                    response_message += ' Error while creating AppliedRule {} .'.format(err)
+                    response_code = IPSDataResponseManager.RESPONSE_CODE_FAIL
+                    # acm.AbortTransaction()
+        except Exception as err:
+            print(traceback.format_exc())
+            response_message += ' Error while create applied rule. {}'.format(err)
+            response_code = IPSDataResponseManager.RESPONSE_CODE_FAIL
+
+        return response_code, response_message
+
+    def add_update_applied_rules(self, request_data_obj):
+        """
+        This function adds/updates the FAppliedRules
+        :param request_data_obj:
+        :return: Tuple of integer and string
+        """
+        ael.poll()
+
+        response_code, response_message, party, applied_rule = self._extract_and_validate_data(request_data_obj)
+
+        if response_code == IPSDataResponseManager.RESPONSE_CODE_SUCCESS:
+            if request_data_obj._actionCode in [IPSDataRequestProcessor.ACTION_CODE_INCREASE,
+                                                IPSDataRequestProcessor.ACTION_CODE_DECREASE]:
+                response_code, response_message = self._update_threshold_value(applied_rule, request_data_obj)
+
+            elif request_data_obj._actionCode == IPSDataRequestProcessor.ACTION_CODE_UPDATE:
+                response_code, response_message = self._update_applied_rule(applied_rule, request_data_obj)
+
+            elif request_data_obj._actionCode == IPSDataRequestProcessor.ACTION_CODE_ADD:
+                response_code, response_message = self._add_applied_rule(request_data_obj, party)
+
+        return response_code, response_message
+
+    def process_data(self):
+        """
+        This function initiates the processing of incoming objects.
+        All the incoming objects are processed and if one of them fails, all the other objects are
+        not committed too.
+        :return: JSON object
+        """
+        response_mgr = IPSDataResponseManager()
+        response_code = IPSDataResponseManager.RESPONSE_CODE_SUCCESS
+        try:
+            acm.BeginTransaction()
+            for request_data_obj in self._limit_objects:
+                if response_code == IPSDataResponseManager.RESPONSE_CODE_FAIL:
+                    response_message = "Failed due to error in other objects shared in the request."
+                else:
+                    try:
+                        response_code, response_message = self.add_update_applied_rules(request_data_obj)
+                    except Exception as err:
+                        print(traceback.format_exc())
+                        response_code = IPSDataResponseManager.RESPONSE_CODE_FAIL
+                        response_message = str(err)
+                response_mgr.add_reponse_object(request_data_obj._requestId,
+                                                request_data_obj._cifNumber,
+                                                request_data_obj._applicationNumber,
+                                                response_code,
+                                                response_message)
+                print("Processing results - RequestID:{} CIF:{} ApplicationNo:{} Response:{}".format(
+                                                                                        request_data_obj._requestId,
+                                                                                        request_data_obj._cifNumber,
+                                                                                        request_data_obj._applicationNumber,
+                                                                                        response_message))
+            if response_code == IPSDataResponseManager.RESPONSE_CODE_FAIL:
+                # if there is an error with any one of the requests, then consider everything to be failed.
+                response_mgr.set_all_failed()
+                raise Exception("Not updating any applied rules.")
+            acm.CommitTransaction()
+        except Exception as err:
+            acm.AbortTransaction()
+            response_mgr.set_all_failed(err)
+            print(err)
+
+        return response_mgr.get_json_object()
+
+
+class IPSDataResponseManager(object):
+    RESPONSE_CODE_SUCCESS = 0
+    RESPONSE_CODE_FAIL = 1
+
+    def __init__(self):
+        """
+        Initialise member variables
+        :param json_string: string containing input in JSON format
+        """
+        self._base_object = {'limitResponseData': list()}
+
+    def add_reponse_object(self, requestId, cifNumber, applicationNumber, response_code, response_message):
+        """
+        This function adds the data to the list
+        :param cifNumber: string
+        :param applicationNumber: string
+        :param response_code: string
+        :param response_message: string
+        :return: None
+        """
+        tmp_base_dict = dict()
+        tmp_base_dict["requestId"] = requestId
+        tmp_base_dict["cifNumber"] = cifNumber
+        tmp_base_dict["applicationNumber"] = applicationNumber
+        tmp_base_dict["responseCode"] = response_code
+        tmp_base_dict["responseMessage"] = response_message
+
+        self._base_object['limitResponseData'].append(tmp_base_dict)
+
+    def get_json_object(self):
+        """
+        This function returns the JSON object.
+        :return: JSON object
+        """
+        return json.dumps(self._base_object)
+
+    def set_all_failed(self, err = None):
+        """
+        This function sets all the response to be failed.
+        :return: None
+        """
+        for resp_dict in self._base_object['limitResponseData']:
+            if resp_dict["responseCode"] == IPSDataResponseManager.RESPONSE_CODE_SUCCESS:
+                resp_dict["responseCode"] = IPSDataResponseManager.RESPONSE_CODE_FAIL
+                if err:
+                    resp_dict["responseMessage"] = "Failed due to error : {}.".format(err)
+                else:
+                    resp_dict["responseMessage"] = "Failed due to error in other objects shared in the request."
+                
+
+
+...
+
+  IPSLimitOnboardingServerMain
+"""--------------------------------------------------------------------------------------------------
+MODULE:
+    IPSLimitOnboardingServerMain : Main module for ATS
+
+DESCRIPTION: This module uses gevent to run the webserver in start method.
+             The start never returns and hence work and stop functions are not called.
+-------------------------------------------------------------------------------------------------------"""
+from gevent.pywsgi import WSGIServer
+import IPSLimitOnboardingInServer, ParametersReader
+
+
+def server_routine():
+    """
+    This function starts the gevent WSGI
+    :return: None
+    """
+    try:
+        ips_limit_config = ParametersReader.get_params('IPSLimitOnboardingConfig')
+        key_file = ips_limit_config['KeyFile']
+        server_port = ips_limit_config['ServerPort']
+        cert_file = ips_limit_config['CertificateFile']
+
+        if not server_port.isdigit():
+            raise Exception('Port should be integer. Supplied {}'.format(server_port))
+
+        bind = ('0.0.0.0', int(server_port))
+        app = IPSLimitOnboardingInServer.app
+        g_server = WSGIServer(bind, app, keyfile=key_file, certfile=cert_file)
+        print('Started webserver.', g_server)
+        g_server.serve_forever()
+    except Exception as err:
+        print(err)
+        return False
+
+
+def start():
+    """ ATS start """
+    try:
+        server_routine()
+    except Exception as err:
+        print(err)
+
+...
+
+}
+

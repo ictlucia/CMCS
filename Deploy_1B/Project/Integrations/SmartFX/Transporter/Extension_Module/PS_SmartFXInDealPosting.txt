@@ -1,0 +1,914 @@
+#
+# Front Arena exported extension module.
+# source          ""
+# timestamp (utc) "2024-10-20 06:38:00.2"
+# ***** DO NOT EDIT! *****
+#
+name        "PS_SmartFXInDealPosting"
+description ""
+
+groups {
+}
+
+decls[FColumnDefinition] {
+  "ReconStatus" ( "sheet columns.tradesheet" ) "";
+}
+
+clx FTradingSheet [FColumnDefinition] {
+  ReconStatus =
+  ColumnAppearance=AlignmentLeft
+  Description=Shows the latest Smart FX reconcilliation state of the trade.
+  ExtensionAttribute=get_recon_state
+  GroupLabel=Smart FX Deal Reconcilliation
+  InitialWidth=200
+  Name=Reconcilliation State
+  ShowErrorHashmark=FullMessage
+
+
+}
+
+decls[FExtensionAttribute] {
+}
+
+clx FTradeRow [FExtensionAttribute] {
+  get_recon_state = object.Trade.AdditionalInfo.SmartFXReconState;
+}
+
+decls[FMenuExtension] {
+}
+
+clx FTradeSheet [FMenuExtension] {
+  SmartFXMenu =
+  DisplayName=SmartFX Interface
+  MenuType=GridRowHeader
+  SubMenuCreateFunction=DealPostingUtils.CreateSmartFXMenu
+
+
+}
+
+decls[FParameters] {
+}
+
+clx FObject [FParameters] {
+  DealPostingConfig =
+  CertificateFile=C:\Projects\FADealPostingWebServer\test_cer.crt
+  DealTypeMapping={'T':'TOD', 'TOM':'TOM', 'F':'FWD', 'S':'SPOT', 'SW':'SWAP'}
+  KeyFile=C:\Projects\FADealPostingWebServer\test_key.key
+  ServerPort=8081
+
+
+}
+
+decls[FPythonCode] {
+}
+
+clx FObject [FPythonCode] {
+  DealPostingUtils
+"""-----------------------------------------------------------------------------------------------------
+MODULE
+    DealPostingUtils
+
+DESCRIPTION: This module provides the utilities functions.
+
+-------------------------------------------------------------------------------------------------------"""
+import ast
+import acm
+import requests
+try:
+    import FUxCore
+except:
+    # May not work for non GUI client
+    pass
+from datetime import datetime, timezone
+import ssl, enum, re, traceback, os
+import SmartFXPortfolioAcquirerMapping
+
+
+class SmartFXSubMenuItem(FUxCore.SubMenu):
+    def __init__(self, extObj):
+        """
+        Initialize member variables
+        :param extObj: GUI handle
+        """
+        self.m_extObj = extObj
+        self._recon_menu_trades = list()
+        self._party_menu_trades = list()
+
+    def Applicable(self):
+        """
+        This function checks if the menu is available
+        :return: boolean
+        """
+        ret_val = False
+        try:
+            if not hasattr(self.m_extObj, 'ActiveSheet'):
+                return False
+            if self.m_extObj.ActiveSheet() is None:
+                return False
+            selected_objects = self.m_extObj.ActiveSheet().Selection().SelectedRowObjects()
+            selected_trades = [trd.Trade() for trd in selected_objects if trd.IsKindOf(acm.FTradeRow)]
+
+            for trd in selected_trades:
+                if trd.OptKey2() and trd.OptKey2().Name() in ['SMART_FX']:
+                    if trd.Counterparty() and trd.Counterparty().Id() in ['DUMMY']:
+                        self._party_menu_trades.append(trd)
+                        ret_val = True
+                    if trd.AdditionalInfo().SmartFXReconState() in ['NotAcknowledged', 'ResponseTimedOut']:
+                        self._recon_menu_trades.append(trd)
+                        ret_val = True
+                else:
+                    ret_val = False
+                    break
+        except Exception as err:
+            print('Error occurred in SmartFXSubMenuItem.Applicable. Err {}'.format(err))
+        return ret_val
+
+    def Enabled(self):
+        """
+        This function checks of the menu is enabled.
+        :return: boolean
+        """
+        return True
+
+    def send_recon(self, _dead_arg):
+        """
+        This function sends the reconciliation
+        :param _dead_arg: dummy argument
+        :return: None
+        """
+        for trd in self._recon_menu_trades:
+            send_reconciliation(trd)
+
+    def update_counterparty(self, _dead_arg):
+        """
+        This function updates the counterparty on trade
+        :param _dead_arg: dummy argument
+        :return: None
+        """
+        for trd in self._party_menu_trades:
+            try:
+                party_cif = trd.YourRef()
+                if party_cif:
+                    party = acm.FParty.Select01('hostId={}'.format(party_cif), None)
+                    if party:
+                        trd.Counterparty(party)
+                        trd.Commit()
+                    else:
+                        print('No party with CIF number {}, found for Trade {}'.format(party_cif, trd.Oid()))
+                else:
+                    print('No CIF number found for Trade {}'.format(trd.Oid()))
+            except Exception as err:
+                print('Error in UpdateCounterpartyMenu.Invoke. Err: {}'.format(err))
+
+    def Invoke(self, eii):
+        """
+        This function is called when the user invokes menu
+        :param eii: GUI handle
+        :return: acm.FUxMenu 
+        """
+        menu = acm.FUxMenu()
+        if self._recon_menu_trades:
+            menu.AddItem(self.send_recon, None, "Send Trade Reconciliation")
+        if self._party_menu_trades:
+            menu.AddItem(self.update_counterparty, None, "Link Counterparty")
+
+        return menu
+            
+        
+
+def CreateSmartFXMenu(eii):
+    """ This function creates the menu"""
+    return SmartFXSubMenuItem(eii)
+
+def send_reconciliation(trd):
+    """
+    This function sends the reconciliation request to server.
+    :param trd: FTrade
+    :return: None
+    """
+    deal_processor = None
+    try:
+        from ReconciliationDealProcessor import ReconciliationDealProcessor
+        deal_processor = ReconciliationDealProcessor()
+        deal_processor.send_recon_request_and_update_trade(trd)
+    except Exception as err:
+        print('Error occurred in while sending recon request. Err {}'.format(err))
+        print(traceback.format_exc())
+    
+
+
+class TradeReconState(enum.Enum):
+    """
+    This class handles the enums representing the reconciliation state additional info.
+    """
+    ACK = 'Acknowledged'
+    NACK = 'NotAcknowledged'
+    TIMED_OUT = 'ResponseTimedOut'
+    AWAITED = 'ResponseAwaited'
+
+
+class Parameters(object):
+    """ Class to read FParameters"""
+
+    def __init__(self, *names):
+        """
+        Initialize member variables
+        :param names: name of the parameter
+        """
+        try:
+            self.param_name_list = []
+            self.get_data(*names)
+        except Exception as error:
+            raise error
+
+    def get_data(self, *names):
+        """ Read the FParameters from the Extension Manager"""
+        for fparam in names:
+            ext_context = acm.FExtensionContext[acm.GetDefaultContext().Name()]
+            param_object = ext_context.GetExtension('FParameters',
+                                                    'FObject', fparam)
+            try:
+                template = param_object.Value()
+            except AttributeError as error:
+                if not param_object:
+                    raise Exception("FParameter %s not present" % fparam)
+                else:
+                    raise Exception("Unable to get content of FParameter %s. Exception : %s" % (fparam, error))
+
+            for k in template.Keys():  # First set all the parameters
+                param_name = str(k)
+                attribute_name = str(template.At(k)).split('#')[0].strip()
+                if (bool(re.search("(\%[A-Za-z0-9_A-Za-z0-9]+\%)|(\${[A-Za-z0-9_A-Za-z0-9]+})",
+                                   attribute_name)) == True):
+                    words_pattern = '[A-Z0-9(\_)A-Z0-9]+'
+                    env_variable = re.findall(words_pattern, attribute_name, flags=re.IGNORECASE)
+                    env_variable_list = []
+                    for curr_var in env_variable:
+                        temp_var = os.environ.get(curr_var)
+                        if temp_var is None:
+                            env_variable_list.append(curr_var)
+                            continue
+                        env_variable_list.append(temp_var)
+                    for i in range(0, len(env_variable)):
+                        attribute_name = str.replace(attribute_name, env_variable[i], env_variable_list[i])
+                    attribute_name = re.sub('\$|{|}|\%', "", attribute_name)
+                setattr(self, param_name, attribute_name)
+                self.param_name_list.append(param_name)
+
+            self.module_name = param_object.Module().Name()
+
+    def get_param_name_list(self):
+        """
+        This function returns the param name list.
+        :return: list
+        """
+        return self.param_name_list
+
+
+def validate_date_format(date_str):
+    """
+    This function validates the date format
+    :param date_str: incoming date
+    :return: tuple of date, month and year as integers.
+    """
+    value_day = date_str.split('/')
+    _d = _m = _y = 0
+    map_date = False
+    if len(value_day) == 3:
+        _d, _m, _y = value_day
+        if _d.isdigit() and _m.isdigit() and _y.isdigit():
+            map_date = True
+    if not map_date:
+        raise Exception('Incorrect date format {}'.format(date_str))
+
+    return _d, _m, _y
+    
+    
+def get_deal_type_value(smartfx_val):
+    """
+    This function finds the deal type mapping
+    :param smartfx_val: deal type flag
+    :return: string.
+    """
+    ret_val = None
+    deal_posting_config = Parameters('DealPostingConfig')
+    deal_type_map = getattr(deal_posting_config, 'DealTypeMapping', None)
+    if deal_type_map:
+        deal_type_map = ast.literal_eval(deal_type_map)
+        if deal_type_map:
+            ret_val = deal_type_map.get(smartfx_val, None)
+    
+    return ret_val
+            
+        
+def get_b2b_portfolios(portfolio_name):
+    """
+    This function finds the trader portfolio acquirer and trader acquirer from the list.
+    If the name of the portfolio is found in the dict, rest of the dict items are extracted
+    :param portfolio_name: string
+    :return: tuple
+    """
+    trader_portfolio = None
+    acquirer = None
+    trader_acquirer = None
+    for list_item in SmartFXPortfolioAcquirerMapping.PORTFOLIO_TO_ACQUIRER:
+
+        if portfolio_name == list_item.get(SmartFXPortfolioAcquirerMapping.PORTFOLIO):
+            trader_portfolio = list_item.get(SmartFXPortfolioAcquirerMapping.TRADER_PORTFOLIO)
+            acquirer = list_item.get(SmartFXPortfolioAcquirerMapping.ACQUIRER)
+            trader_acquirer = list_item.get(SmartFXPortfolioAcquirerMapping.TRADER_ACQUIRER)
+            break
+
+    return trader_portfolio, acquirer, trader_acquirer
+    
+
+class ConnectionObject(object):
+    def __init__(self, url, access_token):
+        """
+        Initialize member variables
+        :return: None
+        """
+        self._url = url
+        self._header = {"Content-Type": "application/json", "Access-Token": access_token}
+
+    def post_request(self, json_data):
+        """
+        Send the post request
+        """
+        return requests.post(self._url, headers=self._header, json=json_data)
+    
+        
+
+...
+
+  SmartFXDealMappingServer
+"""--------------------------------------------------------------------------------------------------
+MODULE:
+    SmartFXDealMappingServer : Module for handing the server functions
+
+DESCRIPTION: This module uses flask and provides functions for handling webserver functions from client.
+-------------------------------------------------------------------------------------------------------"""
+from flask import Flask, request, jsonify
+from SmartFXDealPostingMapper import SmartFXDealPostingMapper
+from SmartFXDealPostingResponse import SmartFXDealPostingResponseAck, SmartFXDealPostingResponseNack
+import traceback
+
+app = Flask(__name__)
+
+
+@app.route("/", methods=['GET'])
+def welcome():
+    """
+    This function handles the default client request
+    :return: string
+    """
+    return "Welcome to FrontArena webserver for posting SmartFX deals!"
+
+
+@app.route("/postdeal", methods=['POST'])
+def postdeal():
+    """
+    This function handles the deal posting request from client.
+    :return: JSON object
+    """
+    response_object = None
+    try:
+        json_data = request.get_json()
+        deal_posting_obj = SmartFXDealPostingMapper(json_data)
+        validate_resut = deal_posting_obj.validate_static_data()
+        if validate_resut == SmartFXDealPostingMapper.VALID_STATIC_DATA:
+            try:
+                trd = deal_posting_obj.process_trade()
+                response_string = 'Deal post with transaction id {} is successful. FA deal id is {}'.format(
+                    deal_posting_obj.transaction_id, trd.Oid())
+                response_object = SmartFXDealPostingResponseAck(response_string)
+            except Exception as err:
+                print(traceback.format_exc())
+                response_object = SmartFXDealPostingResponseNack(str(err))
+        else:
+            response_string = 'Deal posting transaction id {}'.format(deal_posting_obj.transaction_id)
+            if validate_resut & SmartFXDealPostingMapper.INVALID_PORTFOLIO:
+                response_string += " Invalid Portfolio '{}'.".format(deal_posting_obj.portfolio)
+            if validate_resut & SmartFXDealPostingMapper.INVALID_COUNTERPARTY:
+                response_string += " Invalid Counterparty '{}'.".format(deal_posting_obj.counter_party_cif)
+            if validate_resut & SmartFXDealPostingMapper.INVALID_DEALER:
+                response_string += " Invalid Trader '{}'.".format(deal_posting_obj.dealer)
+            if validate_resut & SmartFXDealPostingMapper.SAME_CURRENCY:
+                response_string += " Currencies '{}' and '{}' must be different.".format(deal_posting_obj.Ccy1, deal_posting_obj.Ccy2)
+            if validate_resut & SmartFXDealPostingMapper.INVALID_DEAL_TYPE:
+                response_string += " DealType must be one of 'S', 'F', 'TOM', 'T', 'SW'."
+            if validate_resut & SmartFXDealPostingMapper.INVALID_TRADE_STATUS:
+                response_string += " Status must be one of 'N', 'A', 'C'."
+
+            print(response_string)
+            response_object = SmartFXDealPostingResponseNack(response_string)
+    except Exception as err:
+        print(traceback.format_exc())
+        response_object = SmartFXDealPostingResponseNack('Error occurred in postdeal {}.'.format(err))
+
+    return response_object.get_json_object()
+
+
+
+...
+
+  SmartFXDealMappingServerMain
+"""--------------------------------------------------------------------------------------------------
+MODULE:
+    SmartFXDealMappingServerMain : Main module for ATS
+
+DESCRIPTION: This module uses gevent to run the webserver in start method.
+             The start never returns and hence work and stop functions are not called.
+-------------------------------------------------------------------------------------------------------"""
+
+from gevent.pywsgi import WSGIServer
+import SmartFXDealMappingServer, DealPostingUtils
+
+
+def server_routine():
+    """
+    This function starts the gevent WSGI
+    :return: None
+    """
+    try:
+        deal_posting_config = DealPostingUtils.Parameters('DealPostingConfig')
+        key_file = getattr(deal_posting_config, 'KeyFile', None)
+        server_port = getattr(deal_posting_config, 'ServerPort', None)
+        cert_file = getattr(deal_posting_config, 'CertificateFile', None)
+
+        if not server_port.isdigit():
+            raise Exception('Port should be integer. Supplied {}'.format(server_port))
+
+        bind = ('0.0.0.0', int(server_port))
+        app = SmartFXDealMappingServer.app
+        g_server = WSGIServer(bind, app, keyfile=key_file, certfile=cert_file)
+        print('Started webserver.', g_server)
+        g_server.serve_forever()
+    except Exception as err:
+        print(err)
+        return False
+
+
+def start():
+    """ ATS start """
+    try:
+        server_routine()
+    except Exception as err:
+        print(err)
+
+
+
+
+...
+
+  SmartFXDealPostingMapper
+"""----------------------------------------------------------------------------------------
+MODULE:
+    SmartFXDealPostingMapper : User Module for mapping deal posting fields
+
+DESCRIPTION: This module provides the customizable class for providing additional deal mapping.
+------------------------------------------------------------------------------------------"""
+import acm
+import SmartFXDealPostingMapperBase
+
+
+class SmartFXDealPostingMapper(SmartFXDealPostingMapperBase.SmartFXDealPostingMapperBase):
+    def __init__(self, json_data):
+        """
+        Initialise member variables
+        :param json_string: string containing input in JSON format
+        """
+        super(SmartFXDealPostingMapper, self).__init__(json_data)
+
+    def commit_trade(self, trade):
+        """
+        This function let use to change and fields on the trade before it is committed.
+        This parent version of this function commits the trade.
+        :param trade: Trade to change
+        :return: None
+        Usage:
+            trade.Price(10.1)
+            super(SmartFXDealPostingMapper, self).commit_trade(trade)
+        """
+        super(SmartFXDealPostingMapper, self).commit_trade(trade)
+
+
+
+
+
+...
+
+  SmartFXDealPostingMapperBase
+"""-----------------------------------------------------------------------------------------------------
+MODULE
+    SmartFXDealPostingMapperBase
+
+DESCRIPTION: This module provides the base class for providing mapping of JSON data to Deal.
+
+-------------------------------------------------------------------------------------------------------"""
+import json, ael
+import acm
+import DealPostingUtils
+
+trade_type_enum = acm.FEnumeration['enum(TradeType)']
+
+
+class SmartFXDealPostingMapperBase(object):
+    INVALID_DEALER = 1
+    INVALID_PORTFOLIO = 2
+    INVALID_COUNTERPARTY = 4
+    SAME_CURRENCY = 8
+    INVALID_DEAL_TYPE = 16
+    INVALID_TRADE_STATUS = 32
+    VALID_STATIC_DATA = 0
+
+    TRADER_LEN_MAX = 12
+    COUNTERPARTY_LEN_MAX = 30
+    PORTFOLIO_LEN_MAX = 12
+
+    STATUS_NEW = 'N'
+    STATUS_AMEND = 'A'
+    STATUS_CANCEL = 'C'
+
+    DEAL_TYPE_TODAY = 'T'
+    DEAL_TYPE_TOMORROW = 'TOM'
+    DEAL_TYPE_SPOT = 'S'
+    DEAL_TYPE_FORWARD = 'F'
+    DEAL_TYPE_SWAP = 'SW'
+    
+    
+    
+
+    def __init__(self, json_data):
+        """
+        Initialise member varioables
+        :param json_string: string containing input in JSON format
+        """
+        self._data_dict = json_data
+        self._source = 'SMART_FX'
+        self.product_type = self._data_dict.get('productType')
+        self.trade_status = self._data_dict.get('status')
+        self.deal_text = self._data_dict.get('dealText')
+        self.branch = self._data_dict.get('branch')
+        self.broker = self._data_dict.get('broker')
+        self.Ccy1 = self._data_dict.get('Ccy1')
+        self.Ccy2 = self._data_dict.get('Ccy2')
+        self.counter_party_cif = self._data_dict.get('counterParty')
+        self.dealer = self._data_dict.get('dealer')
+        self.portfolio = self._data_dict.get('portfolio')
+        self.value_day = self._data_dict.get('valueDate')
+        self.trade_day = self._data_dict.get('tradeDate')
+        self.transaction_id = self._data_dict.get('transactionId')
+        self.swap_qty = self._data_dict.get('Amt2Swp2')
+        self.buy_sell = self._data_dict.get('buySell')
+        self.deal_type = self._data_dict.get('dealType')
+        self.maturity_date = self._data_dict.get('maturDate')
+        self.client_rate = self._data_dict.get('clientRate')        
+        self.internal_rate = self._data_dict.get('internalRate')
+        self.io_treasury_rate = self._data_dict.get('ioTreasuryRate')
+        self.client_rate_swp2 = self._data_dict.get('clientRateSwp2')
+        self.amt1 = self._data_dict.get('Amt1')
+        self.amt2 = self._data_dict.get('Amt2')
+        self._swap_sales_margin = None
+        self._dealer_code_add_info_spec = acm.FAdditionalInfoSpec['DealerCode']
+        self._manual_broker_fee = acm.FAdditionalInfoSpec['ManualBrokerFee']
+        self._trader_portfolio, self._acquirer, self._trader_acquirer = DealPostingUtils.get_b2b_portfolios(self.portfolio)
+
+
+    def validate_static_data(self):
+        """
+        This function checks the basic fields validation
+        :return: int
+        """
+        validation_result = SmartFXDealPostingMapperBase.VALID_STATIC_DATA
+        
+        if not (self.dealer and acm.FUser[self.dealer]):
+            validation_result |= SmartFXDealPostingMapperBase.INVALID_DEALER
+
+        if not self.counter_party_cif:
+            validation_result |= SmartFXDealPostingMapperBase.INVALID_COUNTERPARTY
+
+        if not (self.portfolio and acm.FPhysicalPortfolio[self.portfolio]):
+            validation_result |= SmartFXDealPostingMapperBase.INVALID_PORTFOLIO
+            
+        if self.Ccy1 == self.Ccy2:
+            validation_result |= SmartFXDealPostingMapperBase.SAME_CURRENCY
+            
+        if self.deal_type not in [SmartFXDealPostingMapperBase.DEAL_TYPE_TODAY, SmartFXDealPostingMapperBase.DEAL_TYPE_TOMORROW, SmartFXDealPostingMapperBase.DEAL_TYPE_SPOT, SmartFXDealPostingMapperBase.DEAL_TYPE_FORWARD, SmartFXDealPostingMapperBase.DEAL_TYPE_SWAP]:
+            validation_result |= SmartFXDealPostingMapperBase.INVALID_DEAL_TYPE
+            
+        if self.trade_status not in [SmartFXDealPostingMapperBase.STATUS_NEW, SmartFXDealPostingMapperBase.STATUS_AMEND, SmartFXDealPostingMapperBase.STATUS_CANCEL]:
+            validation_result |= SmartFXDealPostingMapperBase.INVALID_TRADE_STATUS
+            
+
+        return validation_result
+
+    def commit_trade(self, trade):
+        """
+        This function is base implementation to change trade before committing.
+        :param trade: Trade to change
+        :return: None
+        """
+        trade.Commit()
+        
+    def _set_counterparty(self, cif, trade):
+        """
+        This function sets counterparty on trade
+        """
+        party = acm.FParty.Select01('hostId={}'.format(cif), None)
+        if party is None:
+            party = acm.FParty['DUMMY']
+            trade.YourRef(cif)
+        trade.Counterparty(party)
+    
+    def _get_branch_from_code(self):
+        """
+        This function deduces branch code
+        """
+        ret_val = ''
+        if self.branch:
+            ch_list = acm.FChoiceList['Branch']
+            for branch in ch_list.Choices():
+                ch_name = branch.Name()
+                ch_name_split = ch_name.split('-')
+                if len(ch_name_split) > 1:
+                    ch_code = ch_name_split[0]
+                    if int(self.branch) == int(ch_code):
+                        ret_val = ch_name
+        
+        return ret_val
+        
+    def _set_additional_info_value(self, acm_obj, spec_name, value):
+        add_info_spec = acm.FAdditionalInfoSpec[spec_name]
+        if add_info_spec:
+            acm_obj.AddInfoValue(add_info_spec, value)
+            
+    
+    def _create_trade_wrapper(self, t=None):
+        if t is None:
+            t = acm.DealCapturing.CreateNewCustomTrade('FX Cash')
+        d = acm.FBusinessLogicDecorator.WrapObject(t)
+        if self.trade_status != SmartFXDealPostingMapperBase.STATUS_CANCEL:
+            d.Instrument(self.Ccy1)
+            d.Currency(self.Ccy2)
+            
+            cp = t.CurrencyPair()
+            pointValue = cp.PointValue()
+            price = None
+            if self.deal_type in [  SmartFXDealPostingMapperBase.DEAL_TYPE_SPOT, 
+                                    SmartFXDealPostingMapperBase.DEAL_TYPE_TODAY, 
+                                    SmartFXDealPostingMapperBase.DEAL_TYPE_TOMORROW,
+                                    SmartFXDealPostingMapperBase.DEAL_TYPE_SWAP]:
+                sales_margin = (float(self.io_treasury_rate)-float(self.internal_rate))/pointValue  
+                price = self.io_treasury_rate
+                if self.deal_type == SmartFXDealPostingMapperBase.DEAL_TYPE_SWAP:
+                    self._swap_sales_margin = (float(self.client_rate_swp2)-float(self.internal_rate))/pointValue  
+            elif self.deal_type == SmartFXDealPostingMapperBase.DEAL_TYPE_FORWARD:
+                sales_margin = (float(self.client_rate)-float(self.internal_rate))/pointValue
+                price = self.client_rate
+                
+            d.Quantity(float(self.amt1))
+            d.FXSalesMargin(sales_margin)
+            d.Price(price)
+        return d
+        
+    def createB2B(self, trd, far_price):
+        pLCurrency = trd.Currency()
+        salesCoverPortfolio=self._trader_portfolio
+        salesCoverAcquirer=self._trader_acquirer
+        salesCoverReferencePrice=self.internal_rate
+        salesCoverPrice=self.internal_rate
+        salesCoverFarPrice=far_price
+        
+        B2BSalesCoverConstellation = acm.FX.Back2BackSalesCoverFX(trd, pLCurrency, salesCoverPortfolio, trd.CurrencyPair(), salesCoverAcquirer, salesCoverReferencePrice, salesCoverPrice, salesCoverFarPrice)
+
+        for t in B2BSalesCoverConstellation.AllTrades():            
+            if 'Sales Cover Parent' not in t.TradeProcessesToString():
+                t.OptionalKey(None)
+                t.Status('Internal')
+                t.AddInfoValue(self._manual_broker_fee, 'Yes')
+            t.Commit()
+        
+    def process_trade(self):
+        """
+        This function process the json data and creates the trade
+        :return: None
+        """
+
+        trade = None
+        
+        try:
+            ael.poll()
+            branch_from_code = self._get_branch_from_code()
+            smartfx_deal_type = DealPostingUtils.get_deal_type_value(self.deal_type)
+            acm.BeginTransaction()
+            if self.trade_status == SmartFXDealPostingMapperBase.STATUS_AMEND or self.trade_status == SmartFXDealPostingMapperBase.STATUS_CANCEL:
+                prev_transactionId = self.deal_text.split('#')[0].strip()
+                trade = acm.FTrade.Select01("optionalKey='{}'".format(prev_transactionId), None)
+                
+                if trade is None:
+                    raise Exception('Trade with optionalKey = {}, not found.'.format(self.transaction_id))
+                    
+                trade = self._create_trade_wrapper(trade)
+                trade.OptionalKey(self.transaction_id)
+            else:
+                trade = self._create_trade_wrapper()
+                trade.Type(trade_type_enum.Enumeration('Normal'))
+                trade.OptionalKey(self.transaction_id)
+                self.deal_text = self.transaction_id + '#' + SmartFXDealPostingMapperBase.STATUS_NEW
+                
+            
+            try:
+                self._set_additional_info_value(trade, 'SmartFXReconState', DealPostingUtils.TradeReconState.AWAITED.value)                
+            except Exception:
+                pass  # If the add info not present, land here.
+            if self.trade_status == SmartFXDealPostingMapperBase.STATUS_CANCEL:
+                farleg = trade.FxSwapFarLeg()
+                trade.Status('Void Input')
+                trade.Text1(self.deal_text)
+                self.commit_trade(trade)
+                if farleg:
+                    try:
+                        self._set_additional_info_value(farleg, 'SmartFXReconState', DealPostingUtils.TradeReconState.AWAITED.value)                        
+                    except Exception:
+                        pass  # If the add info not present, land here.
+                    farleg.Status('Void Input')
+                    self.commit_trade(farleg)
+            else:
+                self._set_counterparty(self.counter_party_cif, trade)
+                trade.Acquirer(self._acquirer)
+                trade.Trader(acm.FUser[self.dealer])
+                trade.Status('Reserved')
+                
+                trade.Text1(self.deal_text)
+                trade.Portfolio(self.portfolio)  # Check portfolio object
+                trade.Broker(self.broker)
+                if self.value_day:
+                    _d, _m, _y = DealPostingUtils.validate_date_format(self.value_day)
+                    trade.ValueDay(acm.Time().DateFromYMD(int(_y), int(_m), int(_d)))
+                    trade.AcquireDay(acm.Time().DateFromYMD(int(_y), int(_m), int(_d)))
+
+                if self.trade_day:
+                    _d, _m, _y = DealPostingUtils.validate_date_format(self.trade_day)
+                    trade.TradeTime(acm.Time().DateFromYMD(int(_y), int(_m), int(_d)))
+                if branch_from_code:
+                    trade.OptKey1(branch_from_code)
+                trade.OptKey2(self._source)
+                trade.OptKey3(self.product_type)
+                
+                if smartfx_deal_type:
+                    trade.OptKey4(smartfx_deal_type)
+                
+                self._set_additional_info_value(trade, 'ClientRate', str(self.client_rate))
+                if self.buy_sell == 'S':
+                    trade.Quantity(trade.Quantity() * -1)
+
+                if self.deal_type in [  SmartFXDealPostingMapperBase.DEAL_TYPE_SPOT, 
+                                        SmartFXDealPostingMapperBase.DEAL_TYPE_TODAY, 
+                                        SmartFXDealPostingMapperBase.DEAL_TYPE_TOMORROW, 
+                                        SmartFXDealPostingMapperBase.DEAL_TYPE_FORWARD]:   
+                    trade.SetFxSpotBit()
+                    trade.AddInfoValue(self._dealer_code_add_info_spec, self.transaction_id)
+                    trade.AddInfoValue(self._manual_broker_fee, 'Yes')
+                    self.commit_trade(trade)
+                    self.createB2B(trade, trade.Price())                    
+                elif self.deal_type == SmartFXDealPostingMapperBase.DEAL_TYPE_SWAP:
+                    # Create the far leg trade
+                    self.commit_trade(trade)
+                    
+                    if self.trade_status == SmartFXDealPostingMapperBase.STATUS_AMEND:
+                        farleg = trade.FxSwapFarLeg()
+                        farleg.Status('Reserved')
+                        try:
+                            self._set_additional_info_value(farleg, 'SmartFXReconState', DealPostingUtils.TradeReconState.AWAITED.value)
+                        except Exception:
+                            pass  # If the add info not present, land here.
+                    else:
+                        counter = 1
+                        farleg = trade.Clone()
+                        farleg.SalesMargin(self._swap_sales_margin)
+                        farleg.Price(self.client_rate_swp2)
+                        farleg.OptionalKey(farleg.OptionalKey() + '_' + str(counter))
+                        '''for add_info in farleg.AddInfos():
+                            if add_info.AddInf() == self._dealer_code_add_info_spec:
+                                add_info.Delete()
+                                break'''
+                        farleg.ConnectedTrade(trade)
+                        farleg.SetFxSwapFarLegBit()
+                        self._set_additional_info_value(farleg, 'ClientRate', self.client_rate)
+                        trade.SetFxSwapNearLegBit()
+                        trade.AddInfoValue(self._dealer_code_add_info_spec, self.transaction_id)
+                        trade.AddInfoValue(self._manual_broker_fee, 'Yes')
+
+                    _d, _m, _y = self.maturity_date.split('/')
+                    farleg.ValueDay(acm.Time().DateFromYMD(int(_y), int(_m), int(_d)))
+
+                    farleg.Quantity(float(self.swap_qty))
+                    if self.buy_sell == 'B':
+                        farleg.Quantity(farleg.Quantity() * -1)
+                    
+                    self.commit_trade(trade)
+                    self.createB2B(trade, self.client_rate_swp2)
+            
+            acm.CommitTransaction()
+            trade.GroupTrdnbr(trade)
+            self.commit_trade(trade)
+        except Exception as err:
+            acm.AbortTransaction()
+            raise Exception('SmartFX Transaction Id {}. Error {}'.format(self.transaction_id, err))
+
+        return trade
+
+...
+
+  SmartFXDealPostingResponse
+"""----------------------------------------------------------------------------------------
+MODULE:
+    SmartFXDealPostingResponse : User Module for handling deal posting response
+
+DESCRIPTION: This module provides the customizable class for handling deal posting response.
+------------------------------------------------------------------------------------------"""
+import SmartFXDealPostingResponseBase
+
+
+class SmartFXDealPostingResponseAck(SmartFXDealPostingResponseBase.SmartFXDealPostingResponseBase):
+    def __init__(self, response_string=''):
+        """
+        Initialize the member variable
+        :param response_string: string
+        """
+        super(SmartFXDealPostingResponseAck, self).__init__(status='N', status_desc=response_string)
+
+
+class SmartFXDealPostingResponseNack(SmartFXDealPostingResponseBase.SmartFXDealPostingResponseBase):
+    def __init__(self, response_string):
+        """
+        Initialize the member variable
+        :param response_string: string
+        """
+        super(SmartFXDealPostingResponseNack, self).__init__(status='Y', status_desc=response_string)
+
+
+
+...
+
+  SmartFXDealPostingResponseBase
+"""-----------------------------------------------------------------------------------------------------
+MODULE
+    SmartFXDealPostingResponseBase
+
+DESCRIPTION: This module provides the base class for deal posting response.
+
+-------------------------------------------------------------------------------------------------------"""
+import json
+
+
+class SmartFXDealPostingResponseBase(object):
+    def __init__(self, status, status_desc):
+        """
+        Initialize the member variable
+        :param response_dict: dictionary containing response text
+        """
+        response_dict = {'errorCode': status, 'errorDesc': status_desc}
+        self._resp_json_object = json.dumps(response_dict)
+
+    def get_json_object(self):
+        """
+        This function returns the JSON object
+        :return: string
+        """
+        return self._resp_json_object
+
+
+
+
+
+...
+
+  SmartFXPortfolioAcquirerMapping
+"""-----------------------------------------------------------------------------------------------------
+MODULE
+    SmartFXPortfolioAcquirerMapping
+
+DESCRIPTION: This module provides the mapping for acquirer.
+
+-------------------------------------------------------------------------------------------------------"""
+TRADER_PORTFOLIO = 'TraderPortfolio'
+TRADER_ACQUIRER = 'TraderAcquirer'
+ACQUIRER = 'Acquirer'
+PORTFOLIO = 'Portfolio'
+
+# Usage: The name of the against PORTFOLIO tag corresponds to the FA portfolio. TRADER_PORTFOLIO, ACQUIRER and TRADER_ACQUIRER map the name of the correspoding fields in FA.
+#        Match against the PORTFOLIO tag will result in the the other three fields being used for B2B cover trades.
+
+PORTFOLIO_TO_ACQUIRER = [       
+                            {PORTFOLIO:'Retail FX Branch', TRADER_PORTFOLIO:'Marktra', ACQUIRER:'Mandiri TRS HO', TRADER_ACQUIRER:'Mandiri TRS HO'},
+                            {PORTFOLIO:'Wholesale FX Branch',TRADER_PORTFOLIO:'Marktra', ACQUIRER:'Mandiri TRS HO', TRADER_ACQUIRER:'Mandiri TRS HO'},
+                            {PORTFOLIO:'Banknotes Branch Settlement',TRADER_PORTFOLIO:'Banknotes Trader', ACQUIRER:'Mandiri TRS HO', TRADER_ACQUIRER:'Mandiri TRS HO'},
+                            # {PORTFOLIO:'Your portfolio name',TRADER_PORTFOLIO:'Trader Portfolio name ', ACQUIRER:'Acquirer party', TRADER_ACQUIRER:'Trader acquirer party'},
+                        ]        
+
+...
+
+}
+

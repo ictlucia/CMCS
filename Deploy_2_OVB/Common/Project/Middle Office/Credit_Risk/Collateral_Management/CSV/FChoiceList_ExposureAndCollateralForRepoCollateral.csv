@@ -1,0 +1,9 @@
+CHOICELIST,,,,/CHOICELIST
+DESCRIPTION,ENTRY,LIST,SORT_ORDER,
+GMRA Indonesia: Clean Price Methodology,GMRA Indonesia: Clean Price Methodology,Collateral Value Calculation,1,
+GMRA Indonesia: Dirty Price Methodology,GMRA Indonesia: Dirty Price Methodology,Collateral Value Calculation,2,
+GMRA International: Dirty Price Method,GMRA International: Dirty Price Method,Collateral Value Calculation,3,
+Exposure value = Repo End Cash Value,GMRA Indonesia,Exposure Calculation,3,
+Exposure Value = Repo Start Cash Value,GMRA Int.- Purchase Price Method,Exposure Calculation,4,
+EV = Start Cash + Outstanding Accrued,GMRA Int.- Purchase Price + Accr Method,Exposure Calculation,5,
+Exposure Value = Repo End Cash Value,GMRA Int.- Repurchase Price Method,Exposure Calculation,6,

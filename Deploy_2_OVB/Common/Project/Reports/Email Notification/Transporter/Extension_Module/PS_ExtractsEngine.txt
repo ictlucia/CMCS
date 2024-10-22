@@ -1,0 +1,911 @@
+#
+# Front Arena exported extension module.
+# source          ""
+# timestamp (utc) "2024-01-23 11:19:27.5"
+# ***** DO NOT EDIT! *****
+#
+name        "PS_ExtractsEngine"
+description "$Id$"
+
+groups {
+}
+
+decls[FParameters] {
+}
+
+clx FObject [FParameters] {
+  Generic Params =
+  email_pwd=0yGtl2v8
+  email_template={'''BO21_BO22_MarkToMarketNasabah''':'''<html> <body> <p align=center><u>Valuation of Outstanding Transaction as of #DATE_VAR#</u></p>  <p style='font-family: arial;font-size:12pt;font-weight: normal'>This is valuation advice of Outstanding Transaction between PT Bank Mandiri (Persero) Tbk and Client. The Valuation, include accrued interest (if any), is viewed from Client's perspective.</p>  <p>#REPORT#</p> <p style='font-family: arial;font-size:12pt;font-weight: normal'>The Valuation as of the valuation date indicates and represents an estimated valuation derived from market quotations or from proprietary models that take into consideration estimates about relevant present and future market conditions, as well as the size and liquidity of the position and any related actual or potential hedging transactions. The information is derived from sources believed to be reliable, nevertheless we do not presume any responsibility to independently verify the same. Valuation based upon other models or assumptions or calculated as of another date and time may yield significantly different results. The Valuation is provided for information purposes only as an accommodation without charge and intended solely for your expediency.</p><p style='font-family: arial;font-size:12pt;font-weight: normal'>We expressly disclaim any responsibility for (1) the accuracy of the models, market data input into such models or estimates used in deriving the Valuation, () any errors or omissions in computing or disseminating the Valuation and (ii) any uses to which the Valuation is put.</p><p style='font-family: arial;font-size:12pt;font-weight: normal'>Further, the Valuation does not represent (1) the actual prices at which new transactions could be entered into, (i) the actual prices at which the existing transaction could be liquidated or unwound or () an estimated amount that would be paid following the early termination date of any transactions.</p><p style='font-family: arial;font-size:12pt;font-weight: normal'>Yours faithfully,</p><p style='font-family: arial;font-size:12pt;font-weight: normal'>PT Bank Mandiri (Persero) Tbk.</p></body> </html>'''}
+  email_user=ntcsovb_dev
+
+
+}
+
+decls[FPythonCode] {
+}
+
+clx FObject [FPythonCode] {
+  FTPEngine
+
+""" A generic FTP class. Usage:
+
+        import FTPEngine
+
+        MyFtp = FTPEngine.downloader(server, user, passw)
+        res = MyFtp.get('*.zip', 'C:\\MyDownloads')
+
+        MyFtp = FTPEngine.uploader(server, user, passw)
+        res = MyFtp.put('myFile.zip', 'home/MyUownloads')
+
+"""
+
+from io import StringIO
+from ftplib import FTP
+import os, os.path, time
+import glob
+from subprocess import Popen, PIPE
+import smtplib
+import mimetypes
+from email import encoders
+from email.mime.base import MIMEBase
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+import FLogger, acm
+import FReportUtils as utils
+import ast
+
+# from Common import getCustomerName
+
+logger = FLogger.FLogger.GetLogger('FAReporting')
+
+
+# ------------------------------------------------------
+
+
+class baseftp(object):
+    def __init__(self, server, user, passw):
+
+        self.server = server
+        self.user = user
+        self.passw = passw
+
+        self.retries = 3
+        self.delay = 5
+        self.timeout = 20
+
+        self._connect()
+
+    def _connect(self):
+        try:
+            self.ftp = FTP(self.server, self.user, self.passw, '', self.timeout)
+            return 1
+        except Exception as e:
+            logger.ELOG('Cannot connect to %s!' % self.server)
+            logger.ELOG(e)
+            self.ftp = None
+            return 0
+
+    def _get(self, dest, y):
+        if not self.ftp:
+            logger.ELOG('No connection...')
+            return
+        logger.LOG(' - Downloading %s...' % y)
+        namefi = "%s\%s" % (dest, y)
+        nfi = open(namefi, "wb")
+        try:
+            self.ftp.retrbinary("RETR " + y, nfi.write)
+            nfi.close()
+            logger.LOG('Done!')
+            return 1
+        except Exception as e:
+            logger.ELOG('Failed!')
+            logger.ELOG(e)
+            try:
+                nfi.close()
+                os.remove(namefi)
+            except:
+                pass
+            return 0
+
+    def _put(self, source, destDir, dest=None):
+        if not self.ftp:
+            logger.ELOG('No connection...')
+            return
+
+        if not dest: dest = os.path.basename(source)
+        logger.LOG(' - Uploading %s to %s...' % (source, destDir))
+
+        try:
+            try:
+                self.ftp.cwd(destDir)
+            except:
+                pass
+            f = open(source, 'rb')
+            self.ftp.storbinary("STOR " + dest, f, 1024)
+            f.close()
+            logger.LOG('Done!')
+            return 1
+        except Exception as e:
+            logger.ELOG('Failed!')
+            logger.ELOG(e)
+            try:
+                f.close()
+            except:
+                pass
+            return 0
+
+
+# -----------------------------------------------------------------
+
+class uploader(baseftp):
+    def put(self, source, destDir):
+
+        count = 0
+        while count < self.retries:
+            if count: logger.LOG('Retrying ....')
+            if (super(uploader, self)._put(source, destDir)): return 1
+            time.sleep(self.delay)
+            count += 1
+        return 0
+
+
+class downloader(baseftp):
+
+    def get(self, mask, dest, excluded=[]):
+        """ Takes the following params:
+             - mask - a filter for remote files, eg: *.zip
+             - dest - the local path where the files go.
+             - excluded -  a list of file names to skip.
+
+            Returns 1 if successful, 0 if some files failed
+        """
+        if not self.ftp:
+            logger.ELOG('No connection...')
+            return
+
+        count = 0
+        self.files = self.ftp.nlst(mask)
+        if not self.files or not len(self.files):
+            logger.ELOG('No files match the %s mask.' % mask)
+            return 1
+
+        errFiles = []
+        if not os.path.isdir(dest): os.mkdir(dest)
+        for y in self.files:
+            if y in excluded: continue
+            if not self._get(dest, y):
+                errFiles.append(y)
+            else:
+                count += 1
+
+        if len(errFiles):
+            for ii in range(self.retries):
+                time.sleep(self.delay)
+                logger.ELOG('----- Retrying failed files: attempt %s -----' % (ii + 1))
+                self.ftp.close()
+                if not self._connect(): continue
+                nerr = []
+                for z in errFiles:
+                    if not self._get(dest, z):
+                        nerr.append(z)
+                    else:
+                        count += 1
+                if len(nerr):
+                    errFiles = nerr
+                else:
+                    break
+
+        if not count: logger.LOG('No files downloaded.')
+
+        if len(errFiles): return 0
+        return 1
+
+
+# -------------------------------------------------
+
+def Encrypt(inputName, outputName, recipient, gpgpath, signature=None):
+    """Encrypt a file"""
+    try:
+        os.remove(outputName)
+    except OSError:
+        pass
+    cmd = r'"%s" -a -o "%s" ' % (gpgpath, outputName)
+    if recipient:
+        cmd += '-r "%s" -e ' % (recipient)
+    if signature:
+        cmd += '--default-key %s --sign ' % (signature)
+    cmd += '"%s"' % inputName
+
+    handle = Popen(cmd, stdout=PIPE, stderr=PIPE)
+    if handle.returncode:
+        for line in (handle.communicate())[1].readlines():
+            logger.LOG(line.strip())
+        raise Exception("Encryption failed!")
+
+
+def SendEmail(address, sender, subject, body, smtpServer, filePath, *rest):
+    if not smtpServer:
+        smtpServer = acm.GetCalculatedValue(0, acm.GetDefaultContext().Name(), 'mailServerAddress').Value()
+
+    if not smtpServer:
+        logger.WLOG('No mail server address specified!\n Please specify your mail server name or IP address!')
+
+    # Get email user and password for authentication
+    extension = utils.GetParameterValues(name='Generic Params')
+    user = extension.get("email_user", '')
+    pwd = extension.get('email_pwd', '')
+
+    msg = MIMEMultipart()
+    msg['Subject'] = subject
+
+    msg['From'] = sender
+    msg['To'] = address
+    msg.preamble = 'Reports created.'
+
+    msg.attach(MIMEText(body, 'plain'))
+
+    if os.path.isfile(filePath):
+        fileName = os.path.basename(filePath)
+        ctype, encoding = mimetypes.guess_type(filePath)
+        if ctype is None or encoding is not None:
+            # No guess could be made, or the file is encoded (compressed), so
+            # use a generic bag-of-bits type.
+            ctype = 'application/octet-stream'
+        maintype, subtype = ctype.split('/', 1)
+        if maintype == 'text':
+            fp = open(filePath)
+            # Note: we should handle calculating the charset
+            attFile = MIMEText(fp.read(), _subtype=subtype)
+            fp.close()
+        else:
+            fp = open(filePath, 'rb')
+            attFile = MIMEBase(maintype, subtype)
+            attFile.set_payload(fp.read())
+            fp.close()
+            # Encode the payload using Base64
+            encoders.encode_base64(attFile)
+        attFile.add_header('Content-Disposition', 'attachment', filename=fileName)
+        msg.attach(attFile)
+
+    try:
+        server = smtplib.SMTP(smtpServer)
+        
+        #for TLS connection
+        server.ehlo()
+        server.starttls()
+        
+        #Baic Authentication
+        if user and pwd:
+            server.login(user, pwd)
+        else:
+            logger.ELOG("Email user and password are not set for authentication")
+        server.sendmail(sender, address.split(','), msg.as_string())
+        server.quit()
+        logger.LOG('Mail sent to: %s' % address)
+    except:
+        logger.ELOG('Failed sending email.')
+
+
+def SendEmailWithTemplate(address, sender, subject, body, smtpServer, filePath, *rest):
+    from lxml import html
+    import InterfaceUtils
+
+    def add_css_inline(filePath):
+        """
+        This function merges the linked CSS file into the html string to make it inline
+        :param filePath: html file path
+        :return: node
+        """
+        html_file_str = open(filePath).read()
+        html_tree = html.fromstring(html_file_str)
+        css_link = html_tree.findall(".//link")[0]
+        css_file_name = css_link.attrib.get('href')
+        css_file_path = os.path.join(os.path.dirname(filePath), css_file_name)
+        style_tag = html.Element("style")
+        css_link.addnext(style_tag)
+        style_tag.text = open(css_file_path).read()
+        html_tree.remove(css_link)
+        return html_tree
+
+    def process_template(inline_html_tree, email_template_html):
+        """
+        This function parses the template html and inserts the inline html into it. 
+        :param inline_html_tree: report html with inline css
+        :param email_template_html: template html
+        :return: node
+        """
+        email_template_html = email_template_html.replace('#DATE_VAR#',InterfaceUtils.date_from_datetime(acm.Time.DateToday(), format_str='%m %d, %Y'))
+        template_tree = html.fromstring(email_template_html)
+        body_root = template_tree.find("body")
+        for para in body_root.findall(".//p"):
+            if para.text == '#REPORT#':
+                para.addnext(inline_html_tree)
+                body_root.remove(para)
+                break
+
+        return template_tree
+
+    def get_template_html(filename1, email_template):
+        """
+        This function extracts the email template  from the parameter dict
+        :param filename1: Name of the report
+        :param email_template: parameter dictionary
+        :return: string
+        """
+        try:
+            email_template_html = None
+            template_dict_key = filename1.split('.')[0]
+            if len(template_dict_key) > 6:
+                template_dict_key = template_dict_key[:-6]
+                email_template_html = email_template.get(template_dict_key)
+        except Exception as err:
+            import traceback
+            print(traceback.format_exc())
+        
+
+        return email_template_html
+
+    if not smtpServer:
+        smtpServer = acm.GetCalculatedValue(0, acm.GetDefaultContext().Name(), 'mailServerAddress').Value()
+
+    if not smtpServer:
+        logger.WLOG('No mail server address specified!\n Please specify your mail server name or IP address!')
+
+    # Get email user, password and template html for authentication
+    extension = utils.GetParameterValues(name='Generic Params')
+    user = extension.get("email_user", '')
+    pwd = extension.get('email_pwd', '')
+    email_template = ast.literal_eval(extension.get('email_template', ''))
+    filename1 = os.path.basename(filePath)
+    template_html = get_template_html(filename1, email_template)
+    if template_html:
+        if os.path.isfile(filePath):
+            filename1 = os.path.basename(filePath)
+            try:
+                html_tree = add_css_inline(filePath)
+                processed_template_tree = process_template(html_tree, template_html)
+                processed_html = html.tostring(processed_template_tree).decode()
+
+                msg = MIMEMultipart()
+                msg['Subject'] = subject
+
+                msg['From'] = sender
+                msg['To'] = address
+                msg.preamble = 'Reports created.'
+                
+                msg.attach(MIMEText(processed_html, 'html'))
+                server = smtplib.SMTP(smtpServer)
+                #for TLS connection
+                server.ehlo()
+                server.starttls()
+                
+                #Basic Authentication
+                if user and pwd:
+                    server.login(user, pwd)
+                else:
+                    logger.ELOG("Email user and password are not set for authentication")
+                    
+                server.sendmail(sender, address.split(','), msg.as_string())
+                server.quit()
+                logger.LOG('Mail sent to: %s' % address)
+            except Exception as err:
+                logger.ELOG('Failed sending email. {}'.format(err))
+    else:
+        SendEmail(address, sender, subject, body, smtpServer, filePath, *rest)
+
+...
+
+  PostProcess
+"""
+The hook function is postProc()
+"""
+
+import ael, acm
+
+import FLogger
+
+import tempfile
+import time
+import FTPEngine as util
+import os.path
+
+logger = FLogger.FLogger.GetLogger('FAReporting')
+
+
+def saveAddInfo(spec, rec, val):
+    ai = acm.FAdditionalInfo.Select01("recaddr = %s and addInf = %s" % (rec.Oid(), spec.Oid()), "")
+    if not ai:
+        ai = acm.FAdditionalInfo(recaddr=rec.Oid(), addInf=spec.Oid())
+    ai.FieldValue(val)
+    ai.Commit()
+
+
+class postHandler(object):
+    def __init__(self, report):
+        self.report = report
+        self.params = report.params
+
+        self.dict = report.params.guiParams
+        tmpDir = tempfile.gettempdir()
+        if len(report.generatedFilePaths) > 1:
+            self.filePath = report.generatedFilePaths[1]
+            self.fileName = os.path.basename(self.filePath)
+        else:
+            self.filePath = report.generatedFilePaths[0]
+            self.fileName = os.path.basename(self.filePath)
+
+        self.tempPath = os.path.join(tmpDir, self.fileName + '.gpg')
+
+    def doSignEncrypt(self):
+        if not self.dict['useEncryption']: return
+        gpgPath = self.dict['gpgPath']
+        if (not gpgPath) or (not len(gpgPath.strip())):
+            raise Exception('Path to gpg not specified!')
+
+        signatureKey = self.dict['signatureKey']
+        encryptionUser = self.dict['encryptionUser']
+
+        util.Encrypt(self.filePath, self.tempPath, encryptionUser, gpgPath, signatureKey)
+        self.filePath = self.tempPath
+        logger.LOG("Finished encryption.")
+
+    def doFTP(self):
+        if not self.dict['useFTP']: return
+        ftpLocation = self.dict['ftpLocation']
+        logger.LOG('Sending file %s via FTP to %s' % (self.filePath, ftpLocation))
+        ftp = util.uploader(ftpLocation, self.dict['ftpUsername'], self.dict['ftpPassword'])
+        if not ftp.put(self.filePath, self.dict['ftpDirectory']): raise Exception("File FTP failed")
+
+    def doSFTP(self):
+        if not self.dict['useSFTP']: return
+        sftpLocation = self.dict['sftpLocation']
+        sftpPort = self.dict['sftpPort']
+        logger.LOG('Sending file %s via SFTP to %s:%d' % (self.filePath, sftpLocation, sftpPort))
+        import pysftp
+        srv = pysftp.Connection(sftpLocation, username=self.dict['sftpUsername'], password=self.dict['sftpPassword'],
+                                port=sftpPort)
+        srv.chdir(self.dict['sftpDirectory'])
+        srv.put(self.filePath)
+        srv.close()
+
+    def doEmail(self):
+        dict = self.dict
+
+        # if not dict['markAsSent']: return
+        field = dict['addInfoName']
+        val = dict['addInfoValue']
+
+        if not self.dict['sendEmail']: return
+        email = self.dict['emailAddress']
+        logger.LOG('Sending e-mail to %s' % email)
+        subject = self.dict['extractName']
+
+        # mesgs = logger.GetAllMessages()
+        mesgs = ['Dear All', 'Please find the attached {} report.'.format(subject), 'Thanks']
+        # body = 'Dear all, ter  lampir outstanding MM per 04-04-2023'
+        body = ''
+
+        for mesg in mesgs:
+            body = body + '\n' + mesg
+            # util.SendEmail(email, self.dict['senderAddress'], subject, body, self.dict['smtpServer'], self.filePath)
+        util.SendEmailWithTemplate(email, self.dict['senderAddress'], subject, body, self.dict['smtpServer'], self.filePath)
+
+    def doMark(self):
+
+        dict = self.dict
+
+        if not dict['markAsSent']: return
+        field = dict['addInfoName']
+        val = dict['addInfoValue']
+
+        for grid in self.report.reportGrids:
+            iter = grid.GridBuilder().RowTreeIterator()
+            x = iter.FirstChild()
+            if x:
+                if '%s' % x.Tree().Item().ClassName() in ('FPortfolioInstrumentAndTrades', 'FStoredASQLQuery'):
+                    x = x.FirstChild()
+                logger.LOG('Setting %s to "%s"' % (field, val))
+                ais = acm.FAdditionalInfoSpec[field]
+                if not ais: raise Exception("Additional Info %s does not exist" % field)
+                while x:
+                    item = x.Tree().Item()
+                    if '%s' % item.ClassName() == 'FTradeRow':
+                        y = item.Trade()
+                    elif '%s' % item.ClassName() == 'FSingleInstrumentAndTrades':
+                        y = item.Instrument()
+                    else:
+                        raise Exception("Unsupported row type: %s" % item.ClassName())
+                    saveAddInfo(ais, y, val)
+                    x = x.NextSibling()
+
+
+# ====================================================================
+
+
+def postProc(x, *rest):
+    try:
+        h = postHandler(x)
+        h.doSignEncrypt()
+        h.doFTP()
+        h.doSFTP()
+        print("Sending Email...")
+        h.doEmail()
+        print("Email sent.")
+        h.doMark()
+    except Exception as e:
+        logger.ELOG('There were problems.')
+        logger.ELOG(e)
+    logger.LOG('Finished.')
+
+
+...
+
+}
+
+decls[FXSLTemplate] {
+  "EmailNotifocation_FXSLTemplate" ( "aef reporting.print templates" "aef reporting.secondary templates" "aef reporting.secondary templates xls" ) "";
+}
+
+clx FObject [FXSLTemplate] {
+  EmailNotifocation_FXSLTemplate
+<?xml version='1.0'?>
+<!-- &copy; Copyright 2011 SunGard FRONT ARENA
+       FStandardTemplate is able to produce colored output for RiskMatrixSheets when DefaultData is turned on
+       Added support for Transhist output
+-->
+<!DOCTYPE xsl:stylesheet [
+    <!ENTITY nbsp "<xsl:text>&#160;</xsl:text>">
+]>
+<xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
+<xsl:param name="clickable" select="0"/>
+<xsl:param name="autoupdate" select="0"/>
+<xsl:output method="html"/>
+<xsl:variable name="cellWidth" select="80"/>
+<xsl:variable name="rowHeaderWidth" select="250"/>
+<xsl:variable name="useLabelColumn" select="//PRIMEReport/Type !='ASQL Table'"/>
+
+<xsl:template name="PrintSpaces">
+  <xsl:param name="n" select="0"/>
+  <xsl:if test="$n > 0">
+    <xsl:call-template name="PrintSpaces">
+      <xsl:with-param name="n" select="$n - 1" />
+    </xsl:call-template>
+    &nbsp;
+  </xsl:if>
+</xsl:template>
+
+<xsl:template match="ReportContents">
+     <xsl:apply-templates select="Table"/>
+</xsl:template>
+
+<xsl:template match="Table">
+    
+    <xsl:variable name="numberOfColumns" select="NumberOfColumns"/>
+
+    <xsl:variable name="colorStep" >
+        <xsl:choose>
+                <xsl:when test="(Type = 'RiskMatrixSheet') and current()//DefaultData">
+                    <xsl:variable name="maxvalue">
+                        <xsl:call-template name="max">
+                                <xsl:with-param name="nodes" select="current()//DefaultData"/>
+                        </xsl:call-template>
+                    </xsl:variable>
+                    <xsl:value-of select="$maxvalue div 255" ></xsl:value-of>
+                </xsl:when>
+                <xsl:otherwise>0</xsl:otherwise>
+        </xsl:choose>
+    </xsl:variable>
+
+    <table width="{$numberOfColumns * ($cellWidth + 4) + $rowHeaderWidth + 6}" border="1px solid black">
+        <tr class="tblhdr" border="1px solid black">
+           <xsl:if test="$useLabelColumn">
+            <td width="{$rowHeaderWidth}">&nbsp;</td>
+            </xsl:if>
+            <xsl:for-each select="Columns/Column">
+                <xsl:choose>
+                <xsl:when test="TemplateId != ''">
+                    <td width="{$cellWidth * 2}" style="background-color : #ecf576"><b>
+                    <xsl:value-of select="TemplateId"/><br />
+                    <xsl:value-of select="Label"/>
+                    </b></td>
+                </xsl:when>
+                <xsl:otherwise>
+                    <td width="{$cellWidth}" style="background-color : #ecf576"><b><xsl:value-of select="Label"/></b></td>
+                </xsl:otherwise>
+                </xsl:choose>
+            </xsl:for-each>
+        </tr>
+        <xsl:apply-templates select="Rows/Row">
+            <xsl:with-param name="treeDepth" select="1"/>
+            <xsl:with-param name="colorStep" select="$colorStep"/>
+        </xsl:apply-templates>
+    </table>
+    <p/><p/>
+</xsl:template>
+
+<xsl:template match="Row">
+    <xsl:param name = "treeDepth"/>
+    <xsl:param name = "colorStep"/>
+    <xsl:variable name="rwId" select="RowId"/>
+    <tr class="{concat('cell', $treeDepth)}" depth="{$treeDepth}" border="1px solid black">
+        <xsl:if test="$useLabelColumn">
+                <td class="row">
+                <xsl:call-template name="PrintSpaces">
+                        <xsl:with-param name="n" select="($treeDepth - 1) * 6"/>
+                </xsl:call-template>
+                <xsl:if test="$clickable = '1'">
+                        <img src="report_plus.gif"/>
+                </xsl:if>
+                <xsl:value-of select="Label"/>
+                </td>
+        </xsl:if>
+    <xsl:apply-templates select="Cells/Cell">
+        <xsl:with-param name="colorStep" select="$colorStep" />
+    </xsl:apply-templates>
+    </tr>
+    <xsl:if test="ancestor::ReportContents/ChildReports/ChildReport[ChildReportId = $rwId]">
+        <xsl:apply-templates select="ancestor::ReportContents/ChildReports/ChildReport[ChildReportId = $rwId]/PRIMEReport/ReportContents/Table" mode="ChildReport">
+            <xsl:with-param name="treeDepth" select="$treeDepth +1" />
+        </xsl:apply-templates>
+    </xsl:if>
+    <xsl:apply-templates select="Rows/Row">
+        <xsl:with-param name="treeDepth" select="$treeDepth + 1" />
+        <xsl:with-param name="colorStep" select="$colorStep" />
+    </xsl:apply-templates>
+</xsl:template>
+
+<xsl:template match="Cell">
+    <xsl:param name = "colorStep"/>
+    <td>
+         
+         <xsl:choose>   
+            
+            <xsl:when test="Appearance">
+                <xsl:attribute name="style">
+                
+                         <xsl:choose>     
+                            <xsl:when test="Appearance/BkgColor">
+                                    background-color: <!--rgb( 0, 255 ,255 )-->
+                                        <xsl:call-template name="rgbfromint">
+                                            <xsl:with-param name="rgbintval" select="Appearance/BkgColor"/>  
+                                         </xsl:call-template>
+                                         
+                            </xsl:when>
+                            <xsl:otherwise>
+                                background-color: white
+                            </xsl:otherwise>
+                         </xsl:choose>    
+                         
+                        <xsl:choose>   
+                            <xsl:when test="Appearance/TextColor">
+                                    ;color: <!--rgb( 255, 0 ,255 )-->
+                                           <xsl:call-template name="rgbfromint">
+                                            <xsl:with-param name="rgbintval" select="Appearance/TextColor"/>  
+                                         </xsl:call-template>
+                            </xsl:when>
+                            <xsl:otherwise>
+                               ;color: black
+                            </xsl:otherwise>
+                        </xsl:choose>   
+                
+                </xsl:attribute>   
+            </xsl:when>
+            
+            <xsl:otherwise>
+                <xsl:if test="DefaultData and $colorStep > 0 and string(number(DefaultData)) !='NaN'">
+                        <xsl:attribute name="style">background-color:
+                                <xsl:call-template name="color">
+                                        <xsl:with-param name="colorStep" select="$colorStep"/>
+                                        <xsl:with-param name="value" select="DefaultData"/>
+                                        
+                                </xsl:call-template>
+                        </xsl:attribute>
+                </xsl:if>
+            </xsl:otherwise>
+            
+        </xsl:choose>
+        <xsl:choose>
+                <xsl:when test="ValueType and DefaultData">
+                        <acronym>
+                                <xsl:attribute name="title">
+                                        <xsl:value-of select="DefaultData"/>
+                                </xsl:attribute>
+                        <xsl:call-template name="CellData" />
+                        </acronym>
+                </xsl:when>
+                <xsl:otherwise>
+                        <xsl:call-template name="CellData" />
+                </xsl:otherwise>
+        </xsl:choose>
+    </td>
+</xsl:template>
+
+<xsl:template name="CellData">
+        <xsl:choose>
+             
+            <xsl:when test="FormattedData">
+                <xsl:value-of select="FormattedData"/>
+            </xsl:when>
+            <xsl:when test="RawData">
+                <xsl:choose>
+                    <xsl:when test ="contains(RawData, 'http:') or contains(RawData, 'https:')">
+                        <xsl:value-of select="RawData " disable-output-escaping="yes"/>
+                    </xsl:when>
+                    <xsl:otherwise>
+                        <xsl:value-of select="RawData"/>
+                    </xsl:otherwise>
+                </xsl:choose>
+            </xsl:when>
+            <xsl:when test="DefaultData">
+                <xsl:choose>
+                        <xsl:when test="ValueType">
+                                <xsl:text>#</xsl:text>
+                        </xsl:when>
+                        <xsl:otherwise>
+                                <xsl:value-of select="DefaultData"/>
+                        </xsl:otherwise>
+                </xsl:choose>
+            </xsl:when>
+            <xsl:otherwise>
+                  <xsl:message terminate="yes"><xsl:text>No dataformat turned on</xsl:text></xsl:message>
+            </xsl:otherwise>
+            
+        </xsl:choose>
+</xsl:template>
+
+<xsl:template match="Settings">
+    <table border="1px solid black">
+    <tr border="1px solid black">
+        <xsl:for-each select="Groups/Group">
+            <xsl:if test="Label = 'Profit/Loss'">
+                <tr class="tblhdr" border="1px solid black">
+                <xsl:for-each select="Column">
+                    <td class="row" width="{$cellWidth}" style="background-color : #ecf576"><b>
+                    <xsl:choose>
+                        <xsl:when test="Label != ''">
+                            <xsl:value-of select="Label"/>
+                        </xsl:when>
+                        <xsl:otherwise>
+                             <xsl:value-of select="ColumnId"/>
+                        </xsl:otherwise>
+                    </xsl:choose>
+                    </b></td>
+                </xsl:for-each>
+                </tr>
+                <tr class="row" depth="1" border="1px solid black">
+                <xsl:for-each select="Cell">
+                    <td class="cell1">
+                        <xsl:call-template name="CellData" />
+                    </td>
+                </xsl:for-each>
+                </tr>
+
+            </xsl:if>
+        </xsl:for-each>
+        </tr>
+    </table>
+    <p/><p/>
+</xsl:template>
+
+<xsl:template match="/">
+    <html>
+        <head>
+        <xsl:if test="$autoupdate = '1'">
+                <meta http-equiv="REFRESH" content="10"></meta>
+        </xsl:if>
+        </head>
+        <insertcss/>
+        <body>
+         <p class="headerImage">
+            <headerImage/>
+        </p>
+        
+        <xsl:if test="$clickable = '1'">
+                <xsl:attribute name="onload">init()</xsl:attribute>
+                <script src="portfolio_report.js" type="text/javascript"></script>
+        </xsl:if>
+
+        <!-- Table of contents, only viewed if more than one report -->
+
+        <xsl:if test="/MultiReport">
+            <table>
+                <xsl:for-each select="/MultiReport/PRIMEReport">
+                        <tr><td>
+                            <!--<td><xsl:value-of select="Type"/></td>-->
+                            <td><xsl:value-of select="Name"/></td>
+                            <td><xsl:value-of select="substring(LocalTime,1,10)"/></td>
+                        </td></tr>
+               </xsl:for-each>
+            </table>
+        </xsl:if>
+        
+
+        <!-- Reports - ORIGINAL CODE-->
+        <xsl:for-each select="/MultiReport/PRIMEReport|/PRIMEReport">
+            <h3>
+                <!--<xsl:value-of select="Type"/>:&nbsp;--><!--ORIGINAL LINE-->
+                <xsl:value-of select="Name"/>&nbsp;
+                <br><xsl:value-of select="substring(LocalTime,1,10)"/></br>
+                <!--<xsl:value-of select="concat(substring(LocalTime,1,10),' ',substring(LocalTime,12,8),' (UTC', substring(LocalTime,20,6),')')"/>-->
+             </h3>
+
+             <xsl:apply-templates select="current()/ReportContents"/>
+        </xsl:for-each>
+        </body>
+    </html>
+</xsl:template>
+
+<!-- derived from http://www.exslt.org/math/functions/max/index.html -->
+<xsl:template name="max">
+   <xsl:param name="nodes" select="/.." />
+   <xsl:choose>
+      <xsl:when test="not($nodes)">0</xsl:when>
+      <xsl:otherwise>
+         <xsl:for-each select="$nodes">
+            <xsl:sort select="translate(.,'-','')" data-type="number" order="descending" />
+            <xsl:if test="position( ) = 1">
+               <xsl:value-of select="number(translate(.,'-',''))" />
+            </xsl:if>
+         </xsl:for-each>
+      </xsl:otherwise>
+   </xsl:choose>
+</xsl:template>
+
+<xsl:template name="color">
+   <xsl:param name="value"/>
+   <xsl:param name = "colorStep"/>
+   <xsl:variable name="rgbval">
+       <xsl:choose>
+          <xsl:when test="$value > 0" >
+            <xsl:value-of select="255 - round($value div $colorStep)"/>
+        </xsl:when>
+        <xsl:otherwise>
+            <xsl:value-of select="255 - round($value div $colorStep * -1)"/>
+        </xsl:otherwise>
+       </xsl:choose>
+
+   </xsl:variable>
+   <xsl:choose>
+        <xsl:when test="$value > 0 and $rgbval &lt; 0">
+            <xsl:text>rgb(255,0,0)</xsl:text>
+            </xsl:when>
+        <xsl:when test="$value &lt; 0 and $rgbval &lt; 0">
+            <xsl:text>rgb(0,255,0)</xsl:text>
+            </xsl:when>
+        <xsl:when test="$value > 0">
+            <xsl:value-of select="concat('rgb(',$rgbval,',255,',$rgbval,')')"/>
+            </xsl:when>
+      <xsl:otherwise>
+            <xsl:value-of select="concat('rgb(255,',$rgbval,',',$rgbval,')')"/>
+      </xsl:otherwise>
+   </xsl:choose>
+</xsl:template>
+
+<xsl:template name="rgbfromint">
+        <xsl:param name="rgbintval"/>
+        
+        <xsl:variable name="redval">
+                <xsl:value-of select="$rgbintval mod 256"/>
+        </xsl:variable>
+        <xsl:variable name="newvalue">
+                <xsl:value-of select="floor($rgbintval div 256)"/>
+        </xsl:variable>
+        <xsl:variable name="greenval">
+                <xsl:value-of select="$newvalue mod 256"/>
+        </xsl:variable>
+        <xsl:variable name="blueval">
+                <xsl:value-of select="floor($newvalue div 256)"/>
+        </xsl:variable>
+        
+        <xsl:value-of select="concat( 'rgb(',  $redval,  ',',   $greenval,    ',',   $blueval,  ')'    )"/>
+        
+        
+</xsl:template>
+
+</xsl:stylesheet>
+
+...
+
+}
+

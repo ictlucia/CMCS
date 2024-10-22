@@ -1,0 +1,6 @@
+CONTEXTLINK,,,,,,,,,,,,,,/CONTEXTLINK
+CONTEXT_SEQNBR.NAME,ATTRIBUTE0,ATTRIBUTE_TYPE0,CURR.EXTERN_ID1,CURR.INSID,DISC_TYPE_CHLNBR.ENTRY,DISC_TYPE_CHLNBR.LIST,GROUP_CHLNBR.ENTRY,GROUP_CHLNBR.LIST,INSADDR.EXTERN_ID1,INSADDR.INSID,MAPPING_TYPE,NAME,TYPE,
+Global,Bond,Instrument Type,,,,,,,,,Attribute1,Theoretical Equals Market,Price Base,
+Global,MBS/ABS,Instrument Type,,,,,,,,,Attribute1,Theoretical Equals Market,Price Base,
+Global,FRN,Instrument Type,,,,,,,,,Attribute1,Theoretical Equals Market,Price Base,
+Global,Bill,Instrument Type,,,,,,,,,Attribute1,Theoretical Equals Market,Price Base,

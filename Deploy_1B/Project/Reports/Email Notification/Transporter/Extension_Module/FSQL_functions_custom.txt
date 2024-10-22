@@ -1,0 +1,159 @@
+#
+# Front Arena exported extension module.
+# source          ""
+# timestamp (utc) "2023-08-11 04:36:40"
+# ***** DO NOT EDIT! *****
+#
+name        "FSQL_functions_custom"
+description "$Id$"
+
+groups {
+}
+
+decls[FPythonCode] {
+}
+
+clx FObject [FPythonCode] {
+  FSQL_functions_custom
+"""------------------------------------------------------------------------------------------------------------
+MODULE 
+       FSQL_functions_custom_template - This is a drop in python module to activate custom ASQL routines.
+	   
+       To activate: rename to FSQL_functions_custom
+
+    (c) Copyright 2010-2015 by Sungard FRONT ARENA. All rights reserved.
+    (c) Copyright 2016-     by FIS. All rights reserved.
+
+---------------------------------------------------------------------------------------------------------------
+
+    VERSION: %R%
+
+    If used in conjunction with FSQL_functions which loads this module correctly,
+    there is no need for module name in the query:
+    
+    select u.name, 
+           myfunction(u.name,' This ','is ','concatenated') 'custom'
+     from user u
+
+    instead of:
+
+    select u.name, 
+           FSQL_functions_custom.myfunction(u.name,' This ','is ','concatenated') 'custom'
+     from user u
+	 
+    In FSQL_functions_custom customers can define own functions to be used from ASQL.
+    An example function which can use dynamic parameters:
+	 
+    @LogException(__name__)
+    @ASQLfunction
+    def rtrim(strg,char=None):
+        ''' Right TRIM. Trims all the occurrences of any one of a set of characters from the right. rtrim(string[, char])'''
+        return str(strg).rstrip(char)
+
+"""
+from FSQL_functions_tools import LogException, ASQLfunction
+from ArenaFunctionBridge import fx_rate
+import acm, ael
+
+daysBetween = acm.GetFunction('days_between', 4)
+
+@LogException(__name__)
+@ASQLfunction
+def isBankNoteCurr(trade, *rest):
+    """ Function to check the value of addinfo <BankNoteCurr> on currency pair. """
+    addinfo_spec_name = 'BankNoteCurr'
+    acmTrade = acm.FTrade[trade.trdnbr]
+    curr1 = acmTrade.Instrument().Name()
+    curr2 = acmTrade.Currency().Name()
+
+    currPair = acm.FCurrencyPair['{0}/{1}'.format(curr1, curr2)]
+
+    addinfo_spec = acm.FAdditionalInfoSpec[addinfo_spec_name]
+    if addinfo_spec:
+        try:
+            addinfo_spec_obj = acm.FAdditionalInfo.Select01(
+                'addInf=%d and recaddr =%d' % (addinfo_spec.Oid(), currPair.Oid()), 'Not found')
+            if addinfo_spec_obj and addinfo_spec_obj.FieldValue() == 'Yes':
+                return 1
+        except Exception as ex:
+            return 0
+    return 0
+
+@LogException(__name__)
+@ASQLfunction
+def getTenor(instrument, *rest):
+    """Function to get tenor of the instruments like deposit, Basket Repo/Reverse etc """
+
+    tenor = 0
+    if instrument:
+        ins = acm.FInstrument[instrument.insaddr]
+        start_date = ael.date_from_string(ins.StartDate())
+        end_date = ael.date_from_string(ins.EndDate())
+        tenor = daysBetween(start_date, end_date, 'Act/365') / 365
+    return tenor
+
+@LogException(__name__)
+@ASQLfunction
+def checkProductType(instrument, *rest):
+    """ Function to check the product type of instrument"""
+    if instrument:
+        ins = acm.FInstrument[instrument.insaddr]
+        product_code = rest
+        if ins:
+            if ins.ProductTypeChlItem() and ins.ProductTypeChlItem().Name() in product_code:
+                return True
+    return False
+
+@LogException(__name__)
+@ASQLfunction
+def checkCategory(instrument, *rest):
+    """ Function to check the product category of instrument"""
+    if instrument:
+        ins = acm.FInstrument[instrument.insaddr]
+        product_category = rest
+        if ins:
+            if ins.CategoryChlItem() and ins.CategoryChlItem().Name() in product_category:
+                return True
+    return False
+    
+@LogException(__name__)
+@ASQLfunction
+def fxRate(aelTrade, *rest):
+    """ Function to check the product category of instrument"""
+    rate = 0.0
+    if aelTrade:
+        trade = acm.FTrade[aelTrade.trdnbr]
+        if trade.Instrument().InsType() == 'Option':
+            currency1 = trade.CurrencyPair().Currency1().Oid()
+            currency2 = trade.CurrencyPair().Currency2().Oid()
+            rate  = fx_rate(currency1, currency2, acm.Time.DateToday())
+    return rate
+    
+@LogException(__name__)
+@ASQLfunction
+def isValidTrade(aelTrade, *rest):
+    """ Function for call spread email notifictaion asql query. 
+        Validate if the spot price is greater than the both(buy and sell) trades strike price to notifying the user as a set of trade in deal package FX strip."""
+    spot_rate = fxRate(aelTrade)
+    trade = acm.FTrade[aelTrade.trdnbr]
+    isValidTrade = 1
+    
+    # This is to get all other trades in the deal package
+    deal_package = trade.DealPackage().ParentDealPackage() if trade.DealPackage() else None
+    if deal_package and trade.Quantity()<0:
+        trades = acm.FDealPackage[deal_package.Oid()].AllTrades(True)
+        buyTrades = [trade for trade in trades if trade.Quantity() > 0]
+        for bTrd in buyTrades:
+            if bTrd.Instrument().ExpiryDate() == trade.Instrument().ExpiryDate():
+                if spot_rate > bTrd.Instrument().StrikePrice():
+                    isValidTrade =  1
+                else:
+                    isValidTrade = 0
+    return isValidTrade
+    
+    
+
+...
+
+}
+

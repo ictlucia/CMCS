@@ -1,0 +1,1034 @@
+#
+# Front Arena exported extension module.
+# source          ""
+# timestamp (utc) "2023-05-31 13:56:50"
+# ***** DO NOT EDIT! *****
+#
+name        "ExtractsEngine"
+description "$Id$"
+
+groups {
+}
+
+decls[FParameters] {
+}
+
+clx FObject [FParameters] {
+  Generic Params =
+  function=PostProcess.postProc
+  HTML_to_File=False
+  HTML_to_Screen=False
+  Secondary_output=1
+
+
+}
+
+decls[FPythonCode] {
+}
+
+clx FObject [FPythonCode] {
+  ExtractsGenerator
+
+
+import ael, acm
+
+import FWorksheetReport
+import ParamsTab
+import FReportAPI
+import reportLogSettingsTab
+
+GENERIC_PARAMS = "Generic Params"
+
+
+def getVars(name):
+    ael_gui_parameters = {'windowCaption':name}
+
+    ael_variables = FWorksheetReport.WorksheetReport()
+    ael_variables.extend(ParamsTab.getAelVariables(GENERIC_PARAMS, name))
+    ael_variables.extend(reportLogSettingsTab.getAelVariables())
+    ael_variables.LoadDefaultValues(GENERIC_PARAMS, name)
+    
+    return ael_variables, ael_gui_parameters
+
+
+def Run(variableDictionary):
+    reportLogSettingsTab.logger_setup(variableDictionary, "FAReporting")
+    variableDictionary[ 'allSheetSettingsBySheetType' ] = FWorksheetReport.allSheetSettingsBySheetType
+    report_params = FReportAPI.FWorksheetReportGuiParameters( guiParams=variableDictionary )
+    report_params.RunScript()
+
+...
+
+  ExtractTemplate
+
+"""
+This is a generic template. Build your extracts based on it.
+"""
+
+
+# Define the name of the extract. 
+# Use this name to specify default parameters in FParameters section.
+NAME = 'My Template'
+
+
+# ================ Do not modify below this line ===========================
+import ael
+import ExtractsGenerator
+
+ael_variables, ael_gui_parameters = ExtractsGenerator.getVars(NAME)
+
+def ael_main(dict):
+    ExtractsGenerator.Run(dict)
+
+
+...
+
+  FReportGetRemote
+""" FReportGetRemote - Retrieve report data from remote sheet server
+
+Retreive report data in XML format from a remote sheet service.
+    
+    (c) Copyright 2011 by SunGard FRONT ARENA. All rights reserved.
+
+
+"""
+import acm
+
+def get_sheet(sheet_name, output):
+    """Get XML for a remote sheet.
+    
+      Retrieve complete XML for report running on a remote sheets server, raises
+      exceptions on any connect issues.
+
+        Returns XML string on AEF Report format
+    """
+    fbus = acm.FBus()
+    return fbus.RequestXMLReport2("Front.Domain.Report.All", sheet_name, 30000, output)
+
+
+...
+
+  FReportUtils
+"""-------------------------------------------------------------------------------------------------------
+MODULE
+    FReportUtils - Common Utility functions for the Reporting Modules
+        
+    (c) Copyright 2011 by SunGard Front Arena. All rights reserved.
+
+-------------------------------------------------------------------------------------------------------"""
+import acm
+import os
+import FLogger
+from xml.sax.saxutils import escape
+import codecs
+import sys
+
+logger = FLogger.FLogger('FAReporting')
+
+def addHeader(xsl, extraParams):
+    try:
+        if extraParams and extraParams.At('headerImage') == 'True':
+            headerFile = extraParams.At('headerImagePath')
+            headerFileEscaped = escape(str(headerFile))
+            return xsl.replace('<headerImage/>', '<img src="' + headerFileEscaped + '"/>')
+    except AttributeError as e:
+        print('Error: Extension modules ExtractsEngine %s ' %str(e))
+    return xsl
+        
+def addCSS(xsl, replaceCSS, extraParams):
+    # Retrieve CSS to use if any and substitute into XSL
+    try:
+        if replaceCSS:
+            outputDir = extraParams.At('outputDir')
+            cssObject = acm.GetDefaultContext().GetExtension('FXSLTemplate', 'FObject', replaceCSS)
+            if not cssObject:
+                logger.WLOG( "Failed to find CSS %s Proceeding without it, output may be malformed", replaceCSS )
+            else:
+                css = cssObject.Value()
+                path = os.path.join(outputDir, replaceCSS + '.css')
+                cssFilename = replaceCSS + '.css'
+                writeToFile(path, css)
+                return xsl.replace('<insertcss/>','<link rel="stylesheet" type="text/css" href="' + cssFilename + '"/>')
+    except AttributeError as e:
+        print('Error: Extension modules ExtractsEngine %s ' %str(e))
+    return xsl
+
+def transformXML(reportXml, template, replaceCSS=None, extraParams=None):
+    # Retrieve stylesheet to use
+    pt = acm.GetDefaultContext().GetExtension('FXSLTemplate', 'FObject', template)
+    if not pt:
+        raise Exception("Failed to find template " + template + " report output not completed")
+    xsl = pt.Value()
+    xsl = addHeader(xsl, extraParams)
+    xsl = addCSS(xsl, replaceCSS, extraParams)
+    
+    # Perform transformation
+    transformer = acm.CreateWithParameter('FXSLTTransform',xsl)
+    return transformer.Transform(reportXml)
+
+def preprocess_transform_XML(reportObj, param, XMLreport):
+    """ This function can be specified in the FWorksheetReport GUI, Processing tab, preprocess XML."""
+    for template in param.split(','):
+        logger.LOG( "preprocess_transform_XML: %s", template )
+        XMLreport=transformXML(XMLreport, template)
+    return XMLreport
+
+def adjust_parameters(aelparams):
+    try:
+        task_parameters = os.environ["TASK_REPORT_PARAMETER"]
+        # the structure is "key=value:key=value....."
+        param_list = task_parameters.split(':')
+        logger.LOG( "Using Environment variable TASK_REPORT_PARAMETER: %s", task_parameters )
+        for keyval in param_list:
+            key,val=keyval.split('=')
+            value = eval(val)
+            aelparams[key] = value
+        return aelparams
+    except KeyError as e:
+        print('Warning :ExtractsEngine failed to read environment variable %s. Script execution will continue without using Environment variable TASK_REPORT_PARAMETER.' %str(e)) 
+        return aelparams
+
+def GetParameterValues( name ):
+    """get values from FParameter by name"""
+    values = {}
+    p = acm.GetDefaultContext().GetExtension('FParameters', 'FObject', name)
+    try:
+        template = p.Value()
+    except AttributeError as e:
+        logger.ELOG( "Error getting parameters ( %s ): %s" , name, str( e ) )
+    for k in template.Keys():
+        k = str(k)
+        value = str( template.At(k) )
+        values[ str(k) ] = value
+    return values
+    
+def writeToFile(path, content):
+    writeToFileMode(path,content,'w')
+
+def writeToFileMode(path, content, mode):
+    if acm.IsUnicodeEnabled() and sys.version_info[0] == 2:
+        file = open(path.decode("utf-8"),mode)
+    else:
+        if sys.version_info[0] > 2:
+            if acm.IsUnicodeEnabled() or content.find('encoding="utf-8"') != -1 or content.find('encoding="UTF-8"') != -1:
+                file = open(path,mode, encoding="utf-8")
+            else:
+                file = open(path,mode, encoding="ISO-8859-1")
+        else:
+            file = open(path,mode)
+
+    file.write(content)
+    file.close()
+
+def writeToFileBinary(path, content, mode, utf16Output = False, useUtf8BOM = False):
+    if sys.version_info[0] > 2:
+        if acm.IsUnicodeEnabled():
+            content = content.encode("utf-8")
+        else:
+            content = content.encode("ISO-8859-1")
+
+    if acm.IsUnicodeEnabled() and sys.version_info[0] == 2:
+        file = open(path.decode("utf-8"),mode)
+    else:
+        file = open(path,mode)
+
+    if utf16Output:
+        file.write(codecs.BOM_UTF16_LE)
+        try:
+            content = content.decode("utf-8").encode('utf-16-le')
+        except AttributeError:#Python3
+            content = content.encode('utf-16-le')
+            pass
+    elif useUtf8BOM:
+        file.write(codecs.BOM_UTF8)
+    file.write(content)
+    file.close()
+
+...
+
+  FTPEngine
+
+""" A generic FTP class. Usage:
+    
+        import FTPEngine
+        
+        MyFtp = FTPEngine.downloader(server, user, passw)
+        res = MyFtp.get('*.zip', 'C:\\MyDownloads')
+        
+        MyFtp = FTPEngine.uploader(server, user, passw)
+        res = MyFtp.put('myFile.zip', 'home/MyUownloads')
+
+"""
+
+from io import StringIO
+from ftplib import FTP
+import os, os.path, time
+import glob
+from subprocess import Popen, PIPE
+import smtplib
+import mimetypes
+from email import encoders
+from email.mime.base import MIMEBase
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+import FLogger, acm
+import FReportUtils as utils
+#from Common import getCustomerName
+
+logger = FLogger.FLogger.GetLogger( 'FAReporting' )
+
+#------------------------------------------------------
+
+
+class baseftp(object):
+    def __init__(self, server, user, passw):
+    
+        self.server = server
+        self.user = user
+        self.passw = passw
+        
+        self.retries = 3
+        self.delay = 5
+        self.timeout = 20
+        
+        self._connect()
+
+    def _connect(self):
+        try:
+            self.ftp = FTP(self.server, self.user, self.passw, '',self.timeout)
+            return 1
+        except Exception as e:
+            logger.ELOG( 'Cannot connect to %s!' % self.server)
+            logger.ELOG( e)
+            self.ftp = None
+            return 0
+
+
+    def _get(self, dest, y):
+        if not self.ftp:
+            logger.ELOG( 'No connection...')
+            return
+        logger.LOG( ' - Downloading %s...' % y)
+        namefi = "%s\%s" % (dest, y)
+        nfi = open(namefi, "wb")
+        try:
+            self.ftp.retrbinary("RETR "+y, nfi.write)
+            nfi.close()
+            logger.LOG( 'Done!')
+            return 1
+        except Exception as e:
+            logger.ELOG( 'Failed!')
+            logger.ELOG( e)
+            try:
+                nfi.close()
+                os.remove(namefi)
+            except:
+                pass
+            return 0
+            
+            
+    def _put(self, source, destDir, dest = None):
+        if not self.ftp:
+            logger.ELOG( 'No connection...')
+            return
+        
+        if not dest: dest = os.path.basename(source)
+        logger.LOG( ' - Uploading %s to %s...' % (source, destDir))
+        
+        
+        try:
+            try: self.ftp.cwd(destDir)
+            except: pass
+            f = open(source,'rb') 
+            self.ftp.storbinary("STOR " + dest, f, 1024)
+            f.close()
+            logger.LOG( 'Done!')
+            return 1
+        except Exception as e:
+            logger.ELOG( 'Failed!')
+            logger.ELOG( e)
+            try: f.close()
+            except: pass
+            return 0
+ 
+
+# -----------------------------------------------------------------
+
+class uploader(baseftp):
+    def put(self, source, destDir):
+            
+        count = 0
+        while count < self.retries:
+            if count: logger.LOG( 'Retrying ....')
+            if (super(uploader, self)._put(source, destDir)): return 1
+            time.sleep(self.delay)
+            count += 1
+        return 0
+
+
+
+
+class downloader(baseftp):
+            
+    def get(self, mask, dest, excluded = []):
+        """ Takes the following params:
+             - mask - a filter for remote files, eg: *.zip
+             - dest - the local path where the files go.
+             - excluded -  a list of file names to skip.
+            
+            Returns 1 if successful, 0 if some files failed
+        """
+        if not self.ftp:
+            logger.ELOG( 'No connection...')
+            return
+            
+        count = 0
+        self.files = self.ftp.nlst(mask) 
+        if not self.files or not len(self.files):
+            logger.ELOG( 'No files match the %s mask.'  % mask)
+            return 1
+            
+        errFiles = []
+        if not os.path.isdir(dest): os.mkdir(dest)
+        for y in self.files:
+            if y in excluded: continue
+            if not self._get(dest, y): errFiles.append(y)
+            else: count += 1
+            
+        if len(errFiles):
+            for ii in range(self.retries):
+                time.sleep(self.delay)
+                logger.ELOG( '----- Retrying failed files: attempt %s -----' % (ii + 1))
+                self.ftp.close()
+                if not self._connect(): continue
+                nerr = []
+                for z in errFiles:
+                    if not self._get(dest, z): nerr.append(z)
+                    else: count += 1
+                if len(nerr): errFiles = nerr
+                else: break
+            
+        if not count: logger.LOG( 'No files downloaded.'  )
+            
+        
+        if len(errFiles): return 0
+        return 1
+#-------------------------------------------------   
+
+def Encrypt(inputName, outputName, recipient, gpgpath, signature=None):
+    """Encrypt a file"""
+    try:
+        os.remove(outputName)
+    except OSError:
+        pass
+    cmd = r'"%s" -a -o "%s" ' % (gpgpath, outputName)
+    if recipient:
+        cmd += '-r "%s" -e ' % (recipient)
+    if signature:
+        cmd += '--default-key %s --sign ' % (signature)
+    cmd += '"%s"' % inputName
+
+    handle = Popen(cmd, stdout=PIPE, stderr=PIPE)
+    if handle.returncode:
+        for line in (handle.communicate())[1].readlines():
+            logger.LOG( line.strip())
+        raise Exception("Encryption failed!")
+    
+        
+def SendEmail(address, sender, subject, body, smtpServer, filePath, *rest):
+    if not smtpServer:
+        smtpServer = acm.GetCalculatedValue(0, acm.GetDefaultContext().Name(), 'mailServerAddress').Value()
+        
+    if not smtpServer:
+        logger.WLOG('No mail server address specified!\n Please specify your mail server name or IP address!')   
+    user = utils.GetParameterValues('email_user')
+    pwd = utils.GetParameterValues('email_pwd')
+
+    #environment_name = getCustomerName()
+    #is_prod = 'Prod' in environment_name
+    
+    msg = MIMEMultipart()
+    msg['Subject'] = subject
+
+    msg['From'] = sender
+    msg['To'] = address
+    msg.preamble = 'Reports created.'
+    
+    msg.attach(MIMEText(body, 'plain'))
+    
+    if os.path.isfile(filePath):
+        fileName = os.path.basename(filePath)
+        ctype, encoding = mimetypes.guess_type(filePath)
+        if ctype is None or encoding is not None:
+            # No guess could be made, or the file is encoded (compressed), so
+            # use a generic bag-of-bits type.
+            ctype = 'application/octet-stream'
+        maintype, subtype = ctype.split('/', 1)
+        if maintype == 'text':
+            fp = open(filePath)
+            # Note: we should handle calculating the charset
+            attFile = MIMEText(fp.read(), _subtype=subtype)
+            fp.close()
+        else:
+            fp = open(filePath, 'rb')
+            attFile = MIMEBase(maintype, subtype)
+            attFile.set_payload(fp.read())
+            fp.close()
+            # Encode the payload using Base64
+            encoders.encode_base64(attFile)
+        attFile.add_header('Content-Disposition', 'attachment', filename=fileName)
+        msg.attach(attFile)
+    
+    #try:
+    server = smtplib.SMTP(smtpServer)
+    print("user=====", user, pwd)
+    if user and pwd:
+        server.login(user, pwd)
+    server.sendmail(sender, address.split(','), msg.as_string())
+    server.quit()
+    logger.LOG('Mail sent to: %s' % address)
+    #except:
+    #    logger.ELOG('Failed sending email.')        
+
+
+...
+
+  interfaceExtract
+
+"""
+This is a generic template. Build your extracts based on it.
+"""
+
+
+
+# Define the name of the extract. 
+# Use this name to specify default parameters in FParameters section.
+NAME = 'interfaceExtract'
+
+
+# ================ Do not modify below this line ===========================
+import ael
+import ExtractsGenerator
+
+ael_variables, ael_gui_parameters = ExtractsGenerator.getVars(NAME)
+
+def ael_main(dict):
+    try:
+        ExtractsGenerator.Run(dict)
+    except Exception as e:
+        print(e)
+        
+
+
+...
+
+  ParamsTab
+"""-------------------------------------------------------------------------------------------------------
+
+-------------------------------------------------------------------------------------------------------"""
+
+import acm
+import FRunScriptGUI
+
+class FFTPTab(FRunScriptGUI.AelVariablesHandler):
+    def _enable(self, i, j, fv):
+        for x in range(i+1, i+j+1):
+            if (self.ael_variables) and (len(self.ael_variables) >= x):
+                self.ael_variables[x][FRunScriptGUI.Controls.ENABLED] = (fv[i] == '1')
+
+
+   
+    def FTPCB(self,index, fieldValues):
+        if self.ael_variables[index][0] == 'sendEmail': self._enable(index, 3, fieldValues)
+        elif self.ael_variables[index][0] == 'useEncryption': self._enable(index, 3, fieldValues)
+        elif self.ael_variables[index][0] == 'useFTP': self._enable(index, 4, fieldValues)
+        elif self.ael_variables[index][0] == 'useSFTP': self._enable(index, 5, fieldValues)
+        elif self.ael_variables[index][0] == 'markAsSent': self._enable(index, 2, fieldValues)
+        return fieldValues
+        
+        
+    def __init__(self):
+        tab_name = 'Extract Settings'
+        vars =[
+         ['extractName','Extract Name_'+tab_name,'string',None,None,None,None,None,None,True],
+         # Encryption
+         ['useEncryption','Use Encryption_'+tab_name,'int',[0,1],None,None,None,None,self.FTPCB,True],
+         ['gpgPath','Path to GPG_'+tab_name,'string',None,None,None,None,"Location of GPG executable",None,True],
+         ['encryptionUser','Encryption Recipient_'+tab_name,'string',None,None,None,None,None,None,True],
+         ['signatureKey','Signature Key_'+tab_name,'string',None,None,None,None,None,None,True],
+         # FTP
+         ['useFTP','Use FTP_'+tab_name,'int',[0,1],None,None,None,None,self.FTPCB,True],
+         ['ftpLocation','FTP Site_'+tab_name,'string',None,None,None,None,None,None,True],
+         ['ftpDirectory','FTP Remote Directory_'+tab_name,'string',None,None,None,None,None,None,True],
+         ['ftpUsername','FTP Username_'+tab_name,'string',None,None,None,None,None,None,True],
+         ['ftpPassword','FTP Password_'+tab_name,'string',None,None,None,None,None,None,True],
+         # SFTP
+         ['useSFTP','Use SFTP_'+tab_name,'int',[0,1],None,None,None,None,self.FTPCB,True],
+         ['sftpLocation','SFTP Site_'+tab_name,'string',None,None,None,None,None,None,True],
+         ['sftpPort','SFTP Port Number_'+tab_name,'int',None,None,None,None,None,None,True],
+         ['sftpDirectory','SFTP Remote Directory_'+tab_name,'string',None,None,None,None,None,None,True],
+         ['sftpUsername','SFTP Username_'+tab_name,'string',None,None,None,None,None,None,True],
+         ['sftpPassword','SFTP Password_'+tab_name,'string',None,None,None,None,None,None,True],
+         # Send Email
+         ['sendEmail','Send E-Mail_'+tab_name,'int',[0,1],None,None,None,None,self.FTPCB,True],
+         ['smtpServer','SMTP Server_'+tab_name,'string',None,None,None,None,None,self.FTPCB,True],
+         ['senderAddress','Sender Address_'+tab_name,'string',None,None,None,None,None,self.FTPCB,True],
+         ['emailAddress','E-Mail Address_'+tab_name,'string',None,None,None,None,None,None,True],
+         # Mark Sent
+         ['markAsSent','Mark as Sent_'+tab_name,'int',[0,1],None,None,None,None,self.FTPCB,True],
+         ['addInfoName','Field Name_'+tab_name,'string',None,None,None,None,None,None,True],
+         ['addInfoValue','Marker Value_'+tab_name,'string',None,"Sent",None,None,None,None,True]
+        ]
+         
+
+        FRunScriptGUI.AelVariablesHandler.__init__(self,vars,__name__)
+    
+
+
+def getAelVariables(gnn, nn = None):
+    if not nn: nn = __name__
+    ael_vars=FFTPTab()
+    ael_vars.LoadDefaultValues(gnn, nn)
+    ael_vars[0][4] = nn
+    return ael_vars
+
+
+...
+
+  PostProcess
+
+
+"""
+The hook function is postProc()
+"""
+
+
+import ael, acm
+
+import FLogger
+
+import tempfile
+import time
+import FTPEngine as util
+import os.path
+
+logger = FLogger.FLogger.GetLogger( 'FAReporting' )
+
+def saveAddInfo(spec, rec, val):
+    ai = acm.FAdditionalInfo.Select01("recaddr = %s and addInf = %s" % (rec.Oid(), spec.Oid()), "")
+    if not ai:
+        ai = acm.FAdditionalInfo(recaddr = rec.Oid(), addInf = spec.Oid())
+    ai.FieldValue(val)
+    ai.Commit()
+
+
+
+class postHandler(object):
+    def __init__(self, report):
+        self.report = report
+        self.params = report.params
+        
+        self.dict = report.params.guiParams
+                
+        tmpDir = tempfile.gettempdir()
+        self.filePath = report.generatedFilePaths[1]
+        self.fileName = os.path.basename(self.filePath)
+        self.tempPath = os.path.join(tmpDir, self.fileName+'.gpg')
+ 
+        
+
+
+        
+    def doSignEncrypt(self):
+        if not self.dict['useEncryption']: return
+        gpgPath = self.dict['gpgPath']
+        if (not gpgPath) or (not len(gpgPath.strip())):
+            raise Exception('Path to gpg not specified!')
+        
+        signatureKey = self.dict['signatureKey']
+        encryptionUser = self.dict['encryptionUser']
+            
+        util.Encrypt(self.filePath, self.tempPath, encryptionUser, gpgPath, signatureKey)
+        self.filePath = self.tempPath
+        logger.LOG("Finished encryption.")
+    
+
+
+    def doFTP(self):
+        if not self.dict['useFTP']: return
+        ftpLocation = self.dict['ftpLocation']
+        logger.LOG('Sending file %s via FTP to %s' % (self.filePath, ftpLocation))
+        ftp = util.uploader(ftpLocation, self.dict['ftpUsername'], self.dict['ftpPassword'])
+        if not ftp.put(self.filePath, self.dict['ftpDirectory']): raise Exception("File FTP failed")
+        
+    def doSFTP(self):
+        if not self.dict['useSFTP']: return
+        sftpLocation = self.dict['sftpLocation']
+        sftpPort = self.dict['sftpPort']
+        logger.LOG('Sending file %s via SFTP to %s:%d' % (self.filePath, sftpLocation, sftpPort))
+        import pysftp
+        srv = pysftp.Connection(sftpLocation, username = self.dict['sftpUsername'], password = self.dict['sftpPassword'],  port=sftpPort)
+        srv.chdir(self.dict['sftpDirectory'])
+        srv.put(self.filePath)
+        srv.close()
+        
+     
+    def doEmail(self):
+        dict = self.dict
+        
+        #if not dict['markAsSent']: return
+        field = dict['addInfoName']
+        val = dict['addInfoValue']
+        
+        if not self.dict['sendEmail']: return
+        email = self.dict['emailAddress']
+        logger.LOG('Sending e-mail to %s' % email)
+        subject = self.dict['extractName']
+        
+        #mesgs = logger.GetAllMessages()
+        mesgs = ['Dear All', 'Please find the attached', subject,   'report', 'Thanks']
+        #body = 'Dear all, ter  lampir outstanding MM per 04-04-2023'
+        body = ''
+        
+        for mesg in mesgs:
+            body = body + '\n'+ mesg        
+        util.SendEmail(email, self.dict['senderAddress'], subject, body, self.dict['smtpServer'], self.filePath)
+                
+            
+    def doMark(self):
+        
+        dict = self.dict
+        
+        if not dict['markAsSent']: return
+        field = dict['addInfoName']
+        val = dict['addInfoValue']
+        
+        print("self.report.reportGrids====",self.report.reportGrids)
+        for grid in self.report.reportGrids:
+            print("grid=====" , grid)
+            iter = grid.GridBuilder().RowTreeIterator()
+            x = iter.FirstChild()
+            if x:
+                print("x===========",x)
+                if '%s' % x.Tree().Item().ClassName() in ('FPortfolioInstrumentAndTrades', 'FStoredASQLQuery'):
+                    x = x.FirstChild()            
+                logger.LOG('Setting %s to "%s"' % (field, val))
+                ais = acm.FAdditionalInfoSpec[field]
+                if not ais: raise Exception("Additional Info %s does not exist" % field)
+                while x:
+                    item = x.Tree().Item()
+                    print("item=========",item)
+                    if '%s' % item.ClassName() == 'FTradeRow': y = item.Trade()
+                    elif '%s' % item.ClassName() == 'FSingleInstrumentAndTrades': y = item.Instrument()
+                    else:
+                        raise Exception("Unsupported row type: %s" % item.ClassName())
+                    saveAddInfo(ais, y, val)
+                    x = x.NextSibling()
+                
+    
+            
+            
+# ====================================================================
+    
+        
+def postProc(x, *rest):
+    try:
+        h = postHandler(x)
+        h.doSignEncrypt()
+        h.doFTP()
+        h.doSFTP()
+        print("sending email******")
+        h.doEmail()
+        print("do email finished")
+        h.doMark()
+    except Exception as e:
+        logger.ELOG('There were problems.')
+        logger.ELOG( e)
+    logger.LOG('Finished.')
+
+...
+
+  reportLogSettingsTab
+"""-------------------------------------------------------------------------------------------------------
+MODULE
+    reportLogSettingsTab - General output settings
+
+
+-------------------------------------------------------------------------------------------------------"""
+from past.builtins import basestring
+import acm
+import FRunScriptGUI
+import FLogger
+import os
+
+
+
+trueFalse = ['False','True']
+
+
+
+class reportLogSettingsTab(FRunScriptGUI.AelVariablesHandler):
+    def __init__(self):
+        directorySelection=FRunScriptGUI.DirectorySelection()
+        vars =[
+                ['log file path', 'File Path_Log settings', directorySelection, None, directorySelection, 0, 1, 'The file path to the directory where the log files should be put. Environment variables can be specified for Windows (%VAR%) or Unix ($VAR).', None, 1],
+                ['log file name', 'File Name_Log settings', 'string', None, '', 0, 0, 'The file name of the logging output'],
+                ['log to console', 'Log to Console_Log settings', 'string', trueFalse, 'True', 1, 0, 'Log messages to sys.stdout?'],
+                ['log to prime', 'Log to Prime Log_Log settings', 'string', trueFalse, 'False', 1, 0, 'Log messages to ael.log?'],
+                ['log debug messages', 'Log debug messages_Log settings', 'string', trueFalse, 'False', 1, 0, 'Log debug messages?']
+              ]
+        FRunScriptGUI.AelVariablesHandler.__init__(self,vars,__name__)
+
+def getAelVariables():
+    outtab=reportLogSettingsTab()
+    outtab.LoadDefaultValues(__name__)
+    return outtab
+
+
+def logger_setup_core(log_level, log_path_or_not, logger_name, log_to_console,
+    log_to_prime):
+    logger = FLogger.FLogger(logger_name,1,True)
+    if log_path_or_not:
+        logger.Reinitialize(level=log_level, 
+            logToFileAtSpecifiedPath=log_path_or_not, 
+            logToConsole=log_to_console, logToPrime=log_to_prime)
+    else:
+        logger.Reinitialize(level=log_level,
+            logToConsole=log_to_console, logToPrime=log_to_prime)
+
+
+
+        
+def logger_setup(ael_variables, logger_name):
+    log_file_path_gui = ael_variables["log file path"]
+    log_file_name = ael_variables["log file name"]
+    log_to_console = trueFalse.index(ael_variables["log to console"])
+    log_to_prime = trueFalse.index(ael_variables["log to prime"])
+    log_debug_messages = trueFalse.index(ael_variables["log debug messages"])
+    
+    if not isinstance(log_file_path_gui, basestring):
+        log_file_path_gui = log_file_path_gui.AsString()   
+      
+    log_file_path = os.path.join(log_file_path_gui, log_file_name)
+        
+    if log_debug_messages:
+        log_level = 2
+    else:
+        log_level = 1
+        
+    logger_setup_core(log_level, log_file_path, logger_name,
+        log_to_console, log_to_prime)
+
+...
+
+}
+
+decls[FXSLTemplate] {
+  "FCSVTemplateDateFormattedWithHeader" ( "aef reporting.secondary templates" "aef reporting.secondary templates csv" ) "";
+  "FCSVTemplateFDDateNoHeader" ( "aef reporting.secondary templates" "aef reporting.secondary templates csv" ) "";
+  "FCSVTemplateFormatedDataNoHeader" ( "aef reporting.secondary templates" "aef reporting.secondary templates csv" ) "";
+  "FCSVTemplateFormatedDataWithHeader" ( "aef reporting.secondary templates" "aef reporting.secondary templates csv" "sheet columns.tradesheet" ) "";
+}
+
+clx FObject [FXSLTemplate] {
+  FCSVTemplateDateFormattedWithHeader
+<?xml version='1.0'?>
+<!DOCTYPE xsl:stylesheet [
+  <!ENTITY comma "<xsl:text>,</xsl:text>">
+  <!ENTITY cr "<xsl:text>&#10;</xsl:text>">
+]>
+
+<xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
+<xsl:output method="text" encoding="ISO-8859-1"/>
+<xsl:strip-space elements="*"/>
+
+<xsl:template match="/">
+        <xsl:for-each select="//PRIMEReport">                         
+            <xsl:apply-templates select="current()/ReportContents"/>             
+     </xsl:for-each>     
+</xsl:template>
+
+<xsl:template match="Table">
+    <xsl:for-each select="Columns/Column">
+        <xsl:value-of select="Label"/>&comma;
+    </xsl:for-each>&cr;
+        <xsl:choose>
+                <xsl:when test="Rows/Row/Rows/Row">
+                        <xsl:apply-templates select="Rows/Row/Rows/Row"/>
+                </xsl:when>
+                <xsl:otherwise>
+                        <xsl:apply-templates select="Rows/Row"/>
+                </xsl:otherwise>
+        </xsl:choose>
+</xsl:template>
+
+<xsl:template match="Row">
+    <xsl:for-each select="Cells/Cell">
+        <xsl:choose>
+                <xsl:when test="FullData/DateTime or FullData/String">
+                        <xsl:value-of select="FormattedData"/>&comma;
+                </xsl:when>
+                <xsl:otherwise>
+                        <xsl:value-of select="FullData"/>&comma;
+                </xsl:otherwise>
+        </xsl:choose>
+    </xsl:for-each>&cr;
+    <xsl:apply-templates select="Rows/Row"/>
+</xsl:template>
+
+        
+</xsl:stylesheet>
+
+...
+
+  FCSVTemplateFDDateNoHeader
+<?xml version='1.0'?>
+<!DOCTYPE xsl:stylesheet [
+  <!ENTITY comma "<xsl:text>,</xsl:text>">
+  <!ENTITY cr "<xsl:text>&#13;&#10;</xsl:text>">
+]>
+
+<xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
+<xsl:output method="text" encoding="ISO-8859-1"/>
+<xsl:strip-space elements="*"/>
+
+<xsl:template match="/">
+        <xsl:for-each select="//PRIMEReport">                         
+            <xsl:apply-templates select="current()/ReportContents"/>             
+     </xsl:for-each>     
+</xsl:template>
+
+<xsl:template match="Table">
+        <xsl:choose>
+                <xsl:when test="Rows/Row/Rows/Row">
+                        <xsl:apply-templates select="Rows/Row/Rows/Row"/>
+                </xsl:when>
+                <xsl:otherwise>
+                        <xsl:apply-templates select="Rows/Row"/>
+                </xsl:otherwise>
+        </xsl:choose>
+</xsl:template>
+
+<xsl:template match="Row">
+    <xsl:for-each select="Cells/Cell">
+        <xsl:choose>
+                <xsl:when test="FullData/DateTime or FullData/String">
+                        <xsl:value-of select="FormattedData"/>&comma;
+                </xsl:when>
+                <xsl:otherwise>
+                        <xsl:value-of select="FullData"/>&comma;
+                </xsl:otherwise>
+        </xsl:choose>
+    </xsl:for-each>&cr;
+    <xsl:apply-templates select="Rows/Row"/>
+</xsl:template>
+
+</xsl:stylesheet>
+
+...
+
+  FCSVTemplateFormatedDataNoHeader
+<?xml version='1.0'?>
+<!DOCTYPE xsl:stylesheet [
+  <!ENTITY comma "<xsl:text>,</xsl:text>">
+  <!ENTITY cr "<xsl:text>&#13;&#10;</xsl:text>">
+]>
+
+<xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
+<xsl:output method="text" encoding="ISO-8859-1"/>
+<xsl:strip-space elements="*"/>
+
+<xsl:template match="/">
+        <xsl:for-each select="//PRIMEReport">                         
+            <xsl:apply-templates select="current()/ReportContents"/>             
+     </xsl:for-each>     
+</xsl:template>
+
+<xsl:template match="Table">
+        <xsl:choose>
+                <xsl:when test="Rows/Row/Rows/Row">
+                        <xsl:apply-templates select="Rows/Row/Rows/Row"/>
+                </xsl:when>
+                <xsl:otherwise>
+                        <xsl:apply-templates select="Rows/Row"/>
+                </xsl:otherwise>
+        </xsl:choose>
+</xsl:template>
+
+<xsl:template match="Row">
+    <xsl:for-each select="Cells/Cell">
+        <xsl:apply-templates select="FullData"/>&comma;
+    </xsl:for-each>&cr;
+    <xsl:apply-templates select="Rows/Row"/>
+</xsl:template>
+
+<xsl:template match="FullData">
+        <xsl:choose>
+                <xsl:when test="String!=''">
+                        <xsl:text>"</xsl:text><xsl:value-of select="."/><xsl:text>"</xsl:text>
+                </xsl:when>
+                <xsl:otherwise>
+                        <xsl:value-of select="."/>
+                </xsl:otherwise>
+        </xsl:choose>
+</xsl:template>
+        
+</xsl:stylesheet>
+
+...
+
+  FCSVTemplateFormatedDataWithHeader
+<?xml version='1.0'?>
+<!DOCTYPE xsl:stylesheet [
+  <!ENTITY comma "<xsl:text>,</xsl:text>">
+  <!ENTITY cr "<xsl:text>&#13;</xsl:text>">
+]>
+
+<xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
+<xsl:output method="text" encoding="ISO-8859-1"/>
+<xsl:strip-space elements="*"/>
+
+<xsl:template match="/">
+        <xsl:for-each select="//PRIMEReport">                         
+            <xsl:apply-templates select="current()/ReportContents"/>             
+     </xsl:for-each>     
+</xsl:template>
+
+<xsl:template match="Table">
+    <xsl:for-each select="Columns/Column">
+        <xsl:value-of select="Label"/>&comma;
+    </xsl:for-each>&cr;
+        <xsl:choose>
+                <xsl:when test="Rows/Row/Rows/Row">
+                        <xsl:apply-templates select="Rows/Row/Rows/Row"/>
+                </xsl:when>
+                <xsl:otherwise>
+                        <xsl:apply-templates select="Rows/Row"/>
+                </xsl:otherwise>
+        </xsl:choose>
+</xsl:template>
+
+<xsl:template match="Row">
+    <xsl:for-each select="Cells/Cell">
+        <xsl:apply-templates select="FullData"/>&comma;
+    </xsl:for-each>&cr;
+    <xsl:apply-templates select="Rows/Row"/>
+</xsl:template>
+
+<xsl:template match="FullData">
+        <xsl:choose>
+                <xsl:when test="String!=''">
+                        <xsl:text>"</xsl:text><xsl:value-of select="."/><xsl:text>"</xsl:text>
+                </xsl:when>
+                <xsl:otherwise>
+                        <xsl:value-of select="."/>
+                </xsl:otherwise>
+        </xsl:choose>
+</xsl:template>
+        
+</xsl:stylesheet>
+
+...
+
+}
+

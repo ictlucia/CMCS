@@ -1,0 +1,2 @@
+<?xml version='1.0' encoding='ISO-8859-1'?>
+<FAelTask><acm_version>2022.2.0, Jun  7 2022</acm_version><version>0 $Id$</version><update_time>2023-05-28 12:19:33</update_time><object_name>BrokerFeeTradeUpdates</object_name><owner>ARENASYS</owner><protection>3072</protection><module>BrokerFeeTradesUpdate</module><context>Standard</context><parameter>TradesQueryFolder=BrokerFeeTradeSelection;</parameter><historylength /><description /><logfilename /><group /><groupstatus>None</groupstatus><historylengthunit>None</historylengthunit></FAelTask>

@@ -1,0 +1,415 @@
+#
+# Front Arena exported extension module.
+# source          ""
+# timestamp (utc) "2024-10-04 07:17:39.2"
+# ***** DO NOT EDIT! *****
+#
+name        "InsertItemDates"
+description ""
+
+groups {
+}
+
+decls[FParameterGUIDefinition] {
+  "InsertItems_FromFirstDate" ( "insert items algorithm definition template" ) "";
+  "InsertItems_LastMonth" ( "insert items algorithm definition template" ) "";
+  "InsertItems_LastYear" ( "insert items algorithm definition template" ) "";
+  "InsertItems_ThisMonth" ( "insert items algorithm definition template" ) "";
+  "InsertItems_ThisYear" ( "insert items algorithm definition template" ) "";
+}
+
+clx FObject [FParameterGUIDefinition] {
+  InsertItems_FromFirstDate =
+  DisplayName=From First Date
+  Domain=date
+  Module=InsertItems_EndOfMonth
+
+
+  InsertItems_LastMonth =
+  DisplayName=Last Month (Business Day)
+  Domain=date
+  Module=InsertItems_LastMonth
+
+
+  InsertItems_LastYear =
+  DisplayName=Last Year (Business Day)
+  Domain=date
+  Module=InsertItems_LastYear
+
+
+  InsertItems_ThisMonth =
+  DisplayName=This Month (Business Day)
+  Domain=date
+  Module=InsertItems_ThisMonth
+
+
+  InsertItems_ThisYear =
+  DisplayName=This Year (Business Day)
+  Domain=date
+  Module=InsertItems_ThisYear
+
+
+}
+
+decls[FPythonCode] {
+}
+
+clx FObject [FPythonCode] {
+  InsertItems_EndOfMonth
+import acm
+from datetime import datetime
+
+def from_first_date_year():
+    year, month, day = acm.Time().FirstDayOfYear(acm.Time().DateToday()).split("-")
+    from_date = f"{day}/{month}/{year}"
+
+    today_date = acm.Time().DateToday()
+    last_month = acm.Time().DateAddDelta(today_date, 0, -1, 0)
+    total_days = acm.Time().DaysInMonth(last_month)
+    year_to, month_to, day_to = last_month.split("-")
+    to_date = f"{total_days}/{month_to}/{year_to}"
+    
+    from_date_date = str(datetime.strptime(from_date, "%d/%m/%Y"))
+    to_date_date = str(datetime.strptime(to_date, "%d/%m/%Y"))
+    to_date_date = acm.Time.DateAddDelta(to_date_date, 0, 0, 1)
+    
+    return acm.Time.AsDate(from_date_date), acm.Time.AsDate(to_date_date)
+ 
+def ael_custom_dialog_main( parameters, dictExtra ):
+ 
+    eii = dictExtra.At('customData')
+    queryDict = eii.ExtensionObject()
+ 
+
+    #The parent node that the attribute nodes should be added to 
+    parentNode = queryDict['parentnode']
+    #The query class, for instance FInstrument, chosen in Insert Items
+    cl = queryDict['class']
+    #The full method chain, for instance Underlying.ExpiryDate
+    methodChainFull = queryDict['methodchainfull']
+    #The relation part of the method chain, for instance Underlying
+    methodChainRelPart = queryDict['methodchainrelationpart']
+    #The tail of the method chain, for instance ExpiryDate
+    methodChainTail = queryDict['methodchaintail']
+ 
+    #Add the "From" and "To" nodes to parent node using the full  method chain
+    from_date, to_date = from_first_date_year()
+ 
+    parentNode.AddAttrNode(methodChainFull,'GREATER_EQUAL', from_date)
+    parentNode.AddAttrNode(methodChainFull,'LESS_EQUAL', to_date)
+ 
+    return parentNode
+
+def ael_custom_dialog_show(shell, params):
+    #Not supported. DO NOTHING HERE!
+    pass
+
+...
+
+  InsertItems_LastMonth
+
+import acm, ael
+from datetime import datetime, date, timedelta
+
+def last_month_business_day(forLast):
+    dayUse = acm.Time().DaysInMonth(acm.Time().DateAddDelta(acm.Time().DateToday(), 0, -1, 0)) if forLast else 1
+    year, month, day = acm.Time().DateToYMD(acm.Time().DateToday())
+    date_form = acm.Time.DateFromYMD(int(year), int(month) - 1, int(dayUse))
+    
+    jakarta_calendar = acm.FCalendar['Jakarta'].Dates()
+    jakarta_date = [date.Date() for date in jakarta_calendar if str(year) in str(date.Date())]
+    
+    holiday = True
+    while holiday:
+        check_day = acm.Time.DayOfWeek(date_form)
+        
+        if check_day in ["Saturday", "Sunday"] or date_form in jakarta_date :
+            if forLast == True :
+                date_form = acm.Time().DateAddDelta(date_form, 0, 0, -1)
+            else :
+                date_form = acm.Time().DateAddDelta(date_form, 0, 0, 1)
+                
+            holiday = True
+        else :
+            holiday = False
+            
+    return date_form
+
+def ael_custom_dialog_main( parameters, dictExtra ):
+ 
+    eii = dictExtra.At('customData')
+    queryDict = eii.ExtensionObject()
+ 
+
+    #The parent node that the attribute nodes should be added to 
+    parentNode = queryDict['parentnode']
+    #The query class, for instance FInstrument, chosen in Insert Items
+    cl = queryDict['class']
+    #The full method chain, for instance Underlying.ExpiryDate
+    methodChainFull = queryDict['methodchainfull']
+    #The relation part of the method chain, for instance Underlying
+    methodChainRelPart = queryDict['methodchainrelationpart']
+    #The tail of the method chain, for instance ExpiryDate
+    methodChainTail = queryDict['methodchaintail']
+ 
+    #Add the "From" and "To" nodes to parent node using the full  method chain
+    from_date, to_date = last_month_business_day(False), acm.Time().DateAddDelta(last_month_business_day(True), 0, 0, 1)
+    
+    parentNode.AddAttrNode(methodChainFull,'GREATER_EQUAL', from_date)
+    parentNode.AddAttrNode(methodChainFull,'LESS_EQUAL', to_date)
+    parentNode.AddAttrNode(methodChainFull,'NOT_EQUAL', to_date)
+ 
+    return parentNode
+
+def ael_custom_dialog_show(shell, params):
+    #Not supported. DO NOTHING HERE!
+    pass
+
+...
+
+  InsertItems_LastYear
+
+import acm
+from datetime import datetime, date, timedelta
+
+def last_year_business_day(forLast):
+    year, month, day = acm.Time().DateToYMD(acm.Time().DateToday())
+    days_use, month_use = [31, 12] if forLast == True else [1, 1]
+    date_form = acm.Time.DateFromYMD(int(year) - 1, month_use, days_use)
+
+    jakarta_calendar = acm.FCalendar['Jakarta'].Dates()
+    jakarta_date = [date.Date() for date in jakarta_calendar if str(int(year) - 1) in str(date.Date())]
+    
+    holiday = True
+    while holiday:
+        check_day = acm.Time.DayOfWeek(date_form)
+        
+        if check_day in ["Saturday", "Sunday"] or date_form in jakarta_date :
+            if forLast == True :
+                date_form = acm.Time().DateAddDelta(date_form, 0, 0, -1)
+            else :
+                date_form = acm.Time().DateAddDelta(date_form, 0, 0, 1)
+                
+            holiday = True
+        else :
+            holiday = False
+            
+    return date_form
+
+def ael_custom_dialog_main( parameters, dictExtra ):
+ 
+    eii = dictExtra.At('customData')
+    queryDict = eii.ExtensionObject()
+ 
+
+    #The parent node that the attribute nodes should be added to 
+    parentNode = queryDict['parentnode']
+    #The query class, for instance FInstrument, chosen in Insert Items
+    cl = queryDict['class']
+    #The full method chain, for instance Underlying.ExpiryDate
+    methodChainFull = queryDict['methodchainfull']
+    #The relation part of the method chain, for instance Underlying
+    methodChainRelPart = queryDict['methodchainrelationpart']
+    #The tail of the method chain, for instance ExpiryDate
+    methodChainTail = queryDict['methodchaintail']
+ 
+    #Add the "From" and "To" nodes to parent node using the full  method chain
+    from_date, to_date = last_year_business_day(False), acm.Time().DateAddDelta(last_year_business_day(True), 0, 0, 1)
+    
+    parentNode.AddAttrNode(methodChainFull,'GREATER_EQUAL', from_date)
+    parentNode.AddAttrNode(methodChainFull,'LESS_EQUAL', to_date)
+    parentNode.AddAttrNode(methodChainFull,'NOT_EQUAL', to_date)
+ 
+    return parentNode
+
+def ael_custom_dialog_show(shell, params):
+    #Not supported. DO NOTHING HERE!
+    pass
+
+
+...
+
+  InsertItems_ThisMonth
+
+import acm, ael
+from datetime import datetime, date, timedelta
+
+def this_month_business_day(forLast):
+    dayUse = acm.Time().DaysInMonth(acm.Time().DateToday()) if forLast else 1
+    year, month, day = acm.Time().DateToYMD(acm.Time().DateToday())
+    date_form = acm.Time.DateFromYMD(int(year), int(month), int(dayUse))
+    
+    jakarta_calendar = acm.FCalendar['Jakarta'].Dates()
+    jakarta_date = [date.Date() for date in jakarta_calendar if str(year) in str(date.Date())]
+    
+    holiday = True
+    while holiday:
+        check_day = acm.Time.DayOfWeek(date_form)
+        
+        if check_day in ["Saturday", "Sunday"] or date_form in jakarta_date :
+            if forLast == True :
+                date_form = acm.Time().DateAddDelta(date_form, 0, 0, -1)
+            else :
+                date_form = acm.Time().DateAddDelta(date_form, 0, 0, 1)
+                
+            holiday = True
+        else :
+            holiday = False
+            
+    return date_form
+
+def ael_custom_dialog_main( parameters, dictExtra ):
+ 
+    eii = dictExtra.At('customData')
+    queryDict = eii.ExtensionObject()
+ 
+
+    #The parent node that the attribute nodes should be added to 
+    parentNode = queryDict['parentnode']
+    #The query class, for instance FInstrument, chosen in Insert Items
+    cl = queryDict['class']
+    #The full method chain, for instance Underlying.ExpiryDate
+    methodChainFull = queryDict['methodchainfull']
+    #The relation part of the method chain, for instance Underlying
+    methodChainRelPart = queryDict['methodchainrelationpart']
+    #The tail of the method chain, for instance ExpiryDate
+    methodChainTail = queryDict['methodchaintail']
+ 
+    #Add the "From" and "To" nodes to parent node using the full  method chain
+    from_date, to_date = this_month_business_day(False), this_month_business_day(True)
+    
+    dateTimeTo1 = datetime.strptime(str(to_date), "%Y-%m-%d").strftime("%x%Y 00:00:00")
+    dateTimeTo2 = datetime.strptime(str(to_date), "%Y-%m-%d").strftime("%x%Y 12:00:00 AM")
+    
+    dateTimeTo1 = dateTimeTo1.replace(dateTimeTo1.split("/")[-1], dateTimeTo1.split("/")[-1][2:])
+    dateTimeTo2 = dateTimeTo2.replace(dateTimeTo2.split("/")[-1], dateTimeTo2.split("/")[-1][2:])
+    
+    parentNode.AddAttrNode(methodChainFull,'GREATER_EQUAL', from_date)
+    parentNode.AddAttrNode(methodChainFull,'LESS_EQUAL', to_date)
+    
+    #parentNode.AddAttrNode(methodChainFull,'NOT_EQUAL', to_date)
+    #print(f"^(?!.*{str(to_date)}).*")
+    
+    #print(parentNode)
+    return parentNode
+
+def ael_custom_dialog_show(shell, params):
+    #Not supported. DO NOTHING HERE!
+    pass
+
+...
+
+  InsertItems_ThisYear
+
+import acm
+from datetime import datetime, date, timedelta
+
+def this_year_business_day(forLast):
+    year, month, day = acm.Time().DateToYMD(acm.Time().DateToday())
+    days_use, month_use = [31, 12] if forLast == True else [1, 1]
+    date_form = acm.Time.DateFromYMD(int(year), month_use, days_use)
+
+    jakarta_calendar = acm.FCalendar['Jakarta'].Dates()
+    jakarta_date = [date.Date() for date in jakarta_calendar if str(year) in str(date.Date())]
+    
+    holiday = True
+    while holiday:
+        check_day = acm.Time.DayOfWeek(date_form)
+        
+        if check_day in ["Saturday", "Sunday"] or date_form in jakarta_date :
+            if forLast == True :
+                date_form = acm.Time().DateAddDelta(date_form, 0, 0, -1)
+            else :
+                date_form = acm.Time().DateAddDelta(date_form, 0, 0, 1)
+                
+            holiday = True
+        else :
+            holiday = False
+            
+    return date_form
+
+def ael_custom_dialog_main( parameters, dictExtra ):
+ 
+    eii = dictExtra.At('customData')
+    queryDict = eii.ExtensionObject()
+ 
+
+    #The parent node that the attribute nodes should be added to 
+    parentNode = queryDict['parentnode']
+    #The query class, for instance FInstrument, chosen in Insert Items
+    cl = queryDict['class']
+    #The full method chain, for instance Underlying.ExpiryDate
+    methodChainFull = queryDict['methodchainfull']
+    #The relation part of the method chain, for instance Underlying
+    methodChainRelPart = queryDict['methodchainrelationpart']
+    #The tail of the method chain, for instance ExpiryDate
+    methodChainTail = queryDict['methodchaintail']
+ 
+    #Add the "From" and "To" nodes to parent node using the full  method chain
+    from_date, to_date = this_year_business_day(False), acm.Time().DateAddDelta(this_year_business_day(True), 0, 0, 1)
+    
+    parentNode.AddAttrNode(methodChainFull,'GREATER_EQUAL', from_date)
+    parentNode.AddAttrNode(methodChainFull,'LESS_EQUAL', to_date)
+    parentNode.AddAttrNode(methodChainFull,'NOT_EQUAL', to_date)
+ 
+    return parentNode
+
+def ael_custom_dialog_show(shell, params):
+    #Not supported. DO NOTHING HERE!
+    pass
+
+
+...
+
+}
+
+clx FTrade [FPythonCode] {
+  InsertItems_EndOfMonth
+import acm
+def EndOfMonth(date):
+    y=0
+    m=0
+    dayOfTheMonth = acm.Time().DayOfMonth(date)
+    daysInMonth = acm.Time().DaysInMonth(date)
+    days = daysInMonth - dayOfTheMonth 
+    eof = acm.Time().DateAddDelta(date, y, m, days)
+    return eof
+ 
+def ael_custom_dialog_main( parameters, dictExtra ):
+ 
+    eii = dictExtra.At('customData')
+    queryDict = eii.ExtensionObject()
+ 
+
+    #The parent node that the attribute nodes should be added to 
+    parentNode = queryDict['parentnode']
+    #The query class, for instance FInstrument, chosen in Insert Items
+    cl = queryDict['class']
+    #The full method chain, for instance Underlying.ExpiryDate
+    methodChainFull = queryDict['methodchainfull']
+    #The relation part of the method chain, for instance Underlying
+    methodChainRelPart = queryDict['methodchainrelationpart']
+    #The tail of the method chain, for instance ExpiryDate
+    methodChainTail = queryDict['methodchaintail']
+ 
+    #Add the "From" and "To" nodes to parent node using the full  method chain
+    Today = acm.Time().DateToday()
+    FromDate = Today
+    ToDate = EndOfMonth(Today)
+ 
+    parentNode.AddAttrNode(methodChainFull,'GREATER_EQUAL', FromDate)
+    parentNode.AddAttrNode(methodChainFull,'LESS_EQUAL', ToDate)
+    
+    periodNode = parentNode.AddOpNode('AND')
+    periodNode.AddAttrNode(methodChainFull,'NOT_EQUAL', to_date)
+ 
+    return parentNode
+ 
+def ael_custom_dialog_show(shell, params):
+    #Not supported. DO NOTHING HERE!
+    pass
+
+...
+
+}
+

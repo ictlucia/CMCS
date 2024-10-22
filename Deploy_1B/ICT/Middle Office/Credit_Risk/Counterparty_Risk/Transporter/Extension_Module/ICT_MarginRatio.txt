@@ -1,0 +1,321 @@
+#
+# Front Arena exported extension module.
+# source          ""
+# timestamp (utc) "2024-04-05 08:55:16.7"
+# ***** DO NOT EDIT! *****
+#
+name        "ICT_MarginRatio"
+description ""
+
+groups {
+}
+
+decls[FColumnDefinition] {
+  "MarginRatio" ( "sheet columns.portfoliosheet" "sheet columns.tradesheet" ) "";
+}
+
+clx FTradingSheet [FColumnDefinition] {
+  MarginRatio =
+  Access=ReadOnly
+  Description=suggested call amount / collateral mtm in percentage.
+  ExtensionAttribute=MarginRatio
+  Format=
+  GroupLabel=FieldCustom
+  LabelList=Margin Ratio (%)
+  Name=Margin Ratio
+
+
+}
+
+decls[FExtensionAttribute] {
+}
+
+clx FMarginingSetInstrumentAndTrades [FExtensionAttribute] {
+  MarginRatio = activeMarginCallSuggestedAmount / marginingSetExposureDisplay * 100;
+}
+
+clx FSingleInstrumentAndTrades [FExtensionAttribute] {
+  MarginRatio = select(object.Instrument.InsType, 
+  "Bond"->nil, 
+  default->parent:activeMarginCallSuggestedAmount / parent:marginingSetExposureDisplay * 100);
+}
+
+clx FTradeRow [FExtensionAttribute] {
+  MarginRatio = select(object.Instrument.InsType, 
+  "Bond"->nil, 
+  default->parent:activeMarginCallSuggestedAmount / parent:marginingSetExposureDisplay * 100);
+}
+
+decls[FPythonCode] {
+}
+
+clx FObject [FPythonCode] {
+  GMRAEmailTransfer
+import re
+import acm
+import FParameterUtils
+from ICTCustomFEmailTransfer import ICTCustomFEmailTransfer
+
+def filter_tag(matched_string):
+    if "<RawData />" in matched_string:
+        return None
+    else:
+        data = matched_string.split('<RawData>')[1].split('</RawData>')[0]
+        return data
+        
+def sort_row_type(row_data, indo_trades, inter_trades):
+    """Sort the row to be either GMRA_INDO or GMRA_International"""
+    for lead_row, master_agreement, margin_ratio, suggested_call in row_data:
+        try:
+            int(lead_row)
+        except:
+            continue
+
+
+        if master_agreement is None:
+            continue
+        if "GMRA Indo" in master_agreement and margin_ratio is not None:
+            indo_trades.append([lead_row, margin_ratio])
+        elif "GMRA Int" in master_agreement and suggested_call is not None:
+            inter_trades.append([lead_row, suggested_call])
+    return indo_trades, inter_trades
+    
+def capture_indo_trades(captured_trades, indo_trades):
+    """Capture Trades for GMRA_INDO"""
+    comp_rule = acm.FComplianceRule['GMRA_INDO']
+    thresholds = comp_rule.Thresholds()
+    
+    for lead_row, margin_ratio in indo_trades:
+        try:
+            for threshold in thresholds:
+                comparison_type = threshold.ComparisonType()
+                if comparison_type == "Greater" and float(margin_ratio) > threshold.ValueAdjusted():
+                        captured_trades.append(lead_row)
+                        
+                elif comparison_type == "Greater or Equal" and float(margin_ratio) >= threshold.ValueAdjusted():
+                        captured_trades.append(lead_row)
+                        
+                elif comparison_type == "Less" and float(margin_ratio) < threshold.ValueAdjusted():
+                        captured_trades.append(lead_row)
+                        
+                elif comparison_type == "Less or Equal" and float(margin_ratio) <= threshold.ValueAdjusted():
+                        captured_trades.append(lead_row)
+                        
+                elif comparison_type == "Equal" and float(margin_ratio) == threshold.ValueAdjusted():
+                        captured_trades.append(lead_row)
+                
+                elif comparison_type == "Not Equal" and float(margin_ratio) != threshold.ValueAdjusted():
+                        captured_trades.append(lead_row)
+        except:
+            pass
+    return captured_trades
+    
+def capture_international_trades(captured_trades, inter_trades):
+    comp_rule = acm.FComplianceRule['GMRA_International']
+    thresholds = comp_rule.Thresholds()
+
+    for lead_row, suggested_amount in inter_trades:
+        try:
+            for threshold in thresholds:
+                comparison_type = threshold.ComparisonType()
+                if comparison_type == "Greater" and float(suggested_amount) > threshold.ValueAdjusted():
+                        captured_trades.append(lead_row)
+                        
+                elif comparison_type == "Greater or Equal" and float(suggested_amount) >= threshold.ValueAdjusted():
+                        captured_trades.append(lead_row)
+                        
+                elif comparison_type == "Less" and float(suggested_amount) < threshold.ValueAdjusted():
+                        captured_trades.append(lead_row)
+                        
+                elif comparison_type == "Less or Equal" and float(suggested_amount) <= threshold.ValueAdjusted():
+                        captured_trades.append(lead_row)
+                        
+                elif comparison_type == "Equal" and float(suggested_amount) == threshold.ValueAdjusted():
+                        captured_trades.append(lead_row)
+                
+                elif comparison_type == "Not Equal" and float(suggested_amount) != threshold.ValueAdjusted():
+                        captured_trades.append(lead_row)
+        except:
+            pass
+    return captured_trades
+    
+def get_column_label_index(ReportXML, column_label):
+    xml_string = ReportXML.split("<Label>")[1:]
+    column_length = len(xml_string)
+    for row in range(column_length):
+        # Now we get the individual row from rows
+        label = xml_string[row].split("</Label>")[0]
+        if label == column_label:
+            return row
+    raise Exception(f"Workbook must contain column with label '{column_label}'")
+        
+def process_subject(subject_string):
+    subject_string = subject_string.replace("<Date>", acm.Time.DateToday())
+    return subject_string
+
+def pre_process_GMRA(reportObj, params, ReportXML):
+    captured_trades = []
+    indo_trades = []
+    inter_trades = []
+    row_data = []
+    
+    columns, xml_string = ReportXML.split("</Settings>") #Get rid of settings
+    temp = ReportXML.split("<Label>")[1:]
+    column_length = len(xml_string)
+    margin_index = get_column_label_index(columns, "Margin Ratio (%)")
+    call_amount_index = get_column_label_index(columns, "Sugg Call Amount")
+    master_agreement_index = get_column_label_index(columns, "MarginingSet.CollateralAnnex.ExposureCalculation.Name")
+    
+    xml_string = xml_string.split("<Rows><Row>")[1:] # Get the data rows
+    for row in xml_string:
+        # Now we get the individual row from rows
+        rows = row.split("<Label>")[1:] # Get the left most label
+        for temp in rows:
+            lead_row, data_row = temp.split("</Label>")
+            regex = "Appearance[\s\S]*?><RawData[\s\S]*?</Cell>" # Get the raw data tag
+            matches = re.findall(regex, data_row)
+            for i in range(len(matches)):
+                if i % column_length  == master_agreement_index:
+                    master_agreement = filter_tag(matches[i]) # Filter the value of master_agreement
+                
+                if i % column_length  == margin_index:
+                    margin_ratio = filter_tag(matches[i]) # Filter the value of master_agreement
+                    
+                if i % column_length  == call_amount_index:
+                    suggested_call = filter_tag(matches[i]) # Filter the value of master_agreement
+            
+            row_data.append([lead_row, master_agreement, margin_ratio, suggested_call])
+
+    indo_trades, inter_trades = sort_row_type(row_data, indo_trades, inter_trades)
+    captured_trades = capture_indo_trades(captured_trades, indo_trades)
+    captured_trades = capture_international_trades(captured_trades, inter_trades)
+    
+    reportObj.captured_trades = captured_trades
+    return ReportXML
+
+def trades_as_html_list(captured_trades):
+    trades_as_string = "<ul>"
+    for trade in captured_trades:
+        trades_as_string += f"<li>{trade}</li>"
+    trades_as_string += "</ul>"
+    return trades_as_string
+    
+def send_GMRA_to_email(reportObj, params, ReportXML):
+    if len(reportObj.captured_trades) == 0:
+        print("No breached trades. No email will be sent")
+        return None
+    
+    SMTPParameters = FParameterUtils.GetFParameters(acm.GetDefaultContext(), 'CustomReportSMTPParameters')
+    hostname = str(SMTPParameters.At('SMTPServer'))
+    port = int(SMTPParameters.At('SMTPPort').Text())
+    username = SMTPParameters.At('EmailUserName').Text()
+    password = SMTPParameters.At('SMTPPassword').Text()
+    tls_mode = bool(SMTPParameters.At('SecureSMTPConnection').Text())
+
+    # Setup SMTPServer Object
+    SMTPServer = ICTCustomFEmailTransfer.SMTPServer(hostname=hostname, port=port, username=username, password=password, tls_mode=tls_mode)
+    
+    # Get Reports
+    generated_reports = reportObj.generatedFilePaths
+    
+    # Setup Message Object
+    split_params = params.split("\\ ")
+    recipients = split_params[0].split(", ")
+    subject = process_subject(split_params[1])
+    sender = SMTPParameters.At('EmailSender').Text()
+    body = split_params[2]
+    trade_list = trades_as_html_list(reportObj.captured_trades)
+    body = body.replace("<trades>", trade_list)
+    cc = None if len(split_params) <= 3 else split_params[3].split(", ")
+    
+    MessageObject = ICTCustomFEmailTransfer.Message(recipients, subject, sender, body, cc, generated_reports)
+    
+    # Send email
+    EmailTransfer = ICTCustomFEmailTransfer(SMTPServer, MessageObject)
+    
+    try:
+        EmailTransfer.Send()
+        print("Email transfer successful for", reportObj.params.fileName)
+    except Exception as e:
+        print("Email Transfer failed:", e)                
+
+...
+
+}
+
+decls[FXSLTemplate] {
+  "FCSVTemplate" ( "aef reporting.secondary templates txt" ) "";
+}
+
+clx FObject [FXSLTemplate] {
+  FCSVTemplate
+<?xml version='1.0'?>
+<!DOCTYPE xsl:stylesheet [
+  <!ENTITY comma "<xsl:text>,</xsl:text>">
+  <!ENTITY lf "<xsl:text>&#10;</xsl:text>">
+]>
+
+<xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
+<xsl:output method="text" encoding="UTF-8"/>
+<xsl:strip-space elements="*"/>
+
+<xsl:template match="/">
+        
+<!-- Reports -->
+    <xsl:for-each select="//PRIMEReport">                         
+            Type:&comma;<xsl:value-of select="current()/Type"/>&lf;
+            Name:&comma;<xsl:value-of select="current()/Name"/>&lf;
+            Time:&comma;<xsl:value-of select="concat(substring(LocalTime,1,10),' ',substring(LocalTime,12,8),' (UTC', substring(LocalTime,20,6),')')"/>&lf;
+            <xsl:apply-templates select="current()/ReportContents"/>             
+     </xsl:for-each>     
+</xsl:template>
+
+<xsl:template match="Table">
+Table name:&comma;<xsl:value-of select="Name"/>&lf;
+&comma;
+<xsl:for-each select="Columns/Column">
+    <xsl:value-of select="Label"/>&comma;
+</xsl:for-each>
+&lf;
+<xsl:apply-templates select="Rows/Row"/>
+</xsl:template>
+
+<xsl:template match="Row">
+    <xsl:value-of select="Label"/>&comma;
+    <xsl:for-each select="Cells/Cell">
+        <xsl:call-template name="CellData" />&comma; 
+    </xsl:for-each>
+    &lf;
+    <xsl:apply-templates select="Rows/Row"/>
+</xsl:template>
+
+<xsl:template name="CellData">
+        <xsl:choose>
+            <xsl:when test="RawData">
+                <xsl:value-of select="RawData"/>
+            </xsl:when>
+            <xsl:when test="FormattedData">
+                <xsl:value-of select="FormattedData"/>
+            </xsl:when>
+            <xsl:when test="DefaultData">
+                <xsl:choose>
+                        <xsl:when test="ValueType">
+                                <xsl:text>#</xsl:text>
+                        </xsl:when>
+                        <xsl:otherwise>
+                                <xsl:value-of select="DefaultData"/>
+                        </xsl:otherwise>
+                </xsl:choose>
+            </xsl:when>
+            <xsl:otherwise>
+                  <xsl:message terminate="yes"><xsl:text>No dataformat turned on</xsl:text></xsl:message>
+            </xsl:otherwise>
+        </xsl:choose>
+</xsl:template>
+
+</xsl:stylesheet>
+
+...
+
+}
+

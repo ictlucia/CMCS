@@ -1,0 +1,10 @@
+INSTRUMENT,,,,,,,,,,LEG,,,,,,,,,,,,,/LEG,/INSTRUMENT
+PAY_OFFSET_METHOD,MTM_FROM_FEED,QUOTATION_SEQNBR.NAME,INSID,EXP_DAY,OTC,CONTR_SIZE,CURR.INSID,SPOT_BANKING_DAYS_OFFSET,INSTYPE,START_DAY,PAY_CALNBR.CALID,END_DATE_METHOD,INTEREST_PAYMENT_TIME,DAYCOUNT_METHOD,END_DAY,PAYLEG,ROLLING_BASE_DAY,ROLLING_PERIOD,CURR.INSID,PAY_DAY_METHOD,NOMINAL_FACTOR,ROLLING_CONVENTION,,
+Business Days,Yes,Per Unit,ATS,9999-12-31,Yes,1,ATS,2,Curr,1970-01-01,Frankfurt,Relative Start,In Arrears,Act/360,9999-12-31,No,1971-01-01,0d,ATS,Following,1,None,,
+Business Days,Yes,Per Unit,BEF,9999-12-31,Yes,1,BEF,2,Curr,1970-01-01,Frankfurt,Relative Start,In Arrears,Act/360,9999-12-31,No,1971-01-01,0d,BEF,Following,1,None,,
+Business Days,Yes,Per Unit,DEM,9999-12-31,Yes,1,DEM,2,Curr,1970-01-01,Frankfurt,Relative Start,In Arrears,Act/360,9999-12-31,No,1971-01-01,0d,DEM,Following,1,None,,
+Business Days,Yes,Per Unit,ESP,9999-12-31,Yes,1,ESP,2,Curr,1970-01-01,Frankfurt,Relative Start,In Arrears,Act/360,9999-12-31,No,1971-01-01,0d,ESP,Following,1,None,,
+Business Days,Yes,Per Unit,FIM,9999-12-31,Yes,1,FIM,2,Curr,1970-01-01,Frankfurt,Relative Start,In Arrears,Act/360,9999-12-31,No,1971-01-01,0d,FIM,Following,1,None,,
+Business Days,Yes,Per Unit,FRF,9999-12-31,Yes,1,FRF,2,Curr,1970-01-01,Frankfurt,Relative Start,In Arrears,Act/360,9999-12-31,No,1971-01-01,0d,FRF,Following,1,None,,
+Business Days,Yes,Per Unit,ITL,9999-12-31,Yes,1,ITL,2,Curr,1970-01-01,Frankfurt,Relative Start,In Arrears,Act/360,9999-12-31,No,1971-01-01,0d,ITL,Following,1,None,,
+Business Days,Yes,Per Unit,NLG,9999-12-31,Yes,1,NLG,2,Curr,1970-01-01,Frankfurt,Relative Start,In Arrears,Act/360,9999-12-31,No,1971-01-01,0d,NLG,Following,1,None,,

@@ -1,0 +1,20 @@
++BaseCore
++PS_Utilities
++PS_ProjectTools
++Front Office
++Middle Office
++Back Office
++Accounting
++Integrations
++Trade and Limit Workflow
++Reports
++StructuredProducts
++FRTB
++Distribution
++PsRvm_RiskManager_Debugger
+%org
+ExportAccountingPackage
+BM_Reporting_Grouping_Menu
+BM_Custom_Columns
+%group
+%user

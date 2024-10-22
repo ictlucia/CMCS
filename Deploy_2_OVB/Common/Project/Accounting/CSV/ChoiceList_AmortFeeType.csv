@@ -1,0 +1,6 @@
+CHOICELIST,,/CHOICELIST
+LIST,ENTRY,
+Additional Payments,Attributable Fee,
+Additional Payments,Non-Attributable Fee (Linear),
+Additional Payments,Non-Attributable Fee (As Fee),
+Additional Payments,Modification PV Fee,

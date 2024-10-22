@@ -1,0 +1,5 @@
+PS_SmartFXInDealPosting
+PS_SmartFXOutTransactionData
+PS_SmartFXOutReconciliation
+PS_SmartFXStaticData
+BM_OutStaticData

@@ -1,0 +1,12 @@
+CONTEXTLINK,,,,,,,,,,/CONTEXTLINK
+CONTEXT_SEQNBR.NAME,INSADDR.INSID,GROUP_CHLNBR.LIST,GROUP_CHLNBR.ENTRY,CURR.INSID,DISC_TYPE_CHLNBR.LIST,DISC_TYPE_CHLNBR.ENTRY,MAPPING_TYPE,NAME,TYPE,
+Global,CHF/LIBOR/6M,,,CHF,,,Instrument,CHF-6M,Yield Curve,
+Global,,,,CHF,DiscType,COLL-USD,Instrument,CHF-COLL-USD,Yield Curve,
+Global,,ValGroup,CCS-Basis,CHF,,,Val Group,CHF-COLL-USD,Yield Curve,
+Global,USD,,,CHF,DiscType,COLL-USD,Instrument,CHF-COLL-USD,Yield Curve,
+Global,,,,CHF,DiscType,FX,Instrument,CHF-FX,Yield Curve,
+Global,USD,,,CHF,,,Instrument,CHF-FX,Yield Curve,
+Global,,,,CHF,,,Instrument,CHF-SARON,Yield Curve,
+Global,CHF/SARON,,,CHF,,,Instrument,CHF-SARON,Yield Curve,
+Global,,,,CHF,DiscType,IBOR,Instrument,CHF-SWAP,Yield Curve,
+Global,,ValGroup,RateIndex,CHF,,,Val Group,CHF-SWAP,Yield Curve,

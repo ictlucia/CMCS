@@ -1,0 +1,2724 @@
+#
+# Front Arena exported extension module.
+# source          ""
+# timestamp (utc) "2024-10-01 05:40:16.2"
+# ***** DO NOT EDIT! *****
+#
+name        "PS_AccountingPSAK"
+description "$Id$"
+
+groups {
+}
+
+decls[FColumnDefinition] {
+  "Accounting Accrued Interest FI" ( "default accounting columns.tradeandcombinations" "sheet columns.tradesheet" ) "";
+  "Accounting Combination Contract Trade Number Trade Time" ( "accounting dates.combination" "sheet columns.dealsheet" "sheet columns.tradesheet" ) "";
+  "Accounting Contract Trade Number Trade Time" ( "accounting dates.trade" "sheet columns.dealsheet" "sheet columns.tradesheet" ) "";
+  "Accounting Daily FX Revaluation Amount" ( "sheet columns.journalsheet" ) "";
+  "Accounting Depreciation Minus One BusDay" ( "default accounting columns.tradeandcombinations" "sheet columns.tradesheet" ) "";
+  "Accounting Expiry Day-1 Business Day" ( "accounting dates.trade" "sheet columns.tradesheet" ) "";
+  "Accounting FX Revaluation Currency" ( "sheet columns.journalsheet" ) "";
+  "Accounting Instrument End Date Minus One Day" ( "accounting dates.trade" ) "";
+  "Accounting Leg Contract Trade Number Trade Time" ( "accounting dates.leg" "sheet columns.dealsheet" "sheet columns.tradesheet" ) "";
+  "Accounting MMLD notional" ( "default accounting columns.tradeandcombinations" "sheet columns.tradesheet" ) "";
+  "Accounting Moneyflow Contract Trade Number Trade Time" ( "accounting dates.moneyflow" "sheet columns.moneyflowsheet" ) "";
+  "Accounting MtM less Accrued Interest" ( "sheet columns.tradesheet" ) "";
+  "Accounting Nominal Amount Swaption" ( "default accounting columns.tradeandcombinations" "sheet columns.dealsheet" "sheet columns.tradesheet" ) "";
+  "Accounting Premium Rounded" ( "default accounting columns.tradeandcombinations" "sheet columns.tradesheet" ) "";
+  "Accounting Remaining Premium" ( "default accounting columns.tradeandcombinations" "sheet columns.tradesheet" ) "";
+  "Accounting RPL Minus One BusDay" ( "default accounting columns.tradeandcombinations" "sheet columns.tradesheet" ) "";
+  "Accounting Traded Interest" ( "default accounting columns.tradeandcombinations" "sheet columns.moneyflowsheet" "sheet columns.tradesheet" ) "";
+  "Accounting Traded Interest Rounded" ( "default accounting columns.tradeandcombinations" "sheet columns.tradesheet" ) "";
+  "Accounting UPL" ( "default accounting columns.tradeandcombinations" "sheet columns.tradesheet" ) "";
+  "Accounting Value Day-1 Business Day" ( "sheet columns.tradesheet" ) "";
+  "Accrual End Date Minus One" ( "accounting dates.moneyflow" "default accounting columns.moneyflow" "sheet columns.moneyflowsheet" ) "";
+  "Fee Realized IDR" ( "default accounting columns.tradeandcombinations" "sheet columns.tradesheet" ) "";
+  "Forward Premium" ( "default accounting columns.tradeandcombinations" ) "";
+  "FX Position IDR Equiv Amt" ( "default accounting columns.tradeandcombinations" "sheet columns.tradesheet" ) "";
+  "FXO Digital Payout Amount" ( "default accounting columns.tradeandcombinations" "sheet columns.dealsheet" "sheet columns.tradesheet" ) "";
+  "IFRS Remaining Premium Discount" ( "sheet columns.tradesheet" ) "";
+  "LinkedTrade" ( "sheet columns.journalsheet" ) "";
+  "Nominal Amount Accounting Currency 2" ( "default accounting columns.tradeandcombinations" ) "";
+  "Nominal Amount Amortized" ( "sheet columns.tradesheet" ) "";
+  "Nominal Amount CCS Curr One" ( "default accounting columns.tradeandcombinations" "sheet columns.tradesheet" ) "";
+  "Nominal Amount CCS Curr Two" ( "sheet columns.tradesheet" ) "";
+  "Nominal Amount FX Call" ( "default accounting columns.tradeandcombinations" "sheet columns.dealsheet" "sheet columns.tradesheet" ) "";
+  "Nominal Amount FX Put" ( "default accounting columns.tradeandcombinations" "sheet columns.dealsheet" "sheet columns.tradesheet" ) "";
+  "Nominal Amount FXO Call" ( "default accounting columns.tradeandcombinations" "sheet columns.tradesheet" ) "";
+  "Nominal Amount FXO Put" ( "default accounting columns.tradeandcombinations" "sheet columns.tradesheet" ) "";
+  "ODF Dealt Amount" ( "default accounting columns.tradeandcombinations" "sheet columns.tradesheet" ) "";
+  "ODF Dealt Currency" ( "default accounting columns.tradeandcombinations" "sheet columns.tradesheet" ) "";
+  "ODF Drawdown Amount Rate 1" ( "default accounting columns.tradeandcombinations" "sheet columns.tradesheet" ) "";
+  "ODF Drawdown Amount Rate 2" ( "default accounting columns.tradeandcombinations" "sheet columns.tradesheet" ) "";
+  "ODF Drawdown Rate 1" ( "default accounting columns.tradeandcombinations" "sheet columns.tradesheet" ) "";
+  "ODF Drawdown Rate 2" ( "default accounting columns.tradeandcombinations" "sheet columns.tradesheet" ) "";
+  "Original Premium Accounting Rounded" ( "default accounting columns.tradeandcombinations" ) "";
+  "Original Premium Discount" ( "default accounting columns.tradeandcombinations" "sheet columns.tradesheet" ) "";
+  "OriginalFxSwap" ( "sheet columns.tradesheet" ) "";
+  "Portfolio Book Unrealized Profit and Loss" ( "default accounting columns.tradeandcombinations" ) "";
+  "Portfolio Closed Tax Lots" ( "sheet columns.tradesheet" ) "";
+  "Portfolio Fees Realized" ( "default accounting columns.tradeandcombinations" ) "";
+  "Portfolio Instrument Accrued" ( "default accounting columns.leg" "default accounting columns.tradeandcombinations" "sheet columns.dealsheet" ) "";
+  "Portfolio Profit and Loss Original Premium Discount" ( "sheet columns.tradesheet" ) "";
+  "Portfolio Profit and Loss Remaining Premium Discount" ( "default accounting columns.tradeandcombinations" "sheet columns.portfoliosheet" "sheet columns.tradesheet" ) "";
+  "Portfolio Profit Loss Lot Depreciation Yield" ( "sheet columns.tradesheet" ) "";
+  "Portfolio Realized Profit and Loss Daily" ( "default accounting columns.tradeandcombinations" "sheet columns.dealsheet" ) "";
+  "Portfolio Tax Lot Closings" ( "sheet columns.tradesheet" ) "";
+  "Portfolio Unrealized Profit and Loss" ( "default accounting columns.leg" "default accounting columns.tradeandcombinations" ) "";
+  "Portfolio Value" ( "default accounting columns.leg" "default accounting columns.tradeandcombinations" ) "";
+  "Portfolio Value No Payments" ( "default accounting columns.tradeandcombinations" "sheet columns.dealsheet" "sheet columns.tradesheet" ) "";
+  "PSAK Bond Fair Value" ( "default accounting columns.tradeandcombinations" "sheet columns.tradesheet" ) "";
+  "PSAK Bond Future Contract Value" ( "default accounting columns.tradeandcombinations" "sheet columns.tradesheet" ) "";
+  "PSAK Bond Option Contract Value" ( "default accounting columns.tradeandcombinations" "sheet columns.tradesheet" ) "";
+  "PSAK Book UPL IDR" ( "sheet columns.tradesheet" ) "";
+  "PSAK FI Interest Income" ( "default accounting columns.moneyflow" "sheet columns.moneyflowsheet" ) "";
+  "PSAK FX Revaluation Amount" ( "default accounting columns.moneyflow" "sheet columns.moneyflowsheet" ) "";
+  "PSAK Instrument Accrued IDR" ( "default accounting columns.tradeandcombinations" "sheet columns.tradesheet" ) "";
+  "PSAK Nominal Amt IDR Currency One" ( "default accounting columns.moneyflow" "sheet columns.moneyflowsheet" ) "";
+  "PSAK Nominal Amt IDR Currency One Trade" ( "sheet columns.tradesheet" ) "";
+  "PSAK Proceeds Minus PureRPL" ( "default accounting columns.tradeandcombinations" "sheet columns.tradesheet" ) "";
+  "Realized Interest" ( "default accounting columns.moneyflow" "sheet columns.moneyflowsheet" ) "";
+  "Realized Upfront Fee" ( "sheet columns.tradesheet" ) "";
+  "Remaining Premium" ( "default accounting columns.tradeandcombinations" "sheet columns.dealsheet" ) "";
+  "SameTradeDayasValueDay" ( "sheet columns.journalsheet" "sheet columns.tradesheet" ) "";
+  "Split Portfolio Realized Deprec Profit and Loss split by Attributable Fee" ( "default accounting columns.tradeandcombinations" ) "";
+  "Split Portfolio Realized Deprec Profit and Loss split by Attributable Fee (Accounting CCY)" ( "default accounting columns.tradeandcombinations" ) "";
+  "Split Portfolio Realized Deprec Profit and Loss split by Discount" ( "default accounting columns.tradeandcombinations" ) "";
+  "Split Portfolio Realized Deprec Profit and Loss split by Discount (Accounting CCY)" ( "default accounting columns.tradeandcombinations" ) "";
+  "Split Portfolio Realized Deprec Profit and Loss split by Modification PV Fee" ( "default accounting columns.tradeandcombinations" ) "";
+  "Split Portfolio Realized Deprec Profit and Loss split by Modification PV Fee (Accounting CCY)" ( "default accounting columns.tradeandcombinations" ) "";
+  "Standard Calculations MtM Value BO" ( "default accounting columns.leg" "default accounting columns.tradeandcombinations" "sheet columns.dealsheet" "sheet columns.tradesheet" ) "";
+  "Standard Calculations Nominal Amount" ( "default accounting columns.tradeandcombinations" "sheet columns.dealsheet" "sheet columns.tradesheet" ) "";
+  "Trade Contract" ( "accounting dates.moneyflow" ) "";
+  "Trade Nominal" ( "default accounting columns.tradeandcombinations" ) "";
+  "Trade Value Day-1" ( "sheet columns.tradesheet" ) "";
+  "Value Date FX FarLeg Adjusted" ( "sheet columns.tradesheet" ) "";
+}
+
+clx FAccount [FColumnDefinition] {
+  Depository =
+  ColumnName=Nostro Mirror A/c Name
+  Description=Name of T-Account to map to when account is used in GL
+  GroupLabel=Accounting
+
+
+  Depository2 =
+  ColumnName=Nostro Mirror A/c Number
+  Description=Number of T-Account to map to when account is used in GL
+  GroupLabel=Accounting
+
+
+}
+
+clx FTradingSheet [FColumnDefinition] {
+  Accounting Accrued Interest FI =
+  ExtensionAttribute=accruedFixedIncome
+  GroupLabel=Accounting
+  LabelList=Accounting Accrued Interest FI
+  Name=Accounting Accrued Interest FI
+
+
+  Accounting Combination Contract Trade Number Trade Time =
+  Description=Trade Time date for the referenced Contract Trade
+  GroupLabel=Accounting
+  Method=Trades.First.Contract.TradeTime
+  Name=Combination Contract TrdNbr Trade Time
+
+
+  Accounting Contract Trade Number Trade Time =
+  Description=Trade Time date for the referenced Contract Trade
+  GroupLabel=Accounting
+  Method=Contract.TradeTime
+  Name=Contract TrdNbr Trade Time
+
+
+  Accounting Daily FX Revaluation Amount =
+  ExtensionAttribute=accountingDailyFxRevaluation
+  GroupLabel=Journal
+  LabelList=Accounting Daily FX Revaluation Amount
+  Name=Accounting Daily FX Revaluation Amount
+
+
+  Accounting Depreciation Minus One BusDay =
+  Description=The realized profit and loss stemming from depreciation for a position or portfolio.
+  ExtensionAttribute=deprecRPLColumnMinus1D
+  GroupLabel=Accounting
+  InheritsFrom=Portfolio Profit and Loss Base (Historical FX parametrization)
+  LabelList=Deprec -1BD;Realized Deprec P/L -1BD;Realized Depreciated Profit/Loss -1BD
+  Name=Accounting Depreciation Minus One BusDay
+
+
+  Accounting Expiry Day-1 Business Day =
+  Description=The expiry day of the instrument minus one business day in based on accounting currency calendar.
+  ExtensionAttribute=accountingExpiryDayMinusOneDay
+  GroupLabel=Accounting
+  Name=Expiry Day-1 Business Day
+
+
+  Accounting FX Revaluation Currency =
+  ExtensionAttribute=accountingFxRevaluationCurrency
+  GroupLabel=Journal
+  LabelList=Accounting FX Revaluation Currency
+  Name=Accounting FX Revaluation Currency
+
+
+  Accounting Instrument End Date Minus One Day =
+  ExtensionAttribute=accountingInstrumentEndDateMinusOneDay
+  GroupLabel=Accounting
+  LabelList=Accounting Instrument End Date Minus One Day
+  Name=Accounting Instrument End Date Minus One Day
+
+
+  Accounting Leg Contract Trade Number Trade Time =
+  Description=Trade Time date for the referenced Contract Trade
+  GroupLabel=Accounting
+  Method=Trades.First.Contract.TradeTime
+  Name=Contract Leg TrdNbr Trade Time
+
+
+  Accounting MMLD notional =
+  Access=Read
+  Description== MMLD notional
+  ExtensionAttribute=spnotional
+  Format=Imprecise
+  GroupLabel=Accounting
+  LabelList=Accounting MMLD notional
+  Name=Accounting MMLD notional
+
+
+  Accounting Moneyflow Contract Trade Number Trade Time =
+  Description=Trade Time date for the referenced Contract Trade
+  GroupLabel=Accounting
+  Method=MoneyFlow.Trade.Contract.TradeTime
+  Name=Contract MF TrdNbr Trade Time
+
+
+  Accounting MtM less Accrued Interest =
+  BuildForCashRows=True
+  Description=Accounting MtM less Accrued Interest. Equal to Theoretical Value (MtM for IRS and CCS) less Accruend Interest (Accrued insterst for current cashflow period).
+  ExtensionAttribute=accountingMtmLessAccrued
+  GroupLabel=Accounting
+  InheritsFrom=Portfolio Profit and Loss Base (Historical FX parametrization)
+  LabelList=Accounting MtM less Accrued
+  Name=Accounting MtM less Accrued Interest
+
+
+  Accounting Nominal Amount Swaption =
+  Description=Column to use for nominal of Swaptions
+  ExtensionAttribute=SwaptionNominal
+  GroupLabel=Accounting
+  LabelList=Swaption Nominal;Swaption Nominal Accounting
+  Name=Nominal Amount Swaption
+
+
+  Accounting Premium Rounded =
+  Access=Read
+  Description== Rounded Premium
+  ExtensionAttribute=roundedPremiumacc
+  Format=Imprecise
+  GroupLabel=Accounting
+  LabelList=Accounting Premium Rounded
+  Name=Accounting Premium Rounded
+
+
+  Accounting Remaining Premium =
+  Description=Remaining Premium / Discount.
+  ExtensionAttribute=accountingRemainingPremiumDenominated
+  GroupLabel=Accounting
+  LabelList=Accounting Remaining Premium
+  Name=Accounting Remaining Premium
+
+
+  Accounting RPL Minus One BusDay =
+  Description=The realized profit and loss considered locked in as of the previous business day.
+  ExtensionAttribute=rPLColumnMinus1D
+  GroupLabel=Accounting
+  InheritsFrom=Portfolio Profit and Loss Base (Historical FX parametrization)
+  LabelList=RPL -1BD
+  Name=Accounting RPL Minus One BusDay
+
+
+  Accounting Traded Interest =
+  Description=Traded interest for the position.
+  ExtensionAttribute=accuntingTradedInterest
+  InheritsFrom=Portfolio Profit and Loss Base (Historical FX parametrization)
+  LabelList=Accounting Traded Interest
+  Name=Accounting Traded Interest
+
+
+  Accounting Traded Interest Rounded =
+  Access=Read
+  Class=InstrumentAndTrades
+  Description== Rounded Accrual
+  ExtensionAttribute=roundedAccruedacc
+  Format=Imprecise
+  GroupLabel=Accounting
+  LabelList=Accounting Traded Interest Rounded
+  Name=Accounting Traded Interest Rounded
+
+
+  Accounting UPL =
+  BuildForCashRows=True
+  Description=uPLColumn - interestFromTodayToAccountingDate
+  ExtensionAttribute=accountingUplColumn
+  GroupLabel=Accounting
+  InheritsFrom=Portfolio Profit and Loss Base (Historical FX parametrization)
+  LabelList=Accounting UPL;Accounting P/L;Accounting Profit and Loss
+  Name=Accounting Unrealized Profit/Loss
+
+
+  Accounting Value Day-1 Business Day =
+  Description=The value day of the instrument minus one Business day from the Calendar of the accounting currency
+  ExtensionAttribute=accountingValueDayMinusOneDay
+  GroupLabel=Accounting
+  Name=Value Day-1 Business Day
+
+
+  Accrual End Date Minus One =
+  ExtensionAttribute=EndDateMinusOne
+  GroupLabel=Accounting
+  Name=Accrual End Date Minus One
+
+
+  Fee Realized IDR =
+  BuildForCashRows=True
+  Description=Fee Realized IDR
+  ExtensionAttribute=FeeRealizedIDR
+  GroupLabel=Accounting
+  Name=Fee Realized IDR
+
+
+  FX Position IDR Equiv Amt =
+  BuildForCashRows=True
+  Description=FX Position in IDR Equivalent Amount
+  ExtensionAttribute=FXPositionIDREquivalentAmount
+  GroupLabel=Accounting
+  Name=FX Position IDR Equiv Amt
+
+
+  FXO Digital Payout Amount =
+  Description=The amount to pay or recieve if exercise the digital FXO.
+  ExtensionAttribute=FXOdigitalpayoutAmount
+  GroupLabel=Accounting
+  Name=FXO Digital Payout Amount
+
+
+  IFRS Remaining Premium Discount =
+  BuildForCashRows=True
+  Description=IFRS Remaining Premium Discount
+  ExtensionAttribute=iFRSOriginalPremiumDiscount
+  GroupLabel=Accounting
+  Name=IFRS Remaining Premium Discount
+
+
+  LinkedTrade =
+  Description=Trade or Contract Trade linked to journal
+  ExtensionAttribute=linkedTrade
+  GroupLabel=Journal
+  LabelList=LinkedTrade
+  Name=Linked Trade
+
+
+  Nominal Amount Amortized =
+  Access=ReadOnly
+  Description=Nominal amount difference between  report time T and T-1 for each leg in cash flow instruments.
+  ExtensionAttribute=nominalAmountAccountingOneDay
+  Format=Imprecise
+  GroupLabel=Accounting
+  LabelList=Nominal Amount Amortized
+  Name=Nominal Amount Amortized
+
+
+  Nominal Amount CCS Curr One =
+  ExtensionAttribute=nominalAmountAccountingCCSCurrOne
+  GroupLabel=Accounting
+  Name=Nominal Amount CCS Curr One
+
+
+  Nominal Amount CCS Curr Two =
+  ExtensionAttribute=nominalAmountAccountingCCSCurrTwo
+  GroupLabel=Accounting
+  Name=Nominal Amount CCS Curr Two
+
+
+  Nominal Amount FX Call =
+  Access=ReadOnly
+  Description=The call nominal amount that is used for accounting.
+  ExtensionAttribute=nominalAmountFXCall
+  Format=Imprecise
+  GroupLabel=Accounting
+  LabelList=Nominal Amount FX Call
+  Name=Nominal Amount FX Call
+
+
+  Nominal Amount FX Put =
+  Access=ReadOnly
+  Description=The put nominal amount that is used for accounting.
+  ExtensionAttribute=nominalAmountFXPut
+  Format=Imprecise
+  GroupLabel=Accounting
+  LabelList=Nominal Amount FX Put
+  Name=Nominal Amount FX Put
+
+
+  Nominal Amount FXO Call =
+  Access=ReadOnly
+  Description=The call nominal amount that is used for accounting.
+  ExtensionAttribute=nominalAmountFXOCall
+  Format=Imprecise
+  GroupLabel=Accounting
+  LabelList=Nominal Amount FXO Call
+  Name=Nominal Amount FXO Call
+
+
+  Nominal Amount FXO Put =
+  Access=ReadOnly
+  Description=The put nominal amount that is used for accounting.
+  ExtensionAttribute=nominalAmountFXOPut
+  Format=Imprecise
+  GroupLabel=Accounting
+  LabelList=Nominal Amount FXO Put
+  Name=Nominal Amount FXO Put
+
+
+  ODF Dealt Amount =
+  Class=Trade
+  Description=The Dealt Amount of an ODF
+  ExtensionAttribute=dealtAmount
+  Format=Detailed
+  GroupLabel=Accounting
+  LabelList=Dealt Amount
+
+
+  ODF Dealt Currency =
+  Class=Trade
+  Description=The Dealt Currency of an ODF
+  ExtensionAttribute=dealtCurrency
+  GroupLabel=Accounting
+  LabelList=Dealt Curr
+
+
+  ODF Drawdown Amount Rate 1 =
+  Class=Trade
+  Description=Returns the Amount based on Rate1 from the Exercise Event table for drawdown
+  ExtensionAttribute=drawdownAmountRate1
+  GroupLabel=Accounting
+  LabelList=Amount Rate 1
+
+
+  ODF Drawdown Amount Rate 2 =
+  Class=Trade
+  Description=Returns the Amount based on Rate2 from the Exercise Event table for drawdown
+  ExtensionAttribute=drawdownAmountRate2
+  GroupLabel=Accounting
+  LabelList=Amount Rate 2
+
+
+  ODF Drawdown Rate 1 =
+  Class=Trade
+  Description=Returns the Rate1 from the Exercise Event table for drawdown
+  ExtensionAttribute=drawdownRate1
+  GroupLabel=Accounting
+  LabelList=Rate 1
+
+
+  ODF Drawdown Rate 2 =
+  Class=Trade
+  Description=Returns the Rate2 from the Exercise Event table for drawdown
+  ExtensionAttribute=drawdownRate2
+  GroupLabel=Accounting
+  LabelList=Rate 2
+
+
+  Original Premium Accounting Rounded =
+  Access=Read
+  Class=InstrumentAndTrades
+  Description== Rounded Premium
+  ExtensionAttribute=roundedPremium
+  Format=Imprecise
+  GroupLabel=Accounting
+  LabelList=Original Premium Accounting Rounded
+  Name=Original Premium Accounting Rounded
+
+
+  Original Premium Discount =
+  Access=Read
+  Class=InstrumentAndTrades
+  Description== (Rounded Premium - Rounded Accrual + Nominal) * (-1)
+  ExtensionAttribute=originalPremiumDiscount
+  Format=Imprecise
+  GroupLabel=Accounting
+  LabelList=Original Premium Discount
+  Name=Original Premium Discount
+
+
+  OriginalFxSwap =
+  GroupLabel=Accounting
+  Method=OriginalFxSwap
+
+
+  Portfolio Profit and Loss Remaining Premium Discount =
+  Description=The remaining premium/discount for a position or portfolio.
+  ExtensionAttribute=remainingPremiumDiscountColumn
+  InheritsFrom=Portfolio Profit and Loss Base (Historical FX parametrization)
+  LabelList=Remaining Prem/Disc;Remaining Premium/Discount
+  Name=Remaining Premium/Discount
+
+
+  Portfolio Value No Payments =
+  BuildForCashRows=True
+  Description=The Mark-To-Market value is either the Theoretical Value or the Market Value for the position depending on the instrument setting MtM From Feed. The value is expressed as a present value or as a spot value depending on the valuation parameter setting Report Date. This column will show the value excluding future payments
+  ExtensionAttribute=markToMarketPeriodValueNoPayments
+  InheritsFrom=Portfolio Profit and Loss Base
+  LabelList=Val;MtM Value;Portfolio Value
+  Name=Mark to Market Value No Payments
+
+
+  PSAK Bond Fair Value =
+  BuildForCashRows=True
+  Description=PSAK Bond Fair Value
+  ExtensionAttribute=PSAKPremiumMinusAccountingTradedInterest
+  GroupLabel=Accounting
+  Name=PSAK Bond Fair Value
+
+
+  PSAK Bond Future Contract Value =
+  BuildForCashRows=True
+  Description=PSAK Bond Future Contract Value
+  ExtensionAttribute=PSAKBondFutureContractValue
+  GroupLabel=Accounting
+  Name=PSAK Bond Future Contract Value
+
+
+  PSAK Bond Option Contract Value =
+  BuildForCashRows=True
+  Description=PSAK Bond Option Contract Value
+  ExtensionAttribute=PSAKBondOptionContractValue
+  GroupLabel=Accounting
+  Name=PSAK Bond Option Contract Value
+
+
+  PSAK Book UPL IDR =
+  BuildForCashRows=True
+  Description=bookUPLColumn in IDR
+  ExtensionAttribute=bookUPLIDR
+  GroupLabel=Accounting
+  InheritsFrom=Portfolio Profit and Loss Base (Historical FX parametrization)
+  Name=PSAK Book UPL IDR
+
+
+  PSAK FI Interest Income =
+  Description=PSAK FI Interest Income
+  ExtensionAttribute=PSAKFIInterestIncomeAFS
+  GroupLabel=Accounting
+  Name=PSAK FI Interest Income
+
+
+  PSAK FX Revaluation Amount =
+  ExtensionAttribute=PSAKFxRevaluationAmount
+  GroupLabel=Accounting
+  Name=PSAK FX Revaluation Amount
+
+
+  PSAK Instrument Accrued IDR =
+  BuildForCashRows=True
+  Description=PSAK Instrument Accrued IDR
+  ExtensionAttribute=PSAKInstrumentAccruedIDR
+  GroupLabel=Accounting
+  Name=PSAK Instrument Accrued IDR
+
+
+  PSAK Nominal Amt IDR Currency One =
+  ExtensionAttribute=PSAKNominalAmtAccIDRCurrOne
+  GroupLabel=Accounting
+  Name=PSAK Nominal Amt IDR Currency One
+
+
+  PSAK Nominal Amt IDR Currency One Trade =
+  ExtensionAttribute=PSAKNominalAmtAccIDRCurrOneTrade
+  GroupLabel=Accounting
+  Name=PSAK Nominal Amt IDR Currency One Trade
+
+
+  PSAK Proceeds Minus PureRPL =
+  BuildForCashRows=True
+  Description=PSAK Proceeds Minus PureRPL
+  ExtensionAttribute=PSAKOriginalPremiumAccountingMinusPureRPL
+  GroupLabel=Accounting
+  Name=PSAK Proceeds Minus PureRPL
+
+
+  Realized Interest =
+  BuildForCashRows=True
+  Description=Uppfront Fees in Fee currency
+  ExtensionAttribute=feesRealizedColumnFeeCurrency
+  GroupLabel=Accounting
+  LabelList=Realized Upfront Fee
+  Name=Realized Upfront Fee
+  Realized Upfront Fee=
+
+
+  SameTradeDayasValueDay =
+  GroupLabel=Accounting
+  Method=SameTradeDayasValueDay
+
+
+  Spot Indicator =
+  GroupLabel=Accounting
+  Method=Spot Indicator
+
+
+  Trade Value Day-1 =
+  Description=The value day of the trade minus one day
+  ExtensionAttribute=tradeValueDayMinusOne
+  GroupLabel=Accounting
+  Name=Value Day-1 Day
+
+
+  Value Date FX FarLeg Adjusted =
+  Description=Value day of the far leg adjusted with accounting currency calendar
+  ExtensionAttribute=accountingValueDateFXFarLegAdjusted
+  GroupLabel=Accounting
+  Name=Value Date FX FarLeg Adjusted
+
+
+}
+
+decls[FCustomFunction] {
+}
+
+clx FObject [FCustomFunction] {
+  CurrentCouponPayDate =
+  Definition=CurrentCouponPayDate(FTrade trade, date date): date read
+  Function=AccountingColumnUtils.currentCouponPayDate
+
+
+  FeeCurrency =
+  Definition=FeeCurrency(FTrade trade): FCurrency
+  Function=DateUtils.PaymentCurrency
+
+
+  getAccCurrHistoricalRate =
+  Definition=getAccCurrHistoricalRate(FInstrument instrument, string market, date today, string price): double read
+  Function=AccountingColumnUtils.getAccCurrHistoricalRate
+
+
+  getColumnValueAsOfPastDate =
+  Definition=getColumnValueAsOfPastDate(FTrade trade, string column, date pastdate): double read
+  Function=AccountingColumnUtils.GetColumnValueAsOfPastDate
+
+
+  getFxRateDate =
+  Definition=getFxRateDate(FInstrument instr, date date): double
+  Function=AccountingColumnUtils.GetFxRateDate
+
+
+}
+
+clx FTrade [FCustomFunction] {
+  IsFxProlongChild =
+  Definition=IsFxProlongChild: bool read
+  Function=VASColumnUtils.IsFxProlongChild
+
+
+  IsFxProlongParent =
+  Definition=IsFxProlongParent: string read
+  Function=VASColumnUtils.IsFxProlongParent
+
+
+}
+
+decls[FCustomMethod] {
+}
+
+clx FJournal [FCustomMethod] {
+  IsCurrencyEqualAccountingCurr =
+  Definition=IsCurrencyEqualAccountingCurr: bool read
+  Function=AccountingColumnUtils.IsCurrencyEqualAccountingCurr
+
+
+  JournalTrade =
+  Definition=JournalTrade: FTrade read
+  Function=AccountingColumnUtils.JournalTrade
+
+
+  LinkedTrade =
+  Definition=LinkedTrade: FTrade trade
+  Function=AccountingColumnUtils.LinkedTrade
+
+
+}
+
+clx FLegAndTrades [FCustomMethod] {
+  IslegCurrencyEqualAccountingCurr =
+  Definition=IslegCurrencyEqualAccountingCurr: bool read
+  Function=AccountingColumnUtils.IslegCurrencyEqualAccountingCurr
+
+
+}
+
+clx FMoneyFlow [FCustomMethod] {
+  IsMFCurrencyEqualAccountingCurr =
+  Definition=IsMFCurrencyEqualAccountingCurr: bool read
+  Function=AccountingColumnUtils.IsMFCurrencyEqualAccountingCurr
+
+
+}
+
+clx FTrade [FCustomMethod] {
+  IsPositionLong =
+  Definition=IsPositionLong: bool read
+  Function=AccountingColumnUtils.IsPositionLong
+
+
+  IsTradeCurrencyEqualAccountingCurr =
+  Definition=IsTradeCurrencyEqualAccountingCurr: bool read
+  Function=AccountingColumnUtils.IsTradeCurrencyEqualAccountingCurr
+
+
+  OriginalFxSwap =
+  Definition=OriginalFxSwap: string read
+  Function=AccountingColumnUtils.OriginalFxSwap
+
+
+  SameTradeDayasValueDay =
+  Definition=SameTradeDayasValueDay: bool read
+  Function=AccountingColumnUtils.SameTradeDayasValueDay
+
+
+  SpotIndicator =
+  Definition=SpotIndicator: string read
+  Function=AccountingColumnUtils.GetSpotIndicator
+
+
+}
+
+decls[FExtensionAttribute] {
+  "markToMarketPeriodValueNoPayments" ( "default accounting columns.tradeandcombinations" "sheet columns.dealsheet" "sheet columns.tradesheet" ) "";
+}
+
+clx FCombInstrMapAndTrades [FExtensionAttribute] {
+  isCurrencyOne = select(object.Trade.Instrument.InsType == "Option", 
+  true->select(object.Trade.Instrument.Underlying.InsType == "Curr", 
+    true->select(object.Trade.Instrument.IsPutOption, 
+      true->select(object.Trade.Direction == "Buy", 
+        true->true, 
+        false->false), 
+      false->select(object.Trade.Direction == "Buy", 
+        true->false, 
+        false->true)), 
+    false->false), 
+  default->false);
+  nominalAmountFXCall = switch(isCurrencyOne, 
+  false->abs(nominalAmountAccounting), 
+  default->abs(nominalAmountAccountingCurrency2));
+  nominalAmountFXOCall = switch(isCurrencyOneFXO, 
+  false->nominalAmountAccounting, 
+  default->nominalAmountAccountingCurrency2);
+  nominalAmountFXOPut = switch(py("AccountingColumnUtils", context).IsCurrencyOneFXO(object), 
+  false->abs(nominalAmountAccountingCurrency2), 
+  default->abs(nominalAmountAccounting));
+  nominalAmountFXPut = switch(py("AccountingColumnUtils", context).IsCurrencyOne(object), 
+  false->abs(nominalAmountAccountingCurrency2), 
+  default->abs(nominalAmountAccounting));
+}
+
+clx FCommodity [FExtensionAttribute] {
+  faceNominalDisplayInQuotation = riskPositionDisplayInQuotation;
+}
+
+clx FCommodityVariant [FExtensionAttribute] {
+  faceNominalDisplayInQuotation = riskPositionDisplayInQuotation;
+}
+
+clx FDeliverableLinkAndTrades [FExtensionAttribute] {
+  isCurrencyOne = select(object.Trade.Instrument.InsType == "Option", 
+  true->select(object.Trade.Instrument.Underlying.InsType == "Curr", 
+    true->select(object.Trade.Instrument.IsPutOption, 
+      true->select(object.Trade.Direction == "Buy", 
+        true->true, 
+        false->false), 
+      false->select(object.Trade.Direction == "Buy", 
+        true->false, 
+        false->true)), 
+    false->false), 
+  default->false);
+  nominalAmountFXCall = switch(isCurrencyOne, 
+  false->abs(nominalAmountAccounting), 
+  default->abs(nominalAmountAccountingCurrency2));
+  nominalAmountFXOCall = switch(isCurrencyOneFXO, 
+  false->nominalAmountAccounting, 
+  default->nominalAmountAccountingCurrency2);
+  nominalAmountFXOPut = switch(py("AccountingColumnUtils", context).IsCurrencyOneFXO(object), 
+  false->abs(nominalAmountAccountingCurrency2), 
+  default->abs(nominalAmountAccounting));
+  nominalAmountFXPut = switch(py("AccountingColumnUtils", context).IsCurrencyOne(object), 
+  false->abs(nominalAmountAccountingCurrency2), 
+  default->abs(nominalAmountAccounting));
+}
+
+clx FFuture [FExtensionAttribute] {
+  faceNominalDisplayInQuotation = riskPositionDisplayInQuotation;
+}
+
+clx FInstrument [FExtensionAttribute] {
+  accountingExpiryDayMinusOneDay = accountingCurrencyCalendar.AdjustBankingDays(object.ExpiryDateOnly, -1.0);
+  accountingExpiryMinusOneBusiDayIDR = currIDR.Calendar.AdjustBankingDays(object.ExpiryDateOnly, -1.0);
+  drawdownAmountRate1 = nil;
+  drawdownAmountRate2 = nil;
+  drawdownRate1 = nil;
+  drawdownRate2 = nil;
+  faceNominalDisplayInQuotation = nil;
+  odfCallPut = shunt(instrument.IsCallOption, 
+  true->1, 
+  false->-1);
+  odfDealtAmount = nil;
+  odfDealtCurrency = object.Underlying;
+  profitAndLossValuesFromProfitAndLossCalculation[tradesInPosition, positionObject, singleTradePosition, tradeSetUsedInProfitandLoss, profitAndLossParameters, plSpotGroupingReference, valuationBaseDateTimeInput, legs, legId, includeAllTrades, pLDividendComparisonMethod, createClosingLotInfos, taxLotPositionObject, taxLotPnL, settledTradesOnly] = select(singleTradePosition == nil, 
+  true->profitAndLossValuesCalculation["ProfitAndLossValues"], 
+  false->shunt(taxLotPnL, 
+    true->profitAndLossValuesTaxLotCalculation, 
+    false->profitAndLossValuesTradeCalculation));
+}
+
+clx FInstrumentAndTrades [FExtensionAttribute] {
+  accountingInstrumentEndDateMinusOneDay = dateAddDelta(instrument:endDate, 0, 0, -1);
+  accruedAcc = collapse(accruedAcc);
+  accruedFixedIncome = shunt(profitAndLossEndDate < accountingExpiryMinusOneBusiDayIDR, 
+  true->shunt(profitAndLossEndDate >= currIDR.Calendar.AdjustBankingDays(currentCouponPayDate, -1.0), 
+    true->shunt(profitAndLossEndDate < currentCouponPayDate, 
+      true->accruedToday, 
+      default->accruedAcc), 
+    default->accruedAcc), 
+  default->object:accruedToday [profitAndLossStartDate := longTimeAgo, profitAndLossEndDate := accountingExpiryMinusOneBusiDayIDR]);
+  accruedOnSell = collapse(accruedOnSell);
+  accruedToday = collapse(accruedToday);
+  accuntingTradedInterest = shift(accuntingTradedInterestTD, snoop(accuntingTradedInterestTD, "profitAndLossReportDate"), ["Today"]);
+  accuntingTradedInterestTD = object:tradedInterest [profitAndLossStartDate := longTimeAgo, profitAndLossEndDate := trade:tradeDate];
+  currentCouponPayDate = CurrentCouponPayDate(trade, profitAndLossEndDate);
+  FXOdigitalpayoutAmount = select(object.Trade.Instrument.SettlementType, 
+  "Physical Delivery"->denominatedvalue(object.Trade.Quantity, object.Trade.Instrument.Underlying.Name, , ), 
+  "Cash"->denominatedvalue(object.Trade.Quantity, object.Trade.Instrument.StrikeCurrency.Name, , ));
+  markToMarketPeriodValueNoPayments = scenarioaxis(markToMarketPeriodValue, <["projectedPayments"], , , [[denominatedbasket([])]]>);
+  originalPremiumDiscount = select(instrument.InsType, 
+  "Bond"->originalPremiumDiscountBondFrn, 
+  "Flexi Bond"->originalPremiumDiscountBondFrn, 
+  "Frn"->originalPremiumDiscountBondFrn, 
+  "Bill"->originalPremiumDiscountBondFrn, 
+  "Zero"->originalPremiumDiscountBondFrn, 
+  "MBS/ABS"->originalPremiumDiscountBondFrn, 
+  default->nil);
+  originalPremiumDiscountBondFrn = denominatedvalue(premiumDiscount, trade:currency, "Original Premium", trade:tradeDate);
+  premiumDiscount = (roundedPremium + roundedAccrued + roundedNominal);
+  profitAndLossEndDateAcc1BD = select(accountingCurrencyCalendar <> nil, 
+  true->accountingCurrencyCalendar.AdjustBankingDays(profitAndLossEndDate, -1), 
+  default->dateAddDelta(profitAndLossEndDate, 0, 0, -1));
+  roundedAccrued = round(double(accuntingTradedInterest), 2);
+  roundedAccruedacc = denominatedvalue(round(accuntingTradedInterest, 2), trade.Currency, , );
+  roundedNominal = -round(double(trade.Nominal), 2);
+  roundedPremium = -round(double(originalPremiumAccounting), 2);
+  roundedPremiumacc = -round(double(originalPremiumAccounting), 2);
+}
+
+clx FJournal [FExtensionAttribute] {
+  accountingDailyFxRevaluation = select(object.AccountNumber, 
+  "19811105"->-object.Amount * accountingDailyFxRevaluationRate, 
+  default->nil);
+  accountingDailyFxRevaluationRate = getAccCurrHistoricalRate(object.Currency, "EOD_MtM", profitAndLossEndDate, "Settle") - getAccCurrHistoricalRate(object.Currency, "EOD_MtM", accountingCurrency.Calendar.AdjustBankingDays(profitAndLossEndDate, -1.0), "Settle");
+  accountingFxRevaluationCurrency = select(object.JournalCategory, 
+  "FX Revaluation"->object.AdditionalInfo.FXRevalCurrency, 
+  "Standard"->select(object.AccountingInstruction.AdditionalInfo.FxRevalAICat == nil, 
+    true->select(journalFxRevalAICat == nil, 
+      false->select(journalTradeCurrTwo, 
+        "IDR"->select(journalFxRevalAICat > 1, 
+          true->select(object.Currency.Name, 
+            "IDR"->journalTradeCurrOne, 
+            default->nil), 
+          default->nil), 
+        default->select(journalFxRevalAICat, 
+          1->journalFxRevalCurrencyCatOne, 
+          2->journalFxRevalCurrencyCatTwo, 
+          default->nil)), 
+      default->nil), 
+    false->addInfoFxRevaluationCurrency));
+  addInfoFxRevaluationCurrency = select(object.AccountingInstruction.AdditionalInfo.FxRevalAICat, 
+  "Instrument"->object.Instrument.Currency, 
+  "RecLeg"->object.Instrument.RecLeg.Currency, 
+  "PayLeg"->object.Instrument.PayLeg.Currency, 
+  "MoneyFlow"->addInfoFxRevaluationCurrencyMF);
+  addInfoFxRevaluationCurrencyMF = select(object.AccountingInstruction.AggregationLevel, 
+  "Trade"->py("AccountingColumnUtils", context).journalMFCurr(journalConnectedTrade, object.MoneyFlowType), 
+  default->py("AccountingColumnUtils", context).journalMFCurr(journalConnectedTrade, addInfoFxRevaluationCurrencyMFFeeType));
+  addInfoFxRevaluationCurrencyMFFeeType = object.AccountingInstruction.AdditionalInfo.FxRevalAICatFeeType;
+  currIDR = currency("IDR");
+  journalAIAggLevel = object.AccountingInstruction.AggregationLevel;
+  journalConnectedTrade = select(journalAIAggLevel, 
+  "Trade"->object.Trade, 
+  "Contract Trade Number"->object.ContractTrade, 
+  "Contract Trdnbr and Moneyflow"->object.ContractTrade, 
+  "Moneyflow"->object.Trade, 
+  default->nil);
+  journalFxRevalAICat = select(object.AccountingInstruction.Name, 
+  "FX_MF_Pay Date FX Position IDR Strong Currency"->1, 
+  "CCS/IRS_MF_Pay Date Nominal Exchange"->3, 
+  "FX_MF_Value Date Principal"->3, 
+  "FX_MF_Pay Date FX Position Reval"->2, 
+  default->nil);
+  journalFxRevalCurrencyCatOne = select(object.Instrument.InsType, 
+  "Curr"->select(py("AccountingColumnUtils", context).journalMFAmount(trade, object), 
+    true->select(object.DebitOrCredit, 
+      "Debit"->journalTradeCurrOne, 
+      "Credit"->journalTradeCurrTwo), 
+    default->select(object.DebitOrCredit, 
+      "Debit"->journalTradeCurrTwo, 
+      "Credit"->journalTradeCurrOne)), 
+  "CurrSwap"->select(py("AccountingColumnUtils", context).journalMFAmountCCS(trade, object, journalTradeCurrOne), 
+    true->select(object.DebitOrCredit, 
+      "Debit"->journalTradeCurrOne, 
+      "Credit"->journalTradeCurrTwo), 
+    default->select(object.DebitOrCredit, 
+      "Debit"->journalTradeCurrTwo, 
+      "Credit"->journalTradeCurrOne)), 
+  default->nil);
+  journalFxRevalCurrencyCatTwo = select(object.Instrument.InsType, 
+  "Curr"->py("AccountingColumnUtils", context).fxMFCurr(trade, object.MoneyFlowType), 
+  "CurrSwap"->object.Leg.Currency.Name, 
+  default->nil);
+  journalTradeBought = select(trade.Bought, 
+  true->true, 
+  default->nil);
+  journalTradeCurrOne = select(journalAIAggLevel, 
+  "Trade"->object.Trade.CurrencyPair.Currency1.Name, 
+  "Contract Trade Number"->object.ContractTrade.CurrencyPair.Currency1.Name, 
+  "Contract Trdnbr and Moneyflow"->object.ContractTrade.CurrencyPair.Currency1.Name, 
+  default->nil);
+  journalTradeCurrTwo = select(journalAIAggLevel, 
+  "Trade"->object.Trade.CurrencyPair.Currency2.Name, 
+  "Contract Trade Number"->object.ContractTrade.CurrencyPair.Currency2.Name, 
+  "Contract Trdnbr and Moneyflow"->object.ContractTrade.CurrencyPair.Currency2.Name, 
+  default->nil);
+  linkedTrade = object.LinkedTrade;
+  trade = select(journalAIAggLevel, 
+  "Trade"->object.Trade, 
+  "Contract Trade Number"->object.ContractTrade, 
+  "Contract Trdnbr and Moneyflow"->object.ContractTrade, 
+  "Moneyflow"->object.Trade, 
+  default->nil);
+}
+
+clx FJournalMultiItem [FExtensionAttribute] {
+  journalAmount = sumOf(journals :* "object.Amount");
+}
+
+clx FLegAndTrades [FExtensionAttribute] {
+  accuntingTradedInterest = nil;
+  accuntingTradedInterestTD = nil;
+  isCurrencyOne = select(object.Trade.Instrument.InsType == "Option", 
+  true->select(object.Trade.Instrument.Underlying.InsType == "Curr", 
+    true->select(object.Trade.Instrument.IsPutOption, 
+      true->select(object.Trade.Direction == "Buy", 
+        true->true, 
+        false->false), 
+      false->select(object.Trade.Direction == "Buy", 
+        true->false, 
+        false->true)), 
+    false->false), 
+  default->false);
+  nominalAmountAccountingCustomDate = dateAddDelta(profitAndLossEndDate, 0, 0, -1);
+  nominalAmountAccountingOneDay = denominatedvalue(nominalAmountAccountingOneDayDiff, leg.Currency, "Nominal", profitAndLossEndDate);
+  nominalAmountAccountingOneDayAgo = riskPositionSubLedgerOneDayAgo * nominalValueSubLedgerOneDay;
+  nominalAmountAccountingOneDayDiff = double(nominalAmountAccounting) - double(nominalAmountAccountingOneDayAgo);
+  nominalAmountFXCall = switch(isCurrencyOne, 
+  false->abs(nominalAmountAccounting), 
+  default->abs(nominalAmountAccountingCurrency2));
+  nominalAmountFXOCall = switch(isCurrencyOneFXO, 
+  false->nominalAmountAccounting, 
+  default->nominalAmountAccountingCurrency2);
+  nominalAmountFXOPut = switch(py("AccountingColumnUtils", context).IsCurrencyOneFXO(object), 
+  false->abs(nominalAmountAccountingCurrency2), 
+  default->abs(nominalAmountAccounting));
+  nominalAmountFXPut = switch(py("AccountingColumnUtils", context).IsCurrencyOne(object), 
+  false->abs(nominalAmountAccountingCurrency2), 
+  default->abs(nominalAmountAccounting));
+  nominalValueSubLedgerOneDay = leg :* "nominalValueSubLedger" [profitAndLossEndDate = nominalAmountAccountingCustomDate];
+  PSAKInstrumentAccruedIDRTEST = denominatedvalue(instrumentAccrued.Number * getFxRateDate(object.Leg.Currency, profitAndLossEndDate), "IDR", , );
+  riskPositionSubLedgerOneDayAgo = object :* "riskPositionSubLedger" [profitAndLossEndDate = nominalAmountAccountingCustomDate];
+}
+
+clx FMoneyFlow [FExtensionAttribute] {
+  tradeValueDayMinusOne = dateAddDelta(object.Trade.ValueDay, 0, 0, -1);
+}
+
+clx FMoneyFlowAndTrades [FExtensionAttribute] {
+  accountingCurrencyPair = instrument:currencyPair;
+  accuntingTradedInterest = trade:accuntingTradedInterest;
+  accuntingTradedInterestTD = trade:accuntingTradedInterestTD;
+  boFxRate = double(trade.AdditionalInfo.BoFxRate);
+  EndDateMinusOne = shunt(endDate, 
+  nil->accountingCurrencyCalendar.AdjustBankingDays(payDate, -1), 
+  default->accountingCurrencyCalendar.AdjustBankingDays(endDate, -1));
+  projectedMinusTradedInterest = select(object.InstrumentAndTrades == "Cash Flow", 
+  true->select(cashFlow.StartDate <= trade.ValueDay, 
+    true->select(cashFlow.EndDate >= trade.ValueDay, 
+      true->denominatedvalue(projectedMoneyFlow.Number + py("AccountingColumnUtils", context).GetColumnValue(trade, "Accounting Traded Interest"), moneyFlow.Currency, , ), 
+      false->projectedMoneyFlow), 
+    false->projectedMoneyFlow), 
+  false->projectedMoneyFlow);
+  PSAKFIInterestIncomeAFS = select(object.InstrumentAndTrades == "Cash Flow", 
+  true->select(cashFlow.StartDate <= trade.ValueDay, 
+    true->select(cashFlow.EndDate > trade.ValueDay, 
+      true->denominatedvalue(projectedMoneyFlow.Number + accuntingTradedInterest, moneyFlow.Currency, , ), 
+      false->projectedMoneyFlow), 
+    false->projectedMoneyFlow), 
+  false->projectedMoneyFlow);
+  PSAKNominalAmtAccIDRCurrOne = select(instrument.InsType, 
+  "Curr"->select(trade.CurrencyPair.Currency1.Name == object.MoneyFlow.Currency.Name, 
+    true->select(object.MoneyFlow.Type, 
+      "Premium"->denominatedvalue(projectedMoneyFlow.Number * boFxRate, currIDR, , ), 
+      "Premium 2"->denominatedvalue(projectedMoneyFlow.Number * boFxRate, currIDR, , ), 
+      default->nil), 
+    default->nil), 
+  "CurrSwap"->select(accountingCurrencyPair.Currency1.Name == object.MoneyFlow.Currency.Name, 
+    true->select(object.MoneyFlow.Type, 
+      "Fixed Amount"->denominatedvalue(projectedMoneyFlow.Number * boFxRate, currIDR, , ), 
+      default->nil), 
+    default->nil), 
+  default->nil);
+  tradeValueDayMinusOne = moneyFlow:tradeValueDayMinusOne;
+}
+
+clx FMultiInstrumentAndTrades [FExtensionAttribute] {
+  accuntingTradedInterest = nil;
+  accuntingTradedInterestTD = nil;
+  faceNominalDisplayInQuotation = nil;
+  originalPremiumDiscount = nil;
+}
+
+clx FObject [FExtensionAttribute] {
+  currIDR = currency("IDR");
+  tradePLLevelTrade = var(1, "enum(TradePlLevel)");
+}
+
+clx FOdf [FExtensionAttribute] {
+  drawdownAmountRate1 = denominatedvalue(-amount * drawdownRate1, delCurrency, , valuationDate);
+  drawdownAmountRate2 = denominatedvalue(-amount * drawdownRate2, delCurrency, , valuationDate);
+  drawdownRate1 = object.ExerciseEvents.At(0).Strike;
+  drawdownRate2 = object.ExerciseEvents.At(0).Strike2;
+  odfDealtAmount = odfCallPut * denominatedvalue(quantity, odfDealtCurrency, , tradeDate);
+}
+
+clx FOption [FExtensionAttribute] {
+  faceNominalDisplayInQuotation = riskPositionDisplayInQuotation;
+}
+
+clx FSingleInstrumentAndTrades [FExtensionAttribute] {
+  faceNominalDisplayInQuotation = shunt(isZeroRiskPosition, 
+  true->0, 
+  false->openInstrumentOrInstrument :* "collapse(faceNominalDisplayInQuotation)" [positionObject, displayCurrency, filterUnit]);
+}
+
+clx FTrade [FExtensionAttribute] {
+  accountingCurrencyPair = instrument:currencyPair;
+  accountingValueDateFXFarLegAdjusted = switch(object.IsFxSwap, 
+  false->object.ValueDay, 
+  true->switch(object.IsFxSwapNearLeg, 
+    true->accountingCurrencyCalendar.AdjustBankingDays(object.FxSwapFarLeg.ValueDay, -1.0), 
+    false->accountingCurrencyCalendar.AdjustBankingDays(object.ValueDay, -1.0)));
+  accruedAcc = shunt(isCollateralDLTrade, 
+  false->select(object.Quantity < 0, 
+    false->accrued, 
+    true->accruedOnSell), 
+  true->(scenarioaxis(accrued, <["tradePlLevel"], , , tradePLLevelTrade>, <["taxLotPnL"], , , false>)));
+  accruedOnSell = select(accruedOnSellApplicable, 
+  true->shunt(profitAndLossEndDate >= object.ValueDay, 
+    true->-(scenarioaxis(tradedInterest, <["tradePlLevel"], , , tradePLLevelTrade>)), 
+    default->shift(accrued, snoop(accrued, "profitAndLossReportDate"), ["Today"])), 
+  default->shift(accrued, snoop(accrued, "profitAndLossReportDate"), ["Today"]));
+  accruedOnSellApplicable = select(instrument.InsType, 
+  "Bond"->select(object.PrimaryIssuance, 
+    true->false, 
+    default->true), 
+  "Bill"->true, 
+  "FRN"->true, 
+  "MBS/ABS"->true, 
+  "Fund"->true, 
+  default->false);
+  accruedToday = shunt(trade:isCollateralDLTrade, 
+  false->shunt(object.Quantity < 0, 
+    false->shift(accrued, snoop(accrued, "profitAndLossReportDate"), ["Today"]), 
+    true->accruedOnSell), 
+  true->(scenarioaxis(shift(accrued, snoop(accrued, "profitAndLossReportDate"), ["Today"]), <["tradePlLevel"], , , tradePLLevelTrade>, <["taxLotPnL"], , , false>)));
+  accuntingTradedInterest = shift(accuntingTradedInterestTD, snoop(accuntingTradedInterestTD, "profitAndLossReportDate"), ["Today"]);
+  accuntingTradedInterestTD = object:tradedInterest [profitAndLossStartDate := longTimeAgo, profitAndLossEndDate := tradeDate];
+  currIDR = currency("IDR");
+  drawdownAmountRate1 = instrument :* "drawdownAmountRate1" [amount = -odfDealtAmount, delCurrency = currency];
+  drawdownAmountRate2 = instrument :* "drawdownAmountRate2" [amount = -odfDealtAmount, delCurrency = currency];
+  drawdownRate1 = instrument:drawdownRate1;
+  drawdownRate2 = instrument:drawdownRate2;
+  isCollateralDLTrade = select(instrument.InsType, 
+  "Deposit"->select(object.TradeCategory, 
+    "Collateral"->true, 
+    default->false), 
+  default->false);
+  IsCollateralDLTrade = select(instrument.InsType, 
+  "Deposit"->select(object.TradeCategory, 
+    "Collateral"->true, 
+    default->false), 
+  default->false);
+  odfDealtAmount = instrument :* "odfDealtAmount" [quantity = object.Quantity, tradeDate];
+  odfDealtCurrency = instrument:odfDealtCurrency;
+  originalPremiumDiscount = denominatedvalue(premiumDiscount, object.Currency, "Original Premium", asDate(object.TradeTime));
+  premiumDiscount = (roundedPremium + roundedAccrued + roundedNominal);
+  roundedAccrued = round(double(accuntingTradedInterest), 2);
+  roundedAccruedacc = denominatedvalue(round(accuntingTradedInterest, 2), object.Currency, , );
+  roundedNominal = -round(double(object.Nominal), 2);
+  roundedPremium = roundedPremium = -round(double(originalPremiumAccounting), 2);
+  roundedPremiumacc = -round(double(originalPremiumAccounting), 2);
+  tradePLLevelTrade = var(1, "enum(TradePlLevel)");
+  tradeValueDayMinusOne = dateAddDelta(object.ValueDay, 0, 0, -1);
+}
+
+clx FTradeRow [FExtensionAttribute] {
+  accountingCurrencyPair = instrument:currencyPair;
+  accountingExpiryDayMinusOneDay = instrument:accountingExpiryDayMinusOneDay;
+  accountingExpiryMinusOneBusiDayIDR = instrument:accountingExpiryMinusOneBusiDayIDR;
+  accountingInstrumentEndDateMinusOneDay = dateAddDelta(instrument:endDate, 0, 0, -1);
+  accountingMtmLessAccrued = presentValue - accruedFixedIncome;
+  accountingRemainingPremiumDenominated = denominatedvalue(-originalPremiumAccounting.Number - nominalAmountAccounting.Number + rPLColumnMinus1D.Number + accuntingTradedInterest.Number, trade.Currency, , );
+  accountingUplAdjustment = acm.DenominatedValue(0, trade:currency, displayDate);
+  accountingUplColumn = scenarioaxis(uPLColumn, <["interestFromTodayToAccountingDate"], , , accountingUplAdjustment>);
+  accountingValueDateFXFarLegAdjusted = trade:accountingValueDateFXFarLegAdjusted;
+  accountingValueDayMinusOneDay = accountingCurrencyCalendar.AdjustBankingDays(trade.ValueDay, -1.0);
+  accruedAcc = shunt(trade:isCollateralDLTrade, 
+  false->select(trade.Quantity < 0, 
+    false->accrued, 
+    true->accruedOnSell), 
+  true->(scenarioaxis(accrued, <["tradePlLevel"], , , tradePLLevelTrade>, <["taxLotPnL"], , , false>)));
+  accruedOnSell = select(trade:accruedOnSellApplicable, 
+  true->shunt(profitAndLossEndDate >= trade.ValueDay, 
+    true->-(scenarioaxis(trade:tradedInterest, <["tradePlLevel"], , , tradePLLevelTrade>, <["taxLotPnL"], , , false>)), 
+    default->shift(accrued, snoop(accrued, "profitAndLossReportDate"), ["Today"])), 
+  default->shift(accrued, snoop(accrued, "profitAndLossReportDate"), ["Today"]));
+  accruedToday = shunt(trade:isCollateralDLTrade, 
+  false->shunt(trade.Quantity < 0, 
+    false->shift(accrued, snoop(accrued, "profitAndLossReportDate"), ["Today"]), 
+    true->accruedOnSell), 
+  true->(scenarioaxis(shift(accrued, snoop(accrued, "profitAndLossReportDate"), ["Today"]), <["tradePlLevel"], , , tradePLLevelTrade>, <["taxLotPnL"], , , false>)));
+  boFxRate = double(trade.AdditionalInfo.BoFxRate);
+  buyCurrencyOfFXTrade = switch(trade.Bought, 
+  true->trade.Instrument.Currency, 
+  false->trade.Currency);
+  closingFractionIFRS = py("AccountingColumnUtils", context).closingFractionIFRS(trade);
+  currIDR = currency("IDR");
+  deprecRPLColumnMinus1D = object:deprecAmount [displayCurrency, calculateTradeEffectInPosition := true, profitAndLossStartDate, profitAndLossEndDate = profitAndLossEndDateAcc1BD, profitAndLossParameters];
+  faceNominalDisplayInQuotation = instrument :* "faceNominalDisplayInQuotation" [singleTradePosition];
+  feeCurrency = FeeCurrency(trade);
+  FeeRealizedIDR = denominatedvalue(feesRealized.Number * getFxRateDate(trade.Currency, profitAndLossEndDate), "IDR", , );
+  feesRealizedColumnFeeCurrency = object:feesRealized [displayCurrency = feeCurrency, calculateTradeEffectInPosition := true];
+  FXbuyCurrencyIDREquivalentAmount = trade.Quantity * boFxRate;
+  FXCurrencyIDREquivalentAmount = switch(buyCurrencyOfFXTrade, 
+  "VND"->switch(trade.Bought, 
+    true->denominatedvalue(round(trade.Quantity, 0), "VND", , ), 
+    false->denominatedvalue(round(trade.Premium, 0), "VND", , )), 
+  default->switch(trade.Bought, 
+    true->denominatedvalue(round(trade.Quantity * boFxRate, 0), "VND", , ), 
+    false->denominatedvalue(round(trade.Premium * boFxRate, 0), "VND", , )));
+  FXPositionIDREquivalentAmount = trade.Quantity * boFxRate;
+  iFRSOriginalPremiumDiscount = select(trade.Bought, 
+  true->denominatedvalue(originalPremiumDiscount.Number * closingFractionIFRS, trade.Currency, , ), 
+  default->0);
+  iFRSRemainingPremiumDiscount = select(trade.Bought, 
+  true->denominatedvalue(originalPremiumDiscount.Number * closingFractionIFRS, trade.Currency, , ), 
+  default->0);
+  isCurrencyOne = select(object.Trade.Instrument.InsType == "Option", 
+  true->select(object.Trade.Instrument.Underlying.InsType == "Curr", 
+    true->select(object.Trade.Instrument.IsPutOption, 
+      true->select(object.Trade.Direction == "Buy", 
+        true->true, 
+        false->false), 
+      false->select(object.Trade.Direction == "Buy", 
+        true->false, 
+        false->true)), 
+    false->false), 
+  default->false);
+  isCurrencyOneFXO = select(object.Trade.Instrument.InsType == "Option", 
+  true->select(object.Trade.Instrument.Underlying.InsType == "Curr", 
+    true->select(object.Trade.Instrument.IsPutOption, 
+      true->true, 
+      false->false), 
+    false->false), 
+  default->false);
+  nominalAmountAccountingCCSCurrOne = select(trade.Instrument.InsType, 
+  "CurrSwap"->select(py("AccountingColumnUtils", context).cCSRecLegCurrOne(trade), 
+    true->nominalAmountAccountingRec, 
+    default->nominalAmountAccountingPay), 
+  default->nil);
+  nominalAmountAccountingCCSCurrTwo = select(trade.Instrument.InsType, 
+  "CurrSwap"->select(py("AccountingColumnUtils", context).cCSRecLegCurrOne(trade), 
+    true->nominalAmountAccountingPay, 
+    default->nominalAmountAccountingRec), 
+  default->nil);
+  nominalAmountAccountingCCSCurrTwoPast = getColumnValueAsOfPastDate(trade, "Nominal Amount CCS Curr Two", tradeDate);
+  nominalAmountAccountingCurrency2Past = getColumnValueAsOfPastDate(trade, "Nominal Amount Accounting Currency 2", tradeDate);
+  nominalAmountAccountingOneDay = nil;
+  nominalAmountAccountingPay = riskPositionSubLedgerPay * nominalValueSubLedgerPay;
+  nominalAmountAccountingRec = riskPositionSubLedgerRec * nominalValueSubLedgerRec;
+  nominalAmountFXCall = select(trade.Type, 
+  "Normal"->switch(isCurrencyOne, 
+    false->nominalAmountAccounting, 
+    default->nominalAmountAccountingCurrency2), 
+  default->switch(isCurrencyOne, 
+    false->nominalAmountAccountingCurrency2, 
+    default->nominalAmountAccounting));
+  nominalAmountFXOCall = switch(isCurrencyOneFXO, 
+  false->nominalAmountAccounting, 
+  default->nominalAmountAccountingCurrency2);
+  nominalAmountFXOPut = switch(py("AccountingColumnUtils", context).IsCurrencyOneFXO(object), 
+  false->nominalAmountAccountingCurrency2, 
+  default->nominalAmountAccounting);
+  nominalAmountFXPut = select(trade.Type, 
+  "Normal"->switch(py("AccountingColumnUtils", context).IsCurrencyOne(object), 
+    false->nominalAmountAccountingCurrency2, 
+    default->nominalAmountAccounting), 
+  default->switch(py("AccountingColumnUtils", context).IsCurrencyOne(object), 
+    false->nominalAmountAccounting, 
+    default->nominalAmountAccountingCurrency2));
+  nominalValueSubLedgerOneDay = instrument :* "nominalValueSubLedger" [singleTradePosition];
+  nominalValueSubLedgerPay = payLeg :* "nominalValueSubLedger" [profitAndLossEndDate, singleTradePosition];
+  nominalValueSubLedgerRec = recLeg :* "nominalValueSubLedger" [profitAndLossEndDate, singleTradePosition];
+  payLeg = object.FirstPayLeg;
+  PSAKBondFutureContractValue = denominatedvalue(trade.Price * abs(faceNominalDisplayInQuotation), trade.Currency, , );
+  PSAKBondOptionContractValue = denominatedvalue(instrument.StrikePrice * abs(faceNominalDisplayInQuotation), trade.Currency, , );
+  PSAKInstrumentAccruedIDR = denominatedvalue(instrumentAccrued.Number * getFxRateDate(trade.Currency, profitAndLossEndDate), "IDR", , );
+  PSAKNominalAmtAccIDRCurrOneTrade = select(accountingCurrencyPair.Currency2.Name, 
+  "IDR"->nil, 
+  default->select(trade.Instrument.InsType, 
+    "Curr"->denominatedvalue(nominalAmountAccounting.Number * boFxRate, "IDR", , ), 
+    "CurrSwap"->denominatedvalue(nominalAmountAccountingCCSCurrOne.Number * boFxRate, "IDR", , ), 
+    default->nil));
+  PSAKNominalAmtAccIDRCurrOneTradePast = getColumnValueAsOfPastDate(trade, "PSAK Nominal Amt IDR Currency One Trade", tradeDate);
+  PSAKOriginalPremiumAccountingMinusAccountingTradedInterest = denominatedvalue(originalPremiumAccounting.Number - accuntingTradedInterest.Number, trade.Currency, , );
+  PSAKOriginalPremiumAccountingMinusPureRPL = denominatedvalue(originalPremiumAccounting.Number - pureRPLColumn.Number, trade.Currency, , );
+  PSAKOriginalPremiumAccountingSellMinusPureRPL = denominatedvalue(originalPremiumAccounting.Number - pureRPLColumn.Number, trade.Currency, , );
+  PSAKPremiumMinusAccountingTradedInterest = denominatedvalue(roundedPremiumacc.Number - roundedAccruedacc.Number, trade.Currency, , );
+  recLeg = object.FirstReceiveLeg;
+  riskPositionSubLedgerPay = payLeg :* "riskPositionSubLedger" [includeAllTrades, profitAndLossEndDate, singleTradePosition];
+  riskPositionSubLedgerRec = recLeg :* "riskPositionSubLedger" [includeAllTrades, profitAndLossEndDate, singleTradePosition];
+  roundedAccrued = denominatedvalue(round(accuntingTradedInterest, 2), trade.Currency, , );
+  roundedAccruedacc = denominatedvalue(round(accuntingTradedInterest, 2), trade.Currency, , );
+  roundedPremium = roundedPremium = -round(double(originalPremiumAccounting), 2);
+  roundedPremiumacc = denominatedvalue(round(premium, 2), trade.Currency, , );
+  rPLColumnMinus1D = object:rPL [displayCurrency, profitAndLossStartDate, profitAndLossEndDate, calculateTradeEffectInPosition := true, profitAndLossParameters];
+  spnotional = denominatedvalue(double(trade.Instrument.AdditionalInfo.Sp_LeverageNotional), trade.Currency, , );
+  SwaptionNominal = switch(profitAndLossEndDate < object.TradeTime, 
+  true->0, 
+  false->switch(profitAndLossEndDate > object.Instrument.ExpiryDate, 
+    true->0, 
+    false->denominatedvalue(trade.Nominal, trade.Currency, , )));
+  theoreticalValueColumnIDR = denominatedvalue(round(theoreticalValue.Number, 2) * getFxRateDate(trade.Currency, profitAndLossEndDate), "IDR", , );
+  tradeDate = trade:tradeDate;
+  tradePLLevelTrade = var(1, "enum(TradePlLevel)");
+  tradeValueDayMinusOne = trade:tradeValueDayMinusOne;
+  uPLColumnIDR = denominatedvalue(round(uPLColumn.Number, 2) * getFxRateDate(trade.Currency, profitAndLossEndDate), "IDR", , );
+}
+
+decls[FExtensionValue] {
+  "Accounting Instruction / Value Date" ( "standard groupers" ) "";
+  "Instrument" ( "standard groupers" ) "";
+  "InsType" ( "standard groupers" ) "";
+  "InsType / Accounting Instruction / Value Date" ( "standard groupers" ) "";
+  "Portfolio Name" ( "standard groupers" ) "";
+  "Portfolio Type" ( "standard groupers" ) "";
+  "Portfolio Type / Portfolio Name" ( "standard groupers" ) "";
+  "Treatment" ( "standard groupers" ) "";
+}
+
+clx FAccount [FExtensionValue] {
+  CustomLayout_PartyAccounts
+vbox(;
+        hbox(;
+                vbox{;
+                        Name;
+                        curr;
+                        account_type;
+                        NetworkAliasType;
+                        SubNetworkChlItem;
+                        NetworkAlias;
+                };
+                vbox{;
+                        NationalClearingSystemChlItem;
+                        NationalClearingCode;
+                        details_of_charges;
+                        Accounting;
+                        vbox[;
+                                ExternalCutOffTyped;
+                                InternalCutOffTyped;
+                        ];
+                };
+        );
+        vbox{;
+                hbox(;
+                        CorrespondentBank;
+                        Account;
+                        Bic;
+                        DataSourceScheme;
+                );
+                hbox(;
+                        CorrespondentBank2;
+                        Account2;
+                        Bic2;
+                        DataSourceScheme2;
+                );        
+                hbox(;
+                        CorrespondentBank3;
+                        Account3;
+                        Bic3;
+                        DataSourceScheme3;
+                );
+                hbox(;
+                        CorrespondentBank4;
+                        Account4;
+                        Bic4;
+                        DataSourceScheme4;
+                );
+                hbox(;
+                        CorrespondentBank5;
+                        Account5;
+                        Bic5;
+                        DataSourceScheme5;
+                );
+        };
+);
+hbox[Accounting;
+        Depository;
+        Depository2;
+];
+...
+
+}
+
+clx FAccountingInstruction [FExtensionValue] {
+  CustomLayout_Accounting
+vbox(;
+        Name;
+        Description;
+        Type;
+        CategoryChlItem;
+        AIPeriodic;
+        ReversalMethod;
+        ReversalFrequency;
+        BusinessDayMethod;
+        AggregationLevel;
+        JournalTriggerType;
+        hbox{;
+                vbox(;
+                        AmendHistoricJournals;
+                );
+                vbox(;
+                        SuppressIfUnchanged;
+                );
+                vbox(;
+                        KeepHistoricJournals;
+                );
+                vbox(;
+                        ReverseDayOneNextPeriod;;
+                );
+                
+        };
+        vbox[Journal Generation Interval;
+                hbox(;
+                        AIStartDate;
+                );
+                hbox(;
+                        AIEndDate;
+                );
+        ];
+        
+        hbox{;
+        vbox[Exclude Reversals;
+                hbox(;
+                        ExcludeReversalsOnEndDate;
+                );
+                hbox(;
+                        ReversalExclusion;
+                );
+        ];         
+        vbox[FX Conversion;
+                hbox(;
+                        ExcludeFXConversion;
+                );
+                hbox(;
+                        AIFXRateDate;
+                );
+                hbox(;
+                        AIFXRate;
+                );
+        ];
+        
+        };
+
+        
+
+);
+...
+
+}
+
+clx FBook [FExtensionValue] {
+  CustomLayout_Accounting
+
+...
+
+}
+
+clx FInstrumentAndTradesGrouperSubject [FExtensionValue] {
+  Instrument
+Attribute;Trade.Instrument.Name
+...
+
+  Portfolio Name
+Attribute;Trade.Portfolio.Name
+...
+
+  Portfolio Type
+Attribute;Trade.Portfolio.TypeChlItem.Name
+...
+
+  Portfolio Type / Portfolio Name
+Chained;Portfolio Type, Portfolio Name
+...
+
+  Portfolio Type / Portfolio Name / Instrument
+Chained;Portfolio Type, Portfolio Name, Instrument
+...
+
+  Treatment
+Chained;Portfolio Type, Portfolio Name, Instrument
+...
+
+}
+
+clx FJournalGrouperSubject [FExtensionValue] {
+  Accounting Instruction / Value Date
+Chained;Accounting Instruction,Value Date
+...
+
+  InsType
+Attribute;Journal.Instrument.InsType
+...
+
+  InsType / Accounting Instruction / Value Date
+Chained;InsType,Accounting Instruction,Value Date
+...
+
+  Portfolio / AI / Value Date
+Chained;Portfolio,Accounting Instruction,Value Date
+...
+
+}
+
+clx FTAccount [FExtensionValue] {
+  CustomLayout_Accounting
+vbox{;
+        Name;
+        Description;
+        Type;
+        ReportingClass;
+        Number;
+        CategoryChlItem;
+        Active;
+        vbox[Ledger Balances;
+                SplitProfitLoss;
+                RevaluationTAccount;
+                RevaluationTAccount2;
+                RollForwardTAccount;
+                vbox[Ledger Key;
+                        InheritLedgerKey;
+                        LedgerKey;
+                        LedgerKeyExplanation;
+                ];
+        ];
+};
+...
+
+}
+
+clx FTreatment [FExtensionValue] {
+  CustomLayout_Accounting
+vbox(;
+        vbox{;
+                Name;
+                TreatmentType;
+                Description;
+        };
+);
+...
+
+}
+
+decls[FInsertItemsMappingConfiguration] {
+}
+
+clx FObject [FInsertItemsMappingConfiguration] {
+  accountingInstructionLegMapping =
+  EditFilterColumns=Leg.PayLeg;Leg.LegType;Leg.NominalAtStart;Leg.NominalAtEnd;Trade.Type
+  FilterColumns=
+  TargetColumns=
+  TestPanelFilterColumns=
+
+
+  accountingInstructionMoneyFlowMapping =
+  EditFilterColumns=Type;Trade.Type
+  FilterColumns=
+  TargetColumns=
+  TestPanelFilterColumns=
+
+
+  accountingInstructionTradeMapping =
+  EditFilterColumns=Instrument.InsType;Instrument.UnderlyingType
+  FilterColumns=
+  TargetColumns=
+  TestPanelFilterColumns=
+
+
+  tAccountMapping =
+  EditFilterColumns=Amount
+  FilterColumns=
+  TargetColumns=ChartOfAccount.TAccount.Name;ChartOfAccount.TAccount.Number;JVD.PostingFieldName;JVD.DebitOrCredit;
+  TestPanelFilterColumns=
+
+
+  treatmentMapping =
+  EditFilterColumns=Instrument.InsType
+  FilterColumns=
+  TargetColumns=
+  TestPanelFilterColumns=
+
+
+}
+
+decls[FParameters] {
+}
+
+clx FObject [FParameters] {
+  CustomJournalOutputValidation =
+  BookName=Treasury
+  StandaloneJournal=OutputValidation.StandaloneJournalOutputValidation
+
+
+}
+
+decls[FPythonCode] {
+}
+
+clx FObject [FPythonCode] {
+  AccountingColumnUtils
+
+import acm
+import ael
+import datetime
+
+ACC_CURR = acm.UsedValuationParameters().AccountingCurrency()
+
+def IsCurrencyOne(object):
+    if object.Trade().Instrument().InsType() == 'Option':
+        if object.Trade().Instrument().Underlying().InsType() == 'Curr':
+            if object.Trade().Instrument().IsPutOption():
+                if object.Trade().Direction() == 'Buy':
+                    # Buy/Put
+                    return True
+                # Sell/Put
+                return False
+            else:
+                if object.Trade().Direction() == 'Buy':
+                    # Buy/Call
+                    return False
+                # Sell/Call
+                return True
+
+def IsCurrencyOneFXO(object):
+    if object.Trade().Instrument().InsType() == 'Option':
+        if object.Trade().Instrument().Underlying().InsType() == 'Curr':
+            if object.Trade().Instrument().IsPutOption():
+                return True
+            else:
+                return False
+
+def IsFxProlongChild(trade):
+    return 'Yes' if 'Prolong Child' in trade.TradeProcessesToString() else 'No'
+
+def LinkedTrade(journal):
+    trade = None
+    if journal.JournalInformation().Trade():
+        trade = journal.JournalInformation().Trade()
+
+    elif journal.JournalInformation().ContractTrade():
+        trade = journal.JournalInformation().ContractTrade()
+
+    elif journal.Settlement() and journal.Settlement().Trade():
+        trade = journal.Settlement().Trade()
+
+    return trade
+
+def IsFxProlongParent(trade):
+    return 'Yes' if 'Prolong Parent' in trade.TradeProcessesToString() else 'No'
+
+def IsFxReversal(trade):
+    return 'Yes' if 'Reversal' in trade.TradeProcessesToString() else 'No'
+
+def find_Root(t):
+    trx = t.TrxTrade()
+    if trx and trx != t:
+        root = find_Root(trx)
+        return root
+    return t
+
+def OriginalFxSwap(t):
+    try:
+        if t.Instrument().InsType() == 'Curr':
+            if t.TrxTrade():
+                try:
+                    root = find_Root(t)
+                except:
+                    pass
+
+                if root.IsFxSwap():
+                    return 'Swap'
+                return 'Outright'
+
+            elif t.ContractTrdnbr() and t.Type() == 'Closing':
+                if t.Contract().IsFxSwap():
+                    return 'Swap'
+                return 'Outright'
+            elif t.ContractTrdnbr() and t.Oid() == t.ContractTrdnbr():
+                if t.IsFxSwap():
+                    return 'Swap'
+                return 'Outright'
+
+        else:
+            return ''
+    except Exception as e:
+        return ''
+
+def GetBusinessDaysBetweenTradeAndValueDate(trade):
+    tradeDate = acm.Time.AsDate(trade.TradeTime())
+    valueDate = trade.ValueDay()
+    return trade.CurrencyPair().BusinessDaysBetween(trade.TradeTime(), trade.ValueDay())
+
+def GetSpotIndicator(trade):
+    try:
+        SpotDays = trade.CurrencyPair().SpotBankingDaysOffset()
+        noOfBusinessDays = GetBusinessDaysBetweenTradeAndValueDate(trade)
+        spotIndicator = 'Spot' if SpotDays >= noOfBusinessDays else 'Forward'
+
+        return spotIndicator
+    except Exception as e:
+        return ''
+
+def GetColumnValue(t, columnId):
+    context = acm.GetDefaultContext()
+    sheetType = 'FTradeSheet'
+
+    #create CalculationSpace (virtual Trading Manager)
+    calc_space = acm.Calculations().CreateCalculationSpace(context, sheetType)
+
+    #get raw value
+    try:
+        value = calc_space.CalculateValue(t, columnId)
+        calc_space.Clear()
+        return value.Number()
+    except:
+        calc_space.Clear()
+        return 0
+
+def GetColumnValueClean(t, columnId):
+    context = acm.GetDefaultContext()
+    sheetType = 'FTradeSheet'
+
+    #create CalculationSpace (virtual Trading Manager)
+    calc_space = acm.Calculations().CreateCalculationSpace(context, sheetType)
+
+    #get raw value
+    try:
+        value = calc_space.CalculateValue(t, columnId)
+        calc_space.Clear()
+        return value
+    except:
+        calc_space.Clear()
+        return 0
+
+def GetMFColumnValue(mf,columnId):
+    context = acm.GetDefaultContext()
+    sheetType = 'FMoneyFlowSheet'
+
+    #create CalculationSpace (virtual Trading Manager)
+    calc_space = acm.Calculations().CreateCalculationSpace(context, sheetType)
+
+    #get raw value
+    try:
+        value = calc_space.CalculateValue(mf, columnId)
+        calc_space.Clear()
+        return value.Number()
+    except:
+        calc_space.Clear()
+        return 0
+
+def GetColumnValueAsOfPastDate(t,columnId,date1):
+    context = acm.GetDefaultContext()
+    sheetType = 'FTradeSheet'
+
+    #create CalculationSpace (virtual Trading Manager)
+    calc_space = acm.Calculations().CreateCalculationSpace(context, sheetType)
+
+    #get raw value
+    try:
+        calc_space.SimulateGlobalValue("Portfolio Profit Loss End Date", "Custom Date")
+        calc_space.SimulateGlobalValue("Portfolio Profit Loss End Date Custom", date1)
+        value1 = calc_space.CalculateValue(t, columnId).Number()
+        calc_space.RemoveGlobalSimulation("Portfolio Profit Loss End Date")
+        calc_space.RemoveGlobalSimulation("Portfolio Profit Loss End Date Custom")
+        value = value1
+        calc_space.Clear()
+    except:
+        calc_space.Clear()
+        return 0
+
+    return value
+
+def getLatestRateForInstrument(instr, curr, valueType, mtmMarket, liveRate = True, date = acm.Time.SmallDate()):
+    if instr == curr:
+        return 1.0
+    if liveRate is True:
+        prices = instr.Prices()
+    else:
+        pattern = 'market="%s" and instrument="%s" and currency="%s" and day="%s"'
+        prices = acm.FPrice.Select(pattern % (mtmMarket.Name(), instr.Name(), curr.Name(), date)).SortByProperty('Day', False)
+    if not prices:
+        return 0
+
+    latest = None
+    check_date = date > acm.Time().SmallDate()
+    for hp in prices:
+        if check_date and acm.Time.DateDifference(hp.Day(), date) > 0:
+            continue
+        if hp.Market() == mtmMarket and hp.Currency() == curr:
+            latest = hp
+            break
+
+    rate = 0
+    if latest:
+        if valueType == 'Bid':
+            rate = latest.Bid()
+        elif valueType == 'Ask':
+            rate = latest.Ask()
+    return rate
+
+def set_addinfo(obj, addInfoName, addInfoValue):
+    '''
+        Set addinfo value on object.
+         addInfoValue must be a string.
+    '''
+    found = False
+    for ai in obj.additional_infos():
+        if ai.addinf_specnbr.field_name == addInfoName:
+            ai.value = addInfoValue
+            found    = True
+
+    if not found:
+        addInfoNew                = ael.AdditionalInfo.new(obj)
+        addInfoNew.value          = addInfoValue
+        addInfoNew.addinf_specnbr = ael.AdditionalInfoSpec[addInfoName]
+
+def delete_addinfo(obj, addInfoName):
+    '''
+        Set addinfo value on object.
+         addInfoValue must be a string.
+    '''
+    found = False
+    for ai in obj.additional_infos():
+        if ai.addinf_specnbr.field_name == addInfoName:
+            found    = True
+            break
+
+    if found:
+        ai.delete()
+
+def IsPositionLong(td):
+    instrument = td.Instrument().Name()
+    portfolio = td.Portfolio().Name()
+    today = acm.Time.DateToday()
+    trades = acm.FTrade.Select('instrument = "%s" and status = "Bo-Bo Confirmed" and portfolio = "%s" and valueDay <= %s\n' % (instrument, portfolio, today))
+    qty = 0.00
+    for t in trades:
+        qty = qty + t.Quantity()
+    if qty < 0.00:
+        return False
+    else:
+        return True
+
+
+def GetFxRateDate(instr, date):
+    try:
+        prices = instr.HistoricalPrices()
+        accCurr = ACC_CURR
+        baseCurr = acm.FInstrument['USD']
+        baseprices = baseCurr.HistoricalPrices()
+        mtmMarket = acm.FParty['EOD_MtM']
+        datePrice = None
+        rate = 0
+        if instr.Name() == ACC_CURR.Name():
+            return 1
+        for hp in prices:
+            if hp.Market() == mtmMarket and hp.Currency() == accCurr:
+                if hp.Day() == date:
+                    datePrice = hp
+                    break
+        if datePrice:
+            rate = datePrice.Settle()
+            return rate
+        else:
+            fcybase = None
+            accbase = None
+            base_inverse = False
+            for hp in baseprices:
+                if hp.Market() == mtmMarket and hp.Currency() == instr:
+                    if hp.Day() == date:
+                        fcybase = hp
+                        break
+            if fcybase is None:
+                base_inverse = True
+                for hp in prices:
+                    if hp.Market() == mtmMarket and hp.Currency() == baseCurr:
+                        if hp.Day() == date:
+                            fcybase = hp
+                            break
+            for hp in baseprices:
+                if hp.Market() == mtmMarket and hp.Currency() == accCurr:
+                    if hp.Day() == date:
+                        accbase = hp
+                        break
+            if accbase is None or fcybase is None:
+                return 0
+            if base_inverse is True:
+                rate = accbase.Settle() * fcybase.Settle()
+            else:
+                rate = accbase.Settle() / fcybase.Settle()
+        return rate
+    except Exception as e:
+        return 0
+
+def getAccCurrHistoricalRate(instr, market, date, valueType):
+    try:
+        accCurr = ACC_CURR
+        mtmMarket = acm.FParty[market]
+        query = "market='{}' and instrument='{}' and currency='{}' and day ='{}'".format(mtmMarket.Name(), instr.Name(), accCurr.Name(), date)
+        prices = acm.FPrice.Select(query)
+
+        if not prices:
+            #"Accounitng : NO Historical Prices for " + instr.Name()
+            return 0
+
+        if instr.Name() == ACC_CURR:
+            return 1
+
+        datePrice = None
+        for hp in prices:
+            if hp.Market() == mtmMarket and hp.Currency() == accCurr:
+                if hp.Day() == date:
+                    datePrice = hp
+                    break
+
+        if not datePrice:
+            #"No historical rates available for " + instr.Name() +"/" +accCurr.Name() + " in market "+ mtmMarket.Name() + " on "+ date
+            return 0
+
+        rate = 0
+        if datePrice:
+            if valueType == 'Bid':
+                rate = datePrice.Bid()
+                #instr.Name()+"/IDR Value day buy rate "+ str(rate)
+            elif valueType == 'Ask':
+                rate = datePrice.Ask()
+                #instr.Name()+"/IDR Value day sell rate "+ str(rate)
+            elif valueType == 'Settle':
+                rate = datePrice.Settle()
+                #instr.Name()+"/IDR Value day settle rate "+ str(rate)
+            elif valueType == 'Last':
+                rate = datePrice.Last()
+        return rate
+    except Exception as e:
+        return 0
+
+def SameTradeDayasValueDay(t):
+    if t.TradeTime()[0:10]== t.ValueDay():
+        return 1
+    return 0
+
+def JournalTrade(journal):
+    journalTrade = journal.Trade() if journal.Trade() else journal.ContractTrade()
+    return journalTrade
+
+def IsCurrencyEqualAccountingCurr(journal):
+    return acm.UsedValuationParameters().AccountingCurrency().Name() == journal.Currency().Name()
+
+def IsTradeCurrencyEqualAccountingCurr(trade):
+    return acm.UsedValuationParameters().AccountingCurrency().Name() == trade.Currency().Name()
+
+def IsMFCurrencyEqualAccountingCurr(moneyflow):
+    return acm.UsedValuationParameters().AccountingCurrency().Name() == moneyflow.Currency().Name()
+
+def IslegCurrencyEqualAccountingCurr(leg):
+    return acm.UsedValuationParameters().AccountingCurrency().Name() == leg.Currency().Name()
+
+class FParameterManager(object):
+    """base class for retrieving FParameter values"""
+
+    def __init__(self, name):
+        self.params = FParameterManager._get_parameter_values(name)
+
+    def get(self, attr_name):
+        return self.params.get(attr_name)
+
+    @classmethod
+    def _get_parameter_values( cls, name ):
+        """get values from FParameter by name"""
+        values = {}
+        template = None
+        p = acm.GetDefaultContext().GetExtension( 'FParameters', 'FObject', name )
+        try:
+            template = p.Value()
+        except AttributeError as e:
+            acm.Log( "FParameters < %s > not defined." % name )
+        if template:
+            for k in template.Keys():
+                k = str(k)
+                value = str( template.At(k) )
+                values[ str(k) ] = value
+        return values
+
+def FindTradesWithSameContract(trade):
+    connectedTradeList = []
+    if trade.ContractTrdnbr():
+        whereClause = ("contractTrdnbr=%d"%(trade.ContractTrdnbr()))
+        connectedTrades = acm.FTrade.Select(whereClause)
+        for bt in connectedTrades:
+            if bt.Status() in ("BO Confirmed","BO-BO Confirmed"):
+                connectedTradeList.append(bt.Oid())
+    return connectedTradeList
+
+def closingTradeNumberIFRS(trade):
+    taxLotsTrades = GetColumnValue(trade, "Portfolio Closed Tax Lots")
+    tradesList = []
+    if taxLotsTrades:
+        for i in taxLotsTrades:
+            string = str(i)
+            startBracket = string.find("[")
+            endBracket = string.find("]")
+            if startBracket >= 0 and endBracket >= 0:
+                tradenumber = string[startBracket+1:endBracket]
+                tradesList.append(tradenumber)
+    return tradesList
+
+def closingAmountIFRS(trade, closedTrade):
+    taxLotsTrades = GetColumnValue(trade, "Portfolio Closed Tax Lots")
+    closingAmount = 0
+    if taxLotsTrades:
+        for i in taxLotsTrades:
+            string = str(i)
+            startBracket = string.find("[")
+            endBracket = string.find("]")
+            if startBracket >= 0 and endBracket >= 0:
+                tradenumber = string[startBracket+1:endBracket]
+                amount = string[0:startBracket]
+                if tradenumber == str(closedTrade.Oid()):
+                    closingAmount = float(amount)
+    return closingAmount
+
+def closingFractionIFRS(trade):
+    outstanding = trade.Quantity()
+    fraction = 1
+    ContractList = FindTradesWithSameContract(trade)
+    tradesList = []
+    closedAmount = 0
+    for t in ContractList:
+        t= acm.FTrade[t]
+        if t.Quantity() < 0:
+            tradesList = closingTradeNumberIFRS(t)
+            if str(trade.Oid()) in tradesList:
+                closedAmount = closingAmountIFRS(t, trade)
+                outstanding = outstanding + closedAmount
+        fraction = outstanding / trade.Quantity()
+    return abs(fraction)
+
+def cCSRecLegCurrOne(trade):
+    if trade is None:
+        return False
+    ins = trade.Instrument()
+    ccyPair = trade.CurrencyPair()
+    currOne = ccyPair.Currency1().Name()
+    currRec = ins.RecLeg().Currency().Name()
+    if currOne == currRec:
+        return True
+    return False
+
+def cCSMFCurrOne(trade, mf):
+    if trade is None:
+        return False
+    ins = trade.Instrument()
+    ccyPair = trade.CurrencyPair()
+    currOne = ccyPair.Currency1().Name()
+    mfCurr = mf.Currency().Name()
+    if currOne == mfCurr:
+        return True
+    return False
+
+def currentCouponPayDate(td, datetoday):
+    mfs = td.MoneyFlows()
+    ed = td.Instrument().EndDate()
+    for m in mfs:
+        try:
+            if m.Type() in ["Coupon", "Fixed Rate", "Float Rate", "Call Fixed Rate"]:
+                if m.StartDate() <= datetoday:
+                    if m.EndDate() > datetoday:
+                        ed = m.PayDate()
+        except:
+            pass
+    return ed
+
+def fxMFCurr(trade, type):
+    if trade is None:
+        return ""
+    mfs = trade.MoneyFlows()
+    curr = ""
+    for m in mfs:
+        if m.Type() == type:
+            curr = m.Currency().Name()
+    return curr
+
+def journalMFAmount(trade, journal):
+    if trade is None:
+        return False
+    mfs = trade.MoneyFlows()
+    type = journal.MoneyFlowType()
+    date = journal.EventDate()
+    amount = 0
+    for m in mfs:
+        if m.Type() == type and m.PayDate() == date:
+            amount = GetMFColumnValue(m,"Cash Analysis Projected")
+    if amount > 0:
+        return True
+    return False
+
+def journalMFAmountCCS(trade, journal, curr):
+    if trade is None:
+        return False
+    mfs = trade.MoneyFlows()
+    type = journal.MoneyFlowType()
+    date = journal.EventDate()
+    amount = 0
+    for m in mfs:
+        if m.Type() == type and m.PayDate() == date and m.Currency().Name() == curr:
+            amount = GetMFColumnValue(m,"Cash Analysis Projected")
+    if amount > 0:
+        return True
+    return False
+
+def journalMFCurr(trade, type):
+    if trade is None:
+        return ""
+    interest = ["Fixed Rate", "Float Rate"]
+    mfs = trade.MoneyFlows()
+    curr = ""
+    mftype = type
+    if type == "FixedFloat":
+        for m in mfs:
+            if m.Type() in interest:
+                mftype = m.Type()
+                break
+    for m in mfs:
+        if m.Type() == mftype and m.Currency().Name() != "IDR":
+            curr = m.Currency().Name()
+            break
+    return curr
+
+def currSwapDealPrice(trade):
+    curr1Nominal = GetColumnValue(trade, "Nominal Amount CCS Curr One")
+    curr2Nominal = GetColumnValue(trade, "Nominal Amount CCS Curr Two")
+    deal_price = curr2Nominal / curr1Nominal
+
+    if deal_price:
+        deal_price = abs(deal_price)
+    return deal_price
+
+
+
+...
+
+  FAccountingHooks
+
+import acm
+import FAccountingHooksMoneyFlowBased
+import FAccountingHooksSettlementBased
+
+def GetDynamicAccount(journal, parentAccount):
+    """
+    DESCRIPTION:    A function that creates dynamic T-Account for journal.
+                    Please do not commit in the hook, just return T-Account.
+    INPUT:          FJournal and corresponding T-Account
+    OUTPUT:         FTAccount
+    """
+    # In this hook we route to either Settlement- or MF-based account population
+    if journal.AccountingInstruction().Type() == "Settlement":
+        return FAccountingHooksSettlementBased.GetDynamicAccount(journal, parentAccount)
+    else:
+        return FAccountingHooksMoneyFlowBased.GetDynamicAccount(journal, parentAccount)
+
+
+def GetTradesForEOD():
+    """
+    DESCRIPTION:    A function that determines which trades that should be processed in the accounting
+                    End of Day process. Please note that if this hook is not configured in the FAccountingParams
+                    the trades that matched the parameter "tradeFilterQueries" will be processed.
+    INPUT:          None
+    OUTPUT:         A list containing the trades that should be processed in End of Day.
+    """
+    return list()
+
+
+def GetDaysBackAsDate(trade):
+    """
+    DESCRIPTION:    A function that determines the start date for journal creation. By default
+                    it returns today minus 3 days but the user can return different dates based on
+                    input trade. Today's calendar is based on the accounting currency of the environment.
+    INPUT:          FTrade
+    OUTPUT:         A string representing date
+    """
+    accountingCurrency = acm.FCurrency[str(acm.UsedAccountingCurrency())]
+    return accountingCurrency.Calendar().AdjustBankingDays(acm.Time.DateToday(), -3)
+
+
+def GetCommitJournalLogMessage(journal, actionString):
+    """
+    DESCRIPTION:    A function that returns a log string that will be included in the log
+                    when the journal is committed.
+    INPUT:          A FJournal to be committed. Treat as read-only.
+                    A string representing the type of action being performed on the journal.
+    OUTPUT:         A string representing the log message
+    """
+
+    aIName = ''
+    tradeOrSettlementOid = '\n'
+    if journal.AccountingInstruction():
+        aIName = journal.AccountingInstruction().Name()
+    if journal.Trade():
+        tradeOrSettlementOid = ' for trade %d\n' % journal.Trade().Oid()
+    if journal.Settlement():
+        tradeOrSettlementOid = ' for settlement %d\n' % journal.Settlement().Oid()
+    accountNumber = journal.Account().Number()
+    accountName = journal.Account().Name()
+    bookName = journal.Book().Name()
+
+    logString = actionString + ' Journal %d' % journal.Oid() + tradeOrSettlementOid \
+    + '\tValue date: %s\n' % journal.ValueDate() \
+    + '\tEvent date: %s\n' % journal.EventDate() \
+    + '\tAmount: %s %f %s\n' % (journal.DebitOrCredit(), journal.Amount(), journal.Currency().Name())  \
+    + '\tAccount name: %s\n' % accountName \
+    + '\tAccount number: %s\n' %  accountNumber \
+    + '\tAccounting instruction: %s\n' % aIName \
+    + '\tBook: %s' % bookName
+    return logString
+
+
+def IsValidTrade(trade):
+    """
+    DESCRIPTION:    A function validating if a trade is valid for accounting processing.
+    INPUT:          An FTrade  to be validated. Treat as read-only.
+    OUTPUT:         True or False
+    """
+
+    return True
+
+...
+
+  FAccountingHooksMoneyFlowBased
+
+import acm
+
+enumerator = acm.FEnumeration['enum(%s)' % 'SettlementCashflowType']
+
+def MoneyflowTypeForJournal(journal):
+    if journal.AccountingInstruction().Type() == 'Money Flow':
+        return enumerator.Enumeration(journal.JournalInformation().MoneyFlowType())
+    elif journal.AccountingInstruction().Type() == 'Trade':
+        return enumerator.Enumeration('Premium')
+    else:
+        return None
+
+def MatchingMoneyflowFromTrade(trade, startDate, endDate, moneyFlowType, journalCurrency):
+    moneyflow = None
+    moneyflowTypes = acm.FArray()
+
+    if moneyFlowType:
+        moneyflowTypes.Add(moneyFlowType)
+
+    moneyflows = trade.MoneyFlows(startDate, endDate, moneyflowTypes)
+    for moneyflow in moneyflows:
+        if moneyflow.Currency() == journalCurrency:
+            break
+    return moneyflow
+
+
+def MoneyflowForJournal(journal, moneyFlowType,insType):
+    if journal.AccountingInstruction().Type() == 'Trade':
+        return MatchingMoneyflowFromTrade(journal.LinkedTrade(), None, None, MoneyflowTypeForJournal(journal), journal.Currency())
+    elif journal.AccountingInstruction().Type() == 'Money Flow':
+        earlyTermination = ['IRS_MF_Pay Date Termination Fee', 'CCS_MF_Pay Date Termination Fee']
+        trade = journal.LinkedTrade()
+        # for Swap early termination use last trade in instrument 
+        if journal.AccountingInstruction().Name() in earlyTermination :
+            trade = trade.Instrument().Trades().Last()
+        return MatchingMoneyflowFromTrade(trade, journal.EventDate(), journal.EventDate(), MoneyflowTypeForJournal(journal), journal.Currency())
+
+
+
+def GetDynamicAccount(journal, parentAccount):
+    
+    insType  = journal.LinkedTrade().Instrument().InsType()
+    tAccount = acm.FTAccount()
+    tAccount.Name("Treasury Suspense Account")
+    tAccount.Number("01-999 Treasury Suspense Account")
+    tAccount.ReportingClass('Suspense')
+    tAccount.Type('Asset')
+    choiceList = acm.FChoiceList['Balance Sheet']
+    tAccount.CategoryChlItem(choiceList)
+    tAccount.Active(True)
+    
+    aMoneyFlow = MoneyflowForJournal(journal, journal.JournalInformation().MoneyFlowType(),insType)
+    if aMoneyFlow and aMoneyFlow.Currency() == journal.Currency():
+        if aMoneyFlow.AcquirerAccount() != None:
+            if parentAccount.Name() == 'Cash Accounts Nostro':
+                tAccount.Name(aMoneyFlow.AcquirerAccount().Depository())
+                tAccount.Description(aMoneyFlow.AcquirerAccount().Depository())
+                tAccount.Number(aMoneyFlow.AcquirerAccount().Depository2())
+                tAccount.ReportingClass('TAccount')
+
+        if aMoneyFlow.CounterpartyAccount() != None:
+            if parentAccount.Name() == 'Cash Accounts Client':
+                tAccount.Name(aMoneyFlow.CounterpartyAccount().Name())
+                tAccount.Description(aMoneyFlow.CounterpartyAccount().Name())
+                tAccount.Number(aMoneyFlow.CounterpartyAccount().Account())
+                tAccount.ReportingClass('TAccount')
+    return tAccount
+
+
+...
+
+  FAccountingHooksSettlementBased
+
+import acm
+
+def GetDynamicAccount(journal, parentAccount):
+
+    tAccount = acm.FTAccount()
+    tAccount.Name("Warning Using The Default Hook")
+    tAccount.Number("Error")
+    tAccount.ReportingClass('TAccount')
+    tAccount.Type('Asset')
+    choiceList = acm.FChoiceList['Balance Sheet']
+    tAccount.CategoryChlItem(choiceList)
+    tAccount.Active(True)
+
+    if parentAccount.Name() == 'Cash Accounts Nostro':
+        tAccount.Name(journal.Settlement().AcquirerAccountRef().Depository())
+        tAccount.Description(tAccount.Name())
+        tAccount.Number(journal.Settlement().AcquirerAccountRef().Depository2())
+
+    if parentAccount.Name() == 'Cash Accounts Client':
+        tAccount.Name(journal.Settlement().CounterpartyAccountRef().Depository())
+        tAccount.Description(tAccount.Name())
+        tAccount.Number(journal.Settlement().CounterpartyAccountRef().Depository2())
+
+
+    return tAccount
+
+...
+
+  FLoggingTab
+import os
+
+import acm
+import FRunScriptGUI
+from FLogger import FLogger
+
+logLevels = [ FLogger.INFO, FLogger.ERROR, FLogger.WARNING, FLogger.DEBUG ]
+
+def PickFolder():
+    res = acm.FFileSelection()
+    res.PickDirectory(True)
+    return res
+
+def LogLevelNameToNumber(level):
+    if level == FLogger.INFO:    return 1
+    if level == FLogger.DEBUG:   return 2
+    if level == FLogger.WARNING: return 3
+    if level == FLogger.ERROR:   return 4
+    return 1
+
+def ReinitializeLogger(logLevel, logFolder, fileName, local_log):
+    logFileName = '%s_%s.log' % (fileName, acm.Time.DateToday().replace('-', ''))
+    local_log.Reinitialize(level=LogLevelNameToNumber(logLevel))
+    
+    if logFolder and fileName:
+        folderString = logFolder.SelectedDirectory().AsString()
+        logPath      = os.path.join(folderString, logFileName)
+        local_log.Reinitialize(logToFileAtSpecifiedPath=logPath)
+
+class FWorksheetReportLogVariables(FRunScriptGUI.AelVariablesHandler):
+    def __init__(self):
+        vars = [
+            ['log_folder', 'Log folder_Logging', PickFolder(), None, PickFolder(), 0, 1, 'Select where the log file should be saved', 0, None],
+            ['log_level', 'Log level_Logging', 'string', logLevels, FLogger.INFO, 1, 0]]
+
+        FRunScriptGUI.AelVariablesHandler.__init__(self, vars, __name__)
+
+
+def getAelVariables():
+    return FWorksheetReportLogVariables()
+
+...
+
+  FValidationAccounting
+
+import ael
+import acm
+
+def validate_transaction(transaction_list, *rest):
+    for (e, op) in transaction_list:
+        #   If it is a Bond-type object set Contract ref to the tradenumber of the first trade in that instrument in the same portfolio.
+        #   This is a fix in order for some Accounting Instructions to be aggregated properly.
+        if e.record_type == 'Trade' and e.category != 'Collateral' and e.insaddr != None and e.insaddr.instype in ['Bond','FRN','Bill','Flexi Bond','IndexLinkedBond','MBS/ABS','CD','Future/Forward', 'Stock', 'ETF'] and op in ['Insert','Update']:
+            if e.status in ('BO-BO Confirmed','Void'):
+                if op == 'Insert':
+                    if e.insaddr.original() == None:
+                        i = e.insaddr
+                    else:
+                        i = e.insaddr.original()
+                elif op == 'Update':
+                    i = e.original().insaddr 
+                
+                if i.trades().members() == []:
+                    pass
+                else:
+                    contractNo = None
+                    trades = i.trades().members()
+                    for trade in trades:
+                        if trade.prfnbr == e.prfnbr and trade.status in ('BO-BO Confirmed','Void'):
+                            if trade.contract_trdnbr:
+                                contractNo = trade.contract_trdnbr
+                                e.contract_trdnbr = contractNo
+                                break
+                    if not contractNo:
+                        for trade in trades:
+                            if trade.prfnbr == e.prfnbr and trade.status in ('BO-BO Confirmed','Void'):
+                                e.contract_trdnbr = trade.trdnbr
+                                break
+
+    return transaction_list
+    
+
+...
+
+  FValidationManualJournals
+
+import acm
+import ael
+
+class ValidationError(Exception):
+    """Base class for all validation errors."""
+
+class AccessValidationError(ValidationError):
+    """Validation Error that concerns access violation."""
+
+def validate_transaction(transaction_list, *rest):
+    for (e, op) in transaction_list:
+        if e.record_type == 'Journal' and e.manual_journal == 1:
+            if op == 'Insert':
+                if e.journal_type == 'Live':
+                    raise ValidationError('Cannot save new manual journals in "Live" status')
+                if e.journal_type == 'Simulated' and not acm.ActionAllowed('Manual Journal Simulated'):
+                    raise AccessValidationError('You do not have the rights to save new manual journals in "Simulated" status')
+            elif op == 'Update':
+                if e.journal_type == 'Live':
+                    if not acm.ActionAllowed('Manual Journal Live'):
+                        raise AccessValidationError('You do not have the rights to update manual journals to "Live" status')
+                    if e.creat_usrnbr.usrnbr == acm.User().Oid():
+                        raise AccessValidationError('You may not move a journal to "Live" status if you created the journal')
+    return transaction_list
+
+...
+
+  FValidationSaveRateOnBOBOConfirmed
+import ael
+import acm
+import AccountingColumnUtils
+
+idrCurr = acm.FInstrument['IDR']
+market_spot = acm.FParty['REFINITIV_SPOT']
+market_historic = acm.FParty['EOD_MtM']
+
+def validate_transaction(transaction_list, *rest):
+    for (e, op) in transaction_list:
+        if e.record_type == "Trade":
+            orig = e.original()
+            if not orig or orig.status != 'BO-BO Confirmed':
+                if e.status == "BO-BO Confirmed":
+                    if e.insaddr.instype in ('Curr', 'CurrSwap'):
+                        try:
+                            if e.correction_trdnbr and e.correction_trdnbr.trdnbr != e.trdnbr:
+                                should_continue = False
+                                if e.correction_trdnbr.add_info('BoFxRate'):
+                                    AccountingColumnUtils.set_addinfo(e, 'BoFxRate', e.correction_trdnbr.add_info('BoFxRate'))
+                                    should_continue = True
+                                if should_continue:
+                                    continue
+                            insName = e.insaddr.insid
+                            if insName:
+                                market = market_spot
+                                liveRate = True
+                                date = acm.Time.SmallDate()
+                                ins = acm.FInstrument[insName]
+                                trade = acm.FTrade[e.trdnbr]
+                                tradeCurr = trade.CurrencyPair().Currency1()
+                                if ins and tradeCurr and market:
+                                    idrRate = AccountingColumnUtils.getLatestRateForInstrument(tradeCurr, idrCurr, 'Bid', market, liveRate, date)
+                                    AccountingColumnUtils.set_addinfo(e, 'BoFxRate', str(idrRate))
+                        except Exception as exc:
+                            print(exc)
+    return transaction_list
+
+
+
+    
+
+...
+
+  FX Revaluation
+
+from itertools import groupby
+
+import acm
+import FRunScriptGUI
+
+import FLoggingTab
+
+from FAccountingCreation import CreateJournal
+from FAccountingEnums import DebitOrCredit, JournalCategory, ReversalType
+from FAccountingPairReverser import __PerformReversal as PerformReversal
+from FAccountingDRCRPairGenerator import GenerateDRCRPairs
+from AccountingColumnUtils import FParameterManager
+from FOperationsIO import GetDefaultPath
+
+import FLogger
+logger = FLogger.FLogger(__name__)
+
+global REVENUE_ACCOUNT
+global REVENUE_CHARTS
+global LIABILITY_ACCOUNT
+global LIABILITY_CHARTS
+ACC_CURR = acm.UsedValuationParameters().AccountingCurrency()
+
+journalParams = FParameterManager("CustomJournalOutputValidation")
+bookName = journalParams.get("BookName")
+WRITE_BOOK = acm.FBook[bookName]
+
+context = acm.GetDefaultContext()
+sheet_type = 'FJournalSheet'
+calc_space = acm.Calculations().CreateCalculationSpace(context, sheet_type)
+
+
+def defineAccounts():
+    global REVENUE_ACCOUNT
+    global REVENUE_CHARTS
+    global LIABILITY_ACCOUNT
+    global LIABILITY_CHARTS
+    REVENUE_ACCOUNT = acm.FTAccount.Select01('number=44011201', None)
+    if REVENUE_ACCOUNT:
+        REVENUE_CHARTS = REVENUE_ACCOUNT.ChartOfAccounts()
+        assert REVENUE_CHARTS, 'No Chart Of Accounts linked to TAccount "%s"' % REVENUE_ACCOUNT.Name()
+    LIABILITY_ACCOUNT = acm.FTAccount.Select01('number=19811105', None)
+    if LIABILITY_ACCOUNT:
+        LIABILITY_CHARTS = LIABILITY_ACCOUNT.ChartOfAccounts()
+        assert LIABILITY_CHARTS, 'No Chart Of Accounts linked to TAccount "%s"' % LIABILITY_ACCOUNT.Name()
+
+def getParameterQueriesTrades():
+    return acm.FStoredASQLQuery.Select('user=0 and subType="FJournal"')
+
+class ReValuationVariables(FRunScriptGUI.AelVariablesHandler):
+
+    def __OnLogToFile(self, index, fieldValues):
+        self.Logfile.enable(fieldValues[index], 'You have to check Log To File to be able to select a Logfile.')
+        self.LogfilePath.enable(fieldValues[index])
+        return fieldValues
+
+    def __init__(self):
+        ttLogFile = r'Name of the logfile. Could include the whole path, c:\temp\...'
+        dirSelectionLogfile = FRunScriptGUI.DirectorySelection()
+        dirSelectionLogfile.SelectedDirectory(str(GetDefaultPath()))
+        vars = [
+                 ['QueryFolders', 'Query Folders', 'FStoredASQLQuery', getParameterQueriesTrades, '', 1, 1, 'Query folders for input to report'],
+                 ['Logfile', 'Log file_Logging', 'string', None, 'FX Revaluation', 1, 0, ttLogFile, None, None]
+               ]
+        FRunScriptGUI.AelVariablesHandler.__init__(self, vars)
+        self.extend(FLoggingTab.getAelVariables())
+
+def _journalHashes(journals):
+    basic_hashes = list()
+    full_hashes = list()
+    for journal in journals:
+        basic = journal.EventDate()
+        basic += journal.JournalInformation().Portfolio().Name()
+        basic += str(journal.ChartOfAccount().Oid())
+        basic += journal.Currency().Name()
+        basic += journal.DebitOrCredit()
+        full = basic + str(journal.Amount())
+        basic_hashes.append(basic)
+        full_hashes.append(full)
+    return basic_hashes, full_hashes
+
+def _createJournal(amount, chart, reval_date, credit_or_debit, journal_link, currency_name, journal_info = None):
+    if journal_info is None:
+        currency = acm.FCurrency[currency_name]
+        journal_info = acm.FJournalInformation()
+        journal_info.Book(WRITE_BOOK)
+        journal_info.Instrument(currency)
+        journal_info.Commit()
+    accounting_period = WRITE_BOOK.FindPeriodByDate(reval_date)
+    journal = CreateJournal(amount, amount, chart, ACC_CURR, JournalCategory.FX_REVALUATION, journal_info, reval_date, accounting_period, reval_date, credit_or_debit)
+    journal.JournalLink(journal_link)
+    journal.BaseAmount(0.0)
+    return journal, journal_info
+
+def _createJournals(collector, reval_date):
+    journals = []
+    for currency in collector:
+        amount = collector[currency]['reval']
+        if amount == 0:
+            continue
+        for revenue_chart in REVENUE_CHARTS:
+            if revenue_chart.Book() == WRITE_BOOK:
+                break
+        for liability_chart in LIABILITY_CHARTS:
+            if liability_chart.Book() == WRITE_BOOK:
+                break
+        if amount > 0:
+            debit_account, credit_account = [LIABILITY_ACCOUNT, REVENUE_ACCOUNT]
+            debit_chart, credit_chart = [liability_chart, revenue_chart]
+        else:
+            credit_account, debit_account = [LIABILITY_ACCOUNT, REVENUE_ACCOUNT]
+            credit_chart, debit_chart = [liability_chart, revenue_chart]
+        journal_link = acm.FJournalLink()
+        journal_link.Commit()
+        amount = abs(amount)
+        debit_journal, journal_info = _createJournal(amount, debit_chart, reval_date, DebitOrCredit.DEBIT, journal_link, ACC_CURR.Name())
+        credit_journal, _ = _createJournal(-amount, credit_chart, reval_date, DebitOrCredit.CREDIT, journal_link, ACC_CURR.Name(), journal_info)
+        for journal in (debit_journal, credit_journal):
+            journal.AdditionalInfo().FXRevalCurrency(currency)
+        journals.append(debit_journal)
+        journals.append(credit_journal)
+    return journals
+
+def _commitJournals(new):
+    try:
+        acm.BeginTransaction()
+        for journal in new:
+            journal.Commit()
+        acm.CommitTransaction()
+    except Exception as e:
+        logger.ELOG('Error committing journals:\n %s' % str(e))
+        acm.AbortTransaction()
+        raise
+    
+def RunReValuation(params):
+    collector = dict()
+    journal_set = set()
+    for query_folder in params['QueryFolders']:
+        if not query_folder: continue
+        journals = query_folder.Query().Select()
+        for journal in journals:
+            if journal.Currency():
+                journal_set.add(journal)
+    if not journal_set:
+        logger.LOG('No journals found for processing')
+        return
+    reval_date = acm.Time.DateToday()
+    logger.LOG('Starting FX Revaluation for revaluation date %s' % (reval_date))
+
+    for journal in journal_set:
+        if journal.Currency() is None:
+            continue
+        if journal.AccountingInstruction() and journal.AccountingInstruction().IsPeriodic():
+            continue
+        currency = journal.Currency().Name()
+        if currency not in collector:
+            collector[currency] = dict()
+            collector[currency] = {'reval': 0}
+        calc = calc_space.CreateCalculation(journal, 'Accounting Daily FX Revaluation Amount')
+        val = calc.Value()
+        collector[currency]['reval'] += val.Number() if hasattr(val, 'Number') else val
+
+    new_journals = _createJournals(collector, reval_date)
+    
+    _commitJournals(new_journals)
+    logger.LOG('Successfully created %i journals for revaluation date %s' % (len(new_journals), reval_date))
+
+
+ael_variables = ReValuationVariables()
+
+def ael_main(variableDictionary):
+    FLoggingTab.ReinitializeLogger(variableDictionary['log_level'], variableDictionary['log_folder'], variableDictionary['Logfile'], logger)
+    defineAccounts()
+    RunReValuation(variableDictionary)
+
+...
+
+  JournalCommandGUIImpl
+""" Compiled: 2022-12-06 18:12:13 """
+
+#__src_file__ = "extensions/accounting/etc/gui/JournalCommandGUIImpl.py"
+import acm
+from JournalCommandGUI import JournalCommand
+from OperationsGUIFactory import OperationsGUIFactory
+from OperationsCommandGUI import RunDiaryGUI
+
+#---------------------------------------------------------------------------
+def __StartFunc(args, guiCommand):
+    shell = args['shell']
+    command = args['command']
+    name = args['name']
+    guiFactory = OperationsGUIFactory()
+    gui = guiCommand(name, command, guiFactory)
+    gui.InitControls()
+    return guiFactory.GetCustomDialogModal()(shell, gui.CreateLayout(), gui)
+
+
+#---------------------------------------------------------------------------
+# StandaloneJournal
+#---------------------------------------------------------------------------
+class StandaloneJournal(JournalCommand):
+    def __init__(self, name, command, guiFactory):
+        super().__init__(name, command, guiFactory)
+    def InitControls(self):
+        super().InitControls()
+        self.SetAddInfoValue('JournalNarrative1', self.bindings, 'string(63)', 'JournalNarrative1')
+        self.SetAddInfoValue('JournalNarrative2', self.bindings, 'string(63)', 'JournalNarrative2')
+        self.SetAddInfoValue('JournalNarrative3', self.bindings, 'string(63)', 'JournalNarrative3')
+        self.SetAddInfoValue('JournalNarrative4', self.bindings, 'string(63)', 'JournalNarrative4')
+        self.SetAddInfoValue('JournalNarrative5', self.bindings, 'string(63)', 'JournalNarrative5')
+    def CreateLayout(self):
+        b = self.guiFactory.GetLayoutBuilder()
+        b.BeginVertBox('None')
+        b.  BeginHorzBox('None')
+        b.    BeginHorzBox('EtchedIn', 'Journal')
+        b.      BeginVertBox('None')
+        self.AddGuiElement('DebitOrCredit', b)
+        self.AddGuiElement('Amount', b)
+        self.AddGuiElement('BaseAmount', b)
+        self.AddGuiElement('Currency', b)
+        self.AddGuiElement('EventDate', b)
+        self.AddGuiElement('ValueDate', b)
+        self.AddGuiElement('ProcessDate', b)
+        self.AddGuiElement('JournalType', b)
+        self.AddGuiElement('Book', b)
+        self.AddGuiElement('AccountingPeriod', b)
+        self.AddGuiElement('AccountingInstruction', b)
+        self.AddGuiElement('ChartOfAccount', b)
+        b.      EndBox()
+        b.      BeginVertBox('None')
+        self.AddGuiElement('Trade', b)
+        self.AddGuiElement('Instrument', b)
+        self.AddGuiElement('Portfolio', b)
+        self.AddGuiElement('Acquirer', b)
+        self.AddGuiElement('Broker', b)
+        self.AddGuiElement('Counterparty', b)
+        self.AddGuiElement('JournalNarrative1', b)
+        self.AddGuiElement('JournalNarrative2', b)
+        self.AddGuiElement('JournalNarrative3', b)
+        self.AddGuiElement('JournalNarrative4', b)
+        self.AddGuiElement('JournalNarrative5', b)
+        b.        BeginVertBox('EtchedIn', 'FX')
+        self.AddCustomGuiElement('IsExchangeRateManuallySelected', b)
+        self.AddGuiElement('FxRate', b)
+        self.AddGuiElement('BaseCurrency', b)
+        b.        EndBox()
+        b.      EndBox()
+        b.    EndBox()
+        b.  EndBox()
+        b.  BeginHorzBox()
+        self.AddCustomGuiElement('Insert', b)
+        self.AddCustomGuiElement('InsertCopy', b)
+        self.AddCustomGuiElement('Remove', b)
+        b.  EndBox()
+        b.  BeginVertBox()
+        self.AddCustomGuiElement('Journals', b)
+        self.AddCustomGuiElement('Reversals', b)
+        b.  EndBox()
+        b.  BeginHorzBox()
+        b.    AddFill()
+        self.AddCustomGuiElement('save', b)
+        self.AddCustomGuiElement('cancel', b)
+        b.  EndBox()
+        b.EndBox()
+        return b
+
+#---------------------------------------------------------------------------
+def StartStandaloneJournalGUI(args):
+    return __StartFunc(args, StandaloneJournal)
+
+#---------------------------------------------------------------------------
+# EditSimulatedJournals
+#---------------------------------------------------------------------------
+class EditSimulatedJournals(JournalCommand):
+    def __init__(self, name, command, guiFactory):
+        super().__init__(name, command, guiFactory)
+
+#---------------------------------------------------------------------------
+def StartEditSimulatedJournalsGUI(args):
+    return __StartFunc(args, EditSimulatedJournals)
+
+#---------------------------------------------------------------------------
+# EditDiary
+#---------------------------------------------------------------------------
+def StartEditDiaryGUI(args):
+    command = args['command']
+    shell = args['shell']
+    answers = acm.FJournalActionAnswers()
+    RunDiaryGUI(command, shell, answers)
+
+#---------------------------------------------------------------------------
+# AdjustDrCrPair
+#---------------------------------------------------------------------------
+class AdjustDrCrPair(JournalCommand):
+    def __init__(self, name, command, guiFactory):
+        super().__init__(name, command, guiFactory)
+
+#---------------------------------------------------------------------------
+def StartAdjustDrCrPairGUI(args):
+    return __StartFunc(args, AdjustDrCrPair)
+
+...
+
+  OutputValidation
+
+import acm
+import ael
+
+def StandaloneJournalOutputValidation(dictionary):
+    toInsert = dictionary['ToInsert']
+    for journal in toInsert:
+        if journal.JournalType() == 'Live':
+            raise Exception('Journal Type Live not allowed')
+
+...
+
+}
+

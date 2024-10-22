@@ -1,0 +1,52 @@
+#
+# Front Arena exported extension module.
+# source          ""
+# timestamp (utc) "2024-02-22 04:19:59.5"
+# ***** DO NOT EDIT! *****
+#
+name        "BM_Settlement"
+description ""
+
+groups {
+}
+
+decls[FColumnDefinition] {
+}
+
+clx FSettlement [FColumnDefinition] {
+  Counterparty.Type =
+  Access=ReadOnly
+  ColumnName=Counterparty Type
+  Description=Type of Counterparty
+  GroupLabel=
+  Method=Counterparty.Type
+
+
+  Trade.OptKey3.Name =
+  Access=ReadOnly
+  ColumnName=Product Type [Trade]
+  Description=The product type of the trade
+  GroupLabel=
+  Method=Trade.OptKey3.Name
+
+
+  Trade.OptKey4.Name =
+  Access=ReadOnly
+  ColumnName=Category [Trade]
+  Description=The category of the trade
+  GroupLabel=
+  Method=Trade.OptKey4.Name
+
+
+}
+
+decls[FExtensionValue] {
+}
+
+clx FSettlement [FExtensionValue] {
+  SettleInstructionQueryAttributes
+Counterparty.Name;Trade.Instrument.InsType;Currency.Name;Trade.SettleCategoryChlItem.Name;Trade.Instrument.SettleCategoryChlItem.Name;Type;Amount;Trade.OptKey3.Name;Trade.OptKey4.Name;Counterparty.Type;
+...
+
+}
+

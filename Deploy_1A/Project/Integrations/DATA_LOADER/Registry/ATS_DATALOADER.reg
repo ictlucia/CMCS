@@ -1,0 +1,11 @@
+Windows Registry Editor Version 5.00
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Front\Front Arena\ATS\FA_INSTANCE_NAME]
+"module_name"="FDLATSOperations"
+"username"="ATS_DATALOADER"
+"password"="intas"
+"receiver_mb_name"="{NOTIFY_SENDER}"
+
+
+
+

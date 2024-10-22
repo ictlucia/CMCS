@@ -1,0 +1,107 @@
+[MESSAGE]
+  TYPE=INSERT_ORGANISATION
+  VERSION=1.0
+  TIME=2024-01-24 04:33:38
+  SOURCE=FAMBAMessageGenerator
+  [ORGANISATION]
+    DESCRIPTION=The Client
+    ORGID=CLIENT
+  [/ORGANISATION]
+[/MESSAGE]
+[MESSAGE]
+  TYPE=INSERT_GROUP
+  VERSION=1.0
+  TIME=2024-01-24 04:33:38
+  SOURCE=FAMBAMessageGenerator
+  [GROUP]
+    DESCRIPTION=Default Front Arena group
+    GRPID=ADMINISTRATION
+    ORGNBR.ORGID=CLIENT
+    [GROUPPROFILELINK]
+      PROFNBR.PROFID=ALL_COMPONENTS
+    [/GROUPPROFILELINK]
+    [GROUPPROFILELINK]
+      PROFNBR.PROFID=ALL_WORKFLOW
+    [/GROUPPROFILELINK]
+  [/GROUP]
+[/MESSAGE]
+[MESSAGE]
+  TYPE=INSERT_USER
+  VERSION=1.0
+  TIME=2024-01-24 04:33:38
+  SOURCE=FAMBAMessageGenerator
+  [USER]
+    EMAIL=emilia.kinsy@inticorp.tech
+    GRPNBR.GRPID=ADMINISTRATION
+    NAME=#1
+    USERID=ARENASYS
+    [USERPROFILELINK]
+      PROFNBR.PROFID=ALL_COMPONENTS
+    [/USERPROFILELINK]
+    [USERPROFILELINK]
+      PROFNBR.PROFID=ALL_WORKFLOW
+    [/USERPROFILELINK]
+    [PRINCIPAL]
+      TYPE=Kerberos
+      PRINCIPAL=#anonym@318
+    [/PRINCIPAL]
+    [PRINCIPAL]
+      TYPE=Kerberos
+      PRINCIPAL=#anonym@340
+    [/PRINCIPAL]
+    [PRINCIPAL]
+      TYPE=Kerberos
+      PRINCIPAL=#anonym@361
+    [/PRINCIPAL]
+    [PRINCIPAL]
+      TYPE=Kerberos
+      PRINCIPAL=#anonym@362
+    [/PRINCIPAL]
+    [PRINCIPAL]
+      TYPE=Kerberos
+      PRINCIPAL=#anonym@363
+    [/PRINCIPAL]
+  [/USER]
+[/MESSAGE]
+[MESSAGE]
+  TYPE=INSERT_TEXTOBJECT
+  VERSION=1.0
+  TIME=2024-01-24 04:33:38
+  SOURCE=FAMBAMessageGenerator
+  [TEXTOBJECT]
+    TYPE=Customizable
+    DATA={\
+    "MSWordTemplates": [\
+        {\
+            "name": "Custody Transaction",\
+            "type": "LongFormTPL",\
+            "version": "5",\
+            "checksumFields": {\
+                "RegularFields": [],\
+                "LoopFields": []\
+            }\
+        }\
+    ],\
+    "PrimeSheetTemplates": [\
+        {\
+            "name": "Custody Transaction",\
+            "classType": "Confirmation Sheet",\
+            "type": "Primary",\
+            "insertItem": "",\
+            "insertQuery": ""\
+        },\
+        {\
+            "name": "Custody Transaction",\
+            "classType": "Confirmation Sheet",\
+            "type": "Supplement",\
+            "insertItem": "Confirmation",\
+            "insertQuery": ""\
+        }\
+    ],\
+    "FormattedColumnSet": []\
+}
+    NAME=Transaction Custody
+    SIZE=760
+    SUBTYPE=ReportForm
+  [/TEXTOBJECT]
+[/MESSAGE]

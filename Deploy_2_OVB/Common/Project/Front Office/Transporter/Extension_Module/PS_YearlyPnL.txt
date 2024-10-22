@@ -1,0 +1,194 @@
+#
+# Front Arena exported extension module.
+# source          ""
+# timestamp (utc) "2024-07-25 03:20:40.5"
+# ***** DO NOT EDIT! *****
+#
+name        "PS_YearlyPnL"
+description "$Id$"
+
+groups {
+}
+
+decls[FColumnDefinition] {
+  "Portfolio Accumulated Cash Yearly" ( "sheet columns.dealpackagesheet" "sheet columns.dealsheet" "sheet columns.portfoliosheet" "sheet columns.tradesheet" ) "";
+  "Portfolio Book Asset Value Yearly" ( "sheet columns.dealpackagesheet" "sheet columns.dealsheet" "sheet columns.portfoliosheet" "sheet columns.tradesheet" ) "";
+  "Portfolio Book Cash Value Yearly" ( "sheet columns.dealpackagesheet" "sheet columns.dealsheet" "sheet columns.portfoliosheet" "sheet columns.tradesheet" ) "";
+  "Portfolio Book Total Profit and Loss Residual Yearly" ( "sheet columns.dealpackagesheet" "sheet columns.dealsheet" "sheet columns.portfoliosheet" "sheet columns.tradesheet" ) "";
+  "Portfolio Book Total Profit and Loss Yearly" ( "sheet columns.dealpackagesheet" "sheet columns.dealsheet" "sheet columns.portfoliosheet" "sheet columns.tradesheet" ) "";
+  "Portfolio Carry Yearly" ( "sheet columns.dealpackagesheet" "sheet columns.dealsheet" "sheet columns.portfoliosheet" "sheet columns.tradesheet" ) "";
+  "Portfolio Dividends Yearly" ( "sheet columns.dealpackagesheet" "sheet columns.dealsheet" "sheet columns.portfoliosheet" "sheet columns.tradesheet" ) "";
+  "Portfolio Market Total Profit and Loss Yearly" ( "sheet columns.dealpackagesheet" "sheet columns.dealsheet" "sheet columns.portfoliosheet" "sheet columns.tradesheet" ) "";
+  "Portfolio PL Market Value Yearly" ( "sheet columns.dealpackagesheet" "sheet columns.dealsheet" "sheet columns.portfoliosheet" "sheet columns.tradesheet" ) "";
+  "Portfolio PL Theoretical Value Yearly" ( "sheet columns.dealpackagesheet" "sheet columns.dealsheet" "sheet columns.portfoliosheet" "sheet columns.tradesheet" ) "";
+  "Portfolio Profit Loss Position Yearly" ( "sheet columns.dealpackagesheet" "sheet columns.dealsheet" "sheet columns.portfoliosheet" "sheet columns.tradesheet" ) "";
+  "Portfolio Realized Profit and Loss Yearly" ( "sheet columns.dealpackagesheet" "sheet columns.dealsheet" "sheet columns.portfoliosheet" "sheet columns.tradesheet" ) "";
+  "Portfolio Theoretical Total Profit and Loss Yearly" ( "sheet columns.dealpackagesheet" "sheet columns.dealsheet" "sheet columns.portfoliosheet" "sheet columns.tradesheet" ) "";
+  "Portfolio Total Profit and Loss" ( "sheet columns.portfoliosheet" ) "";
+  "Portfolio Total Profit and Loss FX Contribution Yearly" ( "sheet columns.dealpackagesheet" "sheet columns.dealsheet" "sheet columns.portfoliosheet" "sheet columns.tradesheet" ) "";
+  "Portfolio Total Profit and Loss Yearly" ( "sheet columns.dealpackagesheet" "sheet columns.dealsheet" "sheet columns.portfoliosheet" "sheet columns.tradesheet" ) "";
+  "Portfolio Total Profit and Loss Yearly PS" ( "sheet columns.portfoliosheet" "sheet columns.tradesheet" ) "";
+  "Portfolio Unrealized Profit and Loss Yearly" ( "sheet columns.dealpackagesheet" "sheet columns.dealsheet" "sheet columns.portfoliosheet" "sheet columns.tradesheet" ) "";
+  "Portfolio Value Start Yearly" ( "sheet columns.portfoliosheet" "sheet columns.tradesheet" ) "";
+  "Portfolio Value Yearly" ( "sheet columns.dealpackagesheet" "sheet columns.dealsheet" "sheet columns.portfoliosheet" "sheet columns.tradesheet" ) "";
+}
+
+clx FTradingSheet [FColumnDefinition] {
+  Portfolio Accumulated Cash Yearly =
+  Description=Sum of all payments connected to the position with a pay day after the beginning of the current report year.
+  GroupLabel=Profit/Loss Yearly
+  InheritsFrom=Portfolio Accumulated Cash
+  LabelList=CashY;Cash Yearly;Accumulated Cash Yearly
+  ParametersFixedValues=PortfolioProfitLossStartDate=First Of Year;PortfolioProfitLossStartDateCustom=1970-01-01
+
+
+  Portfolio Book Asset Value Yearly =
+  Description=Change in Book Asset Value for the position since the beginning of the current report year.
+  GroupLabel=Profit/Loss Yearly
+  InheritsFrom=Portfolio Book Asset Value
+  LabelList=BValY;Asset Value Yearly
+  ParametersFixedValues=PortfolioProfitLossStartDate=First Of Year;PortfolioProfitLossStartDateCustom=1970-01-01
+
+
+  Portfolio Book Cash Value Yearly =
+  Description=Sum of all payments connected to the position (not reflected in the market price or theoretical price) since the beginning of the current report year.
+  GroupLabel=Profit/Loss Yearly
+  InheritsFrom=Portfolio Book Cash Value
+  LabelList=BCashY;Cash Value Yearly
+  ParametersFixedValues=PortfolioProfitLossStartDate=First Of Year;PortfolioProfitLossStartDateCustom=1970-01-01
+
+
+  Portfolio Book Total Profit and Loss Residual Yearly =
+  Description=Change in Book Total Profit and Loss Residual for the position since the beginning of the current report year.
+  GroupLabel=Profit/Loss Yearly
+  InheritsFrom=Portfolio Book Total Profit and Loss Residual
+  LabelList=BTPLRY;Book TPL Residual Yearly
+  ParametersFixedValues=PortfolioProfitLossStartDate=First Of Year;PortfolioProfitLossStartDateCustom=1970-01-01
+
+
+  Portfolio Book Total Profit and Loss Yearly =
+  Description=Change in Book Total Profit and Loss for the position since the beginning of the current report year.
+  GroupLabel=Profit/Loss Yearly
+  InheritsFrom=Portfolio Book Total Profit and Loss
+  LabelList=BTPLY;Book TPL Yearly
+  ParametersFixedValues=PortfolioProfitLossStartDate=First Of Year;PortfolioProfitLossStartDateCustom=1970-01-01
+
+
+  Portfolio Carry Yearly =
+  Description=Change in carry for the position (that is, the accrued and settled interest plus the funding) since the beginning of the current report year.
+  GroupLabel=Profit/Loss Yearly
+  InheritsFrom=Portfolio Carry
+  LabelList=CarryY;Carry Yearly
+  ParametersFixedValues=PortfolioProfitLossStartDate=First Of Year;PortfolioProfitLossStartDateCustom=1970-01-01
+
+
+  Portfolio Dividends Yearly =
+  Description=Sum of all dividends connected to the position with an ex div day after the beginning of the current report year.
+  GroupLabel=Profit/Loss Yearly
+  InheritsFrom=Portfolio Dividends
+  LabelList=DivY;Acc Dividends yearly
+  ParametersFixedValues=PortfolioProfitLossStartDate=First Of Year;PortfolioProfitLossStartDateCustom=1970-01-01
+
+
+  Portfolio Market Total Profit and Loss Yearly =
+  Description=Change in market total profit and loss for the position since the beginning of the current report yearly, that is, the Mark-to-Market value part of the yearly total profit and loss is based on current market prices.
+  GroupLabel=Profit/Loss Yearly
+  InheritsFrom=Portfolio Market Total Profit and Loss
+  LabelList=MaTPLY;Ma Total P/L Year;Market Total Profit and Loss Yearly
+  ParametersFixedValues=PortfolioProfitLossStartDate=First Of Year;PortfolioProfitLossStartDateCustom=1970-01-01
+
+
+  Portfolio PL Market Value Yearly =
+  Description=Change in market value for the position since the beginning of the current report year. The market value is either expressed as a present value or as a spot value depending on the valuation parameter setting Report Date.
+  GroupLabel=Profit/Loss Yearly
+  InheritsFrom=Portfolio PL Market Value
+  LabelList=PLMaValY;Profit and Loss Market Value Yearly
+  ParametersFixedValues=PortfolioProfitLossStartDate=First Of Year;PortfolioProfitLossStartDateCustom=1970-01-01
+
+
+  Portfolio PL Theoretical Value Yearly =
+  Description=Change in theoretical value for the position since the beginning of the current report year. The theoretical value is either expressed as a present value or as a spot value depending on the valuation parameter setting Report Date.
+  GroupLabel=Profit/Loss Yearly
+  InheritsFrom=Portfolio PL Theoretical Value
+  LabelList=PLThValY;Profit and Loss Theoretical Value Yearly
+  ParametersFixedValues=PortfolioProfitLossStartDate=First Of Year;PortfolioProfitLossStartDateCustom=1970-01-01
+
+
+  Portfolio Profit Loss Position Yearly =
+  Description=Change in position since the beginning of the current report year.
+  GroupLabel=Profit/Loss Yearly
+  InheritsFrom=Portfolio Profit Loss Period Position
+  LabelList=PLPosY;Profit/Loss Position Yearly
+  ParametersFixedValues=PortfolioProfitLossStartDate=First Of Year;PortfolioProfitLossStartDateCustom=1970-01-01
+
+
+  Portfolio Realized Profit and Loss Yearly =
+  Description=Change in Realized Profit/Loss for the position since the beginning of the current report year.
+  GroupLabel=Profit/Loss Yearly
+  InheritsFrom=Portfolio Realized Profit and Loss
+  LabelList=RPLY;Realized P/L Year;Portfolio Realized Profit and Loss Yearly
+  ParametersFixedValues=PortfolioProfitLossStartDate=First Of Year;PortfolioProfitLossStartDateCustom=1970-01-01
+
+
+  Portfolio Theoretical Total Profit and Loss Yearly =
+  Description=Theoretical total profit and loss for the position since the beginning of the year, that is, the Mark-to-Market value part of the yearly total profit and loss is calculated theoretically.
+  GroupLabel=Profit/Loss Yearly
+  InheritsFrom=Portfolio Theoretical Total Profit and Loss
+  LabelList=ThTPLY;Th Total P/L Year;Theoretical Total Profit and Loss Yearly
+  ParametersFixedValues=PortfolioProfitLossStartDate=First Of Year;PortfolioProfitLossStartDateCustom=1970-01-01
+
+
+  Portfolio Total Profit and Loss FX Contribution Yearly =
+  Description=Change in Total Profit/Loss FX Contribution for the position since the beginning of the current report year.
+  GroupLabel=Profit/Loss Yearly
+  InheritsFrom=Portfolio Total Profit and Loss FX Contribution
+  LabelList=TPLFXY;Total P/L FX Yearly;Total Profit and Loss FX Contribution Yearly
+  ParametersFixedValues=PortfolioProfitLossStartDate=First Of Year;PortfolioProfitLossStartDateCustom=1970-01-01
+
+
+  Portfolio Total Profit and Loss Yearly =
+  Description=Change in the monetary value gained or lost for the position since the beginning of the current report year.
+  GroupLabel=Profit/Loss Yearly
+  InheritsFrom=Portfolio Total Profit and Loss
+  LabelList=TPLY;Total P/L Year;Total Profit and Loss Yearly
+  Name=Portfolio Total Profit and Loss Yearly
+  ParametersFixedValues=PortfolioProfitLossStartDate=First Of Year;PortfolioProfitLossStartDateCustom=1970-01-01
+
+
+  Portfolio Total Profit and Loss Yearly PS =
+  Description=Change in the monetary value gained or lost for the position since the beginning of the current report year.
+  GroupLabel=Profit/Loss Yearly
+  InheritsFrom=Portfolio Total Profit and Loss
+  LabelList=YTD PL;TPLY;Total P/L Year;Total Profit and Loss Yearly
+  Name=Total Profit and Loss Yearly
+  ParametersFixedValues=PortfolioProfitLossStartDate=First Of Year;PortfolioProfitLossStartDateCustom=1970-01-01
+
+
+  Portfolio Unrealized Profit and Loss Yearly =
+  Description=Change in Unrealized Profit/Loss for the position since the beginning of the current report year.
+  GroupLabel=Profit/Loss Yearly
+  InheritsFrom=Portfolio Unrealized Profit and Loss
+  LabelList=UPLY;Unrealized P/L Year;Unrealized Profit and Loss Yearly
+  ParametersFixedValues=PortfolioProfitLossStartDate=First Of Year;PortfolioProfitLossStartDateCustom=1970-01-01
+
+
+  Portfolio Value Start Yearly =
+  BuildForCashRows=True
+  Description=Mark to Market Value for the position on start date of the year. Expressed as a present value or as a spot value depending on the valuation parameter setting Report Date.
+  GroupLabel=Profit/Loss Yearly
+  InheritsFrom=Portfolio Value Start
+  LabelList=Start Value;Val Start Yearly;MtM Value Start Yearly;Portfolio Value Start Yearly
+  Name=Mark to Market Value Start Yearly
+  ParametersFixedValues=PortfolioProfitLossStartDate=First Of Year;PortfolioProfitLossStartDateCustom=1970-01-01
+
+
+  Portfolio Value Yearly =
+  Description=Change in Mark to Market Value for the position since the beginning of the current report year.
+  GroupLabel=Profit/Loss Yearly
+  InheritsFrom=Portfolio Value
+  LabelList=ValY;MtM Value Yearly;Portfolio Value Yearly
+  ParametersFixedValues=PortfolioProfitLossStartDate=First Of Year;PortfolioProfitLossStartDateCustom=1970-01-01
+
+
+}
+

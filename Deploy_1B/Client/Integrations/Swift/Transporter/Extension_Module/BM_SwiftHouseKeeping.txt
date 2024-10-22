@@ -1,0 +1,551 @@
+#
+
+# Front Arena exported extension module.
+
+# source          ""
+
+# timestamp (utc) "2024-05-06 02:38:10"
+
+# ***** DO NOT EDIT! *****
+
+#
+
+name        "BM_SwiftHouseKeeping"
+
+description "$Id$"
+
+
+
+groups {
+
+}
+
+
+
+decls[FParameters] {
+
+}
+
+
+
+clx FObject [FParameters] {
+
+  SwiftHouseKeepingParams =
+
+  Local_Path_ACK=D:\ArchiveSwiftIncoming\ACK
+
+  Local_Path_Incoming=D:\ArchiveSwiftIncoming\INCOMING
+
+  Remote_Path_ACK=/ACK/
+
+  Remote_Path_Incoming=/INCOMING/
+
+  SSL_Cert_Path=D:\SSL\SWIFT\rvawpdk1wbc20wd-chain.pem
+
+
+
+
+
+}
+
+
+
+decls[FPythonCode] {
+
+}
+
+
+
+clx FObject [FPythonCode] {
+
+  BM_SwiftHouseKeeping
+
+
+
+import ftplib
+
+from ftplib import FTP_TLS
+
+import os
+
+import datetime
+
+import ssl
+
+import shutil
+
+
+
+import acm
+
+import FRunScriptGUI
+
+import ael
+
+import FLogger
+
+import os
+
+import traceback
+
+import InterfaceUtils
+
+
+
+
+
+import ParametersReader 
+
+import FFTPLibHooks
+
+
+
+'''
+
+Fiture:
+
+1. auto reconect without ssl if failed to reconnect
+
+2. backdate paramterize for clean up and archive
+
+3. using existing paramter swift for cleanup
+
+4. Grouping backup data by date
+
+5. modified date still same as the target taked
+
+6. SSL self sign support (openssL - get host + chain)
+
+'''
+
+
+
+def cut_files_from_ftp(logger, host, port, username, password, remote_path, local_path, backdate, ssl_cert_path=None):
+
+    try:
+
+        today = datetime.datetime.now().strftime('%Y%m%d')  # Current date in 'yyyyMMdd' format
+
+        target_modified_date = datetime.datetime.now().date() - datetime.timedelta(days=backdate)
+
+        if ssl_cert_path:
+
+            context = ssl.create_default_context(cafile=ssl_cert_path)
+
+            ftp = ftplib.FTP_TLS(context=context)
+
+            logger.LOG("SSL path set")
+
+        else:
+
+            ftp = ftplib.FTP_TLS()
+
+            logger.LOG("SSL path not set")
+
+        ftp.connect(host, port)
+
+        logger.LOG("Connected ...")
+
+        ftp.login(username, password)
+
+        logger.LOG("Logged in ...")
+
+        ftp.prot_p()  # Enable SSL/TLS protection
+
+        logger.LOG("SSL/TLS protection enabled ...")
+
+        ftp.cwd(remote_path)
+
+        logger.LOG("Changed directory ...")
+
+        files = ftp.nlst()
+
+        logger.LOG("Retrieved file list ...")
+
+
+
+    except Exception as e:
+
+        logger.LOG(f"An error occurred during the connection attempt with SSL: {e}")
+
+        logger.LOG("Try reconnecting without verify the SSL ...")
+
+        try:
+
+            ssl_cert_path = None 
+
+            ftp = ftplib.FTP_TLS() 
+
+            ftp.connect(host, port)
+
+            ftp.login(username, password)
+
+            ftp.prot_p()  # Enable SSL/TLS protection
+
+            ftp.cwd(remote_path)
+
+            files = ftp.nlst()
+
+        except Exception as e:
+
+            logger.LOG(f"Failed to connect without verify SSL: {e}")
+
+            return None
+
+    
+
+    logger.LOG("Start creating Archive directory group")        
+
+    local_path_with_date = os.path.join(local_path, today)
+
+    os.makedirs(local_path_with_date, exist_ok=True)  # Create folder if it doesn't exist
+
+    
+
+    failed_files = []
+
+
+
+    for file_name in files:
+
+        try:
+
+            # Check the modified date of the file
+
+            modified_date = get_file_modified_date(ftp, file_name)
+
+            modified_date_adjusted = modified_date + datetime.timedelta(hours=7) 
+
+            logger.LOG(f"Modified date of file '{file_name}': {modified_date} adjusted to {modified_date_adjusted}")
+
+            
+
+            if modified_date is None:
+
+                logger.LOG(f"Failed to retrieve modification date for file '{file_name}'.")
+
+                failed_files.append(file_name)
+
+                continue
+
+            
+
+            if modified_date_adjusted.date() < target_modified_date:
+
+                # Download the file only if its modification date is older than the specified backdate
+
+                temp_file_path = os.path.join(local_path_with_date, file_name)
+
+                with open(temp_file_path, 'wb') as local_file:
+
+                    ftp.retrbinary('RETR ' + file_name, local_file.write)
+
+                logger.LOG(f"File '{file_name}' downloaded.")
+
+
+
+                # Preserve the modification time of the downloaded file
+
+                os.utime(temp_file_path, (0, modified_date_adjusted.timestamp()))
+
+                # Move the file to the final destination
+
+                final_file_path = os.path.join(local_path_with_date, file_name)
+
+                shutil.move(temp_file_path, final_file_path)
+
+                ftp.delete(file_name)
+
+                logger.LOG(f"File '{file_name}' with modified date '{modified_date_adjusted}' deleted from the server.")
+
+            else:
+
+                logger.LOG(f"File '{file_name}' will not be processed as its modified date is not older than {backdate} days.")
+
+        except Exception as e:
+
+            logger.LOG(f"Failed to process file '{file_name}': {e}")
+
+            failed_files.append(file_name)
+
+
+
+    ftp.quit()
+
+    
+
+    if failed_files:
+
+        logger.LOG("Files failed to process:")
+
+        for file_name in failed_files:
+
+            logger.LOG(file_name)
+
+
+
+
+
+
+
+def get_file_modified_date(ftp, file_name):
+
+    # Send MDTM command to get the modification time of the file
+
+    modification_time_str = ftp.sendcmd(f"MDTM {file_name}")[4:].strip()
+
+    # Parse the modification time string and return as datetime object
+
+    try:
+
+        return datetime.datetime.strptime(modification_time_str, '%Y%m%d%H%M%S')
+
+    except ValueError:
+
+        return None
+
+
+
+
+
+def parse_modified_date(date_str):#not use yet. its for try some modified date
+
+    formats = [
+
+        r'%Y%m%d%H%M%S',  # YYYYMMDDHHMMSS (MDTM format)
+
+        r'%m/%d/%Y %I:%M%p',  # 3/22/2024 2:24PM
+
+        r'%Y-%m-%d %H:%M:%S',  # YYYY-MM-DD HH:MM:SS
+
+        # Add more formats as needed
+
+    ]
+
+    for fmt in formats:
+
+        try:
+
+            return datetime.datetime.strptime(date_str, fmt)
+
+        except ValueError:
+
+            continue
+
+    return None
+
+
+
+
+
+def initialize_logging(params, logfile_name, app_name):
+
+    """
+
+    Initialize logger
+
+    :param params: parameters
+
+    :return: FLogger object
+
+    """
+
+    logger = None
+
+    logfile = None
+
+    try:
+
+        logFolder = params['log_folder']
+
+        logfolderString = logFolder.SelectedDirectory().AsString()
+
+        if logfolderString:
+
+            if logfile_name:
+
+                logfile = os.path.join(logfolderString, logfile_name)
+
+
+
+        logLevel = params['log_level']
+
+        log_to_console = params['log_to_console']
+
+        level = InterfaceUtils.LogLevelNameToNumber(logLevel)
+
+        logger = FLogger.FLogger(level=level,
+
+                                 name=app_name,
+
+                                 logToPrime=True,
+
+                                 logToFileAtSpecifiedPath=logfile,
+
+                                 logToConsole=log_to_console)
+
+    except Exception as err:
+
+        print('Error in initializing logger {}'.format(err))
+
+        print(traceback.format_exc())
+
+    return logger
+
+
+
+folderPicker = FRunScriptGUI.DirectorySelection()
+
+ael_gui_parameters =    {'windowCaption' : 'Swift House Keeping'}
+
+logLevels = [FLogger.FLogger.INFO, FLogger.FLogger.ERROR, FLogger.FLogger.WARNING, FLogger.FLogger.DEBUG]
+
+
+
+ael_variables=  [['BackDate', 'N Day', 'int', None, 7, 1, 0, 'Input for cut file more that N days', None, 1],
+
+                 ['log_folder', 'Log Folder Logging', folderPicker, None, folderPicker, 0, 1, 'Select where to store the log file', 0, None],
+
+                 ['log_level', 'Log Level_Logging', 'string', logLevels, FLogger.FLogger.DEBUG, 1, 0],
+
+                 ['log_to_console', 'Log to console_Logging', 'int', [1, 0], 1, 1, 0,'Whether logging should be done in the Log Console or not.']]
+
+
+
+LOG_PARAM = 'BM Swift House Keeping Log' 
+
+log_file_name = 'SWIFT House Keeping Log'.format(acm.Time.DateToday().replace('-', ''))
+
+app_name = 'BM Swift House Keeping'
+
+
+
+def getUserFTP(logger):
+
+    try:
+
+        FFTPModeSettingsFTPAMB = ParametersReader.get_params('FFTPModeSettings_FTP-AMB')
+
+        FTPUser = FFTPModeSettingsFTPAMB['READ_USER']
+
+        PORT = FFTPModeSettingsFTPAMB['READ_PORT']
+
+        HOST = FFTPModeSettingsFTPAMB['READ_HOST']
+
+        return FTPUser, PORT, HOST
+
+    except Exception as e:
+
+        logger.LOG(f"An error occurred while retrieving SWIFT FTP Parameter: {e}")
+
+        return None, None, None
+
+
+
+def ael_main(params):
+
+    logger = None  
+
+    logger = initialize_logging(params, log_file_name, app_name)
+
+    logger.LOG("SERVICE START")
+
+    SwiftHouseKeepingParams = ParametersReader.get_params('SwiftHouseKeepingParams')
+
+    remote_path_ack_str = SwiftHouseKeepingParams['Remote_Path_ACK']
+
+    local_path_ack_str = SwiftHouseKeepingParams['Local_Path_ACK']
+
+    remote_path_incoming_str = SwiftHouseKeepingParams['Remote_Path_Incoming']
+
+    local_path_incoming_str = SwiftHouseKeepingParams['Local_Path_Incoming']
+
+    ssl_cert_path_str = SwiftHouseKeepingParams['SSL_Cert_Path']
+
+    
+
+    remote_path_ack = f"{remote_path_ack_str}"
+
+    remote_path_incoming = f"{remote_path_incoming_str}"
+
+    local_path_ack = rf"{local_path_ack_str}"
+
+    local_path_incoming = rf"{local_path_incoming_str}"
+
+    ssl_cert_path = rf"{ssl_cert_path_str}"
+
+    
+
+    
+
+    #remote_path_ack = remote_path_ack_str
+
+    #local_path_ack = r'D:\ArchiveSwiftIncoming\ACK'
+
+    #remote_path_incoming = '/INCOMING_TEST/'
+
+    #local_path_incoming = r'D:\ArchiveSwiftIncoming\INCOMING'
+
+    
+
+        
+
+    username, port, host = getUserFTP(logger)
+
+    host = host
+
+    port = int(port)
+
+    password = FFTPLibHooks.fftplibrary_get_external_password("", username, "", "")
+
+    
+
+    try:
+
+        backdate = int(params['BackDate'])
+
+    except ValueError:
+
+        if logger:
+
+            logger.error("BackDate parameter must be an integer. Using default value.")
+
+        backdate = 7  # Default value
+
+        
+
+    try:
+
+        print(f"Start ACK process backdate {backdate}")
+
+        cut_files_from_ftp(logger, host, port, username, password, remote_path_ack, local_path_ack, backdate, ssl_cert_path)
+
+        print("End ACk Process")
+
+        print(f"Start Incoming process backdate {backdate}")
+
+        cut_files_from_ftp(logger, host, port, username, password, remote_path_incoming, local_path_incoming, backdate, ssl_cert_path)
+
+        print("end incoming process")
+
+    except Exception as e:
+
+        if logger:
+
+            logger.error(f"An error occurred: {str(e)}")
+
+        else:
+
+            print(f"An error occurred: {str(e)}")
+
+
+
+
+
+...
+
+
+
+}
+
+

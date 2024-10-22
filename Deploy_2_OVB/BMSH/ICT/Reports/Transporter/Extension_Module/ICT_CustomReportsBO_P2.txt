@@ -1,0 +1,319 @@
+#
+# Front Arena exported extension module.
+# source          ""
+# timestamp (utc) "2024-09-27 07:44:16.8"
+# ***** DO NOT EDIT! *****
+#
+name        "ICT_CustomReportsBO_P2"
+description ""
+
+groups {
+}
+
+decls[FColumnDefinition] {
+  "absSettlementAmount" ( "sheet columns.settlementsheet" ) "";
+  "AmountBuyAudit" ( "sheet columns.tradesheet" ) "";
+  "AmountSellAudit" ( "sheet columns.tradesheet" ) "";
+  "CloseRateAllProduct" ( "sheet columns.tradesheet" ) "";
+  "CurrBuyAudit" ( "sheet columns.tradesheet" ) "";
+  "CurrSellAudit" ( "sheet columns.tradesheet" ) "";
+  "getConvertPriceSGD" ( "sheet columns.portfoliosheet" "sheet columns.tradesheet" ) "";
+  "LSTCPDTE" ( "sheet columns.timesheet" "sheet columns.tradesheet" ) "";
+  "nominalConvertPriceSGD" ( "sheet columns.portfoliosheet" "sheet columns.tradesheet" ) "";
+  "RateBuyAudit" ( "sheet columns.tradesheet" ) "";
+  "RateSellAudit" ( "sheet columns.tradesheet" ) "";
+  "StartCashCustom" ( "sheet columns.tradesheet" ) "";
+}
+
+clx FTradingSheet [FColumnDefinition] {
+  absSettlementAmount =
+  Access=ReadOnly
+  Description=Settlement amount in absolute value
+  ExtensionAttribute=absSettlementAmount
+  Format=
+  GroupLabel=FieldCustom
+  LabelList=absSettlementAmount
+  Name=absSettlementAmount
+
+
+  AmountBuyAudit =
+  Access=ReadOnly
+  Description=if FX and Buy will get Amount else Nominal
+  ExtensionAttribute=AmountBuyAudit
+  Format=
+  GroupLabel=FieldCustom
+  LabelList=Amount (1)
+  Name=Amount (1)
+
+
+  AmountSellAudit =
+  Access=ReadOnly
+  Description=if FX and Sell will get Amount else None
+  ExtensionAttribute=AmountSellAudit
+  Format=
+  GroupLabel=FieldCustom
+  LabelList=Amount (2)
+  Name=Amount (2)
+
+
+  CloseRateAllProduct =
+  Access=ReadOnly
+  Description=Close Rate for all items
+  ExtensionAttribute=CloseRateAllProduct
+  Format=
+  GroupLabel=FieldCustom
+  LabelList=CloseRateAllProduct
+  Name=CloseRateAllProduct
+
+
+  CurrBuyAudit =
+  Access=ReadOnly
+  Description=if FX and Buy will get currency
+  ExtensionAttribute=CurrBuyAudit
+  Format=
+  GroupLabel=FieldCustom
+  LabelList=Curr (1)
+  Name=Curr (1)
+
+
+  CurrSellAudit =
+  Access=ReadOnly
+  Description=if FX and Sell will get currency
+  ExtensionAttribute=CurrSellAudit
+  Format=
+  GroupLabel=FieldCustom
+  LabelList=Curr (2)
+  Name=Curr (2)
+
+
+  getConvertPriceSGD =
+  Access=ReadOnly
+  Description=Convert Ntr Price to SGD
+  ExtensionAttribute=getConvertPriceSGD
+  Format=SixDecimalDetailedShowZero
+  GroupLabel=FieldCustom
+  LabelList=getConvertPriceSGD
+  Name=getConvertPriceSGD
+
+
+  LSTCPDTE =
+  Access=ReadOnly
+  Description=Last Payment Date in cashflow
+  ExtensionAttribute=LSTCPDTE
+  Format=
+  GroupLabel=FieldCustom
+  LabelList=LSTCPDTE
+  Name=LSTCPDTE
+
+
+  nominalConvertPriceSGD =
+  Access=ReadOnly
+  Description=Nominal * NTR SGD
+  ExtensionAttribute=nominalConvertPriceSGD
+  Format=
+  GroupLabel=FieldCustom
+  LabelList=NominalConvertToSGD
+  Name=NominalConvertToSGD
+
+
+  RateBuyAudit =
+  Access=ReadOnly
+  Description=rate Value
+  ExtensionAttribute=RateBuyAudit
+  Format=
+  GroupLabel=FieldCustom
+  LabelList=Rate (1)
+  Name=Rate (1)
+
+
+  RateSellAudit =
+  Access=ReadOnly
+  Description=rate Value
+  ExtensionAttribute=RateSellAudit
+  Format=
+  GroupLabel=FieldCustom
+  LabelList=Rate (2)
+  Name=Rate (2)
+
+
+  StartCashCustom =
+  Access=ReadOnly
+  Description=Start cash of transaction
+  ExtensionAttribute=StartCashCustom
+  Format=
+  GroupLabel=FieldCustom
+  LabelList=StartCashCustom
+  Name=StartCashCustom
+
+
+}
+
+decls[FExtensionAttribute] {
+  "nominalConvertPriceSGD" ( "sheet columns.portfoliosheet" ) "";
+}
+
+clx FConfirmation [FExtensionAttribute] {
+  CurrBuyAudit = py("Report_PythonBO_P2", context).currencyBaseOnCategory(true, object.Trade);
+  CurrSellAudit = py("Report_PythonBO_P2", context).currencyBaseOnCategory(false, object.Trade);
+}
+
+clx FJournal [FExtensionAttribute] {
+  CurrBuyAudit = py("Report_PythonBO_P2", context).currencyBaseOnCategory(true, object.Trade);
+  CurrSellAudit = py("Report_PythonBO_P2", context).currencyBaseOnCategory(false, object.Trade);
+}
+
+clx FMultiInstrumentAndTrades [FExtensionAttribute] {
+  CurrBuyAudit = py("Report_PythonBO_P2", context).currencyBaseOnCategory(true, object.Trades.AsArray.First);
+  nominalConvertPriceSGD = sumOf(children :* "nominalConvertPriceSGD");
+  StartCashCustom = select(object.GrouperOnLevel.DisplayName, 
+  "Currency"->sumOf(children :* "StartCashCustom"), 
+  "Trade Currency"->sumOf(children :* "StartCashCustom"));
+}
+
+clx FPortfolioInstrumentAndTrades [FExtensionAttribute] {
+  CurrBuyAudit = select(object.Trades.Size > 0, 
+  true->py("Report_PythonBO_P2", context).currencyBaseOnCategory(true, object.Trades.AsArray.First));
+  getConvertPriceSGD = py("Report_PythonBO_P2", context).getConvertPrice(CurrBuyAudit, "SGD");
+  nominalConvertPriceSGD = sumOf(children :* "nominalConvertPriceSGD");
+  StartCashCustom = ;
+}
+
+clx FSettlement [FExtensionAttribute] {
+  absSettlementAmount = abs(object.Amount);
+  AmountBuyAudit = py("Report_PythonBO_P2", context).amountBaseOnCategory(true, object.Trade);
+  AmountSellAudit = py("Report_PythonBO_P2", context).amountBaseOnCategory(false, object.Trade);
+  CurrBuyAudit = py("Report_PythonBO_P2", context).currencyBaseOnCategory(true, object.Trade);
+  CurrSellAudit = py("Report_PythonBO_P2", context).currencyBaseOnCategory(false, object.Trade);
+}
+
+clx FSingleInstrumentAndTrades [FExtensionAttribute] {
+  CurrBuyAudit = py("Report_PythonBO_P2", context).currencyBaseOnCategory(true, object.Trades.AsArray.First);
+  getConvertPriceSGD = py("Report_PythonBO_P2", context).getConvertPrice(CurrBuyAudit, "SGD");
+}
+
+clx FTradeRow [FExtensionAttribute] {
+  AmountBuyAudit = py("Report_PythonBO_P2", context).amountBaseOnCategory(true, object.Trade);
+  AmountSellAudit = py("Report_PythonBO_P2", context).amountBaseOnCategory(false, object.Trade);
+  CloseRateAllProduct = select(object.Trade.OptKey3.Name, 
+  "BOND"->py("Report_PythonBO_P2", context).getConvertPrice(object.Trade.Instrument.Name, "IDR", false), 
+  "REPO"->py("Report_PythonBO_P2", context).getConvertPrice(Collateral, "IDR", false), 
+  "REVREPO"->py("Report_PythonBO_P2", context).getConvertPrice(Collateral, "IDR", false), 
+  "DL"->select(object.Trade.Instrument.FirstLeg.LegType, 
+    "Fixed"->nil, 
+    "Float"->py("Report_PythonBO_P2", context).getConvertPrice(object.Trade.Instrument.FirstLeg.FloatPriceReference.Name, trade.Currency.Name, false)), 
+  default->select(object.Trade.CurrencyPair <> nil, 
+    true->py("Report_PythonBO_P2", context).getConvertPrice(object.Trade.CurrencyPair.Currency1.Name, object.Trade.CurrencyPair.Currency2.Name, false), 
+    false->py("Report_PythonBO_P2", context).getConvertPrice(object.Trade.Currency.Name, "IDR", false)));
+  CurrBuyAudit = py("Report_PythonBO_P2", context).currencyBaseOnCategory(true, object.Trade);
+  CurrSellAudit = py("Report_PythonBO_P2", context).currencyBaseOnCategory(false, object.Trade);
+  getConvertPriceSGD = py("Report_PythonBO_P2", context).getConvertPrice(CurrBuyAudit, "SGD");
+  LSTCPDTE = py("Report_PythonBO_P2", context).lstcpdte(object.Trade.MoneyFlows);
+  nominalConvertPriceSGD = select(object.Trade.Currency.Name, 
+  "SGD"->StartCashCustom, 
+  default->StartCashCustom * getConvertPriceSGD);
+  RateBuyAudit = py("Report_PythonBO_P2", context).rateBaseOnCategory(true, object.Trade);
+  RateSellAudit = py("Report_PythonBO_P2", context).rateBaseOnCategory(false, object.Trade);
+  StartCashCustom = abs(object.Trade.StartCash);
+}
+
+decls[FPythonCode] {
+  "Report_PythonBO_P2" ( "sheet columns.tradesheet" ) "";
+}
+
+clx FObject [FPythonCode] {
+  Report_PythonBO_P2
+
+import acm, ael
+from datetime import date, datetime
+import locale, os
+
+def lstcpdte(mfs):
+    payDates = [mf.PayDate() for mf in mfs]
+    payDates.sort(reverse=True)
+    for payDate in payDates:
+        if acm.Time().DateDifference(acm.Time().DateToday(), payDate) >= 0:
+            datetimeUse = datetime.strptime(payDate, "%Y-%m-%d").strftime("%x")
+            return datetimeUse
+
+def getConvertPrice(currFrom, currTo, fromYst = True):
+    dateuse = 'YESTERDAY' if fromYst else 'TODAY'
+    
+    query = f"instrument IN ('{currFrom}', '{currTo}') AND currency IN ('{currFrom}', '{currTo}') AND historical = true AND market = 'EOD_MtM' and day >= {dateuse}"
+    prices = acm.FPrice.Select(query)
+    
+    if prices: 
+        priceUse = prices.Last()
+    else :
+        return 0
+    
+    if priceUse.Instrument().Name() != currTo:
+        return priceUse.Settle()
+    else :
+        return 1 / priceUse.Settle()
+    
+
+def currencyBaseOnCategory(forCurr1, trade):
+    if str(trade.OptKey4AsEnum()) in ["MDCI", "MMLD"]:
+        if forCurr1:
+            return trade.Currency().Name()
+        else :
+            option_trade = [x for x in trade.DealPackage().Trades().AsArray() if "deposit/loan" not in str(x.InstrumentSubType()).lower()][0]
+            curr1, curr2 = option_trade.CurrencyPair().Currency1().Name(), option_trade.CurrencyPair().Currency2().Name()
+            return curr1 if trade.Currency().Name() != curr1 else curr2
+    else :
+        if trade.CurrencyPair():
+            return trade.CurrencyPair().Currency1().Name() if forCurr1 else trade.CurrencyPair().Currency2().Name()
+        else :
+            return trade.Currency().Name() if forCurr1 else trade.Currency().Name() if trade.Instrument().InsType() == "BasketRepo/Reverse" else ""
+ 
+def amountBaseOnCategory(forCurr1, trade, asin=False):
+    if str(trade.OptKey4AsEnum()) in ["MDCI", "MMLD", "MLDR"]:
+        if forCurr1:
+            depo_trade = [x for x in trade.DealPackage().Trades().AsArray() if "deposit/loan" in str(x.InstrumentSubType()).lower()][0]
+            return round(depo_trade.Premium(), 2)
+        else :
+            option_trade = [x for x in trade.DealPackage().Trades().AsArray() if "deposit/loan" not in str(x.InstrumentSubType()).lower()][0]
+            return round(option_trade.FaceValue(), 2) if str(trade.OptKey4AsEnum()) != "MLDR" else None
+    elif str(trade.OptKey4AsEnum()) == "MCS":
+        nominal = round(trade.Nominal(), 2)
+        nominal2 = round(nominal * trade.Instrument().StrikePrice(), 2)
+        return nominal if forCurr1 else nominal2
+    else :
+        if trade.CurrencyPair():
+            if str(trade.OptKey4AsEnum()) == "CCS" :
+                nominal = round(trade.Nominal(), 2)
+                nominal2 = round(nominal * trade.Instrument().FirstReceiveLeg().NominalFactor(), 2) 
+                if trade.Instrument().FirstReceiveLeg().Currency().Name() != trade.CurrencyPair().Currency2().Name() :
+                    return nominal2 if forCurr1 else nominal
+                else :
+                    return nominal if forCurr1 else nominal2
+            elif str(trade.OptKey4AsEnum()) == "OPT" :
+                return round(trade.Quantity(), 2) if forCurr1 else round(trade.Quantity() * trade.Instrument().StrikePrice(), 0)
+            else :
+                return round(trade.Position(), 2) if forCurr1 else round(trade.Premium(), 2)
+        elif trade.Instrument().InsType() == "BasketRepo/Reverse":
+            return round(trade.StartCash(), 2) if forCurr1 else (round(trade.StartCash(), 2) - get_cashflow_proj_interest_amt(trade)) * -1
+        else :
+            return None if asin else round(trade.Nominal(), 2)
+ 
+def rateBaseOnCategory(forCurr1, trade):
+    if trade.OptKey4AsEnum() == "MDCI":
+        option_trade = [x for x in trade.DealPackage().Trades().AsArray() if "deposit/loan" not in str(x.InstrumentSubType()).lower()][0]
+        return option_trade.Instrument().StrikePrice() if forCurr1 else None
+    elif trade.OptKey4AsEnum() in ["MMLD", "MLDR"]:
+        depo_trade = [x for x in trade.DealPackage().Trades().AsArray() if "deposit/loan" in str(x.InstrumentSubType()).lower()][0]
+        option_trade = [x for x in trade.DealPackage().Trades().AsArray() if "deposit/loan" not in str(x.InstrumentSubType()).lower()][0]
+        return depo_trade.Instrument().FirstLeg().FixedRate() if forCurr1 else option_trade.Price()
+    else :
+        if trade.CurrencyPair():
+            return round(trade.Price(), 0) if forCurr1 else None
+        else :
+            try :
+                return None if forCurr1 else round(trade.Instrument().FirstLeg().FixedRate(), 0)
+            except :
+                return None if forCurr1 else round(trade.Price(), 0)
+
+...
+
+}
+

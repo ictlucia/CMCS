@@ -1,0 +1,234 @@
+#
+# Front Arena exported extension module.
+# source          ""
+# timestamp (utc) "2024-10-03 06:55:30.7"
+# ***** DO NOT EDIT! *****
+#
+name        "PS_AccountingDepreciationSplit"
+description ""
+
+groups {
+}
+
+decls[FColumnDefinition] {
+  "Fee Realized Non-Attributable Linear" ( "default accounting columns.tradeandcombinations" "sheet columns.tradesheet" ) "";
+  "Original Premium Accounting (Price)" ( "sheet columns.tradesheet" ) "";
+  "Original Premium Discount (Price)" ( "sheet columns.tradesheet" ) "";
+  "Portfolio Realized Deprec P/L split by Attributable Fee" ( "default accounting columns.tradeandcombinations" "sheet columns.tradesheet" ) "";
+  "Portfolio Realized Deprec P/L split by Modification PV Fee" ( "default accounting columns.tradeandcombinations" "sheet columns.tradesheet" ) "";
+  "Portfolio Realized Deprec P/L split by Modification PV Fee (IDR)" ( "default accounting columns.tradeandcombinations" "sheet columns.tradesheet" ) "";
+  "Portfolio Realized Deprec P/L split by Price" ( "default accounting columns.tradeandcombinations" "sheet columns.tradesheet" ) "";
+}
+
+clx FTradingSheet [FColumnDefinition] {
+  Fee Realized Non-Attributable Linear =
+  Description=Fee Realized Non-Attributable Linear
+  ExtensionAttribute=feeRealizedLinearAmort
+  GroupLabel=Accounting EIR Custom
+  LabelList=Fee Realized Non-Attributable Linear
+  Name=Fee Realized Non-Attributable Linear
+
+
+  Original Premium Accounting (Price) =
+  Access=ReadOnly
+  Description=The total premium for the trades (exluding Modification PV Fee and Attributable Fee) [Mandiri Accounting Customisation]
+  ExtensionAttribute=originalPremiumAccountingPrice
+  GroupLabel=Accounting EIR Custom
+  LabelList=Original Premium Accounting Price
+
+
+  Original Premium Discount (Price) =
+  Access=Read
+  Class=InstrumentAndTrades
+  Description== (Rounded Premium - Rounded Accrual + Nominal) * (-1)
+  ExtensionAttribute=originalPremiumDiscountPrice
+  Format=Imprecise
+  GroupLabel=Accounting EIR Custom
+  LabelList=Original Premium Discount (Price)
+  Name=Original Premium Discount (Price)
+
+
+  Portfolio Realized Deprec P/L split by Attributable Fee =
+  Description=The realized profit and loss stemming from depreciation for a position or portfolio, apportioned by Attributable Fee.
+  ExtensionAttribute=deprecRPLColumnSplitAttributableFee
+  GroupLabel=Accounting EIR Custom
+  InheritsFrom=Portfolio Profit and Loss Base (Historical FX parametrization)
+  LabelList=Deprec Split (Attributable Fee);Realized Deprec P/L split based on Attributable Fee;Realized Depreciated Profit/Loss split based on Attributable Fee
+  Name=Realized Depreciated Profit/Loss split by Attributable Fee
+
+
+  Portfolio Realized Deprec P/L split by Modification PV Fee =
+  Description=The realized profit and loss stemming from depreciation for a position or portfolio, split to Modification PV Fee.
+  ExtensionAttribute=deprecRPLColumnSplitModificationPvFee
+  GroupLabel=Accounting EIR Custom
+  InheritsFrom=Portfolio Profit and Loss Base (Historical FX parametrization)
+  LabelList=Deprec Split (Modification PV Fee);Realized Deprec P/L split based on Modification PV Fee;Realized Depreciated Profit/Loss split based on Modification PV Fee
+  Name=Realized Depreciated Profit/Loss split to Modification PV Fee
+
+
+  Portfolio Realized Deprec P/L split by Modification PV Fee (IDR) =
+  Description=The realized profit and loss stemming from depreciation for a position or portfolio, split to Modification PV Fee (Accounting CCY).
+  ExtensionAttribute=deprecRPLColumnSplitModificationPvFeeIDR
+  GroupLabel=Accounting EIR Custom
+  InheritsFrom=Portfolio Profit and Loss Base (Historical FX parametrization)
+  LabelList=Deprec Split (Modification PV Fee) (IDR);Realized Deprec P/L split based on Modification PV Fee (IDR);Realized Depreciated Profit/Loss split based on Modification PV Fee (IDR)
+  Name=Realized Depreciated Profit/Loss split to Modification PV Fee (IDR)
+
+
+  Portfolio Realized Deprec P/L split by Price =
+  Description=The realized profit and loss stemming from depreciation for a position or portfolio, split by Original Premium Discount. (The remainder of the Realized Deprec P/L is split into trade Fees).
+  ExtensionAttribute=deprecRPLColumnSplitDiscount
+  GroupLabel=Accounting EIR Custom
+  InheritsFrom=Portfolio Profit and Loss Base (Historical FX parametrization)
+  LabelList=Deprec Split (Price);Realized Deprec P/L split by Price;Realized Depreciated Profit/Loss split by Price
+  Name=Realized Depreciated Profit/Loss split by Price
+
+
+  Trade Payments for Realized Amort =
+  Description=Trade Payments for Realized Amort
+  ExtensionAttribute=tradePaymentsForRealizedAmortColumn
+  GroupLabel=Accounting EIR Custom
+  LabelList=Trade Payments for Realized Amort
+  Name=Trade Payments for Realized Amort
+
+
+}
+
+decls[FExtensionAttribute] {
+}
+
+clx FCombInstrMapAndTrades [FExtensionAttribute] {
+  paymentsPerTypeIgnoreDateCheck = nil;
+}
+
+clx FDeliverableLinkAndTrades [FExtensionAttribute] {
+  paymentsPerTypeIgnoreDateCheck = nil;
+}
+
+clx FInstrumentAndTrades [FExtensionAttribute] {
+  originalPremiumDiscountPrice = originalPremiumDiscount.Number + object:paymentsPerTypeIgnoreDateCheck [paymentType := "Modification PV Fee"].Number + object:paymentsPerTypeIgnoreDateCheck [paymentType := "Attributable Fee"].Number;
+  paymentsPerTypeIgnoreDateCheck[paymentType] = object:paymentsPerTypeEnd [paymentType := paymentType, profitAndLossEndDate := dateFromYMD(9999, 12, 31)] - object:paymentsPerTypeStart [paymentType := paymentType, profitAndLossStartDate := longTimeAgo];
+}
+
+clx FLegAndTrades [FExtensionAttribute] {
+  paymentsPerTypeIgnoreDateCheck = nil;
+}
+
+clx FTradeRow [FExtensionAttribute] {
+  deprecRPLColumnSplitAttributableFee = -1 * object:deprecAmount [displayCurrency, calculateTradeEffectInPosition := true, profitAndLossStartDate, profitAndLossEndDate, profitAndLossParameters] * (object:paymentsPerTypeIgnoreDateCheck [paymentType := "Attributable Fee"].Value.Number / deprecRPLColumnSplitCommonDenominator);
+  deprecRPLColumnSplitCommonDenominator = originalPremiumDiscountPrice.Number - object:paymentsPerTypeIgnoreDateCheck [paymentType := "Modification PV Fee"].Value.Number - object:paymentsPerTypeIgnoreDateCheck [paymentType := "Attributable Fee"].Value.Number;
+  deprecRPLColumnSplitDiscount = object:deprecAmount [displayCurrency, calculateTradeEffectInPosition := true, profitAndLossStartDate, profitAndLossEndDate, profitAndLossParameters] * (originalPremiumDiscountPrice.Number / deprecRPLColumnSplitCommonDenominator);
+  deprecRPLColumnSplitModificationPvFee = -1 * object:deprecAmount [displayCurrency, calculateTradeEffectInPosition := true, profitAndLossStartDate, profitAndLossEndDate, profitAndLossParameters] * (object:paymentsPerTypeIgnoreDateCheck [paymentType := "Modification PV Fee"].Value.Number / deprecRPLColumnSplitCommonDenominator);
+  deprecRPLColumnSplitModificationPvFeeIDR = convertToCurrency(denominatedvalue(round(deprecRPLColumnSplitModificationPvFee, 2), displayCurrency, , ), profitAndLossMtMFXRatesToAccountingCurr, accountingCurrency, filterUnit);
+  feeRealizedLinearAmort = feesRealizedColumn - denominatedvalue(tradePaymentsForRealizedAmortColumn, object.Instrument.Currency, , );
+  originalPremiumAccountingPrice = trade :* "originalPremiumAccounting" [profitAndLossEndDate] - object:paymentsPerTypeIgnoreDateCheck [paymentType := "Modification PV Fee"].Value - object:paymentsPerTypeIgnoreDateCheck [paymentType := "Attributable Fee"].Value;
+  tradePaymentsForRealizedAmortColumn = py("TradePaymentsForRealizedAmortColumn", context).getTradePaymentsForRealizedAmortColumn(object.Trade, accountingParameters, profitAndLossEndDate);
+}
+
+decls[FParameters] {
+}
+
+clx FObject [FParameters] {
+  TradeStatusForRealizedAmort =
+  trade_status=['BO-BO Confirmed']
+
+
+}
+
+decls[FPythonCode] {
+}
+
+clx FObject [FPythonCode] {
+  TradePaymentsForRealizedAmortColumn
+
+"""----------------------------------------------------------------------------
+MODULE
+    TradePaymentsForRealizedAmortColumn
+
+DESCRIPTION
+
+    Mandiri Custom
+    Sum of all trade payments of fee allocation type 'As Fee on Trade Day' and 'As Fee on Pay Day'
+    for deducting from realized fees.
+     
+FOOTPRINT
+    [2024 05 08] richard.milford@fisglobal.com
+        update to only include payments from Valid Date
+    [2023 06 14] richard.milford@fisglobal.com
+
+----------------------------------------------------------------------------"""
+
+import acm
+import FAdditionalPayments
+import ParametersReader, ast
+
+
+def TradeStatusAccepted():    
+    status_params = ParametersReader.get_params('TradeStatusForRealizedAmort')
+    status_accepted = status_params['trade_status']
+    return ast.literal_eval(status_accepted)
+
+
+def privateGetPaymentFeeAllocType(_payment,_tradeFPortfolioAccountingParams):
+
+    if _payment.Type() =="Swaps Premium": return _tradeFPortfolioAccountingParams.SwapPremiumAllocate()
+    if _payment.Type() =="Assignment Fee": return _tradeFPortfolioAccountingParams.AssignmentFeeAllocate()
+    if _payment.Type() =="Broker Fee": return _tradeFPortfolioAccountingParams.BrokerFeeAllocate()
+    if _payment.Type() =="Internal Fee": return _tradeFPortfolioAccountingParams.InternalFeeAllocate()
+    if _payment.Type() =="Extension Fee": return _tradeFPortfolioAccountingParams.ExtensionFeeAllocate()
+    if _payment.Type() =="Termination Fee": return _tradeFPortfolioAccountingParams.TerminationFeeAllocate()
+    if _payment.Type() =="Cash Payment": return _tradeFPortfolioAccountingParams.CashAllocate()
+    if _payment.Type() =="Exercise Fee": return _tradeFPortfolioAccountingParams.ExerciseCashAllocate()
+    if _payment.Type() =="Fill Fee": return _tradeFPortfolioAccountingParams.FillFeeAllocate()
+    if _payment.Type() =="Commission": return _tradeFPortfolioAccountingParams.CommissionAlloc()
+    if _payment.Type() =="Allocation Fee": return _tradeFPortfolioAccountingParams.AllocationFeeAlloc()
+    if _payment.Type() =="Recovery Payment": return _tradeFPortfolioAccountingParams.RecoveryAllocate()
+
+    return -1
+
+
+def getTradePaymentsForRealizedAmortColumn(trd,_tradeFPortfolioAccountingParams,_profitAndLossEndDate):
+    contact_trds = list()
+    sumValueTradePayments = 0
+    trade_status = None
+    if acm.GetCalculatedValueFromString(trd, acm.GetDefaultContext(),"taxLotPnL", None).Value():
+        trade_status = TradeStatusAccepted()
+        _taxLotClosings = acm.GetCalculatedValueFromString(trd, acm.GetDefaultContext(),"taxLotClosings", None).Value()
+        if _taxLotClosings is None:
+            if trd.Oid() == trd.ContractTrdnbr(): 
+                contact_trds = acm.FTrade.Select('contractTrdnbr={}'.format(trd.ContractTrdnbr()))            
+    else:
+        contact_trds = [trd]
+    
+    for _trade in contact_trds:
+        if trade_status is None or _trade.Status() in trade_status:
+            tradePayments = _trade.Payments()            
+            for payment in tradePayments:
+                """
+                this function should only return payments with date ValidDate >= _profitAndLossEndDate
+                i.e. if the payment.ValidDate is in the future, then do not include in the return of this function
+                """
+                if acm.Time.DateDifference(_profitAndLossEndDate,payment.ValidFrom()) >= 0:
+                    """
+                    get allocation fee type based on mapped accounting parameters
+                    accounting parameters are mapped to the trade.portfolio
+                    """
+                    feeAllocationMethod = privateGetPaymentFeeAllocType(payment,_tradeFPortfolioAccountingParams)
+                    """
+                    if fee allocation is not defined in the accounting parameters UI, then
+                    additional fee types are defined in the Explorer python module FAdditionalPayments. 
+                    hence if not found (-1) then assume to look in the module FAdditionalPayments
+                    """
+                    if feeAllocationMethod == -1: 
+                        feeAllocationMethod = FAdditionalPayments.fee_alloc_method_from_payment_type(payment.Type())
+
+                    #only sum fees of type 'As Fee on Trade Day','As Fee on Pay Day', for deducting from realized fees
+                    if feeAllocationMethod in ['As Fee on Trade Day','As Fee on Pay Day',3]:
+                        sumValueTradePayments = sumValueTradePayments + payment.Amount()
+
+    return sumValueTradePayments
+
+...
+
+}
+

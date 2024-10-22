@@ -1,0 +1,4 @@
+CHOICELIST,,,/CHOICELIST
+LIST,ENTRY,DESCRIPTION,
+EMASSystem,ACU,Based on USD Currency,
+EMASSystem,DBU,Based on Local Currency,

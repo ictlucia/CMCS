@@ -1,0 +1,4 @@
+ROUNDINGSPEC,ROUNDING,,,,/ROUNDING,/ROUNDINGSPEC
+NAME,ATTRIBUTE,DECIMALS,MODE,TYPE,,
+CollateralRounding,Collateral Post,1000,Step,Up,,
+,Collateral Receive,1000,Step,Up,,

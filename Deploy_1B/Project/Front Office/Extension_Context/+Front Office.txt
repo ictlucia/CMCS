@@ -1,0 +1,10 @@
+Discounted Deposit (PRIME-87262)
+PS_FO_Customisation
+PS_FO_DeflatorFactor
+PS_FO_EOD_Pricecopy
+PS_PriceCopy
+PS_CherryPicking
+PS_FX_Position
+PS_ExeAssignPerform
+PS_InsAndTradeFieldDefaultValues
+PS_YearlyPnL

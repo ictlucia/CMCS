@@ -1,0 +1,453 @@
+#
+# Front Arena exported extension module.
+# source          ""
+# timestamp (utc) "2022-09-28 11:20:12.1"
+# ***** DO NOT EDIT! *****
+#
+name        "AR18130"
+description ""
+
+groups {
+}
+
+decls[FPythonCode] {
+}
+
+clx FObject [FPythonCode] {
+  FComplianceRuleFactory
+""" Compiled: 2022-09-12 20:47:05 """
+
+#__src_file__ = "extensions/ComplianceRules/etc/FComplianceRuleFactory.py"
+import json
+import os.path
+
+import acm
+import DealCaptureSetup
+from FAssetManagementUtils import GetLogger
+from FParameterSettings import ParameterSettingsCreator
+from FTradeFilterHelper import ExportTradeFilterToJSON, ImportTradeFilter
+
+logger = GetLogger('Compliance Rules')
+
+
+class TypedParam:
+
+    @classmethod
+    def Create(cls, param):
+        if isinstance(param, (str, float, int, bool)):
+            return PyParam(param)
+        return AcmParam.Create(param)
+        
+    def __init__(self, param):
+        self.p = param
+        
+    def AsJSON(self):
+        raise NotImplementedError
+        
+    def AsObject(self):
+        raise NotImplementedError
+        
+    
+class PyParam(TypedParam):
+
+    def AsJSON(self):
+        return self.p
+        
+    def AsObject(self):
+        return self.p
+        
+        
+class AcmParam(TypedParam):
+
+    @classmethod
+    def Create(cls, param):
+        clsname = f'{cls.GetType(param)}Param'
+        mod = __import__(__name__)
+        if hasattr(mod, clsname):
+            return getattr(mod, clsname)(param)
+        return cls(param)            
+    
+    @staticmethod
+    def GetType(param):
+        try:
+            return param.ClassName()
+        except AttributeError:
+            return param['type']
+
+    def AsJSON(self):
+        return {'type': str(self.p.ClassName()),
+                'value': str(self.p.Name())}
+                
+    def AsObject(self):
+        return getattr(acm, self.p.get('type'))[self.p.get('value')]
+        
+        
+class FSymbolParam(AcmParam):
+
+    def AsJSON(self):
+        return {'type': str(self.p.Class().Name()),
+                'value': str(self.p.Text())}
+        
+    def AsObject(self):
+        return getattr(acm, self.p.get('type'))(self.p.get('value'))
+        
+
+class FFileSelectionParam(AcmParam):
+
+    def AsJSON(self):
+        return {'type': 'FFileSelection', 
+                'value': {'dir': str(self.p.SelectedDirectory()), 
+                          'file': str(self.p.SelectedFile())}}
+                          
+    def AsObject(self):
+        file = acm.FFileSelection()
+        file.SelectedDirectory(self.p.get('value').get('dir'))
+        file.SelectedFile(self.p.get('value').get('file'))
+        return file
+
+
+def AddThresholds(rule, thresholds, parent=None):
+    try:    
+        for threshold_dict in thresholds:
+            threshold=acm.FThreshold()
+            threshold.ComplianceRule(rule)
+            threshold.ComparisonType(str(threshold_dict.get('comparison_type')))
+            threshold.Value(float(threshold_dict.get('value')))
+            threshold.Type(threshold_dict.get('type'))
+            if parent:
+                threshold.Parent(parent)
+            threshold.Commit()
+            if threshold_dict.get('thresholds'):
+                AddThresholds(rule, threshold_dict.get('thresholds'), threshold)
+    except Exception as e:
+        logger.error('Can not save threshold: %s' % str(e))
+
+
+def CreateRules(rules_definitions):
+    for rule in rules_definitions:
+        try:
+            c_rule = CreateBaseRule(rule)
+            ImportRuleDefinitionFromDict(c_rule.Definition(), rule.get('definition'))
+            c_rule.Commit()
+            AddThresholds(c_rule, rule.get('thresholds', []))
+            logger.debug('Compliance rule %s successfully created.' % str(c_rule.Name()))
+        except Exception as e:
+            logger.error('Can not crate Compliance rule: %s' % str(e))
+
+
+def CreateBaseRule(rule):
+    try:
+        c_rule = acm.FComplianceRule[str(rule.get('name'))]
+        if not c_rule:
+            c_rule = acm.FComplianceRule()
+        else:
+            return c_rule
+        if rule.get('name'):
+            c_rule.Name(str(rule.get('name')))
+        if rule.get('type'):
+            c_rule.DefinitionInfo(str(rule.get('type')))
+        if rule.get('category'):
+            category = acm.FChoiceList.Select('name="%s"' % str(rule.get('category')))
+            if category:
+                c_rule.RuleCategory(str(rule.get('category')))
+            else:
+                DealCaptureSetup.ChoiceListSetUp('Compliance Rule Category', str(rule.get('category')), '').DoSetUp()
+                c_rule.RuleCategory(str(rule.get('category')))
+        if rule.get('description'):
+            c_rule.Description(str(rule.get('description')))
+        return c_rule
+    except Exception as e:
+        logger.error('Can not create Compliance Rule with base information: %s' % str(e))
+
+
+def ExportComplianceRulesAsJSON(path, file, complianceRules):
+    rules = {
+        'compliance_rules': []
+    }
+    
+    logger.info('Start exporting Compliance Rule(s) JSON file.')
+    
+    for rule in complianceRules:
+        rules['compliance_rules'].append(ExportComplianceRule(rule))
+    with open(os.path.join(path, file), 'w') as complianceRuleJSON:
+        complianceRuleJSON.write(json.dumps(rules))
+        
+    logger.info('Compliance Rule(s) JSON file is crated at %s location.' % os.path.join(path, file))
+
+
+def ExportComplianceRule(ruleName):
+    rule = acm.FComplianceRule[ruleName]
+    if not rule:
+        raise Exception('Compliance Rule %s does not exist!' % (ruleName))
+    ruleDict = ExportBasicRuleInfo(rule)
+    ruleDict['definition'] = GetRuleDefinitionDict(rule.Definition())
+    logger.debug('Compliance rule %s successfully exported.' % str(ruleName))
+    return ruleDict
+    
+
+def ExportBasicRuleInfo(rule):
+    base = {
+        'name': str(rule.Name()),
+        'type': str(rule.DefinitionInfo()),
+        'description': str(rule.Description()),
+        'thresholds': ExportThresholds(rule.Thresholds()),
+        'definition': {}
+    }
+    if rule.RuleCategory():
+        base['category'] = str(rule.RuleCategory().Name())
+    return base
+
+
+def GetBaseThresholdInfo(threshold):
+    return {
+        'comparison_type': str(threshold.ComparisonType()),
+        'value': float(threshold.Value()),
+        'type': str(threshold.Type().Name()),
+        'description': str(threshold.Description())
+    }
+
+
+def ExportThresholds(thresholds):
+    thresholdsAsDicts = []
+    for threshold in thresholds:
+        thresholdDict = GetBaseThresholdInfo(threshold)
+        if not threshold.Parent():
+            thresholdDict['thresholds'] = [GetBaseThresholdInfo(t) for t in thresholds if t.Parent() == threshold]
+            thresholdsAsDicts.append(thresholdDict)
+    return thresholdsAsDicts
+
+
+def ImportComplianceRuleFromJSON(fileLoaction):
+    with open(fileLoaction, 'r') as complianceRulesJSON:
+        complianceRules = json.loads(complianceRulesJSON.read())
+    
+    CreateRules(complianceRules.get('compliance_rules', []))
+    
+
+def GetVectorConfig(column):
+    config = {}
+    if str(column.Class().Name()) in ['FStandardColumnCreator', 'FVectorColumnCreator'] and column.Configuration():
+        paramDict = column.Configuration().ParamDict()
+        vectorConfig = paramDict.At('vectorConfig')
+        if not vectorConfig:
+            return config
+        if str(vectorConfig.ClassName()) == 'FTimeBuckets':
+            bucketName = str(column.ExtendedColumnName()).split('Time Buckets: ')[-1]
+            storedTimeBucket = acm.FStoredTimeBuckets[bucketName]
+            config['timeBuckets'] = {
+                'type': str(storedTimeBucket.ClassName()),
+                'name': bucketName,
+                'value': storedTimeBucket.Text()
+            }
+            return config
+        for value in vectorConfig or []:
+            parameters = value.Parameters()
+            config[value.UniqueTag()] = GetParametersDict(parameters)
+    return config
+
+
+def GetColumnParameters(column):
+    params = {}
+    if str(column.Class().Name()) in ['FStandardColumnCreator', 'FVectorColumnCreator'] and column.Configuration():
+        paramDict = column.Configuration().ParamDict()
+        parameters = paramDict.At('columnParameters', {})
+        params = GetParametersDict(parameters)
+    return params
+
+
+def GetParametersDict(parameters):
+    paramsDict = {}
+    for key in parameters:
+        param = TypedParam.Create(parameters[key])
+        paramsDict[str(key)] = param.AsJSON()
+    return paramsDict
+
+
+def GetRuleDefinitionDict(ruleDefinition):
+    dict_obj = {}
+    methodes = set(ruleDefinition.Class().MethodNames()) - set(acm.FRuleDefinition.Class().MethodNames())
+    for method in methodes:
+        function = getattr(ruleDefinition, str(method))
+        if not ruleDefinition.CanInvoke(str(method) + '()'):
+            continue
+        attr_value = function()
+        if isinstance(attr_value, (str, float, int, bool)) and (attr_value or attr_value == 0):
+            dict_obj[str(method)] = attr_value
+        elif hasattr(attr_value, 'Name'):
+            if str(attr_value.Class().Name()) in ['FStandardColumnCreator', 'FVectorColumnCreator']:
+                dict_obj[str(method)] = {
+                    'type': str(attr_value.Class().Name()),
+                    'value': attr_value.ColumnId(),
+                    'columnParameters': GetColumnParameters(attr_value),
+                    'vectorConfig': GetVectorConfig(attr_value)
+                }
+                continue
+            dict_obj[str(method)] = {
+                'type': str(attr_value.Class().Name()),
+                'value': attr_value.Name(),
+                'columnParameters': GetColumnParameters(attr_value),
+                'vectorConfig': GetVectorConfig(attr_value)
+            }
+        elif hasattr(attr_value, 'Template'):
+            dict_obj[str(method)] = {
+                'type': str(attr_value.Class().Name()),
+                'value': str(attr_value.Template()).strip("'"),
+                'columnParameters': GetColumnParameters(attr_value),
+                'vectorConfig': GetVectorConfig(attr_value)
+            }
+        elif hasattr(attr_value, '__iter__'):
+            dict_obj[str(method)] = []
+            for i in attr_value:
+                if hasattr(i, 'Name'):
+                    dict_obj[str(method)].append({
+                        'type': str(i.Class().Name()),
+                        'value': i.Name()
+                    })
+                    continue
+                dict_obj[str(method)].append(GetRuleDefinitionDict(i))
+    return dict_obj
+
+
+def GetColumnCreator(columnDict):
+    template = acm.Sheet().Column().GetCreatorTemplate(columnDict.get('value'), acm.GetDefaultContext())
+    
+    config = acm.Sheet().Column().CreatorConfigurationFromColumnParameterDefinitionNamesAndValues(
+        CreateParameters(columnDict.get('columnParameters', {})))
+    if columnDict.get('vectorConfig'):
+        config = acm.Sheet().Column().CreatorConfigurationFromVector(
+            CreateVectorConfig(columnDict.get('vectorConfig', {})), config)
+
+    return template.CreateCreator(config)
+
+
+def CreateParameters(parametersDict):
+    parameters = acm.FVariantDictionary()
+    for key in parametersDict.keys():
+        param = TypedParam.Create(parametersDict[key])
+        parameters.AtPut(acm.FSymbol(key), param.AsObject())
+    return parameters
+
+
+def CreateVectorConfig(vectorConfigDict):
+    parameterArray = acm.FNamedParametersArray()
+    timeBucketsDict = vectorConfigDict.get('timeBuckets')
+    if timeBucketsDict:
+        timeBuckets = getattr(acm, timeBucketsDict.get('type'))[timeBucketsDict.get('name')]
+        if not timeBuckets:
+            timeBuckets = getattr(acm, timeBucketsDict.get('type'))()
+            timeBuckets.Name(timeBucketsDict.get('name'))
+        timeBuckets.Text(timeBucketsDict.get('value'))
+        timeBuckets.Commit()
+        return timeBuckets.TimeBuckets()
+    for tag in list(vectorConfigDict.keys()):
+        vectorConfig = acm.FNamedParameters()
+        vectorConfig.UniqueTag(tag)
+
+        parametersDict = vectorConfigDict[tag]
+        parameters = CreateParameters(parametersDict)
+
+        vectorConfig.Parameters(parameters)
+
+        parameterArray.Add(vectorConfig)
+    return parameterArray
+
+
+def ImportRuleDefinitionFromDict(ruleDef, defDict):
+    for key, value in defDict.items():
+        if isinstance(value, (int, str, bool, float)):
+            try:
+                #if isinstance(value, unicode):
+                #    value = str(value)
+                getattr(ruleDef, key)(value)
+            except Exception as e:
+                logger.error('Can not import value from rule definition dict: %s' % str(e))
+        elif type(value) is dict:
+            try:
+                if value.get('type') in ['FStandardColumnCreator', 'FVectorColumnCreator']:
+                    obj = GetColumnCreator(value)
+                else:
+                    obj = getattr(acm, str(value['type']))[str(value.get('value'))]
+                getattr(ruleDef, key)(obj)
+            except Exception as e:
+                logger.error('Can not create object in Compliance rule definition: %s' % str(e))
+        elif type(value) is list:
+            if key == 'CurrencyPairs':
+                dictionary = acm.FDictionary()
+                for obj in value:
+                    if type(obj) is dict:
+                        dictionary.AtPut(getattr(acm, str(obj['type']))[str(obj.get('value'))], 0)
+                getattr(ruleDef, key)(dictionary)
+            else:
+                array = acm.FArray()
+                for obj in value:
+                    if isinstance(obj, (int, str, bool, float)):
+                        array.AddFirst(obj)
+                    elif type(obj) is dict:
+                        array.AddFirst(getattr(acm, str(obj['type']))[str(obj.get('value'))])
+                getattr(ruleDef, key)(array)
+    
+
+def ImportComplianceRules(fileLoaction, tradeFilterOption):
+    with open(fileLoaction, 'r') as file:
+        file = json.loads(file.read())
+        
+    logger.info('Start importing %s Compliance Rule(s).' % len(file.get('compliance_rules', [])))
+    
+    for tradeFilter in file.get('trade_filters', []):
+        try:
+            ImportTradeFilter(tradeFilter, tradeFilterOption)
+        except Exception as e:
+            logger.error('Can not import Compliance Rule Trade Filter: %s' % str(e))
+    
+    CreateRules(file.get('compliance_rules', []))
+    logger.info('Successfully imported %s Compliance Rule(s).' % len(file.get('compliance_rules', [])))
+    
+
+def ExportComplianceRules(complianceRules, directoryPath, fileName):
+    rules = {
+        'compliance_rules': [],
+        'trade_filters': []
+    }
+    logger.info('Start exporting %s Compliance Rule(s).' % len(complianceRules))
+    for rule in complianceRules:
+        rules['compliance_rules'].append(ExportComplianceRule(rule))
+        for filter in GetTradeFilters(rule):
+            rules['trade_filters'].append(ExportTradeFilterToJSON(filter.Name()))
+            
+    with open(os.path.join(directoryPath, fileName), 'w') as complianceRuleJSON:
+        complianceRuleJSON.write(json.dumps(rules))
+    logger.info('Successfully exported %s Compliance Rule(s).' % len(rules.get('compliance_rules', [])))
+
+
+def GetTradeFilters(ruleName):
+    rule = acm.FComplianceRule[ruleName]
+    filters = []
+    if rule and hasattr(rule.Definition(), 'FilterQuery'):
+        result = rule.Definition().FilterQuery()
+        if result and hasattr(result, '__iter__'):
+            filters.extend(list(result))
+    return filters
+
+
+def remove_compliance_rules(rule_definitions):
+    for rule_def in rule_definitions:
+        try:
+            if rule_def.get('name'):
+                rule = acm.FComplianceRule[rule_def.get('name')]
+                if not rule:
+                    continue
+                applied_rules = rule.AppliedRules()
+                for ar in list(applied_rules):
+                    for alert in list(ar.Alerts()):
+                        alert.Delete()
+                    ar.Delete()
+                for t in list(rule.Thresholds()):
+                    t.Delete()
+                rule.Delete()
+        except Exception as e:
+            continue
+
+...
+
+}
+

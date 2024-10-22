@@ -1,0 +1,9 @@
+Windows Registry Editor Version 5.00
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Front\Front Arena\ATS\FA_INSTANCE_NAME]
+"module_name"="FRDConvertorMain"
+"username"="ATS_ATCIRD_RETB"
+"password"="intas"
+"sender_mb_name"="ATCI_RD_SENDER_RETB"
+
+

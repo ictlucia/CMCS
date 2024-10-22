@@ -1,0 +1,9 @@
+CHOICELIST,,,/CHOICELIST
+LIST,ENTRY,DESCRIPTION,
+MASTER,DocumentumDocType,Documentum DocumentType Folder,
+DocumentumDocType,Underlying,0b0336bb819f627c,
+DocumentumDocType,DealTicket,0b0336bb819f6268,
+DocumentumDocType,Agreement,0b0336bb819f623f,
+DocumentumDocType,Conversation,0b0336bb819f6241,
+DocumentumDocType,Others,0b0336bb819f6247,
+

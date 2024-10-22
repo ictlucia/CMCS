@@ -1,0 +1,248 @@
+#
+# Front Arena exported extension module.
+# source          ""
+# timestamp (utc) "2024-09-02 12:41:38.6"
+# ***** DO NOT EDIT! *****
+#
+name        "PS_ComplianceRulesOverrides"
+description ""
+
+groups {
+}
+
+decls[FPythonCode] {
+}
+
+clx FObject [FPythonCode] {
+  FExposureRuleInterface
+""" Compiled: 2024-08-20 12:33:17 """
+
+#__src_file__ = "extensions/ComplianceRuleDefinitionsStandard/etc/FExposureRuleInterface.py"
+"""-------------------------------------------------------------------------------------------------------
+MODULE
+    FExposureRuleInterface
+
+    (c) Copyright 2018,2022 FIS Group/Fidelity Information Services Front Arena AB. All rights reserved.
+
+DESCRIPTION
+
+-------------------------------------------------------------------------------------------------------"""
+import acm
+import FSheetUtils
+from FParameterSettings import ParameterSettingsCreator
+from FComplianceRuleInspector import ComplianceRuleInspectorTMSheet
+from FExposureRuleAttributeDefinitions import ExposureRuleDefinition
+
+from FRuleCalculationsProvider import RuleCalculationCheckProvider, RuleCalculationWhatIfProvider, RuleCalculationMonitorProvider
+from FRuleCalculationGrid import NoGridParams, CompositeRuleCalculationGrid
+from FExposureRuleParameters import CreateExposureRuleParameters
+from FPositionRuleCalculator import PositionRuleCalculator
+from FExposureRuleCalculator import ExposureRuleCalculator
+from FPositionRuleProviderParts import GetTrades
+
+
+class ExposureRuleInterface(object):
+        
+    def CreateCheckProvider(self, appliedRule):
+        grid = CreateRuleCalculationGrid(appliedRule)
+        calculator = ExposureRuleCalculator(appliedRule)
+        return RuleCalculationCheckProvider(calculator, grid)
+        
+    def CreateWhatIfProvider(self, appliedRule, whatIfParams):
+        grid = CreateRuleCalculationGrid(appliedRule, whatIfParams)
+        calculator = ExposureRuleCalculator(appliedRule)
+        trades = GetTrades(appliedRule, whatIfParams)
+        return RuleCalculationWhatIfProvider(calculator, grid, trades)
+        
+    def CreateMonitorProvider(self, appliedRule):
+        grid = CreateRuleCalculationGrid(appliedRule)
+        calculator = ExposureRuleCalculator(appliedRule)
+        return RuleCalculationMonitorProvider(calculator, grid)
+    
+    def CreateCompositeAttributes(self, ruleDefinition):
+        return ExposureRuleDefinition(ruleDefinition)
+            
+    def OnDetails(self, appliedRule, alert=None):
+        params = CreateExposureRuleParameters(appliedRule)
+        ExposureRuleInspector(params, alert).Display()
+
+    def IsAffectedBy(self, appliedRule, anObject):
+        params = CreateExposureRuleParameters(appliedRule)
+        if isSatisfiedBy := params.Entity().IsSatisfiedBy(anObject):
+            return isSatisfiedBy
+        if params.RelativeTo():
+            relativeToParams = params.RelativeToParams()
+            return relativeToParams.Entity().IsSatisfiedBy(anObject)
+        return False
+
+    #cpp
+    def PartitionKey(self, appliedRule: acm.FAppliedRule) -> str:
+        return appliedRule.Name()
+        
+        
+def CreateRuleCalculationGrid(appliedRule, whatIfParams=None):
+    params =  CreateExposureRuleParameters(appliedRule, whatIfParams)
+    relParams = params.RelativeToParams() if params.RelativeTo() else NoGridParams('denominators', 100)
+    return CompositeRuleCalculationGrid.Create(params, relParams)
+
+        
+class ExposureRuleInspector(ComplianceRuleInspectorTMSheet):
+    
+    def __init__(self, params, alert=None):
+        super().__init__(params.AppliedRule(), alert)
+        self._params = params
+        self._relativeToParams = params.RelativeToParamsOrNone() 
+        
+    def InsertRuleTarget(self):
+        if self._RelativeNodeShouldBeInserted():
+            items = [self._relativeToParams.Entity(), self.FilteredPortfolioFolder()]
+        else:
+            items = [self.FilteredPortfolioFolder()]
+        self._sheet.InsertObject(items, 'IOAP_LAST')
+        
+        self.ApplyGrouper()
+        FSheetUtils.ExpandTree(self._sheet, 2)
+        self.SortRows()
+    
+    def SortRows(self):
+        columnIter =  self._sheet.GridColumnIterator()
+        while columnIter.Next():
+            if self._params.ColumnId() == columnIter.GridColumn().ColumnId():
+                break
+        if columnIter.GridColumn():
+            self._sheet.SortColumn(columnIter, False)
+    
+    def FilteredPortfolioFolder(self):
+        filteredPortfolioItem = self._params.Entity()
+        if filteredPortfolioItem.IsKindOf(acm.FASQLQuery):
+            folder = acm.FASQLQueryFolder()
+            folder.AsqlQuery(filteredPortfolioItem)
+            folder.Name(self._FolderName())
+            return folder
+        else:
+            return filteredPortfolioItem
+    
+    def ApplyGrouper(self):
+        FSheetUtils.ApplyGrouperInstanceToSheet(self._sheet, self._params.Grouper())
+
+    @staticmethod
+    def GetCreatorConfiguration(params):
+        if calcConfig := params.CalculationConfiguration():
+            d = calcConfig.ParamDict()
+            creatorConfig = acm.Sheet.Column().CreatorConfigurationFromColumnParameterDefinitionNamesAndValues(d.At('columnParameters'))
+            return acm.Sheet.Column().CreatorConfigurationFromVector(d.At('vectorItemValue'), creatorConfig)
+
+    @classmethod
+    def GetCreator(cls, params):
+        template = params.Column().Template()
+        config = cls.GetCreatorConfiguration(params)
+        return template.CreateCreator(config)
+
+    def ColumnCreators(self):
+        columnCreators = acm.FColumnCreators()
+        creator = self.GetCreator(self._params)
+        columnCreators.Add(creator)
+        if self._relativeToParams:
+            relativeCreator = self.GetCreator(self._relativeToParams)
+            columnCreators.Add(relativeCreator)
+        return columnCreators
+
+    def OnCreateSheetSetup(self, sheetSetup):
+        sheetSetup.TimeBucketsTemplate(self._params.TimeBuckets())
+
+    def _FolderName(self):
+        tName = self._appliedRule.TargetName()
+        qName = self._QueryName()
+        return '{0} ({1})'.format(tName, qName) if qName else tName
+        
+    def _QueryName(self):
+        res = [query.Name() for query in self._params.Definition().FilterQuery() or []]
+        if self._params.Definition().PythonFilterMethodName():
+            res.append(self._params.Definition().PythonFilterMethodName().split('.')[1])
+        operator = self._params.Definition().CompoundQueryLogicalOperator()
+        return ' {0} '.format(operator).join(res)
+    
+    def _RelativeNodeShouldBeInserted(self):
+        return self._params.RelativeTo() and not self._params.IsCalculatedForEach()
+    
+    def RowMatchesAlertSubject(self, row):
+        return PositionRuleCalculator.EntityFromRow(row, self._alert.AppliedRule()) == self._alert.Subject()
+    
+    def SheetTemplate(self):
+        settings = ParameterSettingsCreator.FromRootParameter('InspectRuleSheetTemplate')
+        return acm.FTradingSheetTemplate[settings.Exposure()]
+
+...
+
+  FPositionAndRiskRuleInterface
+""" Compiled: 2024-08-20 12:33:17 """
+
+#__src_file__ = "extensions/ComplianceRuleDefinitionsStandard/etc/FPositionAndRiskRuleInterface.py"
+"""-------------------------------------------------------------------------------------------------------
+MODULE
+    FPositionAndRiskRuleInterface
+
+    (c) Copyright 2021,2022 FIS Group/Fidelity Information Services Front Arena AB. All rights reserved.
+
+DESCRIPTION
+
+-------------------------------------------------------------------------------------------------------"""
+import acm
+
+from FRuleCalculationsProvider import RuleCalculationCheckProvider, RuleCalculationWhatIfProvider, RuleCalculationMonitorProvider
+from FRuleCalculationGrid import NoGridParams, CompositeRuleCalculationGrid
+from FPositionAndRiskRuleParameters import CreatePositionAndRiskRuleParameters
+from FPositionAndRiskAttributeDefinitions import PositionAndRiskAttributeDefinitions
+from FExposureRuleCalculator import ExposureRuleCalculator
+from FPositionRuleProviderParts import GetTrades
+from FExposureRuleInterface import ExposureRuleInspector
+
+
+class PositionAndRiskRuleInterface:
+
+    def CreateCheckProvider(self, appliedRule):
+        grid = CreateRuleCalculationGrid(appliedRule)
+        calculator = ExposureRuleCalculator(appliedRule)
+        return RuleCalculationCheckProvider(calculator, grid)
+        
+    def CreateWhatIfProvider(self, appliedRule, whatIfParams):
+        grid = CreateRuleCalculationGrid(appliedRule, whatIfParams)
+        calculator = ExposureRuleCalculator(appliedRule)
+        trades = GetTrades(appliedRule, whatIfParams)
+        return RuleCalculationWhatIfProvider(calculator, grid, trades)
+        
+    def CreateMonitorProvider(self, appliedRule):
+        grid = CreateRuleCalculationGrid(appliedRule)
+        calculator = ExposureRuleCalculator(appliedRule)
+        return RuleCalculationMonitorProvider(calculator, grid)
+    
+    def CreateCompositeAttributes(self, ruleDefinition):
+        return PositionAndRiskAttributeDefinitions(ruleDefinition)
+    
+    def OnDetails(self, appliedRule, alert=None):
+        params = CreatePositionAndRiskRuleParameters(appliedRule)
+        ExposureRuleInspector(params, alert).Display()
+
+    def IsAffectedBy(self, appliedRule, anObject):
+        params = CreatePositionAndRiskRuleParameters(appliedRule)
+        if isSatisfiedBy := params.Entity().IsSatisfiedBy(anObject):
+            return isSatisfiedBy
+        if params.RelativeTo():
+            relativeToParams = params.RelativeToParams()
+            return relativeToParams.Entity().IsSatisfiedBy(anObject)
+        return False
+
+    #cpp
+    def PartitionKey(self, appliedRule: acm.FAppliedRule) -> str:
+        return appliedRule.Name()
+        
+   
+def CreateRuleCalculationGrid(appliedRule, whatIfParams=None):
+    params =  CreatePositionAndRiskRuleParameters(appliedRule, whatIfParams)
+    relParams = params.RelativeToParams() if params.RelativeTo() else NoGridParams('denominators', 100)
+    return CompositeRuleCalculationGrid.Create(params, relParams)
+
+...
+
+}
+

@@ -1,0 +1,10 @@
+ADDITIONALINFOSPEC,,,,,,,,/ADDITIONALINFOSPEC
+SUBREC_MASK1,SUBREC_MASK2,DATA_TYPE.GRP,DESCRIPTION,DATA_TYPE.TYPE,FIELD_NAME,REC_TYPE,DEFAULT_VALUE,
+,,Standard,CTP Alias,String,CTPAlias,Party,,
+,,Standard,CTP Custody,String,CTPCustody,Party,,
+,,Standard,CTP Matching Status,String,CTPMatchingStatus,Trade,,
+1216,32768,Standard,CTP Number,String,CTPNumber,Trade,,
+,,Standard,CTP Participants,String,CTPParticipants,Party,No,
+,,Standard,CTP Reference (Trade Number),String,CTPReference,Trade,,
+,,Standard,CTP State Status,String,CTPStateStatus,Trade,,
+5,,Standard,Single Investor Identification,String,SID,Party,,

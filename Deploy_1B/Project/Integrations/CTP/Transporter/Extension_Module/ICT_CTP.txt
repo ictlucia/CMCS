@@ -1,0 +1,1263 @@
+#
+# Front Arena exported extension module.
+# source          ""
+# timestamp (utc) "2024-04-30 07:37:57.2"
+# ***** DO NOT EDIT! *****
+#
+name        "ICT_CTP"
+description "$Id$"
+
+groups {
+}
+
+decls[FColumnDefinition] {
+  "CTP_CPFirmId" ( "sheet columns.tradesheet" ) "";
+  "CTP_Custodian_Deliverer" ( "sheet columns.tradesheet" ) "";
+  "CTP_Custodian_Receiver" ( "sheet columns.tradesheet" ) "";
+  "CTP_DealerStatus_Deliverer" ( "sheet columns.tradesheet" ) "";
+  "CTP_DealerStatus_Receiver" ( "sheet columns.tradesheet" ) "";
+  "CTP_FileGenerationStatus" ( "sheet columns.tradesheet" ) "";
+  "CTP_Haircut" ( "sheet columns.tradesheet" ) "";
+  "CTP_Position" ( "sheet columns.tradesheet" ) "";
+  "CTP_PPECode_Deliverer" ( "sheet columns.tradesheet" ) "";
+  "CTP_PPECode_Receiver" ( "sheet columns.tradesheet" ) "";
+  "CTP_Price" ( "sheet columns.tradesheet" ) "";
+  "CTP_Quantity" ( "sheet columns.tradesheet" ) "";
+  "CTP_Reference_Deliverer" ( "sheet columns.tradesheet" ) "";
+  "CTP_Reference_Receiver" ( "sheet columns.tradesheet" ) "";
+  "CTP_Remarks_Deliverer" ( "sheet columns.tradesheet" ) "";
+  "CTP_Remarks_Receiver" ( "sheet columns.tradesheet" ) "";
+  "CTP_RepoCashCurrency" ( "sheet columns.tradesheet" ) "";
+  "CTP_RepoContractDate" ( "sheet columns.tradesheet" ) "";
+  "CTP_RepoMarginRatio" ( "sheet columns.tradesheet" ) "";
+  "CTP_Report_Type" ( "sheet columns.tradesheet" ) "";
+  "CTP_RepoType" ( "sheet columns.tradesheet" ) "";
+  "CTP_RepurchaseValue" ( "sheet columns.tradesheet" ) "";
+  "CTP_ReverseDate" ( "sheet columns.tradesheet" ) "";
+  "CTP_SecondLegPrice" ( "sheet columns.tradesheet" ) "";
+  "CTP_SecondLegYield" ( "sheet columns.tradesheet" ) "";
+  "CTP_SecondRepoRate" ( "sheet columns.tradesheet" ) "";
+  "CTP_Series" ( "sheet columns.tradesheet" ) "";
+  "CTP_TradeDate" ( "sheet columns.tradesheet" ) "";
+  "CTP_TradeTime" ( "sheet columns.tradesheet" ) "";
+  "CTP_TransactingPartiesCode_Deliverer" ( "sheet columns.tradesheet" ) "";
+  "CTP_TransactingPartiesCode_Receiver" ( "sheet columns.tradesheet" ) "";
+  "CTP_Transaction_Type" ( "sheet columns.tradesheet" ) "";
+  "CTP_ValueDay" ( "sheet columns.tradesheet" ) "";
+  "CTP_VAS" ( "sheet columns.tradesheet" ) "";
+  "CTP_Yield" ( "sheet columns.tradesheet" ) "";
+}
+
+clx FTradingSheet [FColumnDefinition] {
+  CTP_CPFirmId =
+  Description=The CP Firm Id for CTP.
+  ExtensionAttribute=CTP_CPFirmId
+  GroupLabel=FieldCustom
+  LabelList=CTP_CPFirmId
+  Name=CTP_CPFirmId
+
+
+  CTP_Custodian_Deliverer =
+  Description=If Mandiri is SELLER, then set Mandiri's Network Alias. If Mandiri is BUYER, then set Counterparty's Network Alias (Counterparty Swift).
+  ExtensionAttribute=CTP_Custodian_Deliverer
+  GroupLabel=FieldCustom
+  LabelList=CTP_Custodian_Deliverer
+  Name=CTP_Custodian_Deliverer
+
+
+  CTP_Custodian_Receiver =
+  Description=If Mandiri is BUYER, then set Mandiri's Network Alias. If Mandiri is SELLER, then set Counterparty's Network Alias (Counterparty Swift).
+  ExtensionAttribute=CTP_Custodian_Receiver
+  GroupLabel=FieldCustom
+  LabelList=CTP_Custodian_Receiver
+  Name=CTP_Custodian_Receiver
+
+
+  CTP_DealerStatus_Deliverer =
+  Description=Proceed this calculation if transaction type is R. If SELL, then set value "PRINCIPAL". If BUY, then set value "AGENT".
+  ExtensionAttribute=CTP_DealerStatus_Deliverer
+  GroupLabel=FieldCustom
+  LabelList=CTP_DealerStatus_Deliverer
+  Name=CTP_DealerStatus_Deliverer
+
+
+  CTP_DealerStatus_Receiver =
+  Description=Proceed this calculation if transaction type is R. If SELL, then set value "PRINCIPAL". If BUY, then set value "AGENT".
+  ExtensionAttribute=CTP_DealerStatus_Receiver
+  GroupLabel=FieldCustom
+  LabelList=CTP_DealerStatus_Receiver
+  Name=CTP_DealerStatus_Receiver
+
+
+  CTP_FileGenerationStatus =
+  Description=Additional status to maintain the successful file generation.
+  ExtensionAttribute=CTP_FileGenerationStatus
+  GroupLabel=FieldCustom
+  LabelList=CTP_FileGenerationStatus
+  Name=CTP_FileGenerationStatus
+
+
+  CTP_Haircut =
+  Description=The Collateral Haircut for Repo Transaction
+  ExtensionAttribute=CTP_Haircut
+  Format=NoCommaSeparated4Dec
+  GroupLabel=FieldCustom
+  LabelList=CTP_Haircut
+  Name=CTP_Haircut
+
+
+  CTP_Position =
+  Description=The B/S indicator for transaction of CTP.
+  ExtensionAttribute=CTP_Position
+  GroupLabel=FieldCustom
+  LabelList=CTP_Position
+  Name=CTP_Position
+
+
+  CTP_PPECode_Deliverer =
+  Description=If SELL, then show "PPE-24".
+  ExtensionAttribute=CTP_PPECode_Deliverer
+  GroupLabel=FieldCustom
+  LabelList=CTP_PPECode_Deliverer
+  Name=CTP_PPECode_Deliverer
+
+
+  CTP_PPECode_Receiver =
+  Description=If BUY, then show "PPE-24".
+  ExtensionAttribute=CTP_PPECode_Receiver
+  GroupLabel=FieldCustom
+  LabelList=CTP_PPECode_Receiver
+  Name=CTP_PPECode_Receiver
+
+
+  CTP_Price =
+  Description=The Price of Trade for CTP.
+  ExtensionAttribute=CTP_Price
+  Format=NoCommaSeparated2Dec
+  GroupLabel=FieldCustom
+  LabelList=CTP_Price
+  Name=CTP_Price
+
+
+  CTP_Quantity =
+  Description=The Quantity of Trade for CTP.
+  ExtensionAttribute=CTP_Quantity
+  Format=NoCommaSeparated
+  GroupLabel=FieldCustom
+  LabelList=Quantity (bio)
+  Name=CTP_Quantity
+
+
+  CTP_Reference_Deliverer =
+  Description=If SELL, then show Trade ID.
+  ExtensionAttribute=CTP_Reference_Deliverer
+  GroupLabel=FieldCustom
+  LabelList=CTP_Reference_Deliverer
+  Name=CTP_Reference_Deliverer
+
+
+  CTP_Reference_Receiver =
+  Description=If BUY, then show Trade ID.
+  ExtensionAttribute=CTP_Reference_Receiver
+  Format=
+  GroupLabel=FieldCustom
+  LabelList=CTP_Reference_Receiver
+  Name=CTP_Reference_Receiver
+
+
+  CTP_Remarks_Deliverer =
+  Description=If SELL, then set value "-".
+  ExtensionAttribute=CTP_Remarks_Deliverer
+  GroupLabel=FieldCustom
+  LabelList=CTP_Remarks_Deliverer
+  Name=CTP_Remarks_Deliverer
+
+
+  CTP_Remarks_Receiver =
+  Description=If BUY, then set value "-".
+  ExtensionAttribute=CTP_Remarks_Receiver
+  GroupLabel=FieldCustom
+  LabelList=CTP_Remarks_Receiver
+  Name=CTP_Remarks_Receiver
+
+
+  CTP_RepoCashCurrency =
+  Description=If transaction type is R, then show Instrument Currency.
+  ExtensionAttribute=CTP_RepoCashCurrency
+  GroupLabel=FieldCustom
+  LabelList=CTP_RepoCashCurrency
+  Name=CTP_RepoCashCurrency
+
+
+  CTP_RepoContractDate =
+  Description=If transaction type is "R", then show Instrument Start Date.
+  ExtensionAttribute=CTP_RepoContractDate
+  Format=DateMMDDYYYY
+  GroupLabel=FieldCustom
+  LabelList=CTP_RepoContractDate
+  Name=CTP_RepoContractDate
+
+
+  CTP_RepoMarginRatio =
+  Description=Repo Margin Ratio equals to 100 - Haircut.
+  ExtensionAttribute=CTP_RepoMarginRatio
+  Format=NoCommaSeparated4Dec
+  GroupLabel=FieldCustom
+  LabelList=CTP_RepoMarginRatio
+  Name=CTP_RepoMarginRatio
+
+
+  CTP_Report_Type =
+  Description=ONE or TWO
+  ExtensionAttribute=CTP_Report_Type
+  GroupLabel=FieldCustom
+  LabelList=CTP_Report_Type
+  Name=CTP_Report_Type
+
+
+  CTP_RepoType =
+  Description=If transaction type is R, then show "STD" which means REPO STANDARD.
+  ExtensionAttribute=CTP_RepoType
+  GroupLabel=FieldCustom
+  LabelList=CTP_RepoType
+  Name=CTP_RepoType
+
+
+  CTP_RepurchaseValue =
+  Description=Shows End Cash if Transaction Type = "R".
+  ExtensionAttribute=CTP_RepurchaseValue
+  Format=NoCommaSeparated
+  GroupLabel=FieldCustom
+  LabelList=CTP_RepurchaseValue
+  Name=CTP_RepurchaseValue
+
+
+  CTP_ReverseDate =
+  Description=Shows End Date if Transaction Type = "R".
+  ExtensionAttribute=CTP_ReverseDate
+  Format=DateMMDDYYYY
+  GroupLabel=FieldCustom
+  LabelList=CTP_ReverseDate
+  Name=CTP_ReverseDate
+
+
+  CTP_SecondLegPrice =
+  Description=Shows All In Price if Transaction Type is "R".
+  ExtensionAttribute=CTP_SecondLegPrice
+  GroupLabel=FieldCustom
+  LabelList=CTP_SecondLegPrice
+  Name=CTP_SecondLegPrice
+
+
+  CTP_SecondLegYield =
+  Description=Shows Yield if Transaction Type = "R".
+  ExtensionAttribute=CTP_SecondLegYield
+  GroupLabel=FieldCustom
+  LabelList=CTP_SecondLegYield
+  Name=CTP_SecondLegYield
+
+
+  CTP_SecondRepoRate =
+  Description=Shows Second Leg Rate if Transaction Type = "R".
+  ExtensionAttribute=CTP_SecondRepoRate
+  GroupLabel=FieldCustom
+  LabelList=CTP_SecondRepoRate
+  Name=CTP_SecondRepoRate
+
+
+  CTP_Series =
+  Description=The instrument series of the CTP transaction.
+  ExtensionAttribute=CTP_Series
+  GroupLabel=FieldCustom
+  LabelList=CTP_Series
+  Name=CTP_Series
+
+
+  CTP_TradeDate =
+  Description=The trade date of the CTP transaction.
+  ExtensionAttribute=CTP_TradeDate
+  Format=DateMMDDYYYY
+  GroupLabel=FieldCustom
+  LabelList=CTP_TradeDate
+  Name=CTP_TradeDate
+
+
+  CTP_TradeTime =
+  Description=The trade time of the CTP transaction.
+  ExtensionAttribute=CTP_TradeTime
+  Format=TimeOnlyNoSeconds
+  GroupLabel=FieldCustom
+  LabelList=CTP_TradeTime
+  Name=CTP_TradeTime
+
+
+  CTP_TransactingPartiesCode_Deliverer =
+  Description=If SELL, then use Acquirer Name (Mandiri). If BUY, then use Counterparty Name.
+  ExtensionAttribute=CTP_TransactingPartiesCode_Deliverer
+  GroupLabel=FieldCustom
+  LabelList=CTP_TransactingPartiesCode_Deliverer
+  Name=CTP_TransactingPartiesCode_Deliverer
+
+
+  CTP_TransactingPartiesCode_Receiver =
+  Description=If SELL, then use Acquirer Name (Mandiri). If BUY, then use Counterparty Name.
+  ExtensionAttribute=CTP_TransactingPartiesCode_Receiver
+  GroupLabel=FieldCustom
+  LabelList=CTP_TransactingPartiesCode_Receiver
+  Name=CTP_TransactingPartiesCode_Receiver
+
+
+  CTP_Transaction_Type =
+  Description=R, O, W
+  ExtensionAttribute=CTP_Transaction_Type
+  GroupLabel=FieldCustom
+  Label=CTP_Transaction_Type
+  Name=CTP_Transaction_Type
+
+
+  CTP_ValueDay =
+  Description=The settlement date of the CTP transaction.
+  ExtensionAttribute=CTP_ValueDay
+  Format=DateMMDDYYYY
+  GroupLabel=FieldCustom
+  LabelList=CTP_ValueDay
+  Name=CTP_ValueDay
+
+
+  CTP_VAS =
+  Description=Set value to "N".
+  ExtensionAttribute=CTP_VAS
+  GroupLabel=FieldCustom
+  LabelList=CTP_VAS
+  Name=CTP_VAS
+
+
+  CTP_Yield =
+  Description=The Yield of Trade for CTP.
+  ExtensionAttribute=CTP_Yield
+  Format=NoCommaSeparated4Dec
+  GroupLabel=FieldCustom
+  LabelList=CTP_Yield
+  Name=CTP_Yield
+
+
+}
+
+decls[FDateTimeFormatter] {
+}
+
+clx FObject [FDateTimeFormatter] {
+  DateMMDDYYYY =
+  DateType=
+  Format=%m/%d/%Y
+  Option=
+  ParsePeriodAs=
+  ShowFractionOfSeconds=
+
+
+}
+
+decls[FDocString] {
+  "FXSLTemplate:FTSVTemplateFormatedData" ( "aef.public" ) "";
+}
+
+clx FExtensionDefinition [FDocString] {
+  FXSLTemplate:FTSVTemplateFormatedData
+Secondary report template with tab separated values and formatting.
+...
+
+}
+
+decls[FExtensionAttribute] {
+}
+
+clx FTradeRow [FExtensionAttribute] {
+  CTP_CPFirmId = select(object.Trade.Counterparty.AdditionalInfo.CTPParticipants, 
+  "Yes"->select(object.Trade.Counterparty.Aliases > 0, 
+    true->py("CTPPythonCode", context).get_Party_Aliases_Name(object.Trade), 
+    default->nil), 
+  default->nil);
+  CTP_Custodian_Deliverer = select(CTP_Position, 
+  "S"->select(CTP_Transaction_Type, 
+    "R"->py("CTPPythonCode", context).get_Collateral_MandiriAccountNetworkAlias(object.Trade), 
+    default->py("CTPPythonCode", context).get_MandiriAccountNetworkAlias(object.Trade)), 
+  "B"->select(CTP_Report_Type, 
+    "ONE"->select(CTP_Transaction_Type, 
+      "R"->py("CTPPythonCode", context).get_Collateral_CounterpartyAccountNetworkAlias(object.Trade), 
+      default->py("CTPPythonCode", context).get_CounterpartyAccountNetworkAlias(object.Trade)), 
+    "TWO"->nil));
+  CTP_Custodian_Receiver = select(CTP_Position, 
+  "B"->select(CTP_Transaction_Type, 
+    "R"->py("CTPPythonCode", context).get_Collateral_MandiriAccountNetworkAlias(object.Trade), 
+    default->py("CTPPythonCode", context).get_MandiriAccountNetworkAlias(object.Trade)), 
+  "S"->select(CTP_Report_Type, 
+    "ONE"->select(CTP_Transaction_Type, 
+      "R"->py("CTPPythonCode", context).get_Collateral_CounterpartyAccountNetworkAlias(object.Trade), 
+      default->py("CTPPythonCode", context).get_CounterpartyAccountNetworkAlias(object.Trade)), 
+    "TWO"->nil));
+  CTP_DealerStatus_Deliverer = select(CTP_Position, 
+  "S"->"PRINCIPAL", 
+  "B"->select(CTP_Report_Type, 
+    "ONE"->"AGENT", 
+    "TWO"->nil));
+  CTP_DealerStatus_Receiver = select(CTP_Position, 
+  "B"->"PRINCIPAL", 
+  "S"->select(CTP_Report_Type, 
+    "ONE"->"AGENT", 
+    "TWO"->nil));
+  CTP_FileGenerationStatus = py("CTPPythonCode", context).ctp_FileGenerationStatus(object.Trade, object.Trade.AdditionalInfo.CTPStateStatus);
+  CTP_Haircut = select(CTP_Transaction_Type, 
+  "R"->py("CTPPythonCode", context).get_Collateral_Haircut(object.Trade), 
+  default->nil);
+  CTP_Position = select(object.Trade.Quantity > 0, 
+  true->"B", 
+  false->"S");
+  CTP_PPECode_Deliverer = select(CTP_Position, 
+  "B"->nil, 
+  "S"->"PPE-24");
+  CTP_PPECode_Receiver = select(CTP_Position, 
+  "S"->nil, 
+  "B"->"PPE-24");
+  CTP_Price = select(object.Instrument.InsType, 
+  "BasketRepo/Reverse"->py("CTPPythonCode", context).get_Collateral_Price(object.Trade), 
+  "Bill"->select(object.Trade.BoughtAsString, 
+    "Buy"->-100 * (object.Trade.Premium / object.Trade.FaceValue), 
+    "Sell"->abs(100 * object.Trade.Premium / object.Trade.FaceValue)), 
+  default->object.Trade.Price);
+  CTP_Quantity = abs(object.Trade.Nominal / 1000000000);
+  CTP_Reference_Deliverer = select(CTP_Position, 
+  "S"->string(object.Trade.Oid), 
+  "B"->nil);
+  CTP_Reference_Receiver = select(CTP_Position, 
+  "S"->nil, 
+  "B"->string(object.Trade.Oid));
+  CTP_Remarks_Deliverer = select(CTP_Position, 
+  "S"->"-", 
+  "B"->nil);
+  CTP_Remarks_Receiver = select(CTP_Position, 
+  "S"->nil, 
+  "B"->"-");
+  CTP_RepoCashCurrency = select(CTP_Transaction_Type, 
+  "R"->object.Instrument.Currency.Name, 
+  default->nil);
+  CTP_RepoContractDate = select(CTP_Transaction_Type, 
+  "R"->startDate, 
+  default->nil);
+  CTP_RepoMarginRatio = select(CTP_Transaction_Type, 
+  "R"->100.0 - py("CTPPythonCode", context).get_Collateral_Haircut(object.Trade), 
+  default->nil);
+  CTP_Report_Type = py("CTPPythonCode", context).get_ctp_report_type(object.Trade);
+  CTP_RepoType = select(CTP_Transaction_Type, 
+  "R"->"STD", 
+  default->nil);
+  CTP_RepurchaseValue = select(CTP_Transaction_Type, 
+  "R"->select(CTP_Position, 
+    "B"->object.Trade.StartCash - py("CTPPythonCode", context).get_repurchase_value(object.Trade), 
+    "S"->object.Trade.StartCash + py("CTPPythonCode", context).get_repurchase_value(object.Trade)));
+  CTP_ReverseDate = select(CTP_Transaction_Type, 
+  "R"->endDate, 
+  default->nil);
+  CTP_SecondLegPrice = select(CTP_Transaction_Type, 
+  "R"->CTP_RepurchaseValue / object.Trade.Nominal);
+  CTP_SecondLegYield = select(CTP_Transaction_Type, 
+  "R"->tradeYieldToMaturity * 100);
+  CTP_SecondRepoRate = select(CTP_Transaction_Type, 
+  "R"->uniqueCouponInTheoreticalPrice, 
+  default->nil);
+  CTP_Series = select(object.Instrument.InsType, 
+  "Bond"->object.Instrument.Name, 
+  "Bill"->object.Instrument.Name, 
+  "FRN"->object.Instrument.Name, 
+  "MBS/ABS"->object.Instrument.Name, 
+  default->select(CTP_Transaction_Type, 
+    "R"->select(object.Trade.MasterAgreement.Size <> 0, 
+      true->select(object.Trade.MarginingSets.Size <> 0, 
+        true->py("CTPPythonCode", context).get_Collateral_Instrument(object.Trade)), 
+      false->nil), 
+    false->nil));
+  CTP_TradeDate = asDate(object.Trade.TradeTime);
+  CTP_TradeTime = object.Trade.TradeTime;
+  CTP_TransactingPartiesCode_Deliverer = select(CTP_Position, 
+  "S"->py("CTPPythonCode", context).get_Mandiri_SID(object.Trade), 
+  "B"->select(CTP_Report_Type, 
+    "ONE"->object.Trade.Counterparty.AdditionalInfo.SID, 
+    "TWO"->nil));
+  CTP_TransactingPartiesCode_Receiver = select(CTP_Position, 
+  "B"->py("CTPPythonCode", context).get_Mandiri_SID(object.Trade), 
+  "S"->select(CTP_Report_Type, 
+    "ONE"->object.Trade.Counterparty.AdditionalInfo.SID, 
+    "TWO"->nil));
+  CTP_Transaction_Type = py("CTPPythonCode", context).ctp_TransactionType(object.Trade);
+  CTP_ValueDay = asDate(object.Trade.ValueDay);
+  CTP_VAS = "N";
+  CTP_Yield = select(object.Instrument.InsType, 
+  "BasketRepo/Reverse"->100 * py("CTPPythonCode", context).get_Collateral_Yield(object.Trade), 
+  default->100 * tradeYieldToMaturity);
+}
+
+decls[FMenuExtension] {
+}
+
+clx FSessionManagerFrame [FMenuExtension] {
+  CTP Export =
+  Function=CTPExportUtil.StartApplication
+  MenuType=Application
+  ModuleName=CTP Export CSV
+  ParentMenu=Tools
+  RibbonPosition=CTP Export Import
+
+
+  CTP Import =
+  Function=CTPImportUtil.StartApplication
+  MenuType=Application
+  ModuleName=CTP Import CSV
+  ParentMenu=Tools
+  RibbonPosition=CTP Export Import
+
+
+}
+
+decls[FNumFormatter] {
+}
+
+clx FObject [FNumFormatter] {
+  NoCommaSeparated =
+  DenominatedValueDateTimeFormatter=
+  DigitGrouping=false
+  DigitGroupingSymbol=
+  Epsilon=
+  Expression=
+  Format=
+  Fractions=
+  InputScaleFactor=
+  InputScaleFactorLimit=
+  Inverse=
+  MaximumSignificantDigits=
+  MinimumSignificantDigits=
+  Mnemonic=
+  NumDecimals=5
+  ScaleFactor=1.0
+  ShowInf=false
+  Tick=
+  TruncateTrailingZeros=
+  USTreasuryInput=
+
+
+  NoCommaSeparated2Dec =
+  DenominatedValueDateTimeFormatter=
+  DigitGrouping=false
+  DigitGroupingSymbol=
+  Epsilon=
+  Expression=
+  Format=
+  Fractions=
+  InputScaleFactor=
+  InputScaleFactorLimit=
+  Inverse=
+  MaximumSignificantDigits=
+  MinimumSignificantDigits=
+  Mnemonic=
+  NumDecimals=2
+  ScaleFactor=1.0
+  ShowInf=false
+  Tick=
+  TruncateTrailingZeros=
+  USTreasuryInput=
+
+
+  NoCommaSeparated4Dec =
+  DenominatedValueDateTimeFormatter=
+  DigitGrouping=false
+  DigitGroupingSymbol=
+  Epsilon=
+  Expression=
+  Format=
+  Fractions=
+  InputScaleFactor=
+  InputScaleFactorLimit=
+  Inverse=
+  MaximumSignificantDigits=
+  MinimumSignificantDigits=
+  Mnemonic=
+  NumDecimals=4
+  ScaleFactor=1.0
+  ShowInf=false
+  Tick=
+  TruncateTrailingZeros=
+  USTreasuryInput=
+
+
+}
+
+decls[FPythonCode] {
+}
+
+clx FObject [FPythonCode] {
+  CTP_Mandiri_Export_CSV
+
+import acm
+import ael
+import os
+import locale
+from datetime import datetime
+import FLogger
+
+logger = FLogger.FLogger(__name__)
+
+def check_amend_from_history(trade_no):
+    trxs_trade = acm.FTransactionHistory.Select('name="{}" and transRecordType="Trade" and oper="Update"'.format(trade_no))
+    
+    for history in trxs_trade:
+        old_status = history.OldFieldValue("status", "Trade")
+        new_status = history.NewFieldValue("status", "Trade")
+        
+        if (old_status == "24" or old_status == "BO Rejected") and new_status == "Reserved":
+            return "Amend"
+        
+    return "Success"
+    
+def get_decimal_separator():
+    locale.setlocale(locale.LC_ALL, "")
+    return locale.localeconv()["decimal_point"]
+    
+def check_ctp_criteria(trade_no):
+    trade = acm.FTrade[trade_no]
+    trd_status = trade.Status()
+    ctp_status =  trade.AddInfoValue('CTPStateStatus')
+    result = ''
+    
+    cpty = trade.Counterparty()
+    if (cpty == None) | (cpty == ''):
+        raise Exception("{} - Counterparty is empty!".format(trade_no))
+    else:
+        ctp_participants = cpty.AddInfoValue('CTPParticipants')
+        if ctp_participants not in ('Yes', 'No'):
+            cpty.AddInfoValue('CTPParticipants', 'No')
+            cpty.Commit()
+        else:
+            pass
+    
+    if 'void' in trd_status.lower():
+        result = 'Void'
+    elif ctp_status == '' or ctp_status == None:
+        result = 'New'
+    else:
+        result = check_amend_from_history(trade_no)
+    
+    trade.AddInfoValue('CTPStateStatus', result)
+    trade.Commit()
+    
+    return result
+
+def getFilePathSelection(status):
+    """ Directory selector dialog """
+    selection = acm.FFileSelection()
+    selection.PickDirectory(status)
+    selection.SelectedDirectory = r'C:\Users'
+    return selection  
+
+exportPath = getFilePathSelection(True)
+
+def ExportPath(path):
+    global exportPath
+    exportPath = path
+
+ael_gui_parameters={'runButtonLabel':'&&Run',
+                    'hideExtraControls': True,
+                    'windowCaption':'CTP Mandiri - Export CSV'}
+
+ael_variables=[
+['wb_name','Workbook Name','string', None, 'CTP Mandiri', 1,0],
+['export_path', 'Destination File Path', getFilePathSelection(True), None, getFilePathSelection(True), 1, 1]
+]
+
+def ael_main(parameter):
+    report_name = parameter['wb_name']
+    export_path = str(parameter['export_path'])
+    
+    ExportPath(export_path)
+    
+    folder_path = export_path
+    file_name = report_name
+
+    task = acm.FAelTask['Task CTP Mandiri']
+    params = task.Parameters()
+    params.AtPut("File Path", folder_path)
+    params.AtPut("wbName", file_name)
+    params.AtPut("HTML to File", "False")
+    params.AtPut("HTML to Screen", "False")
+    params.AtPut("Create directory with date", "False")
+    params.AtPut("Secondary output", "True")
+    params.AtPut("Secondary template", "FTSVTemplateFormatedData")
+    params.AtPut("Secondary file extension", ".csv")
+    task.Parameters(params)
+#   task.Commit()
+    task.Execute()
+    
+    complete_path = folder_path+"\\"+file_name+".csv"
+    f = open(complete_path, "r")
+    csv_data = f.read()
+    f.close()
+    
+    if get_decimal_separator() == ",":
+        csv_data = csv_data.replace(",", ".").replace("\t", ",")
+    elif get_decimal_separator() == ".":
+        csv_data = csv_data.replace("\t", ",")
+        
+    csv_file = csv_data.split('\n')
+    titles = ''
+    dict_result_group = {
+        "New" : [], 
+        "Success" : [], 
+        "Amend" : [], 
+        "Void" : []
+    }
+
+    for i in csv_file:
+        if 'Table name' in i:
+            idx = csv_file.index(i)
+            titles = 'Trade'+csv_file[idx+1]
+            titles = titles.split(',')
+            break
+    
+    dict_confirm_titles_idx = {
+        "Report Code" : titles.index("ReportCode"),
+        "Transacting Parties Code - Receiver" : titles.index("CTP_TransactingPartiesCode_Receiver"),
+        "DealerStatus - Receiver" : titles.index("CTP_DealerStatus_Receiver"),
+        "Remarks - Receiver" : titles.index("CTP_Remarks_Receiver"),
+        "Reference - Receiver" : titles.index("CTP_Reference_Receiver"),
+        "PPECode - Receiver" : titles.index("CTP_PPECode_Receiver"),
+        "Custodian - Receiver" : titles.index("CTP_Custodian_Receiver"),
+        "Late Reason Type" : titles.index("LateReasonType"),
+        "Late Reason" : titles.index("LateReason"),
+    }
+    
+    dict_entry_titles_idx = {
+        "Report Type" : titles.index("CTP_Report_Type"),
+        "B/S" : titles.index("B/S"),
+        "SEC ID" : titles.index("CTP_Series"),
+        "Transaction Type" : titles.index("CTP_Transaction_Type"),
+        "RepoType" : titles.index("CTP_RepoType"),
+        "CP Firm ID" : titles.index("CTP_CPFirmId"),
+        "Price" : titles.index("CTP_Price"),
+        "Yield" : titles.index("CTP_Yield"),
+        "Volume" : titles.index("CTP_Quantity"),
+        "Trade Date" : titles.index("CTP_TradeDate"),
+        "Trade Time" : titles.index("CTP_TradeTime"),
+        "VAS" : titles.index("CTP_VAS"),
+        "Settlement Date" : titles.index("CTP_ValueDay"),
+        "RepoContractDate" : titles.index("CTP_RepoContractDate"),
+        "RepoCashCurrency" : titles.index("CTP_RepoCashCurrency"),
+        "RepoMarginRatio" : titles.index("CTP_RepoMarginRatio"),
+        "Haircut" : titles.index("CTP_Haircut"),
+        "Transacting Parties Code - Deliverer" : titles.index("CTP_TransactingPartiesCode_Deliverer"),
+        "DealerStatus - Deliverer" : titles.index("CTP_DealerStatus_Deliverer"),
+        "Remarks - Deliverer" : titles.index("CTP_Remarks_Deliverer"),
+        "Reference - Deliverer" : titles.index("CTP_Reference_Deliverer"),
+        "PPECode - Deliverer" : titles.index("CTP_PPECode_Deliverer"),
+        "Custodian - Deliverer" : titles.index("CTP_Custodian_Deliverer"),
+        "Transacting Parties Code - Receiver" : titles.index("CTP_TransactingPartiesCode_Receiver"),
+        "DealerStatus - Receiver" : titles.index("CTP_DealerStatus_Receiver"),
+        "Remarks - Receiver" : titles.index("CTP_Remarks_Receiver"),
+        "Reference - Receiver" : titles.index("CTP_Reference_Receiver"),
+        "PPECode - Receiver" : titles.index("CTP_PPECode_Receiver"),
+        "Custodian - Receiver" : titles.index("CTP_Custodian_Receiver"),
+        "2nd Leg Price" : titles.index("CTP_SecondLegPrice"),
+        "2nd Leg Yield" : titles.index("CTP_SecondLegYield"),
+        "2nd Leg Rate" : titles.index("SecondLegRate"),
+        "Reverse Date" : titles.index("CTP_ReverseDate"),
+        "Repurchase Value" : titles.index("CTP_RepurchaseValue"),
+        "2nd Repo Rate" : titles.index("CTP_SecondRepoRate"),
+        "Late Reason Type" : titles.index("LateReasonType"),
+        "Late Reason" : titles.index("LateReason"),
+    }
+
+    confirm_titles = ','.join(dict_confirm_titles_idx.keys())
+    entry_titles = ','.join(dict_entry_titles_idx.keys())
+    
+    rows = csv_file[idx+2:]
+    result_one, result_two = [], []
+
+    for i, row in enumerate(rows):
+        temp_row = row.split(',')
+        
+        try:
+            if (i+1) >= len(rows): # At the end of last row
+                logger.ELOG('has been finished')
+                break
+            elif (temp_row[dict_entry_titles_idx['Report Type']] == None) | (temp_row[dict_entry_titles_idx['Report Type']] == ''):
+                continue
+            else:
+                trade_no = int(temp_row[0])
+                check_if_grouper_row = bool(temp_row[dict_entry_titles_idx['B/S']] != '')
+                
+                if check_if_grouper_row :
+                    result = check_ctp_criteria(trade_no)
+                    print(trade_no, '-', result)
+                    if result != 'Skip' :
+                        dict_result_group[result].append(row)
+
+        except Exception as e:
+            logger.ELOG(e)
+            continue
+    
+    now = datetime.now()
+    current_date = now.strftime("%y%m%d")
+    current_hour = now.strftime("%H%M%S")
+    
+    for status, value in dict_result_group.items():
+        if status == 'Success' :
+            continue
+            
+        data_buy, data_sell = [], []
+        for j in value :
+            temp_j = j.split(',')
+
+            trade_no = temp_j[0]
+            temp_data = [trade_no]
+            if temp_j[dict_entry_titles_idx['Report Type']].lower() == 'one':
+                for column, index in dict_entry_titles_idx.items():
+                    temp_data.append(temp_j[index])
+                if temp_j[dict_entry_titles_idx['B/S']].lower() == 'buy' or temp_j[dict_entry_titles_idx['B/S']].lower() == 'b':
+                    data_buy.append(','.join(temp_data))
+                else:
+                    data_sell.append(','.join(temp_data))
+            else:
+                if temp_j[dict_entry_titles_idx['B/S']].lower() == 'buy' or temp_j[dict_entry_titles_idx['B/S']].lower() == 'b':
+                    for column, index in dict_confirm_titles_idx.items():
+                        temp_data.append(temp_j[index])
+                    data_buy.append(','.join(temp_data))
+                else:
+                    for column, index in dict_entry_titles_idx.items():
+                        temp_data.append(temp_j[index])
+                    data_sell.append(','.join(temp_data))
+
+        all_data = {'BUY' : data_buy, 'SELL' : data_sell}
+        
+        for bs, data in all_data.items():
+            full_path = folder_path + "\\" + bs.upper() + "\\"
+            try:
+                os.makedirs(full_path)
+            except:
+                pass
+                
+            for d in data:
+                temp_d = d.split(',')
+                row_data = ','.join(temp_d[1:])
+                
+                f_output = open(full_path+"\\CTP_"+ temp_d[0]+ "_" +current_date + current_hour + "_" + status.upper().replace("AMEND", "AMD") + ".csv", "w")
+                f_output.write(row_data)
+                f_output.close()
+            
+    f.close()
+    
+    try:
+        os.remove(complete_path)
+    except Exception as e:
+        logger.ELOG(e)
+        pass
+    
+
+
+...
+
+  CTP_Mandiri_Import_CTP_File
+
+import acm, ael
+import FLogger
+
+logger = FLogger.FLogger(__name__)
+
+def getFilePathSelection(status):
+    """ Directory selector dialog """
+    selection = acm.FFileSelection()
+    selection.PickDirectory(status)
+    selection.SelectedDirectory = r"C:\Users"
+    return selection  
+
+ael_gui_parameters={'runButtonLabel':'&&Run',
+                    'hideExtraControls': True,
+                    'windowCaption':'CTP Mandiri - Import CTP File'}
+
+ael_variables=[
+['import_path', 'Source File Path', getFilePathSelection(False), None, getFilePathSelection(False), 1, 1]
+]  
+
+def ael_main(parameter):
+    import_path = str(parameter['import_path'])
+    
+    f = open(import_path, "r")
+    csv_file = f.read().split('\n')
+    titles = csv_file[0].split(',')
+    rows = csv_file[1:]
+    ctp_number_idx = titles.index('CTPNumber')
+    ctp_reference_idx = titles.index('Reference')
+            
+    for i, row in enumerate(rows):
+        if (i+1) >= len(rows): # At the end of last row
+            logger.ELOG('has been finished')
+            break
+        elif (row == ",") | (row.strip() == "") | (row == None):
+            logger.ELOG('Row {n} is Empty'.format(n=i+1))
+            break
+        else:
+            row = row.split(',')
+        
+        print(row, end=" - ")
+        try:
+            # Prefilled
+            ctp_number = str(row[ctp_number_idx])
+            query = """select add.recaddr 'TRADENO', add.addinf_specnbr, add.value
+            from AdditionalInfo add
+            where add.value=""" + str(ctp_number)
+            trade_no = ael.asql(query)[1][0][0][0]
+            trade = acm.FTrade[trade_no]
+            ctp_number = trade.AddInfoValue('CTPNumber')
+            ctp_reference = trade.AddInfoValue('CTPReference')
+            ctp_status = trade.AddInfoValue('CTPMatchingStatus')
+            
+            if str(row[ctp_reference_idx]) == ctp_reference:
+                trade.AddInfoValue('CTPMatchingStatus', 'OK')
+                logger.LOG('OK')
+            else:
+                trade.AddInfoValue('CTPMatchingStatus', 'NOK')
+                logger.LOG('NOK')
+        
+        except Exception as e: 
+            # Empty
+            trade = acm.FTrade[int(row[ctp_reference_idx])]
+            ctp_number = trade.AddInfoValue('CTPNumber')
+            ctp_reference = trade.AddInfoValue('CTPReference')
+            if (ctp_number == '' or ctp_number == None) or (ctp_reference == '' or ctp_reference == None):            
+                trade.AddInfoValue('CTPNumber', str(row[ctp_number_idx]))
+                trade.AddInfoValue('CTPReference', row[ctp_reference_idx])
+                trade.AddInfoValue('CTPMatchingStatus', 'OK')
+                logger.LOG('OK')
+            else:
+                logger.LOG(e)
+        
+        trade.Commit()
+
+
+
+...
+
+  CTPExportUtil
+
+import acm
+import UserProfileUtils as up
+import ParametersReader
+
+def StartApplication(eii):
+    component = 'CTP_Mandiri_Export_CSV'
+    shell = acm.UX.SessionManager().Shell()
+    isallow = up.is_component_in_user_profile(component, 'Application')
+    if isallow == 1:
+        acm.RunModuleWithParameters("CTP_Mandiri_Export_CSV", acm.GetDefaultContext())
+    else:
+        acm.UX().Dialogs().MessageBoxInformation(shell, "User doesn't have access right for this menu")
+
+...
+
+  CTPImportUtil
+
+import acm
+import UserProfileUtils as up
+import ParametersReader
+
+def StartApplication(eii):
+    component = 'CTP_Mandiri_Import_CTP_File'
+    shell = acm.UX.SessionManager().Shell()
+    isallow = up.is_component_in_user_profile(component, 'Application')
+    if isallow == 1:
+        acm.RunModuleWithParameters("CTP_Mandiri_Import_CTP_File", acm.GetDefaultContext())
+    else:
+        acm.UX().Dialogs().MessageBoxInformation(shell, "User doesn't have access right for this menu")
+
+...
+
+  CTPPythonCode
+
+import acm
+import ael
+import math
+import traceback
+import re
+import FLogger
+import os
+import locale
+
+logger = FLogger.FLogger(__name__)
+
+def get_ctp_report_type(trade):
+    cpty = trade.Counterparty()
+    
+    ctp_participants = cpty.AddInfoValue('CTPParticipants')
+    result_group = None
+    
+    try:
+        if ctp_participants.lower() == 'yes' :
+            cpty.AddInfoValue('CTPParticipants','Yes')
+            result_group = "TWO"
+        else:
+            cpty.AddInfoValue('CTPParticipants','No')
+            result_group = "ONE"
+    
+    except Exception as e: 
+        logger.LOG("%s of %s : %s" %(get_ctp_report_type.__name__, str(trade.Oid()), str(e)))
+    
+    cpty.Commit()
+    return result_group
+    
+def ctp_TransactionType(trade):
+    
+    type_result = None
+    ins_type = str(trade.InstrumentSubType())
+    
+    if 'repo' in ins_type.lower() :
+        type_result = "R"
+    elif acm.Time.AsDate(trade.TradeTime()) == trade.Instrument().StartDate() :
+        type_result = "W"
+    else:
+        type_result = "O"
+    
+    trade.AddInfoValue('TransactionType', type_result)
+    trade.Commit()
+    
+    return type_result
+    
+def ctp_FileGenerationStatus(trade, CTPStateStatus):
+    context = acm.GetDefaultContext()
+    sheetType = 'FTradeSheet'
+    input = trade
+    columnId_BoS = 'Bought or Sold'
+
+    calcSpace = acm.Calculations().CreateCalculationSpace(context, sheetType)
+    calculation_BoS = calcSpace.CreateCalculation(input, columnId_BoS)
+    buyorsell = calculation_BoS.FormattedValue().upper()
+    
+    statestatus = CTPStateStatus.upper() if CTPStateStatus != 'Amend' else 'AMD'
+    
+    if CTPStateStatus.lower() == 'success':
+        return 'SUCCESS'
+    else:
+        trdnbr = str(trade.Oid())
+        from CTP_Mandiri_Export_CSV import exportPath
+        exportPath = str(exportPath)
+        exportPath += '\\{}\\'.format(buyorsell)
+        os.chdir(exportPath)
+        regex = '[0-9]{12}'
+        filename = 'CTP_{}_{}_{}.csv'.format(trdnbr, regex, statestatus)
+        found = False
+        for file in os.listdir():
+            if re.search(filename, file):
+                found = True
+                break
+            else:
+                continue
+                
+        if found == True:
+            return 'SUCCESS'
+        else:
+            return 'FAILED_{}'.format(statestatus)
+
+def get_Mandiri_SID(trade):
+    acq = trade.Acquirer()
+    if acq != None:
+        return acq.AdditionalInfo().SID()
+    else:
+        return None
+    
+def get_TradeAccountMoneyFlows(trade):
+    try:
+        for mf in trade.MoneyFlows():
+            if mf.Type().lower() == 'security nominal':
+                return mf
+    except Exception as e:
+        logger.LOG("%s of %s : %s" %(get_TradeAccountMoneyFlows.__name__, str(trade.Oid()), str(e)))
+        return None
+
+def get_repurchase_value(trade):
+
+    context = acm.GetDefaultContext()
+    sheetType = 'FMoneyFlowSheet'
+    input = trade.MoneyFlows()
+    columnId = 'Cash Analysis Projected'
+    
+    calcSpace = acm.Calculations().CreateCalculationSpace(context, sheetType)
+    
+    sum = 0
+    list = []
+    
+    for mf in input:
+        if str(mf.MoneyFlowType()) != "Trade Premium":
+            calculation = calcSpace.CreateCalculation(mf, columnId).Value().Number()
+            sum += calculation
+            list.append(mf.MoneyFlowType())
+    return sum
+
+def get_Party_Aliases_Name(trade):
+    cpty = trade.Counterparty()
+    try:
+        for i in cpty.Aliases():
+            if i.Type().Name().lower() == 'ctp_alias':
+                return i.Name()
+    except Exception as e:
+        logger.LOG("%s of %s : %s" %(get_Party_Aliases_Name.__name__, str(trade.Oid()), str(e)))
+        return None
+
+def get_MandiriAccountNetworkAlias(trade):
+    moneyFlow = get_TradeAccountMoneyFlows(trade)
+    if moneyFlow != None:
+        acquirerAccount = moneyFlow.AcquirerAccount()
+        if acquirerAccount != None:
+            return acquirerAccount.NetworkAlias().Name()
+    
+def get_CounterpartyAccountNetworkAlias(trade):
+    moneyFlow = get_TradeAccountMoneyFlows(trade)
+    if moneyFlow != None:
+        counterpartyAccount = moneyFlow.CounterpartyAccount()
+        if counterpartyAccount != None:
+            return counterpartyAccount.NetworkAlias().Name()
+            
+def get_Collateral(trade):
+    try:
+        agl = trade.AgreementLinks()[0]
+        mag = agl.MasterAgreement().Name()
+        ms = agl.MarginingSet().Name()
+        query = """
+            select al.trdnbr, mag.name, ms.name 
+            from TradeAgreementLink al, MarginingSet ms, MasterAgreement mag
+            where al.margining_set_seqnbr = ms.seqnbr
+            and al.master_agreement_seqnbr = mag.seqnbr
+            and mag.name = '{master_agreement}'
+            and ms.name = '{margining_set}'
+            """.format(master_agreement = mag, margining_set = ms)
+        for i in ael.asql(query)[1][0]:
+            trd_no = i[0]
+            t = acm.FTrade[trd_no]
+            if (trd_no != trade.Oid()) & (t.Instrument().InsType().lower() in ('collateral', 'bond', 'bill', 'frn', 'mbs/abs')):
+                return t, t.Instrument().Name()
+    except Exception as e:
+        print(get_Collateral.__name__, str(trade.Oid()), str(e))
+        #logger.LOG("%s of %s : %s" %(get_Collateral.__name__, str(trade.Oid()), str(e)))
+        return None
+        
+def get_Collateral_Trade(trade):
+    coll = get_Collateral(trade)
+    if coll != None:
+        return coll[0]
+    else:
+        return None
+        
+def get_Collateral_Instrument(trade):
+    coll = get_Collateral(trade)
+    if coll != None:
+        return coll[1]
+    else:
+        return None
+    
+def get_Collateral_Haircut(trade):
+    collateral_name = get_Collateral_Instrument(trade)
+    trade = get_Collateral_Trade(trade)
+    if (trade != None) & (collateral_name != None):
+        try:
+            haircutRules = trade.MarginingSet().HaircutRules()
+            hr_FilterTypes = set([i.ProductFilterType().lower() for i in haircutRules])
+            if 'single instrument' in hr_FilterTypes:
+                for hr in haircutRules:
+                    if (hr.ProductFilterType().lower() == 'single instrument') & (hr.EligibleProducts() != None):
+                        if collateral_name.lower() in hr.EligibleProducts().Name().lower(): 
+                            return hr.Haircut()
+                        else: 
+                            continue
+                    else:
+                        continue
+            elif 'multi instrument' in hr_FilterTypes:
+                return haircutRules[0].Haircut()
+        except Exception as e:
+            logger.LOG("%s of %s : %s" %(get_Collateral_Haircut.__name__, str(trade.Oid()), str(e)))
+            return None
+        
+def get_Collateral_MandiriAccountNetworkAlias(trade):
+    trade = get_Collateral_Trade(trade)
+    if trade != None:
+        return get_MandiriAccountNetworkAlias(trade)
+
+def get_Collateral_CounterpartyAccountNetworkAlias(trade):
+    trade = get_Collateral_Trade(trade)
+    if trade != None:
+        return get_CounterpartyAccountNetworkAlias(trade)        
+
+def get_Collateral_Price(trade):
+    trade = get_Collateral_Trade(trade)
+    if trade != None:
+        return trade.Price()
+
+def get_Collateral_Yield(trade):
+    trade = get_Collateral_Trade(trade)
+    if trade != None:
+        context = acm.GetDefaultContext()
+        sheetType = 'FTradeSheet'
+        columnId = 'Trade Yield'
+        
+        calcSpace = acm.Calculations().CreateCalculationSpace(context, sheetType)
+        calculation = calcSpace.CreateCalculation(trade, columnId).Value().Number()
+        return calculation
+
+...
+
+}
+
+decls[FXSLTemplate] {
+  "FTSVTemplateFormatedData" ( "aef reporting.secondary templates" "aef reporting.secondary templates csv" ) "";
+}
+
+clx FObject [FXSLTemplate] {
+  FTSVTemplateFormatedData
+<?xml version='1.0'?>
+<!DOCTYPE xsl:stylesheet [
+  <!ENTITY tab "<xsl:text>&#9;</xsl:text>">
+  <!ENTITY lf "<xsl:text>&#10;</xsl:text>">
+]>
+
+<xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
+<xsl:output method="text" encoding="UTF-8"/>
+<xsl:strip-space elements="*"/>
+
+<xsl:template match="/">
+        
+<!-- Reports -->
+    <xsl:for-each select="//PRIMEReport">                         
+            Type:&tab;<xsl:value-of select="current()/Type"/>&lf;
+            Name:&tab;<xsl:value-of select="current()/Name"/>&lf;
+            Time:&tab;<xsl:value-of select="concat(substring(LocalTime,1,10),' ',substring(LocalTime,12,8),' (UTC', substring(LocalTime,20,6),')')"/>&lf;
+            <xsl:apply-templates select="current()/ReportContents"/>             
+     </xsl:for-each>     
+</xsl:template>
+
+<xsl:template match="Table">
+Table name:&tab;<xsl:value-of select="Name"/>&lf;
+&tab;
+<xsl:for-each select="Columns/Column">
+    <xsl:value-of select="Label"/>&tab;
+</xsl:for-each>
+&lf;
+<xsl:apply-templates select="Rows/Row"/>
+</xsl:template>
+
+<xsl:template match="Row">
+    <xsl:value-of select="Label"/>&tab;
+    <xsl:for-each select="Cells/Cell">
+        <xsl:value-of select="FormattedData"/>&tab;
+    </xsl:for-each>
+    &lf;
+    <xsl:apply-templates select="Rows/Row"/>
+</xsl:template>
+
+</xsl:stylesheet>
+
+...
+
+}
+

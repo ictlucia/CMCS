@@ -1,0 +1,6 @@
+ADDITIONALINFOSPEC,,,,,/ADDITIONALINFOSPEC
+DATA_TYPE.GRP,DESCRIPTION,DATA_TYPE.TYPE,FIELD_NAME,REC_TYPE,
+Standard,RemittanceInfo1,String,RemittanceInfo1,Settlement,
+Standard,RemittanceInfo2,String,RemittanceInfo2,Settlement,
+Standard,RemittanceInfo3,String,RemittanceInfo3,Settlement,
+Standard,RemittanceInfo4,String,RemittanceInfo4,Settlement,

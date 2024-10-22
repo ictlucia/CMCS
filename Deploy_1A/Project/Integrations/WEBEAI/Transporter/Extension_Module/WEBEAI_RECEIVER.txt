@@ -1,0 +1,222 @@
+#
+# Front Arena exported extension module.
+# source          ""
+# timestamp (utc) "2022-07-15 13:26:21.4"
+# ***** DO NOT EDIT! *****
+#
+name        "WEBEAI_RECEIVER"
+description "$Id$"
+
+groups {
+}
+
+decls[FPythonCode] {
+}
+
+clx FObject [FPythonCode] {
+  WEBEAI_Receiver
+
+import os
+import ael, acm
+from FLogger import FLogger
+import FRunScriptGUI
+from ImportDependenciesFiles import ImportDependenciesFiles
+from ImportCSV import ImportCSV
+from ImportOrdering import ImportOrder
+from InterfaceUtils import LogLevelNameToNumber
+import ParametersReader
+import WEBEAIHandler
+
+
+logFileName = 'WEBEAI_RECEIVER_%s.txt' % acm.Time.DateToday().replace('-', '')
+logger        = FLogger.GetLogger('WEBEAI_RECEIVER')
+logLevels   = [ FLogger.INFO, FLogger.ERROR, FLogger.WARNING, FLogger.DEBUG ]
+folderPicker = FRunScriptGUI.DirectorySelection()
+filenames    = []
+
+
+def FolderChanged(index, fieldValues):
+    folder = fieldValues[index]
+    filenames.clear()
+    
+    if folder:
+        for filename in sorted(os.listdir(folder)):
+            if filename.lower().endswith('.csv'):
+                filenames.append(filename)
+        
+    return fieldValues
+
+
+def FilterPaths(files, include, exclude):
+    res = []
+    
+    for path in files:
+        filename = os.path.basename(path)
+
+        if not (include or exclude):
+            res.append(path)
+        elif include:
+            if filename in include:
+                res.append(path)
+        elif exclude:
+            if filename not in exclude:
+                res.append(path)
+
+    return res
+
+
+def Process(foldersDic, include, exclude, transactions, printAMBA, encoding):
+    csvImporter  = ImportCSV()
+    depsImporter = ImportDependenciesFiles()
+    inputFolder  = foldersDic['input']
+    depsFiles    = depsImporter.FilesInFolder(inputFolder)
+    csvPaths     = csvImporter.FilesInFolder(inputFolder)
+    deps         = []
+
+    
+    logger.LOG(f"Checking dependencies")
+    for path in FilterPaths(depsFiles, include, exclude):
+        try:
+            logger.LOG(path)
+            deps.extend(depsImporter.DependencyRecords(path))
+        except Exception as e:
+            logger.error(f'Failed to check dependency for {path}: {e}')
+    
+    logger.LOG(f"Checking file paths")
+    for path in FilterPaths(csvPaths, include, exclude):
+        try:
+            logger.LOG(path)
+            deps.extend(csvImporter.DependencyRecords(path))
+        except Exception as e:
+            logger.error(f'Failed to analyze {path}: {e}')
+            
+    logger.LOG(f"Ordering file paths")
+    try:
+        ordering = ImportOrder(deps)
+        logger.LOG(f"Stared processing files")
+        WEBEAIHandler.perform(ordering, transactions, printAMBA, encoding, foldersDic['archive'], foldersDic['error'], foldersDic['output'])
+    except Exception as e:
+        logger.error(f'Failed to import files')
+
+   
+ael_variables = [
+    ['inputFolder', 'Input Folder', folderPicker, None, folderPicker, 1, 1, 'Folder from which CSV files should be imported', FolderChanged, 1],
+    ['include', 'Include Files', 'string', filenames, None, 0, 1, 'Load the selected files only', None, 1],
+    ['exclude', 'Exclude Files', 'string', filenames, None, 0, 1, 'Load all files in the folder except the selected files', None, 1],
+    ['archiveFolder', 'Archive Folder Path', folderPicker, None, folderPicker, 1, 1, 'The file path where sucessfully processed files will be archived.', None, 1],
+    ['errorFolder', 'Error Folder Path', folderPicker, None, folderPicker, 1, 1, 'The file path where processed files will be archived in case of any error.', None, 1],
+    ['outputFolder', 'output Folder Path', folderPicker, None, folderPicker, 1, 1, 'The file path where summary result will be generated.', None, 1],
+    ['encoding', 'Encoding', 'string', [ 'default', 'utf-8'], 'default', 0, 0, 'File encoding', None, 1],
+    ['logToConsole', 'Log to console_Logging', 'int', [1, 0], 1, 1, 0, 'Whether logging should be done in the Log Console or not.'],
+    ['log_folder', 'Log folder_Logging', folderPicker, None, folderPicker, 0, 1, 'Select where to store the log file', 0, None],
+    ['log_level', 'Log level_Logging', 'string', logLevels, FLogger.INFO, 1, 0],
+    ['printAMBA', 'Print final AMBA message_Logging', 'bool', [0, 1], None, 0, 0, 'Print the final AMBA message after all transformations have been made', None, 1],
+    ]
+
+
+def initializeLogging(params):
+ 
+    logLevel     = params['log_level']
+    logFolder    = params['log_folder']
+    logToConsole = params['logToConsole']
+    
+    if logFolder:
+        logfolderString = logFolder.SelectedDirectory().AsString()
+        logPath = os.path.join(logfolderString, logFileName)
+        logger.Reinitialize(level=LogLevelNameToNumber(logLevel), logToConsole=logToConsole, logToFileAtSpecifiedPath=logPath)
+    else:
+        logger.Reinitialize(level=LogLevelNameToNumber(logLevel), logToConsole=logToConsole)
+        
+
+def ael_main(params):
+    initializeLogging(params)
+    logger.LOG("Execution started")
+
+    folderDict = {}
+    folderDict['input']   = params['inputFolder'].SelectedDirectory().AsString()
+    folderDict['archive'] = params['archiveFolder'].SelectedDirectory().AsString()
+    folderDict['error']   = params['errorFolder'].SelectedDirectory().AsString()
+    folderDict['output']   = params['outputFolder'].SelectedDirectory().AsString()
+    include      = params['include']
+    exclude      = params['exclude']
+    transactions    = False
+    printAMBA       = params['printAMBA']
+    encoding        = params['encoding'] or None
+    encoding        = None if encoding == 'default' else encoding
+    
+    if include and exclude:
+        logger.error('Cannot include and exclude at the same time')
+        return
+    
+    logger.LOG(f"Input folder: {folderDict['input']}")
+    logger.LOG(f"Archive folder: {folderDict['archive']}")
+    
+    Process(folderDict, include, exclude, transactions, printAMBA, encoding)
+
+    logger.LOG("Execution complete")
+
+
+...
+
+  WEBEAIHandler
+
+import acm
+import os
+import csv
+import shutil
+import ParametersReader
+from CSVImporter_ExecutionReporting import CSVImporterExecutionReporting
+
+import FLogger
+
+
+logger = FLogger.FLogger('WEBEAI_RECEIVER')
+
+
+def archive(file, filePath):
+    logger.DLOG(f'Moving file - {file} to {filePath} ')
+    try:
+        shutil.move(file, filePath)
+    except Exception as e:
+        logger.ELOG(f'Failed to move - {file} to {filePath} ')
+
+
+def perform(inputFiles, transactions, printAMBA, encoding, archiveFolder, errorFolder, outputFolder=None):
+    
+    isSucessful = False
+    try:
+        importer = CSVImporterExecutionReporting(logger)
+        
+        for file in inputFiles:
+            isSucessful = False
+            
+            try:
+                isSucessful = importer.ProcessFile(file, transactions, printAMBA, encoding)
+            except Exception as e:
+                logger.ELOG(f'Failed to import {file}: {e}')
+            
+            try:
+                archivePath =archiveFolder if isSucessful else errorFolder
+                archive(file, archivePath)
+            except Exception as e:
+                logger.ELOG('Failed to archive file. Error:'+str(e))
+        
+        writeToFile = True
+        filePostFix = (acm.Time.TimeNow().translate(str.maketrans({'-': '', '.': '',':':'',' ':'_'})))
+        resultPath =outputFolder if (outputFolder is not None) else archiveFolder
+        resultfile = f"WEBEAIResult_{filePostFix}.csv"
+        resultfile = os.path.join(resultPath, resultfile)
+        errorfile = f"WEBEAIErrors_{filePostFix}.csv"
+        errorfile = os.path.join(resultPath, errorfile)
+        importer.ReportProcessSummary(writeToFile, resultfile, errorfile)
+    except Exception as e:
+        logger.ELOG(f'Failed to import files: {e}')
+        isSucessful = False
+    
+    
+        
+
+...
+
+}
+

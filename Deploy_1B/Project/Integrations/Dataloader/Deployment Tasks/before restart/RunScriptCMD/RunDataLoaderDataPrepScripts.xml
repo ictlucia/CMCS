@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="ISO-8859-1" ?>
+
+<RunScriptCMD>
+
+	<Command module="UpdateAMBFParameters">
+        <quotes>0</quotes>
+        <modules>FDLConfigAMBSettings:MESSAGE_BROKER_ex</modules>
+    </Command>
+	
+    <Command module="DataLoader_Bloomberg_DataPrep">
+    </Command>
+
+    <Command module="FDLCreateComponent">
+    </Command>
+
+    <Command module="FDLCreateHierarchy">
+    </Command>
+
+</RunScriptCMD>

@@ -1,0 +1,261 @@
+#
+# Front Arena exported extension module.
+# source          ""
+# timestamp (utc) "2024-02-29 09:25:28.1"
+# ***** DO NOT EDIT! *****
+#
+name        "PS_FO_EOD_Pricecopy"
+description ""
+
+groups {
+}
+
+decls[FPythonCode] {
+}
+
+clx FObject [FPythonCode] {
+  EOD_MtM
+
+""" The script copies prices from market based on serach order to specified EOD market by user.
+
+It skips the prices where time_last is not latest
+
+"""
+
+from datetime import date
+
+
+
+import acm
+
+import FRunScriptGUI
+
+import FLogger
+
+
+
+
+
+logger = FLogger.FLogger("CopyEODPrices")
+
+
+
+class EODPricesVariables(FRunScriptGUI.AelVariablesHandler):
+
+
+
+    def get_query_folders(self):
+
+        """ Get query folders from database """
+
+        rules = acm.FStoredASQLQuery.Select("")
+
+        return rules
+
+        
+
+    def get_eod_markets(self):
+
+        """ Get EOD market places """
+
+        mkts = acm.FMarketPlace.Select("")
+
+        return mkts
+
+
+
+    def __init__(self):
+
+        vars = [
+
+
+
+        # 0-name, 1-field name_tab, 2-data_type, 3-values, 4-default value, 5-Mandatory, 6-'', 7-tooltip, 8-enable/disable method, 9-enable/disable
+
+        # Source Tab
+
+
+
+        # Input field for Security ids
+
+        
+
+        ['ins_query', 'Instruments', 'string', self.get_query_folders(), '', 1, 1, 'Select Instrument Query Folder', None, 1],
+
+        ['mkt_srch_ordr','Market Search Order','string',self.get_eod_markets(), '', 1, 1, \
+
+                                    'List of Market to search prices. Select in a order you like to search prices', None, 1],
+
+        ['eod_market','EOD Market','string',self.get_eod_markets(), '', 1, 0, 'Select EOD market to copy prices in', None, 1],
+
+        ]
+
+        FRunScriptGUI.AelVariablesHandler.__init__(self,vars)
+
+        
+
+ael_variables = EODPricesVariables()
+
+
+
+def get_eod_price(instrument,market) -> acm.FPrice:
+
+    """ Get prices from user specified market
+
+    Input:
+
+        instrument - acm.FInstrument
+
+        market - string
+
+    Output:
+
+        acm.FPrice
+
+    """
+
+    acm_market = acm.FMarketPlace[market]
+
+    curr = instrument.Currency().Oid()
+
+    query = "instrument=%i and market=%i and currency=%i" %(instrument.Oid(), acm_market.Oid(),curr)
+
+    eod_price = acm.FPrice.Select01(query,"")
+
+    return eod_price
+
+
+
+def copy_price(ins:acm.FInstrument, m_price:acm.FPrice, market:str):
+
+    """ Copy prices to user specified market
+
+    Input:
+
+        ins - acm.FInstrument
+
+        m_price - acm.FPrice
+
+        market - string
+
+    """
+
+    logger.LOG("Copying prices from %s to %s"%(m_price.Market().Name(), market))
+
+    eod_price = get_eod_price(ins, market)
+
+    
+
+    # If price in market already exists, update it, else insert new
+
+    if eod_price:
+
+        eod_price.Day(str(acm.Time.DateToday()))
+
+        eod_price.Ask(m_price.Ask())
+
+        eod_price.Bid(m_price.Bid())
+        
+        eod_price.Last(m_price.Last())
+
+        eod_price.Commit()
+
+    else:
+
+        eod_price = acm.FPrice()
+
+        eod_price.Day(str(acm.Time.DateToday()))
+
+        eod_price.Ask(m_price.Ask())
+
+        eod_price.Bid(m_price.Bid())
+        
+        eod_price.Last(m_price.Last())
+
+        eod_price.Currency(ins.Currency())
+
+        eod_price.Instrument(ins)
+
+        eod_price.Market(acm.FMarketPlace[market])    
+
+        eod_price.Commit()
+
+
+
+        
+
+def ael_main(ael_variables):
+
+    """ Task main function to execute """
+
+    ins_query = ael_variables['ins_query']
+
+    eod_market = ael_variables['eod_market']
+
+    market_list = ael_variables['mkt_srch_ordr']
+
+
+    if not ins_query or not eod_market or not market_list:
+
+        logger.ERROR('Invalid Inputs!')
+
+        return
+
+    logger.LOG("Market search order %s"%list(market_list))
+
+    
+
+    instruments = []
+
+    for each_query in ins_query:
+
+        acm_query = acm.FStoredASQLQuery[each_query]
+
+        instruments.extend(acm_query.Query().Select())
+
+    
+
+    for ins in instruments:
+        found_price_today = False
+
+        logger.LOG("Processing Instrument %s"%ins.Name())
+
+        for mkt in market_list:
+
+            m_price = get_eod_price(ins, mkt)
+
+            if m_price:
+
+                logger.LOG("Prices found for <%s> in Market <%s>"%(ins.Name(), mkt))
+
+                time_last = m_price.TradeTime()
+
+                acm_date_today = acm.Time.DateToday()
+
+                time_last_day = acm.Time.DateTimeFromTime(time_last)
+
+                
+
+                if time_last:
+
+                    if acm.Time.AsDate(time_last_day) == acm_date_today:
+                        copy_price(ins, m_price, eod_market)
+                        found_price_today = True
+                        break
+
+        #copy yesterday EOD price if price not found for today
+        if not found_price_today:
+            logger.LOG(f"Taking price from EOD market as appropriate price not found for instrument : {ins.Name()}")
+            mrkt_price = ins.PriceFromMarket(eod_market)
+            if mrkt_price:
+                copy_price(ins, mrkt_price, eod_market)
+            else:
+                logger.LOG(f"Price not found for instrument : {ins.Name()}")    
+
+
+
+
+...
+
+}
+

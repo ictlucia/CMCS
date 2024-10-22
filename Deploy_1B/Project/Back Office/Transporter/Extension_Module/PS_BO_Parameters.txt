@@ -1,0 +1,319 @@
+#
+# Front Arena exported extension module.
+# source          ""
+# timestamp (utc) "2024-10-20 09:55:08.0"
+# ***** DO NOT EDIT! *****
+#
+name        "PS_BO_Parameters"
+description ""
+
+groups {
+  "ui validation hook"
+}
+
+decls[FExtensionAttribute] {
+}
+
+clx FMultiInstrumentAndTrades [FExtensionAttribute] {
+  dispPosOnMultiRow = true;
+}
+
+decls[FParameters] {
+}
+
+clx FObject [FParameters] {
+  CSV Upload defaults =
+  encoding=utf-8
+
+
+}
+
+decls[FPythonCode] {
+}
+
+clx FObject [FPythonCode] {
+  FConfirmationEventHooks
+
+import acm
+from FConfirmationHelperFunctions import FConfirmationHelperFunctions as HelperFunctions
+from FOperationsEnums import InsType, TradeStatus, TradeType, ResetType
+from FConfirmationDefaultEventHooks import IsWeightedReset
+
+
+#-------------------------------------------------------------------------
+def ProcessCashFlowForMLDR(cashFlow, trade):
+    """ If the CashFlow type is Digital Caplet and the trade belongs to MMLDR structured product, then a set of two
+        cashflows having same PayDate will result into one confirmation.
+        Reset type must be 'Unweighted'. First cashflows are filterd on paydate and if cashflow in arument is the last 
+        cashflow with the same paydate the function returns true. All the resets with the set of cashflows with same pay
+        date must be fixed to return true from this function.
+    """
+    if cashFlow.CashFlowType() == 'Digital Caplet' and \
+            trade.DealPackage() and \
+            trade.DealPackage().InstrumentPackage().DefinitionDisplayName() == 'Market Linked Deposit IR':
+        is_reset_unweighted = True
+        for rst in cashFlow.Resets():
+            if rst.ResetType() != 'Unweighted':
+                is_reset_unweighted = False
+                break
+
+        if is_reset_unweighted:
+            current_cf_paydate = cashFlow.PayDate()
+            cash_flow_set = list()
+            for cf in cashFlow.Leg().CashFlows():
+                if cf.PayDate() == current_cf_paydate:
+                    cash_flow_set.append(cf)
+
+            if cashFlow is not cash_flow_set[-1]:
+                return False
+
+            for cf in cashFlow.Leg().CashFlows():
+                if cf.PayDate() == current_cf_paydate and cf is not cashFlow:
+                    for rst in cf.Resets():
+                        if not rst.IsFixed():
+                            return False
+    return True
+
+
+def ProcessFloatFloatCashFlow(cashFlow, trade):
+    def allResetsFixed(cashFlow):
+        for reset in cashFlow.Resets():
+            if not reset.IsFixed():
+                return False
+        return True
+    
+    def latestFixingTimeStamp(cashFlow):
+        time_stamp = None
+        for reset in cashFlow.Resets():
+            if not time_stamp:
+                time_stamp =  reset.ReadTime()
+            elif reset.ReadTime() > time_stamp:
+                time_stamp =  reset.ReadTime()
+                
+        return time_stamp
+        
+    payleg_cashflow = list()
+    recleg_cashflow = list()
+    
+    for leg in trade.Instrument().Legs():
+        if leg.LegType() != 'Float':#Both legs should be float
+            return True
+                
+    for leg in trade.Instrument().Legs(): 
+        for cf in leg.CashFlows():
+            if cf.CashFlowType() == 'Float Rate' and cf.PayDate() == cashFlow.PayDate():
+                if leg.PayLeg():
+                    payleg_cashflow.append(cf)
+                else:
+                    recleg_cashflow.append(cf)
+
+    if len(payleg_cashflow) == 1 and len(recleg_cashflow) == 1:
+        latest_reset_timestamp_payleg = None
+        latest_reset_timestamp_recleg = None
+        cf1 = payleg_cashflow[0]
+        cf2 = recleg_cashflow[0]
+        
+        
+        if allResetsFixed(cf1) and allResetsFixed(cf2):
+            latest_reset_timestamp_payleg = latestFixingTimeStamp(cf1)            
+            latest_reset_timestamp_recleg = latestFixingTimeStamp(cf2)        
+        
+            if latest_reset_timestamp_payleg and latest_reset_timestamp_recleg:
+                if latest_reset_timestamp_payleg >= latest_reset_timestamp_recleg:
+                    return cashFlow is payleg_cashflow[0]
+                else:
+                    return cashFlow is recleg_cashflow[0]
+        else:
+            return False
+    return True
+
+
+def IsDeterminedCashFlow(cashFlow, reset_param, trade):
+    last_fixed_reset = None
+    if cashFlow == None:
+        return False
+    if not cashFlow.Resets():
+        return True
+    
+    if not ProcessCashFlowForMLDR(cashFlow, trade):
+        return False
+        
+    if not ProcessFloatFloatCashFlow(cashFlow, trade):
+        return False    
+    
+    #First get the reset that was fixed the last.
+    for reset in cashFlow.Resets():
+        if not reset.IsFixed():
+            return False
+        else:
+            if not last_fixed_reset:
+                last_fixed_reset = reset
+            elif reset.UpdateTime() > last_fixed_reset.UpdateTime():
+                    last_fixed_reset = reset
+            
+    #Now see if the last fixed reset is the current reset
+    return True if last_fixed_reset and last_fixed_reset.Oid() == reset_param.Oid() else False
+
+
+#-------------------------------------------------------------------------
+def IsRateFixingEvent(reset, trade):
+    if (IsWeightedReset(reset) == False and
+            IsDeterminedCashFlow(reset.CashFlow(), reset, trade)):
+        maxBankingDaysBack = 15
+        return HelperFunctions.IsDateWithinMaxBankingDaysBackInterval(reset.ReadTime(), maxBankingDaysBack)
+    return False
+
+...
+
+  FConfirmationParameters
+""" Compiled: 2016-03-16 17:10:53 """
+
+"""----------------------------------------------------------------------------
+MODULE
+    FConfirmationParameters
+
+DESCRIPTION
+    Changes to any of these settings require a restart of the
+    confirmation ATS for the changes to take affect. Changes that
+    affect the XML also require the documentation ATS to be restarted
+ 
+----------------------------------------------------------------------------"""
+
+from FConfirmationEventHook import ConfirmationEventHook as Hook
+from FConfirmationEventDefinition import FConfirmationEventDefinition as ConfirmationEventDefinition
+from FOperationsHook import CustomHook
+import FConfirmationSwiftDefaultXML as SwiftDefaultXML
+import FConfirmationDefaultXMLTemplates as defaultXMLTemplates
+
+import FServerAddresses
+import acm
+
+ambAddress                                      = FServerAddresses.GetAMBServerAddress()
+
+ambUnicode                                      = acm.IsUnicodeEnabled()
+
+ambaConfig                                      = ''
+
+receiverMBName                                  = 'CONFIRMATION_RECEIVER'
+
+receiverSource                                  = 'BO'
+
+confirmationEvents                               = [
+                                                    #("Adjust Deposit", "IsNewTradeEvent", "Cash Flow", Hook("FConfirmationDefaultEventHooks", 'IsAdjustDepositEvent')),
+                                                    #("Deposit Maturity", Hook("FConfirmationDefaultEventHooks", "IsDepositMaturityEvent")),
+                                                    ("Barrier Crossed", Hook("FConfirmationDefaultEventHooks", 'IsBarrierCrossedEvent')),
+                                                    ("Payment Advice", 'IsNewTradeEvent',"Trade.Payments",Hook("AdditionalConfirmationEvent",'isPaymentAdvice')),
+                                                    ("Close", Hook("FConfirmationDefaultEventHooks", 'IsCloseEvent')),
+                                                    ("Exercise", Hook("FConfirmationDefaultEventHooks", 'IsExerciseEvent')),
+                                                    ("New Trade", Hook("FConfirmationDefaultEventHooks", "IsNewTradeEvent")),
+                                                    ("New Deal Package", Hook("FConfirmationDefaultEventHooks", "IsNewDealPackageEvent")),
+                                                    ("Partial Close", Hook("FConfirmationDefaultEventHooks", 'IsPartialCloseEvent')),
+                                                    ("Coupon Advice", Hook("AdditionalConfirmationEvent", 'isCouponAdvice')),
+                                                    ("Rate Fixing", "IsNewTradeEvent", "Reset", Hook("FConfirmationEventHooks", 'IsRateFixingEvent')),
+                                                    ("Weighted Rate Fixing", "IsNewTradeEvent", "Reset", Hook("FConfirmationDefaultEventHooks", 'IsWeightedRateFixingEvent'))
+                                                  ]
+
+templateToXMLMap                                = [] 
+
+defaultXMLTemplate                              = defaultXMLTemplates.document
+
+detailedLogging                                 = False
+
+tradeFilterQueries                              = ['DoConfirmationProcessing']
+
+preventConfirmationCreationQueries              = []
+
+preventConfirmationCancellationQueries          = []
+
+preventConfirmationAmendmentQueries             = []
+
+changeConfirmationStatusToMatchedQuery          = None
+
+defaultChaserCutoffMethodBusinessDays           = False
+
+defaultDays                                     = 10
+
+cancelPreReleasedConfirmations                  = False
+
+cancellationAndNewInsteadOfAmendmentSWIFT       = False
+
+cancellationAndNewInsteadOfAmendmentFreeForm    = False
+
+setProtectionAndOwnerFromTrade                  = False
+
+hooks                                           = [CustomHook("FConfirmationHooks", "CancellationAndNewInsteadOfAmendmentSWIFT")]
+
+MTMessageToXMLMap                               = [('ALL', SwiftDefaultXML.documentConfirmationSWIFT)]
+
+...
+
+  FSettlementParameters
+""" Compiled: 2016-03-16 17:10:55 """
+
+"""----------------------------------------------------------------------------
+Basic paramaters for ATS-setup, logging and settlement processing.
+
+Changes to any of these settings require a restart of the settlement ATS
+for them to take affect
+----------------------------------------------------------------------------"""
+
+from FOperationsHook import CustomHook
+import FSettlementSwiftDefaultXML as SwiftDefaultXML
+
+import FServerAddresses
+import acm
+
+
+ambAddress                       = FServerAddresses.GetAMBServerAddress()
+
+ambUnicode                       = acm.IsUnicodeEnabled()
+
+ambaConfig                       = ''
+
+receiverMBName                   = 'SETTLEMENT_RECEIVER'
+
+receiverSource                   = 'BO'
+
+maximumDaysBack                  = 30
+
+maximumDaysForward               = 30
+
+alternativeCouponHandling        = False
+
+considerResetsForTRSDividends    = True
+
+detailedLogging                  = False
+
+forwardEarlyTermination          = True
+
+updateVoidedSettlement           = True
+
+setProtectionAndOwnerFromTrade   = True
+
+confirmationEventHandling        = True
+
+preventSettlementCreationQueries = ['PreventSettlementsGen']
+
+preventSettlementDeletionQueries = []
+
+preventAutomaticNetting          = []
+
+tradeFilterQueries               = ['DoSettlementProcessing']
+
+#tradeAmendmentQueries            = ['OPS TradeAmendmentQuery']
+tradeAmendmentQueries            = []
+
+correctTradePayNetQueries        = []
+
+hooks                            = []
+
+MTMessageToXMLMap                = [('ALL', SwiftDefaultXML.documentSettlementSWIFT )]
+
+defaultPartialSettlementType     = 'NPAR'
+
+reevaluateNettingCandidates      = True
+
+...
+
+}
+

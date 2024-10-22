@@ -1,0 +1,2 @@
+<?xml version='1.0' encoding='ISO-8859-1'?>
+<FAelTask><acm_version>2022.3.2, Oct 13 2022</acm_version><version>0 $Id$</version><update_time>2022-12-05 06:12:17</update_time><object_name>SACCR_SetUp</object_name><owner>ARENASYS</owner><protection>3072</protection><module>CreateSaCcrBaseData</module><context>Standard</context><parameter /><historylength /><description /><logfilename /><group /><groupstatus>None</groupstatus><historylengthunit>None</historylengthunit></FAelTask>

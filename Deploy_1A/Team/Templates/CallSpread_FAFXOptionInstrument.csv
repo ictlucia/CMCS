@@ -1,0 +1,12 @@
+INSTRUMENT,,,,,,,,,,,,,,,,,,,,,/INSTRUMENT
+STRIKE_PRICE,PAY_OFFSET_METHOD,QUOTATION_SEQNBR.NAME,PAY_DAY_OFFSET,STRIKE_TYPE,CURR.INSID,UND_INSTYPE,PAYTYPE,UND_INSADDR.INSID,EXERCISE_TYPE,CONTR_SIZE,SPOT_BANKING_DAYS_OFFSET,INSID,STRIKE_QUOTATION_SEQNBR.NAME,EXP_TIME,STRIKE_CURR.INSID,OTC,EXP_DAY,OPTION_TYPE,SETTLEMENT,INSTYPE,
+TRANSACTION,,,,,,,,,,,,,,,,,,,,,
+7.7,Business Days,Points of UndCurr,2,Absolute,HKD,Curr,Spot,USD,European,1,2,USD/C/HKD/P/220622/7.70,Per Unit,6/22/2022 22:00,HKD,Yes,6/22/2022,Call,Physical Delivery,Option,
+7.75,Business Days,Points of UndCurr,2,Absolute,HKD,Curr,Spot,USD,European,1,2,USD/C/HKD/P/220622/7.75,Per Unit,6/22/2022 22:00,HKD,Yes,6/22/2022,Call,Physical Delivery,Option,
+7.7,Business Days,Points of UndCurr,2,Absolute,HKD,Curr,Spot,USD,European,1,2,USD/C/HKD/P/220922/7.70,Per Unit,9/22/2022 22:00,HKD,Yes,9/22/2022,Call,Physical Delivery,Option,
+7.75,Business Days,Points of UndCurr,2,Absolute,HKD,Curr,Spot,USD,European,1,2,USD/C/HKD/P/220922/7.75,Per Unit,9/22/2022 22:00,HKD,Yes,9/22/2022,Call,Physical Delivery,Option,
+7.7,Business Days,Points of UndCurr,2,Absolute,HKD,Curr,Spot,USD,European,1,2,USD/C/HKD/P/221222/7.70,Per Unit,12/22/2022 23:00,HKD,Yes,12/22/2022,Call,Physical Delivery,Option,
+7.75,Business Days,Points of UndCurr,2,Absolute,HKD,Curr,Spot,USD,European,1,2,USD/C/HKD/P/221222/7.75,Per Unit,12/22/2022 23:00,HKD,Yes,12/22/2022,Call,Physical Delivery,Option,
+7.7,Business Days,Points of UndCurr,2,Absolute,HKD,Curr,Spot,USD,European,1,2,USD/C/HKD/P/230322/7.70,Per Unit,3/22/2023 22:00,HKD,Yes,3/22/2023,Call,Physical Delivery,Option,
+7.75,Business Days,Points of UndCurr,2,Absolute,HKD,Curr,Spot,USD,European,1,2,USD/C/HKD/P/230322/7.75,Per Unit,3/22/2023 22:00,HKD,Yes,3/22/2023,Call,Physical Delivery,Option,
+/TRANSACTION,,,,,,,,,,,,,,,,,,,,,

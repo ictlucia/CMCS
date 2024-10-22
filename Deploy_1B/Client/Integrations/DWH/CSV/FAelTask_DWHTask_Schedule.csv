@@ -1,0 +1,7 @@
+TASK,,,,,,TASKDEPENDENCY,/TASKDEPENDENCY,TASKSCHEDULE,,,/TASKSCHEDULE,/TASK
+GROUP.NAME,SIZE,MODULE,NAME,CONTEXT,PARAMETER,PREDECESSOR_TASKNBR.NAME,,CALNBR.CALID,ENABLED,SCHEDULE,,
+EOD,109,DWHCustomColumnUpdateScript,DWH_IFRS9,Standard,logPath=D:\\Interface\\DWH\\Log;logMode=NORMAL;logFile=Output.log;queryFolder=DWH_IFRS9_Trades;reportName=IFRS9;,DWH_IRB,,,,,,
+EOD,98,DWHCustomColumnUpdateScript,DWH_IRB,Standard,logPath=D:\\Interface\\DWH\\Log;logMode=NORMAL;logFile=Output.log;queryFolder=DWH_IRB;reportName=IRB;,DWH_SRP01,,,,,,
+EOD,136,DWHCustomColumnUpdateScript,DWH_PBL01,Standard,logPath=D:\\Interface\\DWH\\Log;logMode=NORMAL;logFile=Output.log;queryFolder=DWH_ANTASENA_PBL0 OtherBankPlacement_Trades;reportName=PBL01;,,,Jakarta,Yes,"1:W:1,Mo,Tu,We,Th,Fr:O,1000:20231220",,
+EOD,111,DWHCustomColumnUpdateScript,DWH_SPSH01,Standard,logPath=D:\\Interface\\DWH\\Log;logMode=NORMAL;logFile=Output.log;queryFolder=DWH_SPSH01_Trades;reportName=SPSH01;,DWH_PBL01,,,,,,
+EOD,109,DWHCustomColumnUpdateScript,DWH_SRP01,Standard,logPath=D:\\Interface\\DWH\\Log;logMode=NORMAL;logFile=Output.log;queryFolder=DWH_IFRS9_Trades;reportName=SRP01;,DWH_SPSH01,,,,,,

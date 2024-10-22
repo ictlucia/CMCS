@@ -1,0 +1,7 @@
+CHOICELIST,,,,/CHOICELIST
+LIST,SORT_ORDER,ENTRY,DESCRIPTION,
+FRTB_Eq_Economy,,Emerging,Emerging market economy,
+FRTB_Eq_Economy,1,Advanced,Advanced economy,
+FRTB_Eq_MarketCap,,Large,Large market capitalisation,
+FRTB_Eq_MarketCap,1,Small,Small market capitalisation,
+FRTB_Eq_Sector,,Sector1,Sector1,

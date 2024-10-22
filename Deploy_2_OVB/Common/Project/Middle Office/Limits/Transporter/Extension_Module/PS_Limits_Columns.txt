@@ -1,0 +1,657 @@
+#
+# Front Arena exported extension module.
+# source          ""
+# timestamp (utc) "2024-05-06 09:00:15.8"
+# ***** DO NOT EDIT! *****
+#
+name        "PS_Limits_Columns"
+description ""
+
+groups {
+}
+
+decls[FColumnDefinition] {
+  "Clean Average Price" ( "sheet columns.portfoliosheet" "sheet columns.tradesheet" ) "";
+  "Counterparty CEM Limit" ( "sheet columns.portfoliosheet" ) "";
+  "CurrNotional" ( "sheet columns.portfoliosheet" ) "";
+  "Cut Loss Ratio" ( "sheet columns.portfoliosheet" ) "";
+  "Cut Loss Ratio Theor Price" ( "sheet columns.portfoliosheet" ) "";
+  "FVOCI PL Ratio" ( "sheet columns.portfoliosheet" ) "";
+  "IDRNotional" ( "sheet columns.portfoliosheet" "sheet columns.tradesheet" ) "";
+  "Issuer Limit" ( "sheet columns.portfoliosheet" ) "";
+  "USDNotional" ( "sheet columns.portfoliosheet" ) "";
+}
+
+clx FTradingSheet [FColumnDefinition] {
+  CEM Limit SubResults Input =
+  Description=CEM SubResults input.
+  Dimensions=Master Agreements Vertical
+  ExtensionAttribute=cemLimitSubResultsInput
+  GroupLabel=Counterparty Credit Risk
+  InheritsFrom=Portfolio Risk Column With Currency and Hierarchy Parametrization
+  LabelList=CEM Limit SubResults Input
+  Name=CEM Limit SubResults Input
+  ValueDomain=array(variant)
+
+
+  Clean Average Price =
+  Access=ReadOnly
+  BuildForCashRows=True
+  Description=Clean sverage price for the position.
+  ExtensionAttribute=ps_averagePriceClean
+  Format=Price
+  GroupLabel=Profit/Loss
+  LabelList=Clean Avg;Clean Average Price
+  Name=Clean Average Price
+  ShowErrorHashmark=Disabled
+
+
+  Counterparty CEM Limit =
+  Description=Counterparty CEM Limit column
+  Dimensions=Master Agreements Vertical
+  ExtensionAttribute=counterpartyCEMDisplay
+  GroupLabel=Limits
+  InputColumnDefinition=CEM Limit SubResults Input
+  LabelList=Counterparty CEM Limit
+  Name=Counterparty CEM Limit
+  ParameterizationParameterGUIDefinition=DisplayCurrencyParameterization
+  Parameters=PosCurrChoice;AggCurrChoice;FixedCurr
+
+
+  CurrNotional =
+  Description=Notional column in parameterised currency
+  ExtensionAttribute=currNotional
+  GroupLabel=Limits
+  LabelList=Currency Notional
+  Name=Currency Notional
+  ParameterizationParameterGUIDefinition=DisplayCurrencyParameterization
+  Parameters=PosCurrChoice;AggCurrChoice;FixedCurr
+
+
+  Cut Loss Ratio =
+  Access=ReadOnly
+  Description=Cut Loss Ratio Custom Column
+  ExtensionAttribute=cutLossRatio
+  Format=Imprecise
+  GroupLabel=Limits
+  LabelList=Cut Loss Ratio
+  Name=Cut Loss Ratio
+
+
+  Cut Loss Ratio Theor Price =
+  Access=ReadOnly
+  Description=Cut Loss Ratio Custom Column. This column is used for instrument that do not have a Market Price and instead the ratio will be based on Theoretical Price. User should refer to the Val Group setting for PriceBase.
+  ExtensionAttribute=cutLossRatioThPrice
+  Format=DetailedShowZeroAndNaN
+  GroupLabel=Limits
+  LabelList=Cut Loss Ratio ThPrice;Cut Loss Ratio Theor Price
+  Name=Cut Loss Ratio ThPrice
+
+
+  FVOCI PL Ratio =
+  Access=ReadOnly
+  Description=FVOCI PL Ratio Column
+  ExtensionAttribute=fvociPLRatio
+  Format=Imprecise
+  GroupLabel=Limits
+  LabelList=FVOCI PL Ratio
+  Name=FVOCI PL Ratio
+
+
+  IDRNotional =
+  Description=IDR Notional column
+  ExtensionAttribute=iDRNotional
+  GroupLabel=Limits
+  LabelList=IDR Notional
+  Name=IDR Notional
+
+
+  Issuer Limit =
+  Description=Issuer Limit column
+  ExtensionAttribute=issuerLimitDisplay
+  GroupLabel=Limits
+  LabelList=Issuer Limit
+  Name=Issuer Limit
+  ParameterizationParameterGUIDefinition=DisplayCurrencyParameterization
+  Parameters=PosCurrChoice;AggCurrChoice;FixedCurr
+
+
+  USDNotional =
+  Description=USD Notional column
+  ExtensionAttribute=usdNotional
+  GroupLabel=Limits
+  LabelList=USD Notional
+  Name=USD Notional
+
+
+}
+
+decls[FCustomFunction] {
+}
+
+clx FObject [FCustomFunction] {
+  cemLimitBankCollateralNominalAggregated =
+  Definition=cemLimitBankCollateralNominalAggregated(FDictionary subResultsAggregated, FObject masterAgreement) : FObject
+  Function=CEMLimitAggregationCalculations.CEMLimitBankCollateralNominalAggregated
+
+
+  cemLimitBankNominalAggregated =
+  Definition=cemLimitBankNominalAggregated(FDictionary subResultsAggregated, FObject masterAgreement) : FObject
+  Function=CEMLimitAggregationCalculations.CEMLimitBankNominalAggregated
+
+
+  getLogicDecorator =
+  Definition=getLogicDecorator(FObject trade): FBusinessObjectDecorator read
+  Function=Utils.GetLogicDecorator
+
+
+}
+
+decls[FExtensionAttribute] {
+}
+
+clx FAggregateSubResults [FExtensionAttribute] {
+  bankCollateralNominal = subResultsAggregatedArray = cemLimitSubResultsAggregatedArray, select(nil == maMasterAgreementSetExternally, 
+  true->shunt(count(maMasterAgreements) > 0, 
+    true->nonEmptyOrNil(sumOf(flattenAndRemoveNil(maMasterAgreements :* "bankCollateralNominal" [rowInstrumentAndTrades := object]))), 
+    false->bankCollateralNominalAggregated), 
+  false->bankCollateralNominalAggregated);
+  bankCollateralNominalAggregated = cemLimitBankCollateralNominalAggregated(cemLimitSubResultsAggregatedArray, maMasterAgreementSetExternally);
+  bankNominal = subResultsAggregatedArray = cemLimitSubResultsAggregatedArray, select(nil == maMasterAgreementSetExternally, 
+  true->shunt(count(maMasterAgreements) > 0, 
+    true->nonEmptyOrNil(sumOf(flattenAndRemoveNil(maMasterAgreements :* "bankNominal" [rowInstrumentAndTrades := object]))), 
+    false->bankNominalAggregated), 
+  false->bankNominalAggregated);
+  bankNominalAggregated = cemLimitBankNominalAggregated(cemLimitSubResultsAggregatedArray, maMasterAgreementSetExternally);
+  cemAddOnDefault = cemAddOnGrossAggregated * (0.4 + 0.6 * cemNetGrossRatio);
+  cemLimitSubResultsAggregatedArray = cemSubResultsAggregatedArray(object.SubResults);
+  counterpartyCEMDisplay = subResultsAggregatedArray = cemLimitSubResultsAggregatedArray, select(nil == maMasterAgreementSetExternally, 
+  true->shunt(count(maMasterAgreements) > 0, 
+    true->nonEmptyOrNil(sumOf(flattenAndRemoveNil(maMasterAgreements :* "counterpartyCEMDisplay" [rowInstrumentAndTrades := object]))), 
+    false->cemExposureAtDefaultValue + bankNominal + bankCollateralNominal), 
+  false->cemExposureAtDefaultValue + bankNominal + bankCollateralNominal);
+  counterpartyCemSubResultsAggregatedArray = cemSubResultsAggregatedArray + object:bankNominal [maMasterAgreements] + object:bankCollateralNominal [maMasterAgreements];
+}
+
+clx FAssetMortgageBackedSecurity [FExtensionAttribute] {
+  bankNominal = object:issuerBankNormalizedNominal [riskPosition];
+  currNotional = abs(sumOf(tradesInPosition :* "currNotional" [filterUnit, fixedCurrency]));
+  issuerLimit = tradesInPosition :* "denominatedNominal";
+  usdNotional = abs(sumOf(tradesInPosition :* "usdNotional" [filterUnit]));
+}
+
+clx FBill [FExtensionAttribute] {
+  bankNominal = masterAgreementTrades :* "issuerBankNominal";
+  currNotional = abs(sumOf(tradesInPosition :* "currNotional" [filterUnit, fixedCurrency]));
+  issuerLimit = tradesInPosition :* "denominatedNominal";
+  usdNotional = abs(sumOf(tradesInPosition :* "usdNotional" [filterUnit]));
+}
+
+clx FBond [FExtensionAttribute] {
+  bankNominal = masterAgreementTrades :* "issuerBankNominal";
+  currNotional = abs(sumOf(tradesInPosition :* "currNotional" [filterUnit, fixedCurrency]));
+  issuerLimit = tradesInPosition :* "denominatedNominal";
+  usdNotional = abs(sumOf(tradesInPosition :* "usdNotional" [filterUnit]));
+}
+
+clx FCashFlowInstrument [FExtensionAttribute] {
+  firstPayLeg = object.FirstPayLeg;
+  firstRecLeg = object.FirstReceiveLeg;
+}
+
+clx FCashFlowMoneyFlow [FExtensionAttribute] {
+  cashFlowMoneyFlowFilter = object;
+}
+
+clx FCurrency [FExtensionAttribute] {
+  fxSpotRateCurr = (object:fxRateInstrument [fxToCurrency := fixedCurrency]) :* "fxSpotRateValue" [domesticCurrency := fixedCurrency];
+  fxSpotRateIDR = (object:fxRateInstrument [fxToCurrency := currency("IDR")]) :* "fxSpotRateValue" [domesticCurrency := currency("IDR")];
+  fxSpotRateUSD = (object:fxRateInstrument [fxToCurrency := currency("USD")]) :* "fxSpotRateValue" [domesticCurrency := currency("USD")];
+}
+
+clx FCurrencySwap [FExtensionAttribute] {
+  currencySwapDomesticCurrency = currencyPair.Currency1;
+  currNotional = abs(sumOf(tradesInPosition :* "currCurrSwapNotional" [filterUnit, fixedCurrency]));
+  usdNotional = abs(sumOf(tradesInPosition :* "usdCurrSwapNotional" [filterUnit]));
+}
+
+clx FDenominatedValue [FExtensionAttribute] {
+  fvociNumerator = object.Number * ((object.Unit) :* "fxSpotRateIDR").Number;
+}
+
+clx FDeposit [FExtensionAttribute] {
+  bankCollateralNominal = masterAgreementTrades :* "counterpartyBankNominal";
+  bankNominal = masterAgreementTrades :* "counterpartyBankNominal";
+  issuerLimit = tradesInPosition :* "denominatedNominal";
+  issuerLimitFund = (portfolio.TradesIn(object)) :* "issuerLimitFund";
+}
+
+clx FFra [FExtensionAttribute] {
+  currNotional = abs(sumOf(tradesInPosition :* "currNotional" [filterUnit, fixedCurrency]));
+  usdNotional = abs(sumOf(tradesInPosition :* "usdNotional" [filterUnit]));
+}
+
+clx FFrn [FExtensionAttribute] {
+  bankNominal = masterAgreementTrades :* "issuerBankNominal";
+  currNotional = abs(sumOf(tradesInPosition :* "currNotional" [filterUnit, fixedCurrency]));
+  issuerLimit = tradesInPosition :* "denominatedNominal";
+  usdNotional = abs(sumOf(tradesInPosition :* "usdNotional" [filterUnit]));
+}
+
+clx FFund [FExtensionAttribute] {
+  currNotional = abs(sumOf(tradesInPosition :* "currNotional" [filterUnit, fixedCurrency]));
+  fundPortfolio = object.FundPortfolio;
+  issuerLimit = issuerLimitNoFund;
+  issuerLimitNoFund = tradesInPosition :* "issuerLimitNoFund";
+  usdNotional = abs(sumOf(tradesInPosition :* "usdNotional" [filterUnit]));
+}
+
+clx FFuture [FExtensionAttribute] {
+  currNotional = select(underlying.InsType, 
+  "Fx Rate"->abs(sumOf(tradesInPosition :* "currNDFNotional" [fixedCurrency])), 
+  default->fixedCurrencyZero);
+  usdNotional = select(underlying.InsType, 
+  "Fx Rate"->abs(sumOf(tradesInPosition :* "usdNDFNotional")), 
+  default->zeroUSD);
+}
+
+clx FFxRate [FExtensionAttribute] {
+  bankCollateralNominal = masterAgreementTrades :* "counterpartyBankNominal";
+  currNotional = sumOf(tradesInPosition :* "abs(currFxNotional)" [filterUnit, fixedCurrency]);
+  fxSpotRateCurr = object:fxSpotRateValue [domesticCurrency := fixedCurrency];
+  fxSpotRateIDR = object:fxSpotRateValue [domesticCurrency := currency("IDR")];
+  fxSpotRateUSD = object:fxSpotRateValue [domesticCurrency := currency("USD")];
+  usdNotional = sumOf(tradesInPosition :* "abs(usdFxNotional)" [filterUnit]);
+}
+
+clx FInstrument [FExtensionAttribute] {
+  bankCollateralNominal = displayCurrencyZero;
+  bankNominal = displayCurrencyZero;
+  currencySwapDomesticCurrency = nil;
+  currNotional = fixedCurrencyZero;
+  denominatedNormalizedNominal = denominatedvalue(riskPosition * normalizedNominalValue, currency, , );
+  firstPayLeg = nil;
+  firstRecLeg = nil;
+  fundPortfolio = nil;
+  insType = object.InsType;
+  issuerBankNormalizedNominal = shunt(object:partyIsBank [party = object.Issuer], 
+  default->displayCurrencyZero, 
+  true->denominatedNormalizedNominal);
+  issuerLimit = displayCurrencyZero;
+  issuerLimitFund = displayCurrencyZero;
+  masterAgreementTrades = flattenAndRemoveNil(tradesInPosition :* "masterAgreementTrades" [maMasterAgreementSetExternally]);
+  partyIsBank = shunt(party, 
+  nil->false, 
+  default->true);
+  usdNotional = zeroUSD;
+}
+
+clx FInstrumentAndTrades [FExtensionAttribute] {
+  averagePriceBase = sumOf(children :* "averagePriceBase");
+  cutLossRatio = shunt(almostZero(averagePriceBase, 1e-12), 
+  default->0, 
+  false->shunt(isFinite(averagePriceBase), 
+    false->0, 
+    default->shunt(isFinite(marketPriceBase), 
+      false->0, 
+      default->shunt(riskPositionDisplay > 0, 
+        true->marketPriceBase.Number / averagePriceBase.Number - 1.0, 
+        false->averagePriceBase.Number / marketPriceBase.Number - 1.0, 
+        default->nil))));
+  cutLossRatioThPrice = shunt(almostZero(averagePrice, 1e-12), 
+  default->0, 
+  false->shunt(isFinite(averagePrice), 
+    false->0, 
+    default->shunt(isFinite(theoreticalPrice), 
+      false->0, 
+      default->shunt(riskPositionDisplay > 0, 
+        true->theoreticalPrice.Number / averagePrice.Number - 1.0, 
+        false->averagePrice.Number / theoreticalPrice.Number - 1.0, 
+        default->nil))));
+  fvociNumerator = sumOf(children :* "fvociNumerator");
+  fvociPLRatio = shunt(bankCapitalTimeSeries.IsEmpty, 
+  default->0, 
+  false->fvociNumerator.Number / bankCapitalTimeSeriesFirst.TimeValue);
+  iDRUSDFxRates = CreateFxRate("IDR", "USD") :* "simplisticFXSpotRate" [allowMarkToMarketPrice := true, fxForwardDate = profitAndLossFXRateForwardDate];
+  marketPriceBase = sumOf(children :* "marketPriceBase");
+}
+
+clx FLeg [FExtensionAttribute] {
+  currCurrSwapNotional = currentFirstOrLastCashFlow:nominalPosition;
+  currentAmount = currentFirstOrLastCashFlow.NominalFactor * object.NominalFactor;
+  currentCashFlow = object.GetCurrentCashFlow(profitAndLossEndDate);
+  currentFirstOrLastCashFlow = shunt(dateDifference(profitAndLossEndDate, startDate) < 0, 
+  true->cashFlows.First, 
+  default->shunt(dateDifference(profitAndLossEndDate, endDate) < 0, 
+    false->cashFlows.Last, 
+    default->currentCashFlow));
+  fundPortfolio = instrument:fundPortfolio;
+  startDate = object.StartDate;
+  usdCurrentAmount = object:currentAmount [profitAndLossEndDate];
+  usdCurrSwapNotional = currentFirstOrLastCashFlow:nominalPosition;
+}
+
+clx FLegAndTrades [FExtensionAttribute] {
+  cemLimitSubResultsInput = arrayAny(createPair(nil, nil));
+}
+
+clx FMoneyFlow [FExtensionAttribute] {
+  cashFlowMoneyFlowFilter = nil;
+  counterparty = object.Counterparty;
+}
+
+clx FMoneyFlowAndTrades [FExtensionAttribute] {
+  counterparty = moneyFlow:counterparty;
+}
+
+clx FMultiInstrumentAndTrades [FExtensionAttribute] {
+  bankCollateralNominal = sumOf(convertToCurrency((openCollateralInstruments :* "bankCollateralNominal" [positionObject, maMasterAgreementSetExternally]).Flatten, profitAndLossEndFXRates, displayCurrency));
+  bankNominal = sumOf(convertToCurrency((openInstruments :* "bankNominal" [positionObject, maMasterAgreementSetExternally]).Flatten, profitAndLossEndFXRates, displayCurrency));
+  cemAddOnDefault = cemAddOnGrossAggregated * (0.4 + 0.6 * cemNetGrossRatio);
+  cemLimitSubResultsArray = [cemMarkToMarketValue, maCollateralMarkToMarketValuesNettingSet, cemPositiveMarkToMarketValue, cemAddOnGross, cemAddOnCustom, bankNominal, bankCollateralNominal];
+  cemLimitSubResultsInput = select(nil == maMasterAgreementSetExternally, 
+  true->flattenAndRemoveNil(maMasterAgreements :* "cemLimitSubResultsInput" [rowInstrumentAndTrades, displayCurrency, cemHierarchyTree]), 
+  false->arrayAny(createPair(maMasterAgreementSetExternally, cemLimitSubResultsArray)));
+  currNotional = shunt(openInstruments.IsEmpty, 
+  true->fixedCurrencyZero, 
+  default->sumOf(openInstruments :* "currNotional" [positionObject, displayCurrency, filterUnit, fixedCurrency]));
+  fundPortfolios = flattenAndRemoveNil(openInstruments :* "fundPortfolio");
+  iDRNotional = sumOf(children :* "iDRNotional");
+  issuerLimit = sumOf(convertToCurrency((openInstruments :* "issuerLimit" [positionObject]).Flatten, profitAndLossEndFXRates, displayCurrency));
+  issuerLimitDisplay = issuerLimit + issuerLimitFund;
+  issuerLimitFund = sumOf(convertToCurrency(fundPortfolios :* "issuerLimitFund" [positionObject], profitAndLossEndFXRates, displayCurrency));
+  usdNotional = shunt(openInstruments.IsEmpty, 
+  true->zeroUSD, 
+  default->sumOf(openInstruments :* "usdNotional" [positionObject, displayCurrency, filterUnit]));
+}
+
+clx FObject [FExtensionAttribute] {
+  bankCapitalTimeSeries = shunt(bankCapitalTimeSeriesSpec, 
+  nil->nil, 
+  default->bankCapitalTimeSeriesSpec.TimeSeries.Filter(bankCapitalTimeSeriesDateFilter));
+  bankCapitalTimeSeriesDateFilter = simpleAndQuery("FTimeSeries", ["day"], ["LESS_EQUAL"], [valuationDate]);
+  bankCapitalTimeSeriesFirst = shunt(bankCapitalTimeSeries, 
+  nil->nil, 
+  default->bankCapitalTimeSeries.SortByProperty("Day", false).First);
+  bankCapitalTimeSeriesSpec = getObject("FTimeSeriesSpec", "Bank Capital");
+  bankCollateralNominal = rowInstrumentAndTrades:bankCollateralNominalAggregated [maMasterAgreementSetExternally := object];
+  bankNominal = rowInstrumentAndTrades:bankNominalAggregated [maMasterAgreementSetExternally := object];
+  cemLimitSubResultsInput = rowInstrumentAndTrades :* "cemLimitSubResultsInput" [maMasterAgreementSetExternally := object, displayCurrency, cemHierarchyTree];
+  counterpartyCEMDisplay = rowInstrumentAndTrades:counterpartyCEMDisplay [maMasterAgreementSetExternally := object, cemHierarchyTree];
+  fixedCurrencyZero = denominatedvalue(0, fixedCurrency, , );
+  logicDecorator = getLogicDecorator(object);
+  remainingPremiumPaymentFilter = simpleAndQuery("FPayment", ["Type"], ["EQUAL"], ["Premium"]);
+  zeroUSD = denominatedvalue(0.0, "USD", , );
+}
+
+clx FOption [FExtensionAttribute] {
+  currNotional = select(underlying.InsType, 
+  "Fx Rate"->sumOf(tradesInPosition :* "currFxOptionNotional" [fixedCurrency]), 
+  "Bond"->sumOf(tradesInPosition :* "currBondOptionNotional" [fixedCurrency]), 
+  default->fixedCurrencyZero);
+  usdNotional = select(underlying.InsType, 
+  "Fx Rate"->sumOf(tradesInPosition :* "usdFxOptionNotional"), 
+  "Bond"->sumOf(tradesInPosition :* "usdBondOptionNotional"), 
+  default->zeroUSD);
+}
+
+clx FPayment [FExtensionAttribute] {
+  currPayment = select(currency, 
+  fixedCurrency->denominatedvalue(object.Amount, currency, , ), 
+  default->denominatedvalue(object.Amount * currency:fxSpotRateCurr [fixedCurrency], fixedCurrency, , ));
+  usdPayment = select(currency.Name, 
+  "USD"->denominatedvalue(object.Amount, currency, , ), 
+  default->denominatedvalue(object.Amount * currency:fxSpotRateUSD, "USD", , ));
+}
+
+clx FPhysicalPortfolio [FExtensionAttribute] {
+  issuerLimitFund = instruments :* "issuerLimitFund" [portfolio = object, positionObject];
+}
+
+clx FPortfolioSwap [FExtensionAttribute] {
+  fundPortfolio = object.FilteredOrFundPortfolio;
+}
+
+clx FSingleInstrumentAndTrades [FExtensionAttribute] {
+  averagePriceBase = denominatedvalue(ps_averagePriceClean.Number * (displayCurrency:fxSpotRateUSD), "USD", , );
+  bankCollateralNominal = sumOf(convertToCurrency((openCollateralInstrument :* "bankCollateralNominal" [positionObject, maMasterAgreementSetExternally]), profitAndLossEndFXRates, displayCurrency));
+  bankNominal = sumOf(convertToCurrency((openInstrument :* "bankNominal" [positionObject, maMasterAgreementSetExternally]), profitAndLossEndFXRates, displayCurrency));
+  cemLimitSubResultsArray = [cemMarkToMarketValue, ccrZero, ccrZero, cemAddOnGross, ccrZero, bankNominal, bankCollateralNominal];
+  cemLimitSubResultsInput = arrayAny(createPair(nil, cemLimitSubResultsArray));
+  currNotional = shunt(openInstrument.ClassName, 
+  "FVariantArray"->fixedCurrencyZero, 
+  default->openInstrument :* "currNotional" [positionObject, displayCurrency, filterUnit, fixedCurrency]);
+  fvociNumerator = sumOf((carry + uPL + rPL) :* "fvociNumerator");
+  fvociPLRatio = shunt(bankCapitalTimeSeries.IsEmpty, 
+  default->0, 
+  false->fvociNumerator.Number / bankCapitalTimeSeriesFirst.TimeValue);
+  iDRNotional = denominatedvalue(usdNotional / iDRUSDFxRates.Number, "IDR", , );
+  marketPriceBase = denominatedvalue(marketPriceClean.Number * (displayCurrency:fxSpotRateUSD), "USD", , );
+  ps_averagePriceClean = instrument:quoteConversionWrapperQuoteToQuote [quoteConversionWrapperToQuotation = cleanQuotation, quoteConversionWrapperFromQuotation = instrument:quotation, quoteConversionWrapperFromQuote = averagePrice, quoteConversionWrapperToQuoteDate = valuationDate, quoteConversionWrapperRightDate = valuationDate, priceSource, instrument:doSplitAll, quoteConversionWrapperDoRounding = false];
+  usdNotional = shunt(openInstrument.ClassName, 
+  "FVariantArray"->zeroUSD, 
+  default->openInstrument :* "usdNotional" [positionObject, displayCurrency, filterUnit]);
+}
+
+clx FSwap [FExtensionAttribute] {
+  currNotional = abs(sumOf(tradesInPosition :* "currNotional" [filterUnit, fixedCurrency]));
+  usdNotional = abs(sumOf(tradesInPosition :* "usdNotional" [filterUnit]));
+}
+
+clx FSymbol [FExtensionAttribute] {
+  cemLimitSubResultsInput = arrayAny(createPair(nil, nil));
+  fxSpotRateIDR = currency(object) :* "fxSpotRateIDR";
+}
+
+clx FTrade [FExtensionAttribute] {
+  afterPnLEndDateFilter = simpleAndQuery("FPayment", ["PayDay"], ["GREATER"], [profitAndLossEndDate]);
+  beforeEqualValueDayFilter = simpleAndQuery("FPayment", ["PayDay"], ["LESS_EQUAL"], [object.ValueDay]);
+  counterparty = object.Counterparty;
+  counterpartyBankNominal = shunt(object:partyIsBank [party = counterparty], 
+  default->instrument:displayCurrencyZero, 
+  true->denominatedNominal);
+  counterpartyCollateralBankNominal = shunt(tradeCategory, 
+  default->instrument:displayCurrencyZero, 
+  "Collateral"->denominatedNominal);
+  currBondOptionNotional = shunt(object.IncludeTradeStatus(nilObject:tradeStatusInclusionMaskDefault), 
+  false->displayCurrencyZero, 
+  default->shunt(quantity > 0, 
+    true->select(currency.Name == fixedCurrency, 
+      true->denominatedvalue(nominal, fixedCurrency, , ), 
+      default->denominatedvalue(nominal * currency:fxSpotRateCurr [fixedCurrency], fixedCurrency, , )), 
+    false->shunt(postPnlEndDateRemainingPremiumPayments.IsEmpty, 
+      true->displayCurrencyZero, 
+      default->sumOf(postPnlEndDateRemainingPremiumPayments :* "usdPayment"))));
+  currCurrSwapDomesticCurrencyNotional = shunt(currencySwapDomesticCurrency, 
+  nil->zeroUSD, 
+  default->select(firstRecLegCurrency == currencySwapDomesticCurrency, 
+    true->shunt(isFinite(firstRecLeg.NominalFactor), 
+      false->zeroUSD, 
+      default->denominatedvalue(firstRecLeg:currentAmount [profitAndLossEndDate] * firstRecLegCurrency:fxSpotRateUSD * quantity * instrument:contractSize, "USD", , )), 
+    false->shunt(isFinite(firstPayLeg.NominalFactor), 
+      false->zeroUSD, 
+      default->denominatedvalue(firstPayLeg:currentAmount [profitAndLossEndDate] * firstPayLegCurrency:fxSpotRateUSD * quantity * instrument:contractSize, "USD", , )), 
+    default->zeroUSD));
+  currCurrSwapNotional = shunt(object.IncludeTradeStatus(nilObject:tradeStatusInclusionMaskDefault), 
+  false->displayCurrencyZero, 
+  default->select(firstRecLegCurrency.Name == fixedCurrency, 
+    true->denominatedvalue(firstRecLeg:currentAmount [profitAndLossEndDate] * firstRecLeg:nominalFactor * quantity * instrument:contractSize, fixedCurrency, , ), 
+    default->select(firstPayLegCurrency.Name == fixedCurrency, 
+      true->denominatedvalue(firstPayLeg:currentAmount [profitAndLossEndDate] * quantity * instrument:contractSize, fixedCurrency, , ), 
+      default->currCurrSwapDomesticCurrencyNotional)));
+  currencySwapDomesticCurrency = instrument:currencyPair;
+  currFxNotional = shunt(object.IncludeTradeStatus(nilObject:tradeStatusInclusionMaskDefault), 
+  false->fixedCurrencyZero, 
+  default->select(instrument, 
+    fixedCurrency->denominatedvalue(quantity, instrument, , ), 
+    default->select(currency, 
+      fixedCurrency->denominatedvalue(premium, currency, , ), 
+      default->denominatedvalue(quantity * instrument:fxSpotRateCurr [fixedCurrency], fixedCurrency, , ))));
+  currFxOptionNotional = shunt(object.IncludeTradeStatus(nilObject:tradeStatusInclusionMaskDefault), 
+  false->fixedCurrencyZero, 
+  default->shunt(quantity > 0, 
+    true->select(instrument.Underlying == fixedCurrency, 
+      true->denominatedvalue(quantity, fixedCurrency, , ), 
+      false->select(instrument.Currency == fixedCurrency, 
+        true->denominatedvalue(logicDecorator.AmountDomestic, fixedCurrency, , ), 
+        false->denominatedvalue(quantity * (instrument.Underlying) :* "fxSpotRateCurr" [fixedCurrency], fixedCurrency, , ))), 
+    false->shunt(postPnlEndDateRemainingPremiumPayments.IsEmpty, 
+      true->fixedCurrencyZero, 
+      default->sumOf(postPnlEndDateRemainingPremiumPayments :* "currPayment" [fixedCurrency]))));
+  currNDFNotional = shunt(object.IncludeTradeStatus(nilObject:tradeStatusInclusionMaskDefault), 
+  false->displayCurrencyZero, 
+  default->select(instrument.Underlying.Name, 
+    fixedCurrency->denominatedvalue(quantity, instrument.Underlying, , ), 
+    default->select(instrument.Underlying.Currency.Name, 
+      fixedCurrency->denominatedvalue(premium, instrument.Underlying.Currency, , ), 
+      default->denominatedvalue(quantity * (instrument.Underlying) :* "fxSpotRateCurr" [fixedCurrency], fixedCurrency, , ))));
+  currNotional = shunt(object.IncludeTradeStatus(nilObject:tradeStatusInclusionMaskDefault), 
+  false->fixedCurrencyZero, 
+  default->select(currency.Name == fixedCurrency, 
+    true->denominatedvalue(nominal, currency, , ), 
+    default->denominatedvalue(nominal * currency:fxSpotRateCurr [fixedCurrency], fixedCurrency, , )));
+  denominatedNominal = denominatedvalue(nominal, instrument:currency, , );
+  firstPayLeg = instrument:firstPayLeg;
+  firstPayLegCurrency = firstPayLeg:currency;
+  firstRecLeg = instrument:firstRecLeg;
+  firstRecLegCurrency = firstRecLeg:currency;
+  fundPortfolio = instrument:fundPortfolio;
+  insType = instrument:insType;
+  issuerBankNominal = shunt(object:partyIsBank [party = instrument.Issuer], 
+  default->instrument:displayCurrencyZero, 
+  true->denominatedNominal);
+  issuerLimitFund = shunt(object.IncludeTradeStatus(nilObject:tradeStatusInclusionMaskDefault), 
+  true->denominatedNominal, 
+  default->instrument:displayCurrencyZero);
+  issuerLimitNoFund = shunt(fundPortfolio, 
+  nil->denominatedNominal, 
+  default->instrument:displayCurrencyZero);
+  masterAgreement = object.MasterAgreement;
+  masterAgreementTrades = shunt(maMasterAgreementSetExternally, 
+  nil->object, 
+  "Rest"->shunt(masterAgreement, 
+    nil->object, 
+    default->nil), 
+  default->shunt(masterAgreement, 
+    nil->nil, 
+    default->shunt(masterAgreement.Name == maMasterAgreementSetExternally, 
+      true->object, 
+      default->nil)));
+  moneyFlowAfterEndDate = object.MoneyFlows(profitAndLossEndDate, bigDate);
+  moneyFlowBeforeEndDate = object.MoneyFlows(smallDate, profitAndLossEndDate);
+  partyIsBank = shunt(party, 
+  nil->false, 
+  default->true);
+  payments = object.Payments;
+  postPnlEndDateRemainingPremiumPayments = remainingPremiumPayments.Filter(afterPnLEndDateFilter);
+  premiumAdditionalPayment = shunt(remainingPremiumPayments.IsEmpty, 
+  true->nil, 
+  default->remainingPremiumPayments.First);
+  preValueDateRemainingPremiumPayments = remainingPremiumPayments.Filter(beforeEqualValueDayFilter);
+  remainingPremiumPayments = payments.Filter(remainingPremiumPaymentFilter);
+  tradeCategory = object.TradeCategory;
+  usdBondOptionNotional = shunt(object.IncludeTradeStatus(nilObject:tradeStatusInclusionMaskDefault), 
+  false->zeroUSD, 
+  default->shunt(quantity > 0, 
+    true->select(currency.Name == "USD", 
+      true->denominatedvalue(nominal, "USD", , ), 
+      default->denominatedvalue(nominal * currency:fxSpotRateUSD, "USD", , )), 
+    false->shunt(postPnlEndDateRemainingPremiumPayments.IsEmpty, 
+      true->zeroUSD, 
+      default->sumOf(postPnlEndDateRemainingPremiumPayments :* "usdPayment"))));
+  usdCurrSwapDomesticCurrencyNotional = shunt(currencySwapDomesticCurrency, 
+  nil->zeroUSD, 
+  default->select(firstRecLegCurrency == currencySwapDomesticCurrency, 
+    true->shunt(isFinite(firstRecLeg.NominalFactor), 
+      false->zeroUSD, 
+      default->denominatedvalue(firstRecLeg:currentAmount [profitAndLossEndDate] * firstRecLegCurrency:fxSpotRateUSD * quantity * instrument:contractSize, "USD", , )), 
+    false->shunt(isFinite(firstPayLeg.NominalFactor), 
+      false->zeroUSD, 
+      default->denominatedvalue(firstPayLeg:currentAmount [profitAndLossEndDate] * firstPayLegCurrency:fxSpotRateUSD * quantity * instrument:contractSize, "USD", , )), 
+    default->zeroUSD));
+  usdCurrSwapNotional = shunt(object.IncludeTradeStatus(nilObject:tradeStatusInclusionMaskDefault), 
+  false->zeroUSD, 
+  default->select(firstRecLegCurrency.Name == "USD", 
+    true->denominatedvalue(firstRecLeg:currentAmount [profitAndLossEndDate] * firstRecLeg:nominalFactor * quantity * instrument:contractSize, "USD", , ), 
+    default->select(firstPayLegCurrency.Name == "USD", 
+      true->denominatedvalue(firstPayLeg:currentAmount [profitAndLossEndDate] * quantity * instrument:contractSize, "USD", , ), 
+      default->usdCurrSwapDomesticCurrencyNotional)));
+  usdFxNotional = shunt(object.IncludeTradeStatus(nilObject:tradeStatusInclusionMaskDefault), 
+  false->zeroUSD, 
+  default->select(instrument.Name, 
+    "USD"->denominatedvalue(quantity, instrument, , ), 
+    default->select(currency.Name, 
+      "USD"->denominatedvalue(premium, currency, , ), 
+      default->denominatedvalue(quantity * instrument:fxSpotRateUSD, "USD", , ))));
+  usdFxOptionNotional = shunt(object.IncludeTradeStatus(nilObject:tradeStatusInclusionMaskDefault), 
+  false->zeroUSD, 
+  default->shunt(quantity > 0, 
+    true->select(instrument.Underlying.Name == "USD", 
+      true->denominatedvalue(quantity, "USD", , ), 
+      false->select(instrument.Currency.Name == "USD", 
+        true->denominatedvalue(logicDecorator.AmountDomestic, "USD", , ), 
+        false->denominatedvalue(quantity * (instrument.Underlying) :* "fxSpotRateUSD", "USD", , ))), 
+    false->shunt(postPnlEndDateRemainingPremiumPayments.IsEmpty, 
+      true->zeroUSD, 
+      default->sumOf(postPnlEndDateRemainingPremiumPayments :* "usdPayment"))));
+  usdNDFNotional = shunt(object.IncludeTradeStatus(nilObject:tradeStatusInclusionMaskDefault), 
+  false->zeroUSD, 
+  default->select(instrument.Underlying.Name, 
+    "USD"->denominatedvalue(quantity, instrument.Underlying, , ), 
+    default->select(instrument.Underlying.Currency.Name, 
+      "USD"->denominatedvalue(premium, instrument.Underlying.Currency, , ), 
+      default->denominatedvalue(quantity * (instrument.Underlying) :* "fxSpotRateUSD", "USD", , ))));
+  usdNotional = shunt(object.IncludeTradeStatus(nilObject:tradeStatusInclusionMaskDefault), 
+  false->zeroUSD, 
+  default->select(currency.Name == "USD", 
+    true->denominatedvalue(nominal, currency, , ), 
+    default->denominatedvalue(nominal * currency:fxSpotRateUSD, "USD", , )));
+}
+
+clx FUndefinedObject [FExtensionAttribute] {
+  fvociNumerator = 0;
+}
+
+decls[FPythonCode] {
+}
+
+clx FObject [FPythonCode] {
+  CEMLimitAggregationCalculations
+
+import acm
+
+IDX_BANK_NOMINAL = 5
+IDX_BANK_COLLATERAL_NOMINAL = 6
+
+#------------------------------------------------------------------------------
+def CEMLimitBankNominalAggregated ( subResultsAggregated, masterAgreement ):
+    return (subResultsAggregated[masterAgreement])[IDX_BANK_NOMINAL] \
+        if subResultsAggregated else None
+
+#------------------------------------------------------------------------------
+def CEMLimitBankCollateralNominalAggregated ( subResultsAggregated, masterAgreement ):
+    return (subResultsAggregated[masterAgreement])[IDX_BANK_COLLATERAL_NOMINAL] \
+        if subResultsAggregated else None
+
+...
+
+  TradeRestrictionFilter
+import acm
+
+def ParentOrSelf(interface):
+    for target_value in interface.TargetValues():
+        query = acm.Filter.SimpleOrQuery('FTrade', ['Counterparty.Name', 'Counterparty.Parent.Name'],['EQUAL', 'EQUAL'],[target_value, target_value])
+        return query
+    return None
+
+...
+
+  Utils
+import acm
+def GetLogicDecorator(object):
+    return acm.FBusinessLogicDecorator.WrapObject(object)
+
+...
+
+}
+

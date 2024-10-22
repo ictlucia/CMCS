@@ -1,0 +1,94 @@
+[MESSAGE]
+  TYPE=INSERT_TEXTOBJECT
+  VERSION=1.0
+  TIME=2024-07-22 08:01:52
+  SOURCE=FAMBAMessageGenerator
+  [TEXTOBJECT]
+    TYPE=Customizable
+    DATA={\
+    "MSWordTemplates": [\
+        {\
+            "name": "TC IRS-OVB",\
+            "type": "LongFormTPL",\
+            "version": "3",\
+            "checksumFields": {\
+                "RegularFields": [\
+                    {\
+                        "fieldName": "Trade"\
+                    },\
+                    {\
+                        "fieldName": "Trade.Counterparty.FullName"\
+                    },\
+                    {\
+                        "fieldName": "AcquirerContactRef.Fullname"\
+                    },\
+                    {\
+                        "fieldName": "LongFormTradeDate_Eng"\
+                    },\
+                    {\
+                        "fieldName": "AcquirerContactRef.Fax"\
+                    },\
+                    {\
+                        "fieldName": "AcquirerContactRef.Address"\
+                    },\
+                    {\
+                        "fieldName": "LongFormInstrument"\
+                    },\
+                    {\
+                        "fieldName": "LongFormCurrency"\
+                    },\
+                    {\
+                        "fieldName": "LongFormNominalAmount"\
+                    },\
+                    {\
+                        "fieldName": "LongFormValueDate_Eng"\
+                    },\
+                    {\
+                        "fieldName": "LongFormEndDate_Eng"\
+                    },\
+                    {\
+                        "fieldName": "Trade.Instrument.PayLeg.PayDayMethod"\
+                    },\
+                    {\
+                        "fieldName": "LongFormFixedRate"\
+                    },\
+                    {\
+                        "fieldName": "LongFormDayCount"\
+                    },\
+                    {\
+                        "fieldName": "LongFormFloatRateRef"\
+                    },\
+                    {\
+                        "fieldName": "LongFormOurAccount_IRS"\
+                    },\
+                    {\
+                        "fieldName": "LongFormYourAccount_IRS"\
+                    }\
+                ],\
+                "LoopFields": []\
+            }\
+        }\
+    ],\
+    "PrimeSheetTemplates": [\
+        {\
+            "name": "TCIRS - OVB",\
+            "classType": "Confirmation Sheet",\
+            "type": "Primary",\
+            "insertItem": "",\
+            "insertQuery": ""\
+        },\
+        {\
+            "name": "TCIRS - OVB",\
+            "classType": "Confirmation Sheet",\
+            "type": "Supplement",\
+            "insertItem": "Confirmation",\
+            "insertQuery": ""\
+        }\
+    ],\
+    "FormattedColumnSet": []\
+}
+    NAME=TC IRS OVB
+    SIZE=2553
+    SUBTYPE=ReportForm
+  [/TEXTOBJECT]
+[/MESSAGE]

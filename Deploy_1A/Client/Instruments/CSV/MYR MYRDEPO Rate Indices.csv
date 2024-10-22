@@ -1,0 +1,8 @@
+INSTRUMENT,,,,,,,,,,,INSTRUMENTALIAS,,/INSTRUMENTALIAS,LEG,,,,,,,,,,,,,/LEG,/INSTRUMENT
+PAY_OFFSET_METHOD,MTM_FROM_FEED,QUOTATION_SEQNBR.NAME,GENERIC,INSID,OTC,CONTR_SIZE,CURR.INSID,SPOT_BANKING_DAYS_OFFSET,EXTERN_ID1,INSTYPE,TYPE.ALIAS_TYPE_NAME,ALIAS,,PAY_CALNBR.CALID,END_DATE_METHOD,TYPE,DAYCOUNT_METHOD,INTEREST_PAYMENT_TIME,PAYLEG,START_PERIOD,NOMINAL_AT_END,END_PERIOD,CURR.INSID,PAY_DAY_METHOD,NOMINAL_FACTOR,ROLLING_CONVENTION,,
+Business Days,Yes,Coupon,Yes,MYR/MYRDEPO/1M,Yes,1,MYR,0,MRDRA,RateIndex,BB_TICKER,MRDRA LAST Curncy,,Singapore,Relative Start,Fixed,Act/365,In Arrears,No,0d,Yes,1m,MYR,Following,1,None,,
+Business Days,Yes,Coupon,Yes,MYR/MYRDEPO/1W,Yes,1,MYR,0,MRDR1Z,RateIndex,BB_TICKER,MRDR1Z LAST Curncy,,Singapore,Relative Start,Fixed,Act/365,In Arrears,No,0d,Yes,1w,MYR,Following,1,None,,
+Business Days,Yes,Coupon,Yes,MYR/MYRDEPO/1Y,Yes,1,MYR,0,MRDR1,RateIndex,BB_TICKER,MRDR1 LAST Curncy,,Singapore,Relative Start,Fixed,Act/365,In Arrears,No,0d,Yes,1y,MYR,Following,1,None,,
+Business Days,Yes,Coupon,Yes,MYR/MYRDEPO/3M,Yes,1,MYR,0,MRDRC,RateIndex,BB_TICKER,MRDRC LAST Curncy,,Singapore,Relative Start,Fixed,Act/365,In Arrears,No,0d,Yes,3m,MYR,Following,1,None,,
+Business Days,Yes,Coupon,Yes,MYR/MYRDEPO/6M,Yes,1,MYR,0,MRDRF,RateIndex,BB_TICKER,MRDRF LAST Curncy,,Singapore,Relative Start,Fixed,Act/365,In Arrears,No,0d,Yes,6m,MYR,Following,1,None,,
+Business Days,Yes,Coupon,Yes,MYR/MYRDEPO/ON,Yes,1,MYR,0,MRDR1T,RateIndex,BB_TICKER,MRDR1T LAST Curncy,,Singapore,Relative Start,Fixed,Act/365,In Arrears,No,0d,Yes,1d,MYR,Following,1,None,,

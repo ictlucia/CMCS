@@ -1,0 +1,10 @@
+Windows Registry Editor Version 5.00
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Front\Front Arena\ATS\FA_INSTANCE_NAME]
+"group"="PRELOAD_PREDEAL"
+"username"="ATS_PREDEAL_RES"
+"password"="intas"
+"unicode"="1"
+"logcategory"="compliance"
+"logdir"="D:\Front\Front Arena\LOG\ATS_PRELOAD_PREDEAL\"
+

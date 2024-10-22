@@ -1,0 +1,5 @@
+ADDITIONALINFOSPEC,,,,,/ADDITIONALINFOSPEC
+DATA_TYPE.GRP,DESCRIPTION,DATA_TYPE.TYPE,FIELD_NAME,REC_TYPE,
+Standard,from Summit - Credit Limit Amounts Definition,String,Comments (Part 2),AppliedRule,
+Standard,from Summit - Credit Limit Amounts Definition,String,Comments (Part 3),AppliedRule,
+Standard,from Summit - Credit Limit Amounts Definition,String,Comments (Part 4),AppliedRule,

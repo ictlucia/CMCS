@@ -1,0 +1,5 @@
+USERPROFILE,,PROFILECOMPONENT,,,/PROFILECOMPONENT,/USERPROFILE
+DESCRIPTION,PROFID,ALLOW_WRITE,COMPNBR.COMPNAME,COMPNBR.TYPE,,
+TWC Portfolio,TWC_PORT,Yes,Wholesale SP,Portfolio,,
+,,Yes,Wholesale FX Branch,Portfolio,,
+,,Yes,Wholesale FX & Derivative BO,Portfolio,,

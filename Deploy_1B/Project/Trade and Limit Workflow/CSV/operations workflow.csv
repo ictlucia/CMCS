@@ -1,0 +1,10 @@
+COMPONENT,,/COMPONENT
+COMPNAME,TYPE,
+FO Checker,Operation,
+FO Maker,Operation,
+Limit Check,Operation,
+Internal,Operation,
+Pending FO Verification,Operation,
+Reserved,Operation,
+Void,Operation,
+Void Input,Operation,

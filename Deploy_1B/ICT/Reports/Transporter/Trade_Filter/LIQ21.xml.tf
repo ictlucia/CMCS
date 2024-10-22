@@ -1,0 +1,2 @@
+<?xml version='1.0' encoding='ISO-8859-1'?>
+<FTradeFilter><acm_version>2022.4.17, Aug 20 2024</acm_version><version>0 $Id$</version><update_time>2024-09-20 11:15:07</update_time><object_name>LIQ21</object_name><owner>ARENASYS</owner><protection>W:R,O:RWD,G:RWD,U:RWD</protection><asql_query>LIQ21</asql_query></FTradeFilter>

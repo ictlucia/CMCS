@@ -1,0 +1,4 @@
+ADDITIONALINFOSPEC,,,,,/ADDITIONALINFOSPEC
+DATA_TYPE.GRP,DESCRIPTION,DATA_TYPE.TYPE,FIELD_NAME,REC_TYPE,
+Standard,Free text 1 filled by user,String,SettleInstruction1,Confirmation,
+Standard,Free text 2 filled by user,String,SettleInstruction2,Confirmation,

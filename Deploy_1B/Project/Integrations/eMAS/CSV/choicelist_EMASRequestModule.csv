@@ -1,0 +1,6 @@
+CHOICELIST,,,/CHOICELIST
+LIST,ENTRY,DESCRIPTION,
+MASTER,EMASRequestModule,EMASRequestModule,
+EMASRequestModule,HoldAmount,HoldAmount,
+EMASRequestModule,HoldAmountInquiry,HoldAmountInquiry,
+EMASRequestModule,HoldAmountRelease,HoldAmountRelease,

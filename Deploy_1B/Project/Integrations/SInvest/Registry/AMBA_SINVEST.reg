@@ -1,0 +1,21 @@
+Windows Registry Editor Version 5.00
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Front\Front Arena\AMBA\FA_INSTANCE_NAME]
+"create_missing_ref"=""
+"sender_mb_name"="AMBA_SINVEST_SENDER"
+"receiver_mb_name"=""
+"sender_off"="0"
+"receiver_off"="1"
+"log_messages"="1"
+"ael_module_name"="SInvestMessageAdaptations"
+"ael_receiver_modify"=""
+"ael_sender_modify"="sender_modify"
+"username"="AMBA_SINVEST"
+"password"="intas"
+"sender_source"=""
+"zero_unspec_fields"="0"
+"receiver_sources"=""
+"Unicode"="1"
+"add_records"="{trade}"
+
+

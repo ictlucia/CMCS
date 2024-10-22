@@ -1,0 +1,106 @@
+[MESSAGE]
+  TYPE=INSERT_ORGANISATION
+  VERSION=1.0
+  TIME=2024-04-22 08:43:42
+  SOURCE=FAMBAMessageGenerator
+  [ORGANISATION]
+    DESCRIPTION=Bank Mandiri
+    ORGID=MANDIRI
+  [/ORGANISATION]
+[/MESSAGE]
+[MESSAGE]
+  TYPE=INSERT_GROUP
+  VERSION=1.0
+  TIME=2024-04-22 08:43:42
+  SOURCE=FAMBAMessageGenerator
+  [GROUP]
+    GRPID=IT_SUPERADMIN
+    ORGNBR.ORGID=MANDIRI
+    [GROUPPROFILELINK]
+      PROFNBR.PROFID=ALL_COMPONENTS
+    [/GROUPPROFILELINK]
+    [GROUPPROFILELINK]
+      PROFNBR.PROFID=ALL_WORKFLOW
+    [/GROUPPROFILELINK]
+    [GROUPPROFILELINK]
+      PROFNBR.PROFID=PORT_ALL
+    [/GROUPPROFILELINK]
+  [/GROUP]
+[/MESSAGE]
+[MESSAGE]
+  TYPE=INSERT_USER
+  VERSION=1.0
+  TIME=2024-04-22 08:43:42
+  SOURCE=FAMBAMessageGenerator
+  [USER]
+    EMAIL=emilia.kinsy@inticorp.tech
+    GRPNBR.GRPID=IT_SUPERADMIN
+    NAME=#1
+    USERID=ARENASYS
+    [USERPROFILELINK]
+      PROFNBR.PROFID=ALL_COMPONENTS
+    [/USERPROFILELINK]
+    [PRINCIPAL]
+      TYPE=Kerberos
+      PRINCIPAL=#anonym@318
+    [/PRINCIPAL]
+    [PRINCIPAL]
+      TYPE=Kerberos
+      PRINCIPAL=#anonym@340
+    [/PRINCIPAL]
+    [PRINCIPAL]
+      TYPE=Kerberos
+      PRINCIPAL=#anonym@361
+    [/PRINCIPAL]
+    [PRINCIPAL]
+      TYPE=Kerberos
+      PRINCIPAL=#anonym@362
+    [/PRINCIPAL]
+    [PRINCIPAL]
+      TYPE=Kerberos
+      PRINCIPAL=#anonym@363
+    [/PRINCIPAL]
+  [/USER]
+[/MESSAGE]
+[MESSAGE]
+  TYPE=INSERT_TEXTOBJECT
+  VERSION=1.0
+  TIME=2024-04-22 08:43:42
+  SOURCE=FAMBAMessageGenerator
+  [TEXTOBJECT]
+    TYPE=Customizable
+    DATA={\
+    "MSWordTemplates": [\
+        {\
+            "name": "TC CCS - OVB",\
+            "type": "LongFormTPL",\
+            "version": "4",\
+            "checksumFields": {\
+                "RegularFields": [],\
+                "LoopFields": []\
+            }\
+        }\
+    ],\
+    "PrimeSheetTemplates": [\
+        {\
+            "name": "TC CCS - OVB",\
+            "classType": "Confirmation Sheet",\
+            "type": "Primary",\
+            "insertItem": "",\
+            "insertQuery": ""\
+        },\
+        {\
+            "name": "TC CCS - OVB",\
+            "classType": "Confirmation Sheet",\
+            "type": "Supplement",\
+            "insertItem": "Confirmation",\
+            "insertQuery": ""\
+        }\
+    ],\
+    "FormattedColumnSet": []\
+}
+    NAME=CCSTC - OVB
+    SIZE=739
+    SUBTYPE=ReportForm
+  [/TEXTOBJECT]
+[/MESSAGE]

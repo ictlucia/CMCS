@@ -1,0 +1,113 @@
+TEXTOBJECT,,,,,/TEXTOBJECT
+SIZE,DATA,NAME,SUBTYPE,TYPE,
+3687,"<?xml version='1.0' encoding='UTF-8'?>\
+<FrontArenaPrimeSheetExport>\
+<!--PRIME Version: 2022.4.17-->\
+<FDictionary type =""AcmDomain"">\
+  <Element>\
+  <FAssociation type =""AcmDomain"">\
+    <associationKey type =""Property"">\
+      <FSymbol type =""AcmDomain"">\
+        <Text type =""Property"">\
+          <string type =""AcmDomain"">PortfolioGrouper</string>\
+        </Text>\
+      </FSymbol>\
+    </associationKey>\
+    <associationValue type =""Property"">\
+      <FChainedGrouper type =""AcmDomain"">\
+        <label type =""Property"">\
+          <FSymbol type =""AcmDomain"">\
+            <Text type =""Property"">\
+              <string type =""AcmDomain"">Journal Instrument Currency</string>\
+            </Text>\
+          </FSymbol>\
+        </label>\
+        <split type =""Property"">\
+          <bool type =""AcmDomain"">false</bool>\
+        </split>\
+        <groupers type =""Property"">\
+          <FArray type =""AcmDomain"">\
+            <Element>\
+            <FAttributeGrouper type =""AcmDomain"">\
+              <split type =""Property"">\
+                <bool type =""AcmDomain"">false</bool>\
+              </split>\
+              <methodCollection type =""Property"">\
+                <FArray type =""AcmDomain"">\
+                  <Element>\
+                  <FSymbol type =""AcmDomain"">\
+                    <Text type =""Property"">\
+                      <string type =""AcmDomain"">Journal.Instrument.Currency.Name</string>\
+                    </Text>\
+                  </FSymbol>\
+                  </Element>\
+                </FArray>\
+              </methodCollection>\
+              <attributeType type =""Property"">\
+                <int type =""AcmDomain"">-1</int>\
+              </attributeType>\
+              <subjectClass type =""Property"">\
+                <FDomain type =""AcmDomain"">\
+                  <DomainName type =""Property"">\
+                    <string type =""AcmDomain"">FJournalGrouperSubject</string>\
+                  </DomainName>\
+                </FDomain>\
+              </subjectClass>\
+              <ignoreNullLevels type =""Property"">\
+                <int type =""AcmDomain"">0</int>\
+              </ignoreNullLevels>\
+              <Method type =""Property"">\
+                <FSymbol type =""AcmDomain"">\
+                  <Text type =""Property"">\
+                    <string type =""AcmDomain"">Journal.Instrument.Currency.Name</string>\
+                  </Text>\
+                </FSymbol>\
+              </Method>\
+            </FAttributeGrouper>\
+            </Element>\
+          </FArray>\
+        </groupers>\
+      </FChainedGrouper>\
+    </associationValue>\
+  </FAssociation>\
+  </Element>\
+  <Element>\
+  <FAssociation type =""AcmDomain"">\
+    <associationKey type =""Property"">\
+      <FSymbol type =""AcmDomain"">\
+        <Text type =""Property"">\
+          <string type =""AcmDomain"">positionBasedPartitioningByGrouper</string>\
+        </Text>\
+      </FSymbol>\
+    </associationKey>\
+    <associationValue type =""Property"">\
+      <FDictionary type =""AcmDomain"">\
+      </FDictionary>\
+    </associationValue>\
+  </FAssociation>\
+  </Element>\
+  <Element>\
+  <FAssociation type =""AcmDomain"">\
+    <associationKey type =""Property"">\
+      <FSymbol type =""AcmDomain"">\
+        <Text type =""Property"">\
+          <string type =""AcmDomain"">RowModifier2</string>\
+        </Text>\
+      </FSymbol>\
+    </associationKey>\
+    <associationValue type =""Property"">\
+      <FRowModifier type =""AcmDomain"">\
+        <propKeys type =""Property"">\
+          <FArray type =""AcmDomain"">\
+          </FArray>\
+        </propKeys>\
+        <propVals type =""Property"">\
+          <FArray type =""AcmDomain"">\
+          </FArray>\
+        </propVals>\
+      </FRowModifier>\
+    </associationValue>\
+  </FAssociation>\
+  </Element>\
+</FDictionary>\
+</FrontArenaPrimeSheetExport>",Journal Instrument Currency,FJournalGrouperSubject,Stored Grouper,

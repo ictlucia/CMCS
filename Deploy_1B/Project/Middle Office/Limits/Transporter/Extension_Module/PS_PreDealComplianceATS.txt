@@ -1,0 +1,1857 @@
+#
+# Front Arena exported extension module.
+# source          ""
+# timestamp (utc) "2024-09-20 05:53:28"
+# ***** DO NOT EDIT! *****
+#
+name        "PS_PreDealComplianceATS"
+description "$Id$"
+
+groups {
+  "ui validation hook"
+}
+
+decls[FCommandExtension] {
+  "Compliance Check Report Viewer.Category.Home" ( "active commands" ) "";
+  "Compliance Check Report Viewer.Category.Home.Panel.File" ( "active commands" ) "";
+  "Compliance Check Report Viewer.Category.Home.Panel.Open" ( "active commands" ) "";
+  "Compliance Check Report Viewer.createPDF" ( "active commands" ) "";
+  "Compliance Check Report Viewer.Global" ( "active commands" ) "";
+  "Compliance Check Report Viewer.openTrade" ( "active commands" ) "";
+  "View Check" ( "active commands" ) "";
+}
+
+clx CInsDefAppFrame [FCommandExtension] {
+  View Check =
+  icon=FLimitSheet
+  LargeIcon=Yes
+
+
+}
+
+clx FUxLayoutApplicationFrame [FCommandExtension] {
+  Compliance Check Report Viewer.Category.Home =
+  ChildOrder=Compliance Check Report Viewer.Category.Home.Panel.File;Compliance Check Report Viewer.Category.Home.Panel.Open
+  RibbonLabel=Home
+  SubType=Compliance Check Report Viewer
+  Type=Category
+
+
+  Compliance Check Report Viewer.Category.Home.Panel.File =
+  Category=Compliance Check Report Viewer.Category.Home
+  ChildOrder=fileOpen;Compliance Check Report Viewer.createPDF
+  RibbonLabel=File
+  SubType=Compliance Check Report Viewer
+  Type=Panel
+
+
+  Compliance Check Report Viewer.Category.Home.Panel.Open =
+  Category=Compliance Check Report Viewer.Category.Home
+  ChildOrder=Compliance Check Report Viewer.openTrade
+  RibbonLabel=Open
+  SubType=Compliance Check Report Viewer
+  Type=Panel
+
+
+  Compliance Check Report Viewer.createPDF =
+  icon=Properties
+  LargeIcon=Yes
+  RibbonLabel=Create PDF
+  ToolTip=Create PDF Document
+
+
+  Compliance Check Report Viewer.Global =
+  ChildOrder=Compliance Check Report Viewer.Category.Home
+  SubType=Compliance Check Report Viewer
+  Type=Ribbon
+
+
+  Compliance Check Report Viewer.openTrade =
+  icon=InstrumentAppBkg
+  LargeIcon=Yes
+  RibbonLabel=Trade
+  ToolTip=Open trade connected to report
+
+
+  fileDelete =
+  LargeIcon=Yes
+
+
+  fileOpen =
+  LargeIcon=Yes
+
+
+}
+
+decls[FCustomApplicationDefinition] {
+}
+
+clx FObject [FCustomApplicationDefinition] {
+  Compliance Check Report Viewer =
+  CreationFunction=ComplianceCheckReportApplication.CreateApplicationInstance
+  HostApplication=
+  HostObjectType=
+  HostPath=
+  Name=Compliance Check Report Viewer
+  ObjectTypes=FLimitCheckReport,FTrade
+  ProfileComponent=
+
+
+}
+
+decls[FExtensionAttribute] {
+}
+
+clx FAlertSheet [FExtensionAttribute] {
+  _defaultColumnsPreDealAlertSheet = "Alert State.Alert Threshold Type.Alert Rule.Alert Acknowledged.Alert Subject.Alert Rule Target.Alert Information.Alert Threshold Comparison Type.Alert Threshold Value.Diff Threshold Value Non RT";
+  _preDealColumnsAlertSheet = "Alert State.Alert Threshold Type.Alert Rule.Alert Acknowledged.Alert Subject.Alert Rule Target.Alert Information.Checked Value.Alert Threshold Comparison Type.Alert Threshold Value Adjusted";
+}
+
+decls[FMenuExtension] {
+}
+
+clx CInsDefAppFrame [FMenuExtension] {
+  Compliance Check Viewer =
+  CreateFunction=ComplianceCheckMenuItems.LaunchApplicationFromInsDef
+  DisplayName=View Check
+  MenuType=Application
+  RibbonPosition=Home/Compliance
+
+
+}
+
+clx FSessionManagerFrame [FMenuExtension] {
+  Compliance Check Viewer =
+  DisplayName=Compliance Check Viewer
+  Function=ComplianceCheckMenuItems.LaunchComplianceCheckReportViewer
+  MenuType=Application
+  ParentMenu=Tools
+  Standard=Yes
+
+
+}
+
+clx FUxLayoutApplicationFrame [FMenuExtension] {
+  Compliance Check Viewer =
+  CreateFunction=ComplianceCheckMenuItems.LaunchApplicationFromInsDef
+  DisplayName=View Check
+  MenuType=Application
+  RibbonPosition=Home/Compliance
+
+
+}
+
+decls[FParameterGUIDefinition] {
+  "CompliancePopUpUiValidation" ( "ui validation hook" ) "";
+}
+
+clx FTrade [FParameterGUIDefinition] {
+  CompliancePopUpUiValidation =
+  DisplayName=Compliance Popup validation
+  Module=CompliancePopUpUiValidation
+
+
+}
+
+decls[FParameters] {
+}
+
+clx FObject [FParameters] {
+  ComplianceCheckReport =
+  Overwrite=True
+  ReportDir=C:\temp\Compliance Rules
+  ReportName=Check
+  Storage=ADS
+  SubDir=Compliance Check Reports
+
+
+  ComplianceCheckSettings =
+  DeviationSummaryDefaultPDFFolder=C:\temp
+  FopLibraryPath=C:\Program Files (x86)\FOP\fop-2.2\fop\fop.bat
+  Launch Report On Breach=True
+  Launch Report On Compliant=True
+  UsePopUp=True
+
+
+}
+
+decls[FPythonCode] {
+}
+
+clx FObject [FPythonCode] {
+  ComplianceCheckMenuItems
+import os
+import acm
+import FUxCore
+import ComplianceCheckReportPDFCreator
+from FParameterSettings import ParameterSettingsCreator
+from ComplianceCheckProgressDialog import ComplianceCheckProgressDialog
+
+def LaunchComplianceCheckReportViewer(eii):
+    acm.StartApplication('Compliance Check Report Viewer', None)
+
+class ComplianceCheckReportViewerFromInsDef(FUxCore.MenuItem):
+    
+    def __init__(self, frame):
+        self.frame = frame
+    
+    def Enabled(self):
+        if str(self.frame.ClassName()) == 'FUxLayoutApplicationFrame':
+            current_object = self.frame.CurrentObject()
+            if current_object:
+                if str(current_object.ClassName()) != 'FDealPackage': return False
+                trade = current_object.LeadTrade()
+                return trade and not trade.IsInfant()
+            return False
+        return self.frame.OriginalTrade() and not self.frame.OriginalTrade().IsInfant()
+    
+    def Applicable(self):
+        return True
+        
+    def Invoke(self, eii):
+        if str(self.frame.ClassName()) == 'FUxLayoutApplicationFrame':  
+            current_object = self.frame.CurrentObject()
+            if current_object:
+                if str(current_object.ClassName()) != 'FDealPackage': return
+                trade = current_object.LeadTrade()
+                acm.StartApplication('Compliance Check Report Viewer', trade)
+                return
+        acm.StartApplication('Compliance Check Report Viewer', self.frame.OriginalTrade())
+     
+
+class PDFMenuItem(FUxCore.MenuItem):
+    
+    def __init__(self, frame):
+        self.frame = frame
+ 
+    def Report(self):
+        return self.frame.CustomLayoutApplication().Report()
+ 
+    def Enabled(self):
+        return bool(self.Report())
+        
+    def Applicable(self):
+        return True
+        
+    def SelectPath(self):
+        settings = ParameterSettingsCreator.FromRootParameter('ComplianceCheckSettings')
+        defaultDirectory = settings.DeviationSummaryDefaultPDFFolder()
+        defaultPath = '\\'.join((defaultDirectory, self.Report().Name()))
+        a = acm.FFileSelection()
+        a.PickExistingFile(False)
+        a.SelectedFile(defaultPath)
+        a.FileFilter(('PDF Files (*.pdf)|*.pdf|'))
+        if acm.UXDialogs().BrowseForFile(self.frame.Shell(), a):
+            path = str(a.SelectedFile())
+            if os.path.exists(path):
+                if 'Button1' != acm.UX().Dialogs().MessageBoxOKCancel(self.frame.Shell(), 'Information', 'Are you sure you wish to override "{0}"'.format(path)):
+                    return self.SelectPath()
+            return path
+                    
+        
+    def DoCreatePdf(self, report):
+        path = self.SelectPath()
+        if path:
+            ComplianceCheckReportPDFCreator.CreatePDFFile(self.Report(), path)
+            return path
+            
+    def Invoke(self, eii):
+        try:
+            path = self.DoCreatePdf(self.frame.CustomLayoutApplication().Report())
+        except Exception as e:
+            self.frame.CustomLayoutApplication().ShowErrorMessage("Failed to create PDF. Reason: " + str(e))
+        else:
+            try:
+                if path and os.path.exists(path):
+                    os.startfile(path)
+                elif path:
+                    self.frame.CustomLayoutApplication().ShowErrorMessage("Failed to create PDF file")
+            except Exception as e:
+                self.frame.CustomLayoutApplication().ShowErrorMessage("Failed to open PDF. Reason: " + str(e))
+ 
+     
+class OpenTradeMenuItem(FUxCore.MenuItem):
+  
+    def __init__(self, frame):
+        self.frame = frame
+        
+    def Invoke(self, eii):
+        report = self.frame.CustomLayoutApplication().Report()
+        trade = report.FromArchive('Trade') if report else None
+        if trade:
+            acm.StartApplication('Instrument Definition', trade)
+  
+class ForceSaveTradeMenuItem(FUxCore.MenuItem):
+  
+    def __init__(self, frame):
+        self.frame = frame
+        
+    def Enabled(self):
+        return self.frame.OriginalTrade() and not self.frame.OriginalTrade().IsInfant() and not self.frame.ContentIsChanged()
+    
+    def Applicable(self):
+        return True
+        
+    def Invoke(self, eii):
+        trade = self.frame.OriginalTrade()
+        img = trade.StorageImage()
+        img.UpdateTime(acm.Time.RealTimeNow())
+        img.Commit()
+        dial =  ComplianceCheckProgressDialog(trade)
+        acm.UXDialogs.ShowCustomDialog(self.frame.Shell(), dial.CreateLayout(), dial)
+        
+  
+def CreatePDFMenuItem(frame):
+    return PDFMenuItem(frame)
+
+def CreateOpenTradeMenuItem(frame):
+    return OpenTradeMenuItem(frame)
+
+def LaunchApplicationFromInsDef(frame):
+    return  ComplianceCheckReportViewerFromInsDef(frame)
+
+def CreateForceSaveTradeMenuItem(frame):
+    return ForceSaveTradeMenuItem(frame)
+
+...
+
+  ComplianceCheckProgressDialog
+from time import sleep
+import acm, ael
+import FUxCore
+from FParameterSettings import ParameterSettingsCreator
+settings = ParameterSettingsCreator.FromRootParameter('ComplianceCheckSettings')
+
+class ComplianceCheckProgressDialog(FUxCore.LayoutDialog):
+    
+    RED = acm.UX().Colors().Create(255, 0, 0)
+    YELLOW = acm.UX().Colors().Create(255, 255, 0)
+    GREEN = acm.UX().Colors().Create(0, 128, 0)
+    BLACK = acm.UX().Colors().Create(0, 0, 0)
+    
+    colorMap = {'ERROR': RED, 'CRITICAL': RED, 'WARNING': YELLOW}
+    
+    def __init__(self, trade, app = None):
+        self.trade = trade
+        self.fuxDialog = None
+        self.progressCount = 0
+        self.UpdatedReport = None
+        self.app = app
+        
+        #Only show messages containing the following string
+        trade_string = self._ultimateOriginalTradeString(trade)
+        self.conditionFilter = 'Trade {0}'.format(trade_string)
+
+    @staticmethod
+    def _ultimateOriginalTradeString(trade):
+        trade_string = trade.StringKey()
+        previous_string = trade_string
+        while trade_string.find('-') == 0:
+            trade = trade.OriginalOrSelf()
+            trade_string = trade.StringKey()
+            if trade_string == previous_string:
+                break
+            previous_string = trade_string
+        return trade_string
+
+    def HandleApply(self):
+        pass
+
+    def Unsubscribe(self):
+        ael.ServerClientLog.unsubscribe(self._messageSubscription)
+        self.subscriptionSet.RemoveDependent(self)
+
+    def HandleDestroy(self):
+        self.Unsubscribe()
+
+    def DoOpenCheckReportViewer(self, checkReport):
+        isBreached = checkReport.FromArchive('IsBreached')
+        if isBreached:
+            return settings.LaunchReportOnBreach()
+        else:
+            return settings.LaunchReportOnCompliant()
+        
+    def OpenDeviationSummaryIfApplicable(self, checkReport):
+        acm.PollAllEvents()
+        try:
+            if self.DoOpenCheckReportViewer(checkReport):
+                if self.app is not None:
+                    dp = self.app.CurrentObject()
+                    lead = dp.LeadTrade()
+                    cnt = 0
+                    while cnt < 5:
+                        #print(f'{cnt = }')
+                        sleep(0.5)
+                        acm.PollAllEvents()
+                        if lead.Status() == 'Reserved':
+                            cnt += 1
+                        else:
+                            break
+                    try:
+                        layout_app = self.app.CustomLayoutApplication()
+                        if layout_app is not None:
+                            layout_app.Revert()
+                    except AttributeError as e:
+                        print(e)
+                        pass
+
+                acm.StartApplication('Compliance Check Report Viewer', checkReport)
+            self.fuxDialog.CloseDialogCancel()
+        except Exception as e:
+            print(e)
+
+    def ShowDetailedLog(self, *args):
+        self.detailedLog.Visible( not self.detailedLog.Visible() )
+
+    def OnIdle(self, *args):
+        if self.UpdatedReport is not None:
+            self.OpenDeviationSummaryIfApplicable(self.UpdatedReport)
+
+    def HandleCreate(self, dlg, layout):
+        self.fuxDialog = dlg
+        self.fuxDialog.RegisterTimer(self.OnIdle, 100)
+        self.progress = layout.GetControl('progressBar')
+        self.infoLabel = layout.GetControl('dialogLabel')
+        self.detailedLog =  layout.GetControl('detailedLog')
+        self.detailedLog.Visible(False)
+        self.detailedLog.Editable(False)
+        self.detailedLog.Enabled(True)
+        self.detailedLogEnabled =  layout.GetControl('detailedLogEnabled')
+        self.detailedLogEnabled.AddCallback("Activate", self.ShowDetailedLog, None)
+        self.InitSubscriptions()
+        
+    def InitSubscriptions(self):
+        self._messageSubscription = self._bindFunction(self.message_cb)
+        ael.ServerClientLog.subscribe(self._messageSubscription)
+        trade = self.trade
+        trade_string = self._ultimateOriginalTradeString(trade)
+        self.subscriptionSet = acm.FLimitCheckReport.Select('name like *{0}'.format(trade_string))
+        self.subscriptionSet.AddDependent(self)
+        
+    def UpdateProgress(self, increment = 20):
+        self.progressCount = self.progressCount + increment
+        self.progress.SetData(self.progressCount)
+
+    def InitControls(self):
+        pass
+        
+    def CreateLayout(self):
+        b = acm.FUxLayoutBuilder()
+        b.BeginVertBox()
+        b.AddLabel('dialogLabel', 'Waiting..', 200, 1000)
+        b.AddProgress('progressBar', 400, 30, 400, 30)
+        b.BeginHorzBox()
+        b.AddFill()
+        b.AddButton('detailedLogEnabled', 'Log...', False, True)
+        b.EndBox()
+        b.AddText('detailedLog', -1, 400)
+        b.EndBox()
+        return b
+
+    def HandleMessage(self, msg, msgType):
+        color = self.colorMap.get(msgType, self.BLACK)
+        self.infoLabel.SetData(msg)
+        self.infoLabel.SetColor('Text', color)
+        self.detailedLog.AppendText('{0}: {1}\n'.format(msgType, msg))
+        self.UpdateProgress()
+
+    def message_cb(self, _object, ael_entity, _arg, event):
+        if ael_entity.severity == "User":
+            if self.conditionFilter in ael_entity.message:
+                for msgKey in ('ERROR', 'INFO'):
+                    msgParts = ael_entity.message.split(msgKey)
+                    if len(msgParts)>1:
+                        #Found message key, handle 
+                        self.HandleMessage(msgParts[1].strip(), msgKey)
+                        
+    def ServerUpdate(self, sender, event, obj):
+        if str(event) in ('insert', 'update'):
+            self.UpdatedReport = obj
+            
+    def _bindFunction(self, function):
+        def inner(*args, **kwargs):
+            return function(*args, **kwargs)
+        return inner
+     
+
+            
+            
+
+...
+
+  ComplianceCheckProgressDialogLauncher
+import acm, ael
+import FAssetManagementUtils
+from collections import defaultdict
+from ComplianceCheckProgressDialog import ComplianceCheckProgressDialog
+from ComplianceCheckServer import tradeQuery
+from FParameterSettings import ParameterSettingsCreator
+
+logger  = FAssetManagementUtils.logger
+
+class Singleton(type):
+
+    _instances = {}
+
+    def __call__(cls, *args, **kwargs):
+        if cls not in cls._instances:
+            cls._instances[cls] = type.__call__(cls, *args, **kwargs)
+        return cls._instances[cls]
+
+class ComplianceViewerDialogPopupRouter(object):
+    
+    __metaclass__ = Singleton
+    PopupsAllowed = defaultdict(bool)
+    
+    def AllowPopup(self, shell):
+        self.PopupsAllowed[shell.Handle()] = True
+
+    def BlockPopup(self, shell):
+        self.PopupsAllowed[shell.Handle()] = False       
+
+    def IsAllowed(self, shell):
+        return self.PopupsAllowed[shell.Handle()]
+
+def OnCreate(eii):
+    try:
+        settings = ParameterSettingsCreator.FromRootParameter('ComplianceCheckSettings')
+        if settings.UsePopUp():
+            app = eii.ExtensionObject()
+            ComplianceViewerDialogCallback(app)
+    except Exception as e:
+        logger.debug('Error in InsDefEventHandler.OnCreate: {0}'.format(e))
+
+
+class ComplianceViewerDialogCallback(object):
+    
+    def __init__(self, app):
+        self.app = app
+        self._acmDependencies = set()
+        self._aelDependencies = set()
+        self.tradeCallback = self._bindFunction(self.trade_cb)
+        self._SetDependencies()
+
+        
+    def ServerUpdate(self, sender, aspectSymbol, parameter):
+        try:
+            self.ServerUpdateImpl(sender, aspectSymbol, parameter)
+        except StandardError as e:
+            logger.debug(str(e))
+            
+    def ServerUpdateImpl(self, sender, aspectSymbol, parameter):
+        self._ResetDependencies()
+        if str(aspectSymbol) == 'OnDestroy':
+            return
+        if type(sender) == type(self.app):
+            self.app = sender
+        self._SetDependencies()
+  
+    def IsApplicable(self, sender):
+        return sender.IsKindOf(acm.FTrade)
+  
+    def Trade(self):
+        if hasattr(self.Owner(), 'OriginalTrade'):
+            return self.Owner().OriginalTrade()
+        if hasattr(self.Owner(), 'CustomLayoutApplication'):
+            if hasattr(self.Owner().CustomLayoutApplication(), 'DealPackage'):
+                return self.Owner().CustomLayoutApplication().DealPackage().LeadTrade()
+
+    def Instrument(self):
+        if hasattr(self.Owner(), 'OriginalInstrument'):
+            return self.Owner().OriginalInstrument()
+        if hasattr(self.Owner(), 'CustomLayoutApplication'):
+            if hasattr(self.Owner().CustomLayoutApplication(), 'DealPackage'):
+                return self.Owner().CustomLayoutApplication().DealPackage()
+
+    def Owner(self):
+        return self.app
+        
+    def _SetDependencies(self):
+        trade = self.Trade()
+        owner = self.Owner()
+        if trade:
+            aelEntity = ael.Trade[self.Trade().Oid()]
+            if aelEntity:
+                aelEntity.subscribe(self.tradeCallback)
+                self._aelDependencies.add(aelEntity)
+        for acmEntity in (owner, trade):
+            if acmEntity:
+                acmEntity.AddDependent(self)
+                self._acmDependencies.add(acmEntity)
+        
+    def _ResetDependencies(self):
+        while self._aelDependencies: 
+            try:
+                self._aelDependencies.pop().unsubscribe(self.tradeCallback)
+            except Exception as e:
+                pass
+        while self._acmDependencies: 
+            try:
+                self._acmDependencies.pop().RemoveDependent(self)
+            except Exception as e:
+                pass
+                
+    def trade_cb(self, table, entity, _arg, event):
+        if str(event) in ("insert", "update"):
+            shell = self.Owner().Shell()
+            if ComplianceViewerDialogPopupRouter().IsAllowed(shell):
+                ComplianceViewerDialogPopupRouter().BlockPopup(shell)
+                trade = acm.Ael.AelToFObject(entity) 
+                if tradeQuery.IsSatisfiedBy(trade):
+                    dial =  ComplianceCheckProgressDialog(trade)
+                    acm.UXDialogs.ShowCustomDialog(shell, dial.CreateLayout(), dial)
+                        
+    def _bindFunction(self, function):
+        def inner(*args, **kwargs):
+            return function(*args, **kwargs)
+        return inner
+
+...
+
+  ComplianceCheckReport
+
+
+import os
+import acm
+import FSheetUtils
+import FFileUtils
+from FParameterSettings import ParameterSettingsCreator
+
+SETTINGS = ParameterSettingsCreator.FromRootParameter('ComplianceCheckReport')
+
+
+class ComplianceCheckReport(object):
+
+    def __init__(self, output):
+        self._alerts = None
+        self._reportName = ' '.join((SETTINGS.ReportName(), acm.Time.TimeNow()))
+        self._report = acm.Report.CreateReport(self._reportName, output)
+        self._reportGrid = self.CreateDefaultReportGrid()
+        
+    def GridBuilder(self):
+        return self._reportGrid.GridBuilder()
+        
+    def Report(self):
+        return self._report
+   
+    def Generate(self, alerts):
+        self._SetColumnCreators()
+        builder = self.GridBuilder()
+        for alert, value in alerts:
+            if hasattr(value, 'IsKindOf') and value.IsKindOf('FRuleResult'):
+                value = value.RuleValue().Value()
+            try:
+                alert.CheckedValue(float(value))
+            except:
+                print('Cannot convert %s to float' % value)
+                continue
+            tree_proxy = builder.InsertItem(alert)
+        self._SaveReport()
+        
+    def _SaveReport(self):       
+        self._reportGrid.Generate()
+            
+    def CreateDefaultReportGrid(self, includeInsAndLeg=True, includeRows=True):
+        gridConfig = acm.Report.CreateGridConfiguration(includeInsAndLeg, includeRows)
+        return self.Report().OpenSheet(acm.FAlertSheet(), gridConfig, None)
+        
+    def _SetColumnCreators(self):
+        columnIds = FSheetUtils.ColumnIds('_preDealColumnsAlertSheet', "FAlertSheet")
+        columnCreators = FSheetUtils.ColumnCreators(columnIds)
+        i = 0
+        while i < columnCreators.Size():
+            creator = columnCreators.At(i)
+            self.GridBuilder().ColumnCreators().Add(creator)
+            i = i + 1
+
+
+class XmlReportOutputBase(object):
+    
+    SEPARATOR = ' '
+    
+    def __init__(self, name, writer = None):
+        self.name = name
+        self.writer = writer
+        
+    def Writer(self):
+        if self.writer is None:
+            self.writer = self.CreateXmlReportOutput()
+            self.writer.IncludeColorInformation(True)
+            self.writer.IncludeFormattedData(True)
+            self.writer.IncludeRawData(False)
+            self.writer.IncludeFullData(False)
+        return self.writer
+
+    def CreateXmlReportOutput(self):
+        raise NotImplementedError
+        
+    def StoreAndGenerateKey(self):
+        return self.name
+
+class XmlReportOutputFile(XmlReportOutputBase):
+
+    FILE_TYPE = '.xml'
+        
+    def CreateDirectory(self):
+        return FFileUtils.createDirectory(
+                r'{0}'.format(SETTINGS.ReportDir()), 
+                SETTINGS.SubDir(), 
+                dirNameSeparator=self.SEPARATOR)
+        
+    def FilePath(self):
+        return FFileUtils.getFilePath(
+                self.CreateDirectory(), 
+                self.name, 
+                self.FILE_TYPE,  
+                dateBeginning=True,
+                overwriteIfFileExists=SETTINGS.Overwrite(),
+                fileNameSeparator=self.SEPARATOR)
+        
+    def CreateXmlReportOutput(self):
+        output = acm.FXmlReportOutputFile(self.FilePath())
+        output.EnableWhitespace(True)
+        return output
+        
+    def StoreAndGenerateKey(self):
+        return os.path.relpath(str(self.Writer().Name()), r'{0}'.format(SETTINGS.ReportDir()))
+
+class XmlReportOutput(XmlReportOutputBase):
+
+    PREFIX = 'ComplianceCheckReport'
+    
+    def CreateXmlReportOutput(self):
+        output = acm.FXmlReportOutput("") 
+        output.EnableWhitespace(False)
+        return output
+        
+    @staticmethod
+    def CreateFile(archiveName):
+        archive = acm.FLimitCheckReport()
+        archive.Name(archiveName)
+        archive.AutoUser(False)
+        return archive
+
+    def GetNextArchiveName(self, suggested_name):
+        i=1
+        newFileName = suggested_name
+        while self.ArchiveOrNone(newFileName) is not None:
+            if i == 1:
+                numbering = ''
+            else:
+                numbering = '#' + str(i)
+            newFileName = suggested_name + numbering
+            i = i + 1
+        return newFileName
+            
+    def ComplianceCheckReportTextObject(self):
+        suggested_name = '_'.join((self.PREFIX, self.name))
+        if SETTINGS.Overwrite():
+            existingFile = self.ArchiveOrNone(suggested_name)
+            if not existingFile:
+                file = self.CreateFile(suggested_name)
+            else:       
+                file = existingFile.StorageImage()
+        else:
+            fileName = self.GetNextArchiveName(suggested_name)
+            file = self.CreateFile(fileName)
+        return file
+        
+    def StoreAndGenerateKey(self):
+        archive = self.ComplianceCheckReportTextObject()
+        archive.XmlData(self.Writer().AsString())
+        archive.Commit()
+        return str(archive.Oid())
+
+    @staticmethod
+    def ArchiveOrNone(filename):
+        try:
+            return acm.FLimitCheckReport.Select('name="{0}"'.format(filename))[0]
+        except IndexError:
+            return 
+
+def CreateComplianceReportFile(alerts, name):
+        if SETTINGS.Storage() == 'ADS':
+            output = XmlReportOutput(name)
+        elif SETTINGS.Storage()  == 'File':
+            output = XmlReportOutputFile(name)
+        else:
+            logger.error('Unknown storage place %s'%STORAGE)
+            return
+        ComplianceCheckReport(output.Writer()).Generate(alerts)
+        return output.StoreAndGenerateKey()
+
+...
+
+  ComplianceCheckReportApplication
+
+import acm
+import FUxCore
+import FLogger
+import os
+import unicodedata
+import ComplianceCheckMenuItems
+import inspect
+from string import Template
+
+
+logger = FLogger.FLogger('Compliance Check Report App')
+
+
+def CreateApplicationInstance():
+    return ComplianceCheckReportApplication()
+
+class ComplianceCheckReportApplication(FUxCore.LayoutApplication):
+    def __init__(self):
+        FUxCore.LayoutApplication.__init__(self)
+        self._panes = dict()
+        self._report = None
+
+    def HandleObject(self, contents):
+        report = None
+        if type(contents) is acm._pyClass("FLimitCheckReport"):
+            report = contents
+        elif type(contents) is acm._pyClass("FTrade"):
+            reports = acm.FLimitCheckReport.Select('name like *_{0}'.format(contents.OriginalOrSelf().StringKey())).SortByProperty('UpdateTime')
+            if reports.Size() > 0:
+                report = reports.Last()
+        self.Report(report)
+        self._UpdateControls()
+        self.SetCaption()
+        
+    def HandleDestroy( self ):
+        self.Report(None)
+        
+    def SetCaption(self):
+        report = self.Report()
+        if report:
+            caption = self.Report().StringKey()
+            caption += ' | Version: {0}'.format(self.Report().VersionId())
+            caption += ' | Timestamp: {0}'.format(acm.Time.DateTimeFromTime(report.UpdateTime()))
+            self.SetContentCaption(caption)
+        else:
+            self.SetContentCaption('')
+
+    def HandleCreate(self, createContext):
+        for paneCls in (ComplianceCheckReportPane,):
+            try:
+                pane = paneCls(self)
+                paneKey = self.PaneKey(pane)
+                layout = createContext.AddPane(pane.CreateLayout(), paneKey)
+                pane.HandleCreate(layout)
+            except Exception as e:
+                logger.ELOG(str(e))
+            else:
+                self._panes[paneKey] = pane
+        self._UpdateControls()
+        self.SetCaption()
+
+    def Report(self, *args):
+        if args:
+            if self._report:
+                self._report.RemoveDependent(self)
+            self._report = args[0]
+            if self._report:
+                self._report.AddDependent(self)
+        else:
+            return self._report
+
+    def _UpdateControls(self):
+        for pane in self._panes.values():
+            pane.UpdateControls()
+        
+    def DataForPane(self, pane):
+        report = self._report
+        if report:
+            return report.FromArchive(self.PaneKey(pane))
+        
+    def GetPane(self, key):
+        return self._panes.get(key, None)
+        
+    def HandleSetContents(self, contents ):
+        self.HandleObject(contents)
+        
+    def ServerUpdate(self, sender, symbol, _params):
+        if str(symbol) == 'delete':
+            self.ShowErrorMessage('Report has been deleted.')
+            self.HandleObject(None)
+        elif sender == self.Report():
+           self._UpdateControls() 
+        
+    def PaneKey(self, pane):
+        if not inspect.isclass(pane):
+            pane = pane.__class__ 
+        return pane.__name__
+        
+    def OnFileOpen(self):
+        selectedObject = acm.UX().Dialogs().SelectObject(
+                self.Shell(), 'Select Report', 'Reports',
+                acm.FLimitCheckReport.Select('').SortByProperty('Name'), self.Report())
+        if selectedObject:
+            self.HandleObject(selectedObject)
+            
+    def OnFileDelete(self):
+        report = self.Report()
+        text = 'Are you sure you want to delete report %s?' % report.Name()
+        result = acm.UX().Dialogs().MessageBoxOKCancel(self.Shell(), 'Question', text)
+        if result == 'Button1':
+            try:
+                self.Report(None)
+                report.Delete()
+            except StandardError as e:
+                self.Report(report)
+                self.ShowErrorMessage('Error deleting report: ' + str(e))
+            else:
+                self.HandleObject(None)
+
+    def HandleRegisterCommands(self, builder):
+    
+        def CreateMenuItemCallback(callback, *args):
+            def CreateMenuItem():
+                return callback(self.Frame(), *args)
+            return CreateMenuItem
+            
+        commands = (
+            # Item name, Name, Accelerator, Menu creation callback
+            ('openTrade', 'Data', 'Trade', 'Open trade connected to report', '', '', CreateMenuItemCallback(ComplianceCheckMenuItems.CreateOpenTradeMenuItem), False),
+            )
+        fileCommands = acm.FSet()
+        fileCommands.AddAll(['FileOpen', 'FileDelete'])
+        builder.RegisterCommands(FUxCore.ConvertCommands(commands), fileCommands)
+
+
+    def ShowErrorMessage(self, message):
+        acm.Log(message)
+        acm.UX().Dialogs().MessageBox(self.Shell(), 'Error', message,
+                'OK', None, None, 'Button1', 'Button1')
+
+    def HandleStandardFileCommandInvoke(self,commandName):
+        if commandName == 'FileOpen':
+            self.OnFileOpen()
+        elif commandName == 'FileDelete':
+            self.OnFileDelete()
+
+    def HandleStandardFileCommandEnabled(self,commandName):
+        if commandName == 'FileOpen':
+            return True
+        elif commandName == 'FileDelete':
+            return bool(self._report)
+
+class ComplianceCheckReportPane(FUxCore.LayoutPanel):
+    
+    def __init__(self, parent):
+        self._sheetCtrl = None
+        self.sheet = None
+        self._parent = parent
+        
+    def Report(self):
+        return self._parent.Report()
+        
+    def HandleCreate(self, layout):
+        self._sheetCtrl = layout.GetControl('sheet') 
+        self.sheet = self._sheetCtrl.GetCustomControl()
+        
+    def CreateLayout(self):
+        b = acm.FUxLayoutBuilder()
+        b.BeginVertBox('None')
+        b.  AddCustom('sheet','sheet.FThinSheet',1000,200)
+        b.EndBox()
+        return b
+
+    def UpdateControls(self):
+        contents = acm.FDictionary()
+        if self.Report():
+            contents.AtPut('service', self.CreateDefinition( self.Report() ))
+            self.sheet.SheetContents(contents)
+        else:
+            self.sheet.InsertObject(None, 'IOAP_REPLACE')
+        self.sheet.RowHeaderCaption('Compliance Check')
+        self.sheet.SetHeaderColumnWidth(0)
+
+    @staticmethod
+    def CreateDefinition(report):
+        definition = acm.FDictionary()
+        definition.AtPut(acm.FSymbol('XmlReport'), report)
+        return definition
+
+def OnDoubleClick(eii):
+    try:
+        sheet = eii.Parameter( "sheet" )
+        ruleId = sheet.Selection().SelectedCell().Value()
+        try:
+            rule = acm.FComplianceRule[ruleId]
+        except:
+            rule = None
+        if rule:
+            acm.StartApplication("Compliance Rule Editor", rule)
+    except AttributeError:
+        pass
+
+...
+
+  ComplianceCheckReportPDFCreator
+import acm
+import xml.etree.ElementTree as ElementTree
+import datetime
+import tempfile
+import subprocess
+import os 
+from FParameterSettings import ParameterSettingsCreator
+from contextlib import contextmanager
+
+def removeXMLdeclaration(xmlString):
+    index = xmlString.find("?>")
+    return xmlString[index + 2:] if index >-1 else xmlString
+
+def getElementTree(xmlData):
+    deviationSummary = removeXMLdeclaration(str(xmlData))
+    return ElementTree.fromstring(deviationSummary)
+
+def getXSLFile(xmlStr):
+    XSL_TEMPLATE =  "ComplianceCheckPDF"
+    extension = acm.GetDefaultContext().GetExtension("FXSLTemplate", "FObject", XSL_TEMPLATE)
+    source = extension.Value()
+    declarationIndex = source.find('\n') + 1
+    source = source[ declarationIndex: ]
+    source = source.replace( "...","" )
+    transformer = acm.CreateWithParameter('FXSLTTransform', source)
+    return transformer.Transform(xmlStr)
+    
+@contextmanager
+def temporaryFile(content):
+    tmp = tempfile.NamedTemporaryFile(delete=False)
+    try:
+        tmp.write(content)
+        tmp.close()
+        yield tmp
+    finally:
+       os.remove(tmp.name)
+    
+def CreatePDFFile(report, path):
+    settings = ParameterSettingsCreator.FromRootParameter('ComplianceCheckSettings')
+    checkReport = report.XmlData()
+    xsl = getXSLFile(str(checkReport))
+    with temporaryFile(xsl) as f:
+        CREATE_NO_WINDOW = 0x08000000
+        command = b'"{0}" "{1}" -pdf "{2}"'.format(settings.FopLibraryPath(), f.name, path)
+        subprocess.call(command, shell=False, creationflags=CREATE_NO_WINDOW)
+
+...
+
+  ComplianceCheckServer
+from collections import namedtuple
+import acm
+import FRunScriptGUI
+import ComplianceCheckServerBase
+from FLogger import FLogger
+
+logger = FLogger(__name__)
+tradeQuery = acm.Filter.SimpleOrQuery('FTrade',['Status'],['EQUAL'],['Reserved'])
+
+class CompliancePreDealRunscript(FRunScriptGUI.AelVariablesHandler):
+
+    GUI_PARAMETERS = {
+        'runButtonLabel':   '&&Run',
+        'hideExtraControls': False,
+        'windowCaption' : 'FCompliancePreDeal'
+        }
+    LOG_LEVELS = {
+        '1. Normal': 1,
+        '2. Warnings/Errors': 3,
+        '3. Debug': 2
+        }
+
+    def __init__(self):
+        FRunScriptGUI.AelVariablesHandler.__init__(self, self._GetVariableDefinitions())
+
+    @staticmethod
+    def GetParameters(params):
+        paramClass = namedtuple('RuleParameters', list(params.keys()))
+        return paramClass(**params)
+
+    @classmethod
+    def GetLoggingLevel(cls, logLevel):
+        return cls.LOG_LEVELS.get(logLevel, 1)
+
+    def _GetVariableDefinitions(self):
+        logLevels = sorted(self.LOG_LEVELS)
+
+        tt_RuleQueries = 'Select the insert item query containing rules to check.'
+        tt_PreLoadRuleQueries = 'Select the insert item query containing rules to preload.'
+        tt_LogLevel = 'Select the verbosity of logging output by the compliance engine task.'
+        
+        return (('RuleQuery', 'Rule Query_General', 'FStoredASQLQuery', self._GetRuleInsertItemQueries(), None, True, False, tt_RuleQueries, None, True),
+                ('PreloadRuleQuery', 'Preload Rule Query_General', 'FStoredASQLQuery', self._GetRuleInsertItemQueries(), None, True, False, tt_PreLoadRuleQueries, None, True),
+                ('LogLevel', 'Logging Level_Logging', 'string', logLevels, logLevels[0], 2, 0, tt_LogLevel),)
+
+    @staticmethod
+    def _GetRuleInsertItemQueries():
+        q = acm.CreateFASQLQuery(acm.FStoredASQLQuery, 'AND')
+        q.AddOpNode('AND').AddAttrNode('Name', 'RE_LIKE_NOCASE', None)
+        q.AddOpNode('AND').AddAttrNode('SubType', 'RE_LIKE_NOCASE', 'FAppliedRule')
+        return [qf.Name() for qf in q.Select()]
+
+ael_variables = CompliancePreDealRunscript()
+ael_gui_parameters = ael_variables.GUI_PARAMETERS
+
+engine = None
+
+def start_ex(params):
+    params = CompliancePreDealRunscript.GetParameters(params)
+    eventsToWatch = ['insert', 'update']
+    secondsForPerformanceWarning = 2
+
+    logger.Reinitialize(CompliancePreDealRunscript.GetLoggingLevel(params.LogLevel))
+
+    ruleFolder = params.RuleQuery
+    ruleQuery = ruleFolder.Query() if ruleFolder else None
+    preloadFolder = params.PreloadRuleQuery
+    preloadQuery = preloadFolder.Query() if preloadFolder else ruleQuery
+
+    global engine
+    engine = ComplianceCheckServerBase.RuleChecker(tradeQuery,
+                                           ruleQuery,
+                                           preloadQuery,
+                                           secondsForPerformanceWarning,
+                                           eventsToWatch, logger)
+
+    engine.start()
+
+def stop():
+    engine.stop()
+
+def work():
+    engine.work()
+
+def status():
+    engine.status()
+
+...
+
+  ComplianceCheckServerBase
+"""--------------------------------------------------------------------------
+MODULE
+    (c) Copyright 2017 SunGard FRONT ARENA. All rights reserved.
+-----------------------------------------------------------------------------"""
+from itertools import chain
+import time
+import xml.etree.ElementTree as ET
+
+import ael
+import acm
+
+import ComplianceCheckReport
+import FComplianceRulesUtils
+import FAlertGenerator
+import LimitsUtils
+
+import ComplianceCheckServerSimulatedBase
+
+
+FILTERS = dict()
+lastTime = 0
+
+
+def Pop(orderedSet):
+    if orderedSet:
+        firstKey = orderedSet.AsList()[0]
+        orderedSet.Remove(firstKey)
+        
+        return firstKey
+
+
+class RuleChecker(ComplianceCheckServerSimulatedBase.RuleChecker):
+    def __init__(self, tradeQuery, appliedRuleQuery, preloadQuery, secondsForPerformanceWarning, eventsToWatch, logger):
+        self._tradeQuery = tradeQuery
+        self._appliedRuleQuery = appliedRuleQuery
+        self._eventsToWatch = eventsToWatch
+        self._preloadQuery = preloadQuery
+        self._warnAfter = secondsForPerformanceWarning
+        self._newTrades = acm.FOrderedSet()
+        self._tradeSubscription = None
+        self.logger = logger
+        self.map = dict()
+        self.preloadComplete = False
+        self.commitFailures = set()
+    
+    def GenerateReportCaption(self, trade, isBreached):
+        ids = list()
+        includeAttrs = ('Trade', 'Instrument', 'Trader', 'Counterparty', 'Portfolio', 'Acquirer')
+        
+        for attr in includeAttrs:
+            val = getattr(trade, attr)()
+            ids.append(attr + ': ' + (val.StringKey() if val else ''))
+        
+        ids.append('Compliance check: ' + ('Failed' if isBreached else 'Passed'))
+        
+        return ' | '.join(ids)
+
+    def CreateReport(self, alerts, trade, isBreached):
+        output = ComplianceCheckReport.XmlReportOutput(trade.Status() + '_' + trade.StringKey())
+        reportName = self.GenerateReportCaption(trade, isBreached)
+        report = ComplianceCheckReport.ComplianceCheckReport(output.Writer())
+        report._reportName = reportName
+        report.Generate(alerts)
+        archive = output.ComplianceCheckReportTextObject()
+        archive.XmlData(output.Writer().AsString())
+        archive.ToArchive('Trade', trade) 
+        archive.ToArchive('IsBreached', isBreached)
+        archive.Commit()
+
+    def _ChangeTradeStatus(self, trade, limit_level):
+        trades = set()
+        trades.add(trade)
+        trade_status = trade.Status()
+        
+        if trade.IsFxSwap():
+            if trade.IsFxSwapFarLeg():
+                trades.add(trade.FxSwapNearLeg())
+            elif trade.IsFxSwapNearLeg():
+                trades.add(trade.FxSwapFarLeg())
+        
+        if trade.DealPackage() is not None:
+            deal_package = trade.DealPackage()
+            
+            if parent_deal_package := deal_package.ParentDealPackage():
+                child_deal_packages = parent_deal_package.ChildDealPackages()
+            else:
+                child_deal_packages = [deal_package]
+            
+            for child_deal_package in child_deal_packages:
+                for trade_link in child_deal_package.TradeLinks():
+                    trades.add(trade_link.Trade())
+        internal_group_trades = set()
+        group_trades = dict()
+        for prior_trade in trades:
+            prior_trade_oid = prior_trade.Oid()
+            group_trades[prior_trade_oid] = set()
+            if prior_trade.GroupTrdnbr() is not None:
+                group_trades[prior_trade_oid].update(acm.FTrade.Select('groupTrdnbr = %i' % prior_trade.GroupTrdnbr().Oid()))
+        for prior_trade in trades.copy():
+            if prior_trade.GroupTrdnbr() is not None:
+                if prior_trade.TradeProcessesToString().find('Sales Cover Parent') == -1:
+                    for group_trade in group_trades[prior_trade.Oid()]:
+                        trades.add(group_trade)
+                else:
+                    for group_trade in group_trades[prior_trade.Oid()]:
+                        if group_trade.TradeProcessesToString().find('Sales Cover Child') > -1:
+                            mirror_trade = group_trade.MirrorTrade()
+                            if mirror_trade:
+                                internal_group_trades.add(mirror_trade)
+                                trades.add(mirror_trade)
+                            internal_group_trades.add(group_trade)
+                            trades.add(group_trade)
+
+        acm.BeginTransaction()
+        try:
+            for trade in trades:
+                deco = acm.FBusinessLogicDecorator.WrapObject(trade)
+                if trade_status == 'Internal':
+                    continue
+                if trade_status == 'Reserved':
+                    if limit_level in ['Violation']:
+                        deco.Status('Pending FO Verification')
+                    else:
+                        if trade in internal_group_trades:
+                            deco.Status('Internal')
+                        else:
+                            deco.Status('FO Confirmed')
+                self.logger.info(f'Trade {trade.Oid()} moved from {trade_status} to {trade.Status()}')
+                deco.Commit()
+            acm.CommitTransaction()
+        except Exception as e:
+            acm.AbortTransaction()
+            self.logger.error(f'Exception in _ChangeTradeStatus: {e}')
+            
+            for trade in trades:
+                key = (trade.Oid(), trade.Status(), trade.UpdateTime())
+                self.commitFailures.add(key)
+            
+    def _HandleComplete(self, alerts, trade, isBreached):
+        self.logger.debug('Creating Report')
+        self.CreateReport(alerts, trade, isBreached)
+        self.logger.debug('Changing Trade Status')
+        self._ChangeTradeStatus(trade, self._MaxBreachedLevel(alerts))
+        self.logger.info(f'Trade {trade.Oid()}: Rule check completed')
+
+    def _RuleResults(self, appliedRules, trade):
+        if len(appliedRules) == 0:
+            self._HandleComplete([], trade, False)
+            return
+        
+        async_task = acm.AsyncTask.WhenAll([ar.Check() for ar in appliedRules])
+        self.map[async_task] = trade
+        async_task.ContinueWith(self._HandleContinue)
+
+    def _HandleContinue(self, async_task):
+        trade = self.map[async_task]
+        del self.map[async_task]
+        rule_results = dict()
+        flat_list = list()
+        
+        for a_task in async_task.Result():
+            results = a_task.Result()
+            
+            for result in results:
+                applied_rule = result.AppliedRule()
+                
+                if applied_rule not in rule_results.keys():
+                    rule_results[applied_rule] = acm.FArray()
+                
+                rule_results[applied_rule].Add(result)
+                flat_list.append(result)
+        
+        isBreached = self.ComplianceCheckIsNonCompliant(flat_list)
+        alerts = self._Alerts(rule_results, trade)
+        self._HandleComplete(alerts, trade, isBreached)
+
+    def _Alerts(self, rule_results, trade = None):
+        PRIO_DICT = {'Violation': 0, 'Warning': 1, 'Report': 2}
+        allAlerts = list()
+        trade_oid = trade.Oid() if trade else 0
+        
+        for applied_rule in rule_results:
+            results = rule_results[applied_rule]
+            self.logger.debug('Generating Alerts for "%s" for %s' % (applied_rule.ComplianceRule().Name(), applied_rule.Target().Name()))
+            alertGenerator = FAlertGenerator.Create(applied_rule)
+            alertsAndValues = alertGenerator.AlertsAndValuesFromResultsPreDeal(results)
+            alerts = [(alert, value) for alert, value in alertsAndValues if alert.State() == 'Active']
+            self.logger.debug('Found %i active alerts for "%s" for %s' % (len(alerts), applied_rule.ComplianceRule().Name(), applied_rule.Target().Name()))
+            
+            if alerts:
+                in_place = alerts.copy()
+                alerts = list()
+                for alert, value in in_place:
+                    if alert.SubjectType() != 'Trade':
+                        alerts.append((alert, value))
+                        continue
+                    if alert.SubjectId() == trade_oid:
+                        alerts.append((alert, value))
+                try:
+                    if alert.SubjectType() != 'Trade':
+                        if alert.AppliedRule().ComplianceRule().Definition().ForEach() != '':
+                            grouper_label = alert.AppliedRule().ComplianceRule().Definition().ForEach()
+                            attribute_grouper = acm.FAttributeGrouper(grouper_label)
+                            if attribute_grouper is not None:
+                                method = acm.FMethodChain(acm.FSymbol(attribute_grouper.Method()))
+                                trade_grouper = method.Call([trade])
+                                filter_alerts = list(filter(lambda a: a[0].Subject() == trade_grouper, alerts))
+                                allAlerts.extend(sorted(filter_alerts, key = lambda a: PRIO_DICT.get(a[0].Threshold().Type().Name(), 9)))
+                            else:
+                                allAlerts.append(sorted(alerts, key = lambda a: PRIO_DICT.get(a[0].Threshold().Type().Name(), 9))[0])
+                        else:
+                            allAlerts.append(sorted(alerts, key = lambda a: PRIO_DICT.get(a[0].Threshold().Type().Name(), 9))[0])
+                    else:
+                        allAlerts.extend(alerts)
+                except IndexError:
+                    self.logger.debug('Trying to sort empty alert list')
+                except Exception as e:
+                    self.logger.debug(e)
+
+        return allAlerts
+
+    def _AnyErrorsInRuleChecks(self, rule_results):
+        for rule_result in rule_results:
+            if rule_result.State() == 'Error':
+                return True
+        
+        return False
+
+    def _AnyNonCompliantThresholdsBreached(self, rule_results):
+        nonCompliantThresholdTypes = ['Violation']
+        
+        for rule_result in rule_results:
+            if rule_result.State() == 'Compliant':
+                if rule_result.Threshold().Type().Name() in nonCompliantThresholdTypes:
+                    return True
+        
+        return False
+    
+    def ComplianceCheckIsNonCompliant(self, rule_results):
+        return self._AnyErrorsInRuleChecks(rule_results) or self._AnyNonCompliantThresholdsBreached(rule_results)
+
+    def _MaxBreachedLevel(self, alerts):
+        max_name = 'Reporting'
+        max_level = 0
+        
+        for alert, _ in alerts:
+            threshold_level_name = alert.Threshold().Type().Name()
+            threshold_level = LimitsUtils.ThresholdComparator(threshold_level_name)
+            
+            if threshold_level > max_level:
+                max_level = threshold_level
+                max_name = threshold_level_name
+        
+        return max_name
+
+    def CheckRules(self, trade):
+        appliedRules = self._FindRelevantAppliedRules(trade)
+        self._RuleResults(set(appliedRules), trade)
+
+    def start(self):
+        self.logger.info('Initiating calculations...')
+        try:
+            self.InitializeRules()
+        except Exception as e:
+            self.logger.info('Calculation initalization failed! Reason: {0}'.format(str(e)))
+
+    def InitializeRules(self):
+        preloadRules = self._preloadQuery.Select()
+        self.logger.info('Identified {0} rules for preload'.format(preloadRules.Size()))
+        
+        appliedRules = [ar for ar in preloadRules if ar.Target()]
+        self.logger.info(f'appliedRules: {len(appliedRules)}')
+        
+        self.preloadComplete = len(appliedRules) == 0
+        asyncTask = acm.AsyncTask.WhenAll([ar.Check() for ar in appliedRules])
+        asyncTask.ContinueWith(self._HandlePreloadComplete)
+
+    def _HandlePreloadComplete(self, asyncTask):
+        self.logger.info('Preloading finished')
+        
+        tasks = asyncTask.Result()
+        
+        self.logger.info('Initializing ATS rule checking...')
+
+        self._tradeSubscription = self._bindFunction(self.trade_table_cb)
+        ael.Trade.subscribe(self._tradeSubscription, None)
+        
+        self.logger.info('Calculation initialization finished')
+        self.logger.info('Initializing ATS done.')
+        self.preloadComplete = True
+    
+    def GetTradeForProcessing(self):
+        if self._newTrades:
+            trade = Pop(self._newTrades)
+            key = (trade.Oid(), trade.Status(), trade.UpdateTime())
+            
+            if key in self.commitFailures:
+                # The event callback is called again when a commit fails and the modification is undone
+                # so we need to break the loop by not trying prevously failed commits again.
+                # The reason the commit failed can be e.g. that a mandatory field was not set, such as the counterparty.
+                self.logger.warn(f'Trade {trade.Oid()} failed to commit earlier, not trying again')
+                return None
+    
+            if trade.Status() not in ['Reserved']:
+                return None
+            
+            if trade.IsFxSwap():
+                if not bool(self._OtherFxSwapLeg(trade)):
+                    self.logger.debug('Trade {0} is ignored. Awaiting other leg of FX swap.'.format(trade.Oid()))
+                    return None
+                elif trade.IsFxSwapFarLeg():
+                    self._newTrades.Add(trade.FxSwapNearLeg())
+                    return None
+            elif trade.DealPackage() is not None:
+                deal_package = trade.DealPackage()
+                
+                if trade.Oid() != deal_package.LeadTrade().Oid():
+                    self.logger.debug(f'Trade {trade.Oid()} is part of a Deal Package. Awaiting lead trade of package.')
+                    return None
+            elif trade.GroupTrdnbr() is not None:
+                if trade.Oid() != trade.GroupTrdnbr().Oid():
+                    self.logger.debug(f'Trade {trade.Oid()} is part of a Trade Group. Awaiting group lead trade.')
+                    return None
+            
+            return trade
+    
+    def work(self):
+        if not self.preloadComplete:
+            global lastTime
+            elapsed = time.time() - lastTime
+            
+            if elapsed >= 120:
+                self.logger.info('Still preloading..')
+                lastTime = time.time()
+            
+            return
+        
+        try:
+            trade = self.GetTradeForProcessing()
+            
+            if trade:        
+                self.logger.info(f'Trade {trade.Oid()}: Checking rules..') 
+                self.CheckRules(trade.OriginalOrSelf())
+                #If the trade for some reason has been modified, revert changes so we can receive updates again
+                if trade.IsModified():
+                    trade.Undo()
+        except Exception as e:
+            self.logger.ELOG(f'Exception in work: {e}')
+    
+        
+    def stop(self):
+        ael.Trade.unsubscribe(trade_table_cb)
+        self.logger.info('Monitoring task terminated.')
+
+    def status(self):
+        return 'Status: class = {0}'.format(self.__class__)
+
+    def trade_table_cb(self, _object, ael_entity, _arg, event):
+        if event in self._eventsToWatch:
+            trade = acm.FTrade[ael_entity.trdnbr]
+            
+            if self._tradeQuery.IsSatisfiedBy(trade):
+                self._newTrades.Add(trade)
+
+
+
+...
+
+  ComplianceCheckServerSimulated
+import acm
+import ComplianceCheckServerSimulatedBase
+
+PRE_DEAL_FILTER_NAME = "Transaction-PreDeal"
+secondsForPerformanceWarning = 2
+
+limitReportQuery = acm.Filter.SimpleOrQuery("FLimitCheckReport",['Name'],['RE_LIKE_NOCASE'],['ComplianceCheckReport_Simulated_*'])
+eventsToWatch = ['insert'] 
+
+ruleQuery = acm.FStoredASQLQuery.Select01("subType= '{0}' and name = '{1}'".format("FAppliedRule", PRE_DEAL_FILTER_NAME), None).Query()
+
+checker = ComplianceCheckServerSimulatedBase.RuleChecker(limitReportQuery,
+                                           ruleQuery,
+                                           secondsForPerformanceWarning,
+                                           eventsToWatch)
+                                       
+"""
+    ATS interface.
+"""
+def start():
+    checker.start()
+
+def stop():
+    checker.stop()
+
+def work():
+    checker.work()
+
+def status():
+    checker.status()
+
+...
+
+  ComplianceCheckServerSimulatedBase
+"""--------------------------------------------------------------------------
+MODULE
+    (c) Copyright 2017 SunGard FRONT ARENA. All rights reserved.
+-----------------------------------------------------------------------------"""
+from itertools import chain
+import time
+import types
+import xml.etree.ElementTree as ET
+
+import ael
+import acm
+import FAssetManagementUtils
+
+import ComplianceCheckReport
+import FComplianceRulesUtils
+import FAlertGenerator
+import LimitsUtils
+
+logger  = FAssetManagementUtils.logger
+def ReinitializeLogger(logMode):
+    logger.Reinitialize(level=logMode,
+                        keep=None,
+                        logOnce=None,
+                        logToConsole=False,
+                        logToPrime=True,
+                        logToFileAtSpecifiedPath=None,
+                        filters=None,
+                        lock=None)
+
+newLimits = set()
+FILTERS = dict()
+
+class RuleChecker(object):
+    def __init__(self, reportQuery, appliedRuleQuery, secondsForPerformanceWarning, eventsToWatch):
+        self._reportQuery = reportQuery
+        self._appliedRuleQuery = appliedRuleQuery
+        self._warnAfter = secondsForPerformanceWarning
+        self._eventsToWatch = eventsToWatch
+        self._newReports = set()
+        self._reportSubscription = None
+        self.map = dict()
+
+    def GenerateReportCaption(self, trade, isBreached):
+        ids = list()
+        includeAttrs = ('Trade', 'Instrument', 'Trader', 'Counterparty', 'Portfolio', 'Acquirer')
+        for attr in includeAttrs:
+            val = getattr(trade, attr)()
+            ids.append(attr + ': ' + (val.StringKey() if val else ''))
+        ids.append('Compliance check: ' + ('Failed' if isBreached else 'Passed'))
+        return ' | '.join(ids)
+
+    def CreateReport(self, alerts, trade, isBreached):
+        output = ComplianceCheckReport.XmlReportOutput(trade.Status() + '_' + trade.StringKey())
+        reportName = self.GenerateReportCaption(trade, isBreached)
+        report = ComplianceCheckReport.ComplianceCheckReport(output.Writer())
+        report._reportName = reportName
+        report.Generate(alerts)
+        archive = output.ComplianceCheckReportTextObject()
+        archive.XmlData(output.Writer().AsString())
+        archive.ToArchive('Trade', trade) 
+        archive.Commit()
+
+    ''' If there is a fitler query we will check that we are applicable. python methods not supported.. '''
+    @staticmethod
+    def _CompositeQuery(queryClass, queries, operator='AND'):
+        if queries:
+            compQuery = queries[0]
+            for query in queries[1:]:
+                if operator == 'AND':
+                    compQuery = acm.Filter.CompositeAndQuery(queryClass, compQuery, query)
+                elif operator == 'OR':
+                    compQuery = acm.Filter.CompositeOrQuery(queryClass, compQuery, query)
+                else:
+                    raise ValueError('Unknown operator: {0}. Must be AND or OR'.format(operator))
+            return compQuery
+
+    def GetQueryFromRule(self, appliedRule):
+        try:
+            definition = appliedRule.ComplianceRule().Definition()
+            if hasattr(definition, "FilterQuery"):
+                if definition.FilterQuery() and (not definition.PythonFilterMethodName()):
+                    return self._CompositeQuery(
+                        acm.FTrade, 
+                        [f.Query() for f in definition.FilterQuery()], 
+                        operator=definition.CompoundQueryLogicalOperator())
+        except Exception as e:
+            pass
+
+    def RuleApplicable(self, applied_rule, trade):
+        if applied_rule.Inactive() or (not self._appliedRuleQuery.IsSatisfiedBy(applied_rule)):
+            return False
+        calculationQuery = self.GetQueryFromRule(applied_rule)
+        if calculationQuery:
+            return calculationQuery.IsSatisfiedBy(trade)
+        compliance_rule = applied_rule.ComplianceRule()
+        if compliance_rule.Name() not in FILTERS:
+            FILTERS[compliance_rule.Name()] = dict()
+            FILTERS[compliance_rule.Name()]['interface'] = FComplianceRulesUtils.GetInterface(compliance_rule)()
+
+        if FILTERS[compliance_rule.Name()]['interface'].IsAffectedBy(applied_rule, trade):
+            return True
+        credit_balance = trade.CreditBalance()
+        if credit_balance is not None:
+            crba_trades = credit_balance.Trades()
+            if len(crba_trades) == 1:
+                crba_trade = crba_trades.First()
+                if FILTERS[compliance_rule.Name()]['interface'].IsAffectedBy(applied_rule, crba_trade):
+                    return True
+        return False
+
+    def _FindRelevantAppliedRules(self, trd):
+        trades = set()
+        trades.add(trd)
+        if trd.IsFxSwap():
+            trades.add(self._OtherFxSwapLeg(trd))
+        if trd.DealPackage() is not None:
+            deal_package = trd.DealPackage()
+            for trade_link in deal_package.TradeLinks():
+                trades.add(trade_link.Trade())
+        if trd.GroupTrdnbr() is not None:
+            group_trades = acm.FTrade.Select('groupTrdnbr = %i' % trd.GroupTrdnbr().Oid())
+            for group_trade in group_trades:
+                trades.add(group_trade)
+        applied_rules = LimitsUtils.AppliedRuleFinder.GetAppliedRulesFromTrades(list(trades))
+        logger.debug('Found %i applied_rules for trade %i' % (len(applied_rules), trd.Oid()))
+        for applied_rule in applied_rules:
+            for trade in trades:
+                if self.RuleApplicable(applied_rule, trade):
+                    logger.debug(applied_rule.ComplianceRule().Name())
+                    yield applied_rule
+                    break
+
+    def _RuleChecks(self, appliedRules, trade):
+        async_task = acm.AsyncTask.WhenAll([ar.Check() for ar in appliedRules])
+        self.map[async_task] = trade
+        async_task.ContinueWith(self._HandleContinue)
+
+    def _HandleContinue(self, async_task):
+        trade = self.map[async_task]
+        del self.map[async_task]
+        rule_results = dict()
+        flat_list = list()
+        for a_task in async_task.Result():
+            results = a_task.Result()
+            for result in results:
+                applied_rule = result.AppliedRule()
+                if applied_rule not in rule_results.keys():
+                    rule_results[applied_rule] = list()
+                rule_results[applied_rule].append(result)
+                flat_list.append(result)
+        isBreached = self.ComplianceCheckIsNonCompliant(flat_list)
+        alerts = self._Alerts(rule_results, trade)
+        self.CreateReport(alerts, trade, isBreached)
+        if trade.IsModified():
+            trade.Undo()
+        logger.info(f'Trade {trade.Oid()}: Rule check completed')
+
+    def _Alerts(self, rule_results, trade = None):
+        PRIO_DICT = {'Level 1': 0, 'Level 2': 1, 'Level 3': 2, 'Level 4': 3, 'Report': 4}
+        allAlerts = []
+        trade_oid = trade.Oid() if trade else 0
+        for applied_rule in rule_results:
+            results = rule_results[applied_rule]
+            logger.debug('Generating Alerts for "%s" for %s' % (applied_rule.ComplianceRule().Name(), applied_rule.Target().Name()))
+            alertGenerator = FAlertGenerator.Create(applied_rule)
+            alertsAndValues = alertGenerator.AlertsAndValuesFromResults(results)
+            alerts = [(alert, value) for alert, value in alertsAndValues if alert.State() == 'Active']
+            logger.debug('Found %i active alerts for "%s" for %s' % (len(alerts), applied_rule.ComplianceRule().Name(), applied_rule.Target().Name()))
+            if alerts:
+                in_place = alerts.copy()
+                alerts = list()
+                for alert, value in in_place:
+                    if alert.SubjectType() != 'Trade':
+                        alerts.append((alert, value))
+                        continue
+                    if alert.SubjectId() == trade_oid:
+                        alerts.append((alert, value))
+                try:
+                    allAlerts.append(sorted(alerts, key = lambda a: PRIO_DICT.get(a[0].Threshold().Type().Name(), 9))[0])
+                except IndexError:
+                    logger.debug('Trying to sort empty alert list')
+                    
+        return allAlerts
+
+    def _AnyErrorsInRuleChecks(self, rule_results):
+        for rule_result in rule_results:
+            if rule_result.State() == 'Error':
+                return True
+        return False
+    
+    def ComplianceCheckIsNonCompliant(self, ruleChecks):
+        return self._AnyErrorsInRuleChecks(ruleChecks) or self._AnyNonCompliantThresholdsBreached(ruleChecks)
+    
+    def _AnyNonCompliantThresholdsBreached(self, rule_results):
+        nonCompliantThresholdTypes = ['Level 1']
+        for rule_result in rule_results:
+            if rule_result.State() == 'Compliant':
+                if rule_result.Threshold().Type().Name() in nonCompliantThresholdTypes:
+                    return True
+        return False
+
+    def _MaxBreachedLevel(self, alerts):
+        max_name = 'Report'
+        max_level = 0
+        for alert, _ in alerts:
+            threshold_level_name = alert.Threshold().Type().Name()
+            threshold_level = LimitsUtils.ThresholdComparator(threshold_level_name)
+            if threshold_level > max_level:
+                max_level = threshold_level
+                max_name = threshold_level_name
+        return max_name
+
+    ''' Related to generating alerts '''
+        
+    def CheckRules(self, trade):
+        appliedRules = self._FindRelevantAppliedRules(trade)
+        ruleChecks = self._RuleChecks(set(appliedRules))
+        isBreached = self.ComplianceCheckIsNonCompliant(ruleChecks)
+        alerts = self._Alerts(ruleChecks, trade)
+        self.CreateReport(alerts, trade)
+ 
+    def start(self):
+        ReinitializeLogger(2)
+        logger.info('Initializing ATS rule checking...')
+        self._reportSubscription = self._bindFunction(self.report_table_cb)
+        ael.TextObject.subscribe(self._reportSubscription, None)
+        logger.info('Initializing ATS done.')
+
+    def work(self):
+        workingSet = self._newReports.copy()
+        for report in workingSet:
+            try:
+                _, _, trade_oid = report.Name().split('_')
+                trade = acm.FTrade[trade_oid]
+                logger.info(f'Trade {trade_oid}: Checking rules..')
+                self.CheckRules(trade)
+            except Exception as e:
+                logger.ELOG(e)
+        self._newReports.difference_update(workingSet)
+        
+    def stop(self):
+        ael.TextObject.unsubscribe(report_table_cb)
+        logger.info('Monitoring task terminated.')
+
+    def status(self):
+        return 'Status: class = {0}'.format(self.__class__)
+
+    def report_table_cb(self, _object, ael_entity, _arg, event):
+        if event in self._eventsToWatch:
+            report = acm.FLimitCheckReport[ael_entity.seqnbr]
+            if self._reportQuery.IsSatisfiedBy(report):
+                self._newReports.add(report)
+                
+    def _bindFunction(self, function):
+        def inner(*args, **kwargs):
+            return function(*args, **kwargs)
+        return inner
+
+    @staticmethod
+    def _OtherFxSwapLeg(trade):
+        if trade.IsFxSwapNearLeg():
+            return trade.FxSwapFarLeg()
+        elif trade.IsFxSwapFarLeg():
+            return trade.FxSwapNearLeg()
+
+...
+
+  ComplianceCheckServerUtils
+
+import acm
+
+
+...
+
+  CompliancePopUpUiValidation
+
+import acm
+import ComplianceCheckProgressDialogLauncher
+from FParameterSettings import ParameterSettingsCreator
+def ael_custom_dialog_show(shell, params):
+    callData = params['initialData']
+    if not callData:
+        return None
+    settings = ParameterSettingsCreator.FromRootParameter('ComplianceCheckSettings')
+    if settings.UsePopUp():
+        ComplianceCheckProgressDialogLauncher.ComplianceViewerDialogPopupRouter().AllowPopup(shell)
+
+    returnParameters = acm.FDictionary()
+    return returnParameters
+
+def ael_custom_dialog_main( parameters, dictExtra ):
+    # not used for validation
+    return dictExtra
+
+...
+
+}
+
+decls[FUIEventHandlers] {
+}
+
+clx CInsDefAppFrame [FUIEventHandlers] {
+  ComplianceCheckPopUpLauncher =
+  ContentsChanged=
+  OnCreate=ComplianceCheckProgressDialogLauncher.OnCreate
+
+
+}
+
+clx FThinSheet [FUIEventHandlers] {
+  OpenComplianceRule =
+  GridDoubleClickCell=ComplianceCheckReportApplication.OnDoubleClick
+  GridMiddleButtonDoubleClickCell=
+
+
+}
+
+clx FUxLayoutApplicationFrame [FUIEventHandlers] {
+  ComplianceCheckPopUpLauncher =
+  OnCreate=ComplianceCheckProgressDialogLauncher.OnCreate
+
+
+}
+

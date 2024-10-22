@@ -1,0 +1,105 @@
+#
+# Front Arena exported extension module.
+# source          ""
+# timestamp (utc) "2024-03-18 06:56:41.3"
+# ***** DO NOT EDIT! *****
+#
+name        "PS_ExposureCalc"
+description "$Id$"
+
+groups {
+}
+
+decls[FColumnDefinition] {
+  "securitiesFinanceExposureCustom" ( "sheet columns.portfoliosheet" ) "";
+}
+
+clx FTradingSheet [FColumnDefinition] {
+  securitiesFinanceExposureCustom =
+  ExtensionAttribute=securitiesFinanceExposureCustom
+  GroupLabel=Margin Exposure TEST
+  Name=securitiesFinanceExposureCustom
+
+
+  Standard Calculations Projected Factor =
+  Description=Sum of projected cash flows filtered per factor.
+  ExtensionAttribute=projectedFactorForStandardCalculations
+  Format=DetailedShowZero
+  GroupLabel=Standard Calculations
+  Name=Projected Factor
+
+
+}
+
+decls[FExtensionAttribute] {
+}
+
+clx FCashFlowInstrument [FExtensionAttribute] {
+  legsForProjectedFactor = shunt(isSingleLegInstrument, 
+  true->firstLeg, 
+  false->nil);
+  projectedFactor = shunt(legsForProjectedFactor, 
+  nil->nil, 
+  default->sumOf(stripDateTimePart(legsForProjectedFactor :* "projectedFactor" [projectedRightDate, factorFilter, cashFlowRightCutOffDate] * contractSize * quantity)));
+}
+
+clx FInstrument [FExtensionAttribute] {
+  originalPremiumForMarginExposure = denominatedvalue(originalPremium, instrument.Currency, , );
+  projectedFactor = nil;
+}
+
+clx FInstrumentAndTrades [FExtensionAttribute] {
+  marginingSetExposureCustom = securitiesFinanceExposureCustom;
+  projectedFactor = instrument:projectedFactor [projectedRightDate = trade.AcquireDay, factorFilter, quantity = trade:quantity, cashFlowRightCutOffDate];
+  projectedFactorForStandardCalculations = object:projectedFactor [factorFilter = factorFilterForStandardCalculations, cashFlowRightCutOffDate = projectedEndDateForStandardCalculations];
+  securitiesFinanceExposureCustom = convertToCurrency(securitiesFinanceExposuresCustom, profitAndLossEndFXRates, displayCurrencySymbol, filterUnit);
+  securitiesFinanceExposuresCustom = select(collateralAnnexExposureCalculation, 
+  "GMRA Indonesia"->securitiesFinanceExposuresCustom_GmraIndonesia, 
+  "GMRA Int.- Purchase Price Method"->-originalPremiumForMarginExposure, 
+  "GMRA Int.- Purchase Price + Accr Method"->-originalPremiumForMarginExposure + denominatedvalue(accrued, displayCurrency, , ), 
+  "GMRA Int.- Repurchase Price Method"->securitiesFinanceExposuresCustom_GmraIndonesia, 
+  default->securitiesFinanceExposures);
+  securitiesFinanceExposuresCustom_GmraIndonesia = sumOf(trades :* "securitiesFinanceExposuresCustom_GmraIndonesia" [priceSource, isSplitAllGrouped, valuesOnSpotOverride, positionObject, filterUnit, groupingSpotDiscountDate, marginRatio, factorFilter = factorFilterForStandardCalculations, cashFlowRightCutOffDate = projectedEndDateForStandardCalculations]);
+}
+
+clx FLeg [FExtensionAttribute] {
+  projectedFactor = sumOf(stripDateTimePart(staticLegInformation.ProjectedCashFlow(valuationDate, projectedRightDate, legInformation, roundingInformation, cashFlowRightCutOffDate, factorFilter)));
+}
+
+clx FMultiInstrumentAndTrades [FExtensionAttribute] {
+  liveFXRateDisplayCCYToMarginingSetFxPair = CreateFxRate(displayCurrency, marginingSetDisplayCurrency);
+  liveFXRateInsCCYToMarginingSet = stripDateTimePart(select(pLPeriodFXIsReportDate, 
+  true->liveFXRateDisplayCCYToMarginingSetFxPair :* "profitAndLossLiveFXRate" [allowMarkToMarketPrice := true, fxForwardDate = profitAndLossFXRateForwardDate], 
+  false->liveFXRateDisplayCCYToMarginingSetFxPair :* "profitAndLossFXRate" [profitAndLossFXRateDate, profitAndLossFXRateForwardDate, allowMarkToMarketPrice := true]));
+  marginingSetExposureCustom = securitiesFinanceExposureCustom;
+  originalPremiumForMarginExposure = select(instruments.Size > 0, 
+  false->nil, 
+  true->sumOf(instruments :* "denominatedvalue(originalPremium, instrument.Currency, , )" [positionObject, , profitAndLossEndDate]));
+  securitiesFinanceExposuresCustom = select(collateralAnnexExposureCalculation, 
+  "GMRA Indonesia"->securitiesFinanceExposuresCustom_GmraIndonesia, 
+  "GMRA Int.- Purchase Price Method"->-originalPremiumForMarginExposure, 
+  "GMRA Int.- Purchase Price + Accr Method"->-originalPremiumForMarginExposure + convertToCurrency(denominatedvalue(accrued, displayCurrency, , ), liveFXRateInsCCYToMarginingSet, marginingSetDisplayCurrency), 
+  "GMRA Int.- Repurchase Price Method"->securitiesFinanceExposuresCustom_GmraIndonesia, 
+  default->securitiesFinanceExposures);
+}
+
+clx FRepoInstrument [FExtensionAttribute] {
+  legsForProjectedFactor = shunt(underlying, 
+  nil->firstLeg, 
+  default->financingLeg);
+}
+
+clx FSingleInstrumentAndTrades [FExtensionAttribute] {
+  originalPremiumForMarginExposure = denominatedvalue(originalPremium, instrument.Currency, , );
+}
+
+clx FTrade [FExtensionAttribute] {
+  securitiesFinanceExposuresCustom_GmraIndonesia = shunt(object.IncludeTradeStatus(nilObject:tradeStatusInclusionMaskDefault), 
+  true->select(instrument:isExpired, 
+    true->denominatedvalue(0, displayCurrency, , ), 
+    false->select(instrument.InsType, 
+      "BasketRepo/Reverse"->instrument :* "projectedFactor" [projectedRightDate = object.AcquireDay, quantity, factorFilter, cashFlowRightCutOffDate], 
+      default->denominatedvalue(0, displayCurrency, , ))), 
+  default->nil);
+}
+

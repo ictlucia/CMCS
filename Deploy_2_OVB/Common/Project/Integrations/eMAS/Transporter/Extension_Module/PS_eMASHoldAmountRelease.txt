@@ -1,0 +1,324 @@
+#
+# Front Arena exported extension module.
+# source          ""
+# timestamp (utc) "2024-02-21 09:51:19.7"
+# ***** DO NOT EDIT! *****
+#
+name        "PS_eMASHoldAmountRelease"
+description ""
+
+groups {
+}
+
+decls[FParameters] {
+}
+
+clx FObject [FParameters] {
+  eMASHoldAmountReleaseParams =
+  ApiKey=638f2361-cd12-4fad-bfc9-d0c14aabf2f9
+  BranchNumber=10
+  ChannelId=11
+  DefaultTellerId=9925503
+  FailedTradeStatus=Pending FO Verification
+  LogFilename=eMAS_HoldAmountRelease_LOG_{}.txt
+  MessageSender=NTCS
+  SuccessTradeStatus=BO-BO Confirmed
+  Timeout=30
+  TradeFilter=eMASHoldAmountRelease
+  TypeOfEntry=SC
+  Url=/gateway/CoreBankHoldRelease/1.0/holdRelease
+
+
+}
+
+decls[FPythonCode] {
+}
+
+clx FObject [FPythonCode] {
+  eMAS_HoldAmountRelease
+"""----------------------------------------------------------------------------------------------------
+MODULE:
+    eMAS_HoldAmountRelease
+
+DESCRIPTION:
+    Entry point to invoke the eMAS HoldAmountRelease Inquiry run task gui.
+
+-------------------------------------------------------------------------------------------------------"""
+import acm, ael, traceback, os
+import FLogger, FRunScriptGUI
+import ParametersReader, InterfaceUtils
+import eMAS_CommonUtils
+
+# get value from FParameter
+eMASParams = ParametersReader.get_params('eMASHoldAmountReleaseParams')
+log_file_name = eMASParams['LogFilename'].format(acm.Time.DateToday().replace('-', ''))
+
+class HoldAmountRelease(FRunScriptGUI.AelVariablesHandler):
+    def __init__(self):
+        """
+        Initialize member variables
+        """
+        # NAME = 0  # internal name
+        # TEXT = 1  # GUI Text
+        # TYPE = 2  # object type
+        # VALUES = 3  # valid values
+        # DEFAULT = 4  # default
+        # MANDATORY = 5  # mandatory
+        # MULTI = 6  # multiple selection
+        # TIP = 7  # floating tip
+        # CB = 8  # callback
+        # ENABLED = 9  # enabled
+
+        logLevels = [FLogger.FLogger.INFO, FLogger.FLogger.ERROR, FLogger.FLogger.WARNING, FLogger.FLogger.DEBUG]
+
+        query = [query.Name() for query in acm.FStoredASQLQuery.Select("subType='FTrade'")]
+        query.sort()
+
+        folderPicker = FRunScriptGUI.DirectorySelection()
+
+        gui_vars = [
+            ['col_trade_query', 'Collateral Trades_Input', 'string', query, 'eMASHoldAmountRelease', 1, 0,
+             'Collateral Trades', None, 1],
+            ['logToConsole', 'Log to console_Logging', 'int', [1, 0], 1, 1, 0,
+             'Whether logging should be done in the Log Console or not.'],
+            ['log_folder', 'Log folder_Logging', folderPicker, None, folderPicker, 0, 1,
+             'Select where to store the log file',
+             0, None],
+            ['log_level', 'Log level_Logging', 'string', logLevels, FLogger.FLogger.DEBUG, 1, 0]
+        ]
+
+        self._logger = None
+        FRunScriptGUI.AelVariablesHandler.__init__(self, gui_vars)
+
+    def set_logger(self, logger):
+        """
+        This function sets the logger
+        :param logger: FLogger
+        :return: None
+        """
+        self._logger = logger
+
+    def send_hold_amount_release(self, params):
+        """
+        This function generates recap data
+        :param params: parameters
+        :return:None
+        """
+        self._logger.LOG('Start send_hold_amount_release')
+        collateral_trades_query = params['col_trade_query']
+        collateral_trades = acm.FStoredASQLQuery[collateral_trades_query]
+        if collateral_trades:
+            collateral_trades = collateral_trades.Query().Select().Sort()
+            for counter, trade in enumerate(collateral_trades):
+                try:
+                    trade.AddInfoValue(eMAS_CommonUtils.ADD_INFO_REQ_MOD_SPEC, eMAS_CommonUtils.ADD_INFO_REQ_MOD_HOLD_REL)
+                    trade.Touch()
+                    trade.Commit()
+                    self._logger.DLOG('Updated add info on trade {}'.format(trade.Oid()))
+                except Exception as err:
+                    self._logger.LOG('Error while updating trade {}. Error {}'.format(trade.Oid(), err))
+
+        self._logger.LOG('Finish generateRecapData')
+
+
+ael_gui_parameters = {'windowCaption': "eMAS Hold Amount Release"}
+
+ael_variables = HoldAmountRelease()
+ael_variables.LoadDefaultValues(__name__)
+app_name = 'eMAS Hold Amount Release'
+
+
+def initialize_logging(params, logfile_name, app_name):
+    """
+    Initialize logger
+    :param params: parameters
+    :return: FLogger object
+    """
+    logger = None
+    try:
+        logFolder = params['log_folder']
+        logfolderString = logFolder.SelectedDirectory().AsString()
+        logfile = os.path.join(logfolderString, logfile_name)
+        if logfile == '':
+            logfile = None
+
+        logLevel = params['log_level']
+        level = InterfaceUtils.LogLevelNameToNumber(logLevel)
+        logger = FLogger.FLogger(level=level,
+                                 name=app_name,
+                                 logToPrime=True,
+                                 logToFileAtSpecifiedPath=logfile,
+                                 logToConsole=False)
+    except Exception as err:
+        print('Error in initializing logger {}'.format(err))
+        print(traceback.format_exc())
+    return logger
+
+
+def ael_main(params):
+    """
+    AEL main function
+    :param params: GUI parameters
+    :return: None
+    """
+    eMAS_loger = None
+    try:
+        eMAS_loger = initialize_logging(params, log_file_name, app_name)
+        if eMAS_loger:
+            eMAS_loger.LOG('Execution started.')
+            ael_variables.set_logger(eMAS_loger)
+            ael_variables.send_hold_amount_release(params)
+
+    except Exception as err:
+        if eMAS_loger is not None:
+            eMAS_loger.ELOG(str(err))
+        print(traceback.format_exc())
+        print('Error in ael main. {}'.format(err))
+
+
+...
+
+  eMAS_HoldAmountReleaseProcessor
+"""----------------------------------------------------------------------------------------------------
+MODULE:
+    eMAS_HoldAmountReleaseProcessor
+
+DESCRIPTION:
+    Module to process the hold amount release flow.
+
+-------------------------------------------------------------------------------------------------------"""
+import acm, ast, traceback
+import ParametersReader
+import eMAS_HoldAmountAPI, eMAS_CommonUtils, eMAS_ProcessorBase
+
+eMASHoldAmtRelParams = ParametersReader.get_params('eMASHoldAmountReleaseParams')
+
+SUCCESS_TRADE_STATUS = eMASHoldAmtRelParams['SuccessTradeStatus']
+FAILED_TRADE_STATUS = eMASHoldAmtRelParams['FailedTradeStatus']
+
+ADD_INFO_HOLD_AMT_REL_VAL_SUCCESS = 'Released'
+ADD_INFO_HOLD_AMT_REL_VAL_FAIL = 'Failed'
+MODULE_NAME = "HoldAmountRelease"
+
+
+class HoldAmountReleaseProcessor(eMAS_ProcessorBase.eMASProcessorBase):
+    def __init__(self):
+        """
+        Initializes the member variables
+        """
+        eMAS_api_key = eMASHoldAmtRelParams['ApiKey']
+        eMAS_url = eMASHoldAmtRelParams['Url']
+        _timeout = eMASHoldAmtRelParams['Timeout']
+        default_tellerd_id = eMASHoldAmtRelParams['DefaultTellerId']
+
+        super(HoldAmountReleaseProcessor, self).__init__(default_tellerd_id, MODULE_NAME, eMAS_api_key, eMAS_url, _timeout)
+
+        self._channel_id = eMASHoldAmtRelParams['ChannelId']
+        self._messageSender = eMASHoldAmtRelParams['MessageSender']
+        self._typeOfEntry = eMASHoldAmtRelParams['TypeOfEntry']
+        self._add_info_spec_hold_amount_seq = acm.FAdditionalInfoSpec['EMASHoldAmountSeqNo']
+        self._add_info_spec_hold_amount_release = acm.FAdditionalInfoSpec['EMASRelAmtStatus']
+
+    def _get_original_trade_seq_num(self, trd):
+        """This function find the seq number from the parent trade."""
+        original_trade = trd.ContractTrade()
+        return original_trade.AddInfoValue(self._add_info_spec_hold_amount_seq)
+
+    def process(self, trade):
+        """
+        This function processes the hold amount flow
+        :param trade: FTrade
+        :return: None
+        """
+        trade_status = None
+        log_string = 'Trade - {}. eMASHoldAmountRelease DELETE request with tellerId {} and journalSequence {} .'.format(
+            trade.Oid(), self._tellerId, self._journalSeqNo)
+        try:
+            account_obj = eMAS_CommonUtils.get_account_number(trade)
+            if account_obj:
+                ovb_channel_id=self._channel_id
+                eMAS_system = getattr(account_obj.AdditionalInfo(),'EMASSystem', None)
+                if eMAS_system:
+                    ovb_channel_id = eMAS_CommonUtils.get_emas_system_channel_id(eMAS_system())
+                    if not ovb_channel_id:
+                        log_string += " Error - No channel id found for {}. ".format(eMAS_system())
+                
+                hold_amount_seq_number = self._get_original_trade_seq_num(trade)
+                try:
+                    json_obj = eMAS_HoldAmountAPI.create_hold_amount_release_request(trade_object=trade,
+                                                                                     account_object=account_obj,
+                                                                                     channel_id=ovb_channel_id,
+                                                                                     journal_sequence=self._journalSeqNo,
+                                                                                     teller_id=self._tellerId,
+                                                                                     sequence_no=hold_amount_seq_number,
+                                                                                     message_sender=self._messageSender,
+                                                                                     type_of_entry=self._typeOfEntry,
+                                                                                     tracking_id_counter=self._tracking_id_counter)
+                                                                                     
+                    log_string += "\nHold Amount Release Request JSON - {}\n".format(json_obj)
+                    response_object = self._connection_object.post_request(json_obj)
+                    log_string += "\nHold Amount Release Response - {}\n".format(response_object)
+                    
+                    if response_object and response_object.status_code == eMAS_CommonUtils.HTTP_CODE_SUCCESS:
+                        response_json = response_object.json()
+                        log_string += "\nHold Amount Release Response JSON - {}\n".format(response_json)
+                        if response_json:
+                            general_posting_response_obj = eMAS_CommonUtils.get_general_posting_response(response_json)
+                            if general_posting_response_obj:
+                                exception_code = general_posting_response_obj.get_attribute_value("exceptionCode")
+                                error_description = general_posting_response_obj.get_attribute_value(
+                                    "exceptionDescription")
+                                if error_description:
+                                    log_string += " Error - {}".format(error_description)
+                                if exception_code == eMAS_CommonUtils.EXCEPTION_CODE_TELLER_ID_IN_USE:
+                                    self.assign_new_tellerId()
+                            else:
+                                response_obj = eMAS_HoldAmountAPI.capture_hold_amount_response(response_json)
+                                if response_obj.get_attribute_value(
+                                        "responseCode") == eMAS_CommonUtils.RESPONSE_CODE_SUCCESS:
+                                    trade_status = SUCCESS_TRADE_STATUS
+                                    log_string += " Successful."
+                                else:
+                                    trade_status = FAILED_TRADE_STATUS
+                                    exception_code = response_obj.get_attribute_value("exceptionCode")
+                                    if exception_code:
+                                        error_description = response_obj.get_attribute_value("exceptionDescription")
+                                        if not error_description:
+                                            error_description = response_obj.get_attribute_value("responseMessage")
+                                        log_string += " Error - {} {}".format(exception_code, error_description)
+                                    else:
+                                        exception_val = response_obj.get_attribute_value("Exception")
+                                        log_string += " Error - {}".format(exception_val)
+                        else:
+                            log_string += ' Failed to get a response for trade id {}'.format(trade.Oid())
+                    else:
+                        log_string += 'Server return code {}. {} '.format(response_object.status_code,
+                                                                          response_object.reason)
+                except Exception as err:
+                    log_string += 'Internal exception handler' + str(err)
+                self.save_counters()
+            else:
+                log_string += ' Account with EMAS network not found for trade {}'.format(trade.Oid())
+
+        except Exception as err:
+            log_string += 'Outer exception handler' + str(err)
+            print(traceback.format_exc())
+
+        if trade_status:
+            try:
+                trade.Status(trade_status)
+                if trade_status == SUCCESS_TRADE_STATUS:
+                    trade.AddInfoValue(self._add_info_spec_hold_amount_release, ADD_INFO_HOLD_AMT_REL_VAL_SUCCESS)
+                else:
+                    trade.AddInfoValue(self._add_info_spec_hold_amount_release, ADD_INFO_HOLD_AMT_REL_VAL_FAIL)
+
+                trade.Commit()
+            except:
+                print(traceback.format_exc())
+
+        print(log_string)
+
+...
+
+}
+

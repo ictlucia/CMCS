@@ -1,0 +1,1015 @@
+#
+# Front Arena exported extension module.
+# source          ""
+# timestamp (utc) "2024-09-21 09:08:13.7"
+# ***** DO NOT EDIT! *****
+#
+name        "PS_BIS4_OutSettlements"
+description "$Id$"
+
+groups {
+}
+
+decls[FParameters] {
+}
+
+clx FObject [FParameters] {
+  Bis4OutFtpParams =
+  cert_password=
+  certificate=
+  ftp_dest_dir=out
+  host=10.243.212.62
+  password=0x4wqnChMOKw4HCqmTCo8Kc
+  port=23
+  user=AdminJITU
+
+
+  OutSettlementsParams =
+  logFilename=BIS4_OutSettlements_LOG_{}.txt
+  logFolder=c:\temp
+  logLevel=INFO
+  outputFileName=BIS4OutSettlement_{}
+  outputFolder=C:\temp
+  outSettlementQuery=BIS4OutSettlementQuery
+  SETL_PREFIX=77
+  TRADE_PREFIX=77
+
+
+}
+
+decls[FPythonCode] {
+}
+
+clx FObject [FPythonCode] {
+  BI_S4_OutSettlementsAMBAHandler
+"""----------------------------------------------------------------------------------------------------
+MODULE:
+    BI_S4_OutSettlementsAMBAHandler
+
+DESCRIPTION:
+    Entry point to invoke the AMBA hook.
+
+-------------------------------------------------------------------------------------------------------"""
+import acm, ael, traceback
+import ParametersReader
+import BI_SSSS_OutSettlementsAPI
+
+# get value from FParameter
+SettlementsParams = ParametersReader.get_params('OutSettlementsParams')
+
+log_file_name = SettlementsParams['logFilename'].format(acm.Time.DateToday().replace('-', ''))
+log_folder = SettlementsParams['logFolder'].format(acm.Time.DateToday().replace('-', ''))
+log_level = SettlementsParams['logLevel'].format(acm.Time.DateToday().replace('-', ''))
+
+bis4_out_settlement_logger = BI_SSSS_OutSettlementsAPI.initialize_logging(log_folder, log_file_name, log_level)
+
+
+def get_message_type(m):
+    """
+    This function returns the message type of the AMBA message
+    :param m: mbf_object
+    :return: string
+    """
+    type = m.mbf_find_object('TYPE', 'MBFE_BEGINNING')
+    return type.mbf_get_value() if type else ''
+
+
+def process_bs4_out_settlement(message, s):
+    """
+    AEL main function
+    :param params: GUI parameters
+    :return: None
+    """
+    try:
+        if bis4_out_settlement_logger:
+            bis4_out_settlement_logger.LOG('Execution started.')
+            settlement_passed = list()
+            settlement_failed = list()
+            message_type = get_message_type(message)
+            if message_type in ['UPDATE_SETTLEMENT', 'INSERT_SETTLEMENT']:
+                mbf_setl_obj = message.mbf_find_object('SETTLEMENT', 'MBFE_BEGINNING')
+                if not mbf_setl_obj:
+                    if message_type == 'UPDATE_SETTLEMENT':
+                        mbf_setl_obj = message.mbf_find_object('!SETTLEMENT', 'MBFE_BEGINNING')
+                    else:
+                        mbf_setl_obj = message.mbf_find_object('+SETTLEMENT', 'MBFE_BEGINNING')
+
+                while mbf_setl_obj:
+                    mbf_setl_seqnbr = None
+                    try:
+                        mbf_setl_seqnbr = mbf_setl_obj.mbf_find_object('SEQNBR', 'MBFE_BEGINNING')
+                        if mbf_setl_seqnbr:
+                            setl = acm.FSettlement[mbf_setl_seqnbr.mbf_get_value()]
+                            bis4_out_settlement_logger.LOG('Execution started for Settlement {}.'.format(setl.Oid()))
+                            settlement_passed_tmp, settlement_failed_tmp = BI_SSSS_OutSettlementsAPI.process_settlement(
+                                bis4_out_settlement_logger, setl)
+                            settlement_passed.extend(settlement_passed_tmp)
+                            settlement_failed.extend(settlement_failed_tmp)
+                    except Exception as err:
+                        if mbf_setl_seqnbr:
+                            seq_no = mbf_setl_seqnbr.mbf_get_value()
+                            settlement_failed.extend([seq_no])
+
+                        print(traceback.format_exc())
+                        bis4_out_settlement_logger.ELOG('Error in processing amb loop. {}'.format(err))
+
+                    mbf_setl_obj = message.mbf_next_object()
+
+                bis4_out_settlement_logger.LOG('Execution Ended.')
+                bis4_out_settlement_logger.LOG(
+                    '--------------------------Stats Summary Start-----------------------------------------------')
+                bis4_out_settlement_logger.LOG('Settlement Id processed successfully. {}'.format(
+                    'Zero' if not settlement_passed else ', '.join(settlement_passed)))
+                bis4_out_settlement_logger.LOG('Settlement Id failed. {}'.format(
+                    'Zero' if not settlement_failed else ', '.join(settlement_failed)))
+                bis4_out_settlement_logger.LOG(
+                    '--------------------------Stats Summary End-------------------------------------------------')
+    except Exception as err:
+        if bis4_out_settlement_logger is not None:
+            bis4_out_settlement_logger.ELOG(str(err))
+        print(traceback.format_exc())
+        print('Error in process_bs4_out_settlement. {}'.format(err))
+
+    return message, s
+
+...
+
+  BI_SSSS_Out_Settlements
+"""----------------------------------------------------------------------------------------------------
+MODULE:
+    BI_SSSS_Out_Settlements
+
+DESCRIPTION:
+    Entry point to invoke the BIS4 Out Settlements run task gui.
+
+-------------------------------------------------------------------------------------------------------"""
+import acm, ael, traceback
+import os
+import ParametersReader
+import BI_SSSS_OutSettlementsAPI, FRunScriptGUI
+
+# get value from FParameter
+SettlementsParams = ParametersReader.get_params('OutSettlementsParams')
+
+log_file_name = SettlementsParams['logFilename'].format(acm.Time.DateToday().replace('-', ''))
+log_level = SettlementsParams['logLevel']
+log_folder = SettlementsParams['logFolder']
+
+
+class BIS4OutSettlements(FRunScriptGUI.AelVariablesHandler):
+    def __init__(self):
+        self._logger = None
+        FRunScriptGUI.AelVariablesHandler.__init__(self, [])
+    
+    def set_logger(self, logger):
+        self._logger = logger
+        
+
+    def process_task(self):
+        self._logger.LOG('Start process_bis4_out settlement')
+
+        settlement_passed, settlement_failed = BI_SSSS_OutSettlementsAPI.process_settlements_task(self._logger)
+        
+        self._logger.LOG('End process_bis4_out settlement')
+
+        self._logger.LOG('--------------------------Stats Summary Start-----------------------------------------------')
+        self._logger.LOG('Settlement Id processed successfully. {}'.format('Zero' if not settlement_passed
+                                                                         else ', '.join(settlement_passed)))
+        self._logger.LOG('Settlement Id failed. {}'.format('Zero' if not settlement_failed else ', '.join(settlement_failed)))
+        self._logger.LOG('--------------------------Stats Summary End-------------------------------------------------')
+
+
+ael_gui_parameters = {'windowCaption': "BIS4 Out Settlements"}
+
+ael_variables = BIS4OutSettlements()
+ael_variables.LoadDefaultValues(__name__)
+
+def ael_main(params):
+    """
+    AEL main function
+    :param params: GUI parameters
+    :return: None
+    """
+    bis4_out_settlement_logger = None
+    try:
+        bis4_out_settlement_logger = BI_SSSS_OutSettlementsAPI.initialize_logging(log_folder, log_file_name+'_task',
+                                                                                  log_level)
+        if bis4_out_settlement_logger:
+            bis4_out_settlement_logger.LOG('Execution started.')
+            ael_variables.set_logger(bis4_out_settlement_logger)
+            ael_variables.process_task()
+    except Exception as err:
+        if bis4_out_settlement_logger is not None:
+            bis4_out_settlement_logger.ELOG(str(err))
+        print(traceback.format_exc())
+        print('Error in ael main. {}'.format(err))
+
+...
+
+  BI_SSSS_OutSettlementGenerator
+"""----------------------------------------------------------------------------------------------------
+MODULE:
+    BI_SSSS_OutSettlementGenerator
+
+DESCRIPTION:
+    File to geneate the GEN-1 format text.
+
+-------------------------------------------------------------------------------------------------------"""
+
+
+class BIS4SettlementOutHandler(object):
+    HEADER_SECTION = 'header'
+    PAYLOAD_SECTION = 'payload'
+    FOOTER_SECTION = 'footer'
+
+    def __init__(self):
+        self._header = list(' ' * 700)
+        self._payload = list(' ' * 1000)
+        self._footer = list(' ' * 700)
+
+        payload_number_fields = list()
+        footer_number_fields = list()
+
+        self._header_record_type = {'start_index': 1, 'length': 1}
+        self._header_member_code = {'start_index': 2, 'length': 17}
+        self._header_crediton_date = {'start_index': 19, 'length': 8}
+        self._header_batch_reference = {'start_index': 27, 'length': 10}
+        self._header_message_type = {'start_index': 37, 'length': 1}
+        self._header_batch_type = {'start_index': 38, 'length': 1}
+        self._header_reserved = {'start_index': 39, 'length': 662}
+
+        self._payload_record_type = {'length': 1, 'start_index': 1}
+        self._payload_transaction_code = {'length': 3, 'start_index': 2}
+        self._payload_initiate_party = {'length': 1, 'start_index': 5}
+        self._payload_seller_member_code = {'length': 17, 'start_index': 6}
+        self._payload_seller_agent_code = {'length': 17, 'start_index': 23}
+        self._payload_seller_reference = {'length': 10, 'start_index': 40}
+        self._payload_seller_custody_code = {'length': 2, 'start_index': 50}
+        self._payload_seller_investor_type = {'length': 2, 'start_index': 52}
+        self._payload_buyer_member_code = {'length': 17, 'start_index': 54}
+        self._payload_buyer_agent_code = {'length': 17, 'start_index': 71}
+        self._payload_buyer_reference = {'length': 10, 'start_index': 88}
+        self._payload_buyer_custody_code = {'length': 2, 'start_index': 98}
+        self._payload_buyer_investor_type = {'length': 2, 'start_index': 100}
+        self._payload_transaction_date = {'length': 8, 'start_index': 102}
+        self._payload_value_date = {'length': 8, 'start_index': 110}
+        self._payload_beneficiary = {'length': 24, 'start_index': 118}
+        self._payload_agreement_code = {'length': 20, 'start_index': 142}
+        self._payload_securities_code = {'length': 16, 'start_index': 162}
+        self._payload_nominal_amount = {'length': 17, 'start_index': 178, 'number_format': '9(15)v99'}
+        payload_number_fields.append(self._payload_nominal_amount)
+        self._payload_clean_price = {'length': 8, 'start_index': 195, 'number_format': '9(3)v9(5)'}
+        payload_number_fields.append(self._payload_clean_price)
+        self._payload_yield = {'length': 8, 'start_index': 203, 'number_format': '9(3)v9(5)'}
+        payload_number_fields.append(self._payload_yield)
+        self._payload_repo_option = {'length': 1, 'start_index': 211}
+        self._payload_accrued_interest = {'length': 17, 'start_index': 212, 'number_format': '9(15)v99'}
+        payload_number_fields.append(self._payload_accrued_interest)
+        self._payload_misc = {'length': 17, 'start_index': 229, 'number_format': '9(15)v99'}
+        payload_number_fields.append(self._payload_misc)
+        self._payload_total_proceed = {'length': 17, 'start_index': 246, 'number_format': '9(15)v99'}
+        payload_number_fields.append(self._payload_total_proceed)
+        self._payload_transaction_type = {'length': 2, 'start_index': 263}
+        self._payload_settlement_type = {'length': 1, 'start_index': 265}
+        self._payload_tax_i_date = {'length': 8, 'start_index': 266}
+        self._payload_tax_i_nominal_amount = {'length': 17, 'start_index': 274, 'number_format': '9(15)v99'}
+        payload_number_fields.append(self._payload_tax_i_nominal_amount)
+        self._payload_tax_i_price = {'length': 8, 'start_index': 291}
+        self._payload_tax_ii_date = {'length': 8, 'start_index': 299}
+        self._payload_tax_ii_nominal_amount = {'length': 17, 'start_index': 307}
+        self._payload_tax_ii_price = {'length': 8, 'start_index': 324}
+        self._payload_tax_iii_date = {'length': 8, 'start_index': 332}
+        self._payload_tax_iii_nominal_amount = {'length': 17, 'start_index': 340}
+        self._payload_tax_iii_price = {'length': 8, 'start_index': 357}
+        self._payload_tax_percentage = {'length': 5, 'start_index': 365}
+        self._payload_seller_to_buyer_information = {'length': 140, 'start_index': 370}
+        self._payload_repo_type = {'length': 2, 'start_index': 510}
+        self._payload_repo_maturity_date = {'length': 8, 'start_index': 512}
+        self._payload_repo_rate = {'length': 8, 'start_index': 520, 'number_format': '9(3)v9(5)'}
+        payload_number_fields.append(self._payload_repo_rate)
+        self._payload_repo_yield = {'length': 8, 'start_index': 528}
+        self._payload_sign = {'length': 1, 'start_index': 536}
+        self._payload_repo_accrued_interest = {'length': 17, 'start_index': 537}
+        self._payload_repo_maturity_total_proceed = {'length': 17, 'start_index': 554, 'number_format': '9(15)v99'}
+        payload_number_fields.append(self._payload_repo_maturity_total_proceed)
+        self._payload_repo_tenure = {'length': 3, 'start_index': 571}
+        self._payload_seller_aid = {'length': 20, 'start_index': 574}
+        self._payload_buyer_aid = {'length': 20, 'start_index': 594}
+        self._payload_name_for_seller_customer = {'length': 60, 'start_index': 614}
+        self._payload_name_for_buyer_customer = {'length': 60, 'start_index': 674}
+        self._payload_npwp_for_seller_customer = {'length': 24, 'start_index': 734}
+        self._payload_npwp_for_buyer_customer = {'length': 24, 'start_index': 758}
+        self._payload_address_for_seller = {'length': 60, 'start_index': 782}
+        self._payload_address_for_buyer = {'length': 60, 'start_index': 842}
+        self._payload_reserved = {'length': 17, 'start_index': 902}
+        self._payload_reserved2 = {'length': 82, 'start_index': 919}
+
+        self._footer_record_type = {'length': 1, 'start_index': 1}
+        self._footer_total_ssts_1st_count = {'length': 5, 'start_index': 2}
+        self._footer_total_ssts_1st_nominal_amount = {'length': 18, 'start_index': 7, 'number_format': '9(16)v99'}
+        footer_number_fields.append(self._footer_total_ssts_1st_nominal_amount)
+        self._footer_total_ssts_2nd_count = {'length': 5, 'start_index': 25}
+        self._footer_total_ssts_2nd_nominal_amount = {'length': 18, 'start_index': 30}
+        self._footer_reserved = {'length': 653, 'start_index': 48}
+
+        # Fill all the number fields with 0
+        for fld in payload_number_fields:
+            start_index = fld.get('start_index')
+            length = fld.get('length')
+            for idx in range(length):
+                self._payload[start_index - 1 + idx] = '0'
+                
+        for fld in footer_number_fields:
+            start_index = fld.get('start_index')
+            length = fld.get('length')
+            for idx in range(length):
+                self._footer[start_index - 1 + idx] = '0'
+                
+        
+
+    def set_attribute(self, section_name, attrib_name, val):
+        """
+        This function sets the attribute
+        :param section_name: header, payload or footer
+        :param attrib_name: name of the attributes
+        :param val: value to set
+        :return: none
+        """
+        is_val_blank = False
+        data_pointer = None
+        if section_name == BIS4SettlementOutHandler.HEADER_SECTION:
+            data_pointer = self._header
+        elif section_name == BIS4SettlementOutHandler.PAYLOAD_SECTION:
+            data_pointer = self._payload
+        elif section_name == BIS4SettlementOutHandler.FOOTER_SECTION:
+            data_pointer = self._footer
+
+        converted_attrib_name = '_{}_{}'.format(section_name, attrib_name.replace(' ', '_').lower())
+        attrib = getattr(self, converted_attrib_name)
+        start_index = attrib.get('start_index')
+        length = attrib.get('length')
+        number_format = attrib.get('number_format')
+        
+        
+        if number_format:
+            decimal_char_size = 1
+
+            if number_format == '9(15)v99':  # 15 whole numbers and 2 decimal places
+                whole_number_size = 15
+                decimal_place_size = 2
+            elif number_format == '9(3)v9(5)':  # 3 whole numbers and 5 decimal places
+                whole_number_size = 3
+                decimal_place_size = 5
+            elif number_format == '9(16)v99':  # 16 whole numbers and 2 decimal places
+                whole_number_size = 16
+                decimal_place_size = 2
+            else:
+                raise Exception('Number format {} not supported'.format(number_format))
+
+            total_format_size = whole_number_size + decimal_char_size + decimal_place_size
+            format_str = '{{:0{}.{}f}}'.format(total_format_size, decimal_place_size)  # e.g. {:09.5f}
+            val = format_str.format(abs(val))
+            val = val.replace('.', '')
+        elif isinstance(val, int):
+            format_str = '{{:0{}}}'.format(length)  # e.g. {:11}
+            val = format_str.format(val)
+            
+            
+        val = val.strip()    
+        val_length = len(val)
+                    
+
+        if val_length == 0:
+            is_val_blank = True
+            val_length = length
+        elif length <= val_length: # If value is longer then permitted length
+            val_length = length
+            
+        for lth in range(val_length):
+            val_to_set = ''
+            if is_val_blank:
+                val_to_set = ' '
+            elif val == '0':
+                val_to_set = '0'
+            else:
+                val_to_set = val[lth]
+            
+            data_pointer[start_index - 1 + lth] = val_to_set
+
+    
+
+    def get_object_gen1_format(self):
+        header_str = ''.join(self._header)
+        payload_str = ''.join(self._payload)
+        footer_str = ''.join(self._footer)
+
+        return '{}\n{}\n{}'.format(header_str, payload_str, footer_str)
+    
+
+...
+
+  BI_SSSS_OutSettlementsAPI
+"""----------------------------------------------------------------------------------------------------
+MODULE:
+    BI_SSSS_OutSettlementsAPI
+
+DESCRIPTION:
+    Utils functions.
+
+-------------------------------------------------------------------------------------------------------"""
+import acm, FLogger, traceback, InterfaceUtils
+import os
+import ParametersReader
+from BI_SSSS_OutSettlementGenerator import BIS4SettlementOutHandler
+import FFTPTLSOperations
+import EncoderUtils
+
+settlements_params = ParametersReader.get_params('OutSettlementsParams')
+ftpParams = ParametersReader.get_params('Bis4OutFtpParams')
+
+output_file_name = settlements_params['outputFileName']
+output_folder_name = settlements_params['outputFolder']
+out_settlements_query_name = settlements_params['outSettlementQuery']
+
+certPassword = ftpParams['cert_password']
+certFile = ftpParams['certificate']
+ftp_dest_dir = ftpParams['ftp_dest_dir']
+host = ftpParams['host']
+password = ftpParams['password']
+port = ftpParams['port']
+user = ftpParams['user']
+
+CALC_SPACE_TRADE_SHEET = acm.Calculations().CreateCalculationSpace(acm.GetDefaultContext(), 'FTradeSheet')
+CALC_SPACE_DEAL_SHEET = acm.Calculations().CreateCalculationSpace(acm.GetDefaultContext(), 'FDealSheet')
+g_calculation_space = acm.Calculations().CreateStandardCalculationsSpaceCollection()
+SETL_PREFIX = settlements_params['SETL_PREFIX']
+TRADE_PREFIX = settlements_params['TRADE_PREFIX']
+g_key = 'YDWN3418'
+EMPTY_TAX_DATE = '00000000'
+NO_SECURITY_ID = 'No Security ID mapped'
+NO_AGREEMENT_CODE = 'No agreement code mapped'
+DELIVERY_TYPE_DVP = 'Delivery versus Payment'
+DELIVERY_TYPE_DFP = 'Delivery Free of Payment'
+
+
+def get_agent_bic(account):
+    bic = ''
+    if account.CorrespondentBank5():
+        if account.Bic4():
+            bic = account.Bic4().Alias()
+    elif account.CorrespondentBank4():
+        if account.Bic3():
+            bic = account.Bic3().Alias()
+    elif account.CorrespondentBank3():
+        if account.Bic2():
+            bic = account.Bic2().Alias()
+    elif account.CorrespondentBank2():
+        if account.Bic():
+            bic = account.Bic().Alias()
+    elif account.CorrespondentBank():
+        if account.NetworkAlias():
+            bic = account.NetworkAlias().Alias()
+    return bic
+
+
+def get_transaction_code_type(settlement_obj):
+    trans_type = ''
+    trans_code = ''
+
+    if settlement_obj.Instrument().IsKindOf(acm.FBasketRepo):
+        trans_type = 'RP'
+        trans_code = 820
+    elif settlement_obj.DeliveryType() == DELIVERY_TYPE_DVP:
+        trans_type = 'SL'
+        trans_code = 700
+        if get_basket_repo_trade(settlement_obj):# If it's a DvP collateral trade
+            trans_type = 'RP'
+            trans_code = 820
+    elif settlement_obj.DeliveryType() == DELIVERY_TYPE_DFP:
+        trans_type = 'TF'
+        trans_code = 720
+
+    return trans_type, trans_code
+    
+def transform_agent_bic(bic):
+    """
+        if the CP CO value of correspondent bank  have last tree letters NVT 
+        its will convert last 3 letters from NVT TO DJA
+        but the special case if its KSEIINVT, the buyer/seller agent should be KSEIIDJ1
+        --> Example
+        if the value of correspondent bank is CENAIDJA , the buyer/seller agent sent to bis4  sent CENAIDJA
+        if the value of correspondent bank IS CENAINVT, the buyer/seller agent sent to the bis4 will  CENAIDJA
+        if the value of correspondent bank IS KSEIINVT, the buyer/seller agent sent to the bis4 will  KSEIIDJ1
+        if the value of correspondent bank IS KSEIIDJA, the buyer/seller agent sent to the bis4 will  KSEIIDJA
+    """
+    ret_val = bic
+    if ret_val == 'KSEIINVT':
+        ret_val = 'KSEIIDJ1'
+    elif ret_val.endswith('NVT'):
+        ret_val = ret_val[:-3] + "DJA"
+    
+    return ret_val
+    
+
+def get_trade_yield(trade):
+    try:
+        tradeLogicDecorator = acm.FTradeLogicDecorator(trade, None)
+        formatter = acm.Get('formats/SixDecimalDetailedTruncateTrailingZeroShowZero')
+        if trade.Instrument().Quotation().Name() == 'Yield':
+            as_formatted_string = formatter.Format(abs(tradeLogicDecorator.Price()))
+        else:
+            as_formatted_string = formatter.Format(abs(tradeLogicDecorator.ViceVersa()))
+        return formatter.Parse(as_formatted_string)
+    except Exception as err:
+        print('Error in get_trade_yield', err)    
+    return 0
+
+
+def get_repo_rate(settlement_object):
+    instrument = settlement_object.Instrument()
+    rate = 0
+    if instrument and instrument.IsKindOf(acm.FBasketRepo) and instrument.Legs():
+        leg = instrument.Legs()[0]
+        legtype = leg.LegType()
+        if legtype in ['Fixed', 'Fixed Accretive', 'Fixed Adjustable']:
+            rate = leg.FixedRate()
+        elif legtype == 'Float':
+            rate = leg.Spread()
+
+    return rate
+
+
+def get_repo_maturity_proceed(trd):
+    mat_proceed = 0
+    try:
+        if trd and trd.Instrument().IsKindOf(acm.FBasketRepo):
+            mat_proceed = CALC_SPACE_TRADE_SHEET.CalculateValue(trd, "Standard Calculations Projected Factor").Value().Number()
+
+    except Exception as e:
+        print("Error in get_repo_maturity_proceed : {}".format(e))
+
+    return mat_proceed
+
+
+def get_repo_tenure(trd):
+    repo_tenure = 0
+    end_date = ''
+    try:
+        if trd.Instrument().IsKindOf(acm.FBasketRepo):
+            start_date = trd.Instrument().StartDate()
+            end_date = trd.Instrument().EndDate()
+            repo_tenure = acm.Time.DateDifference(end_date, start_date)
+            end_date = InterfaceUtils.date_from_datetime(end_date, format_str='%Y%m%d')
+    except Exception as e:
+        print("Error in get_repo_tenure : {}".format(e))
+
+    return repo_tenure, end_date
+
+
+def get_collateral_trade(sett):
+    collateral_trade = None
+    if sett.Instrument().IsKindOf(acm.FBasketRepo):
+        repo_trade = sett.Trade()
+        m_set = repo_trade.MarginingSet()
+        for trd_lnk in m_set.TradeAgreementLinks():
+            if trd_lnk.Trade().TradeCategory() == 'Collateral':
+                collateral_trade = trd_lnk.Trade()
+
+    return collateral_trade
+    
+
+def get_basket_repo_trade(sett):
+    basket_repo_trade = None
+    if sett.Trade().TradeCategory() == 'Collateral':
+        collateral_trade = sett.Trade()
+        m_set = collateral_trade.MarginingSet()
+        for trd_lnk in m_set.TradeAgreementLinks():
+            if trd_lnk.Trade().Instrument().IsKindOf(acm.FBasketRepo):
+                basket_repo_trade = trd_lnk.Trade()  
+                break
+
+    return basket_repo_trade
+
+
+def get_accrued_interest(trd):
+    try:
+        calc = CALC_SPACE_DEAL_SHEET.CreateCalculation(trd, 'Standard Calculations Quote Conversion Accrued')
+        acc_int = calc.Value().Number()
+        formatter = acm.Get('formats/InstrumentDefintionCorrespondingPrice')
+        as_formatted_string = formatter.Format(acc_int)
+        return abs(formatter.Parse(as_formatted_string))
+    except Exception as err:
+        return 0
+
+
+def get_full_pricision_formatted(val):
+    formatter = acm.Get('formats/FullPrecision')
+    as_formatted_string = formatter.Format(abs(val))
+    return formatter.Parse(as_formatted_string)
+    
+
+def get_instrument_pricision_formatted(val):
+    formatter = acm.Get('formats/InstrumentDefinitionPrice')
+    as_formatted_string = formatter.Format(abs(val))
+    return formatter.Parse(as_formatted_string)
+
+
+def get_tax_amt_date(trd):
+    """
+    This function find tax and percentage tax
+    :param trd: FTrade
+    :return: tuple
+    """
+    tax_amt = 0
+    tax_date = EMPTY_TAX_DATE
+    for payment in trd.Payments():
+        if payment.Type().upper() == 'WHT':
+            tax_amt = abs(payment.Amount())
+            tax_date = InterfaceUtils.date_from_datetime(payment.PayDay(), format_str='%Y%m%d')
+            break
+    return tax_amt, tax_date
+
+def get_trade_price(trade):
+    """This function give the price for give acm_obj that can be confirmation or settlement"""
+
+    rate = ''
+    if trade:
+        formatter = acm.Get('formats/FullPrecision')
+        price_as_formatted_string = formatter.Format(trade.Price())
+        rate = formatter.Parse(price_as_formatted_string)
+    return rate
+
+def get_trade_clean(acm_obj):
+    trade = acm_obj.Trade()
+    instrument = trade.Instrument()
+    price = get_trade_price(trade)
+    nominal = trade.Instrument().NominalAmount()
+    clean_price = instrument.Calculation().PriceConvert(g_calculation_space, price, instrument.Quotation(), 'Clean', trade.ValueDay(), trade.ValueDay(), False).Number()
+    dealprice = clean_price
+    if dealprice:
+        dealprice = abs(dealprice)
+    return dealprice
+    
+def get_agreement_code(settlement_obj):
+    add_info_spec = acm.FAdditionalInfoSpec['CTPNumber']
+    trd = get_basket_repo_trade(settlement_obj)
+    if not trd:
+        trd = settlement_obj.Trade()   
+        
+    return trd.AddInfoValue(add_info_spec) if trd and trd.AddInfoValue(add_info_spec) is not None else ''
+
+def security_value(settlement):
+    trade = settlement.Trade()
+    td = acm.FBusinessLogicDecorator.WrapObject(trade)
+    secValue = td.SecurityValue(td.CollateralActionType(), None)
+    if  trade.BoFxRate():
+        securityvalue = secValue * trade.BoFxRate()
+    else:
+        securityvalue = secValue
+    return securityvalue   
+
+def get_interest(trade):
+    interest_amt = 0
+    for moneyFlow in trade.MoneyFlows():
+        if moneyFlow.Type() in ['Fixed Rate', 'Float Rate']:    
+            number = moneyFlow.Calculation().Projected(g_calculation_space).Value().Number()
+            if not acm.Operations.IsValueInfNanOrQNan(number):
+                interest_amt = abs(number)
+    
+    return interest_amt
+
+def get_cash_amount(trade):
+    interest_amt = 0
+    for moneyFlow in trade.MoneyFlows():
+        if moneyFlow.Type() in ['Premium']:    
+            number = moneyFlow.Calculation().Projected(g_calculation_space).Value().Number()
+            if not acm.Operations.IsValueInfNanOrQNan(number):
+                interest_amt = abs(number)
+    
+    return interest_amt 
+    
+def generate_file_stream(settlement_obj):
+    # Sample data
+    # 0SRCITIIDJX       20121031C000000100I1
+    # 1820BBNINIDJA                                        BMRIIDJA         BMRIIDJA         236508    OR  2020061120200611                        BNIPINRPSB301130    FR0070          000500000000000000852363000000000+000000000000000000000000000000000000042618150000000RP 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000                                                                                                                                            SB202006110059500000000000+0000000000000000000042639281499400003
+    # 90000100001000000000000000000000000000000000000
+
+    EMPTY_VALUE_BLANK = ''
+    EMPTY_NUMBER_ZERO = 0
+    seller_agent_bic = ''
+    buyer_agent_bic = ''
+    buyer_seller = 'B'
+    seller_reference = ''
+    buyer_reference = ''
+    repo_type = ''
+    repo_maturity_date = ''
+    repo_tenure = 0
+    repo_maturity_proceed = 0
+    repo_yield = 0
+    repo_rate = 0
+    clean_price = 0
+    repo_option = 0  # Fixed value
+    nominal_amt = settlement_obj.Trade().Nominal()
+    total_proceed = 0
+    accrued_interest = EMPTY_NUMBER_ZERO
+    yield_amt = EMPTY_NUMBER_ZERO
+    tax_amount = 0
+    tax_date = EMPTY_TAX_DATE
+    batch_ref_format_str = '{{}}{{:07}}{{:0{}}}'.format(3-len(SETL_PREFIX))
+
+    
+    instrument = settlement_obj.Instrument()
+    reserved2 = 'USD' if settlement_obj.Currency().Name() != 'IDR' else EMPTY_VALUE_BLANK
+    security_id = instrument.alias('BI-SSSS ALIAS')
+    trade_time = settlement_obj.Trade().TradeTime() if settlement_obj.Trade() else settlement_obj.CreateTime()  # if netted settlement
+    value_day = settlement_obj.ValueDay()
+    trade_day = InterfaceUtils.date_from_datetime(trade_time, format_str='%Y%m%d')
+    value_day = InterfaceUtils.date_from_datetime(value_day, format_str='%Y%m%d')
+    date_today = InterfaceUtils.date_from_datetime(acm.Time.DateToday(), format_str='%Y%m%d')
+    collateral_trade = get_collateral_trade(settlement_obj)
+    agreement_code = get_agreement_code(settlement_obj)
+    is_collateral_dvp_settlement = True if settlement_obj.Trade().TradeCategory() == 'Collateral' and settlement_obj.DeliveryType() == DELIVERY_TYPE_DVP else False
+        
+    if not agreement_code:
+        return NO_AGREEMENT_CODE
+
+    transaction_type, transaction_code = get_transaction_code_type(settlement_obj)    
+
+    if settlement_obj.Instrument().IsKindOf(acm.FBasketRepo):
+        repo_type = 'SB'
+        repo_option = 2
+        repo_rate = get_repo_rate(settlement_obj)
+        repo_rate = get_full_pricision_formatted(repo_rate)
+        repo_maturity_proceed = get_full_pricision_formatted(get_repo_maturity_proceed(settlement_obj.Trade()))
+        repo_tenure, repo_maturity_date = get_repo_tenure(settlement_obj)
+        if collateral_trade:
+            security_id = collateral_trade.Instrument().alias('BI-SSSS ALIAS')
+            nominal_amt = collateral_trade.Nominal()
+            total_proceed = settlement_obj.Trade().Premium() # Cash value of repo trade is total proceed
+            dirty_price = 100 * total_proceed/nominal_amt # For repo its the dirty price. Accrued interest is always zero. collateral_trade.Price()
+            clean_price = get_full_pricision_formatted(dirty_price)
+            #accrued_interest_tmp = get_accrued_interest(collateral_trade)
+            tax_amount, tax_date = get_tax_amt_date(collateral_trade) if collateral_trade else (0, EMPTY_TAX_DATE)
+            tax_amount = get_full_pricision_formatted(tax_amount)
+            
+    else:
+        tax_amount, tax_date = get_tax_amt_date(settlement_obj.Trade()) if settlement_obj.Trade() else (0, EMPTY_TAX_DATE)
+        tax_amount = abs(get_full_pricision_formatted(tax_amount))
+        clean_price_tmp = get_trade_clean(settlement_obj)
+        if transaction_code == 700 or is_collateral_dvp_settlement: #Send only if outright DVP  
+            yield_amt = get_trade_yield(settlement_obj.Trade())            
+        if transaction_code == 700: #Send only if outright DVP  
+            accrued_interest = abs(get_accrued_interest(settlement_obj.Trade()))
+        if transaction_code != 720: #Don't Send if outright DFP  
+            total_proceed = abs(settlement_obj.Trade().Premium()) - tax_amount            
+        
+        if transaction_code == 700: #Send only if outright DVP            
+            clean_price = get_full_pricision_formatted(clean_price_tmp)
+            
+        if is_collateral_dvp_settlement:
+            #clean_price_tmp = 100.0 * security_value(settlement_obj)/settlement_obj.Trade().Nominal()
+            #clean_price = get_full_pricision_formatted(clean_price_tmp)
+            repo_option = 2  
+            repo_type = 'SB'
+            repo_trd = get_basket_repo_trade(settlement_obj)
+            haircut = acm.FTradeLogicDecorator(settlement_obj.Trade(),None).Haircut()
+            #total_proceed = abs(settlement_obj.Trade().Nominal()) * (clean_price_tmp-haircut)/100 # + 0 accrued interest is always zero
+            repo_tenure, repo_maturity_date = get_repo_tenure(repo_trd)
+            repo_rate = round(get_repo_rate(repo_trd),4)
+            repo_maturity_proceed = get_full_pricision_formatted(get_repo_maturity_proceed(repo_trd))
+            accrued_interest = get_interest(repo_trd)
+            total_proceed = abs(repo_trd.Premium()) # Cash value of repo trade is total proceed
+            clean_price_tmp = 100.0 * total_proceed/settlement_obj.Trade().Nominal()
+            clean_price = get_full_pricision_formatted(clean_price_tmp)
+                        
+    if not security_id:
+        return NO_SECURITY_ID
+    total_proceed = get_full_pricision_formatted(total_proceed)
+        
+    member_code = get_agent_bic(settlement_obj.AcquirerAccountRef())
+    if not member_code:
+        member_code = settlement_obj.Acquirer().Swift()
+        
+    if settlement_obj.Trade().Direction() in ['Sell', 'Deposit']:
+        buyer_seller = 'S'
+        seller_agent_bic = get_agent_bic(settlement_obj.AcquirerAccountRef())
+        buyer_agent_bic = get_agent_bic(settlement_obj.CounterpartyAccountRef())
+        seller_member_bic = seller_agent_bic if seller_agent_bic else settlement_obj.Acquirer().Swift()
+        buyer_member_bic = buyer_agent_bic if buyer_agent_bic else settlement_obj.Counterparty().Swift()
+        seller_reference = '{}{}'.format(SETL_PREFIX, settlement_obj.Oid())   
+        seller_agent_bic = transform_agent_bic(seller_agent_bic)
+        buyer_agent_bic = transform_agent_bic(buyer_agent_bic)
+    else:
+        buyer_agent_bic = get_agent_bic(settlement_obj.AcquirerAccountRef())
+        seller_agent_bic = get_agent_bic(settlement_obj.CounterpartyAccountRef())
+        seller_member_bic = seller_agent_bic if seller_agent_bic else settlement_obj.Counterparty().Swift()
+        buyer_member_bic = buyer_agent_bic if buyer_agent_bic else settlement_obj.Acquirer().Swift()
+        buyer_reference = '{}{}'.format(SETL_PREFIX, settlement_obj.Oid())
+        seller_agent_bic = transform_agent_bic(seller_agent_bic)
+        buyer_agent_bic = transform_agent_bic(buyer_agent_bic)
+    
+    gen1_object = BIS4SettlementOutHandler()
+    
+    
+
+    # Header Section
+    gen1_object.set_attribute(BIS4SettlementOutHandler.HEADER_SECTION, 'Record Type', 0)
+
+    gen1_object.set_attribute(BIS4SettlementOutHandler.HEADER_SECTION, 'Member Code', member_code)
+    gen1_object.set_attribute(BIS4SettlementOutHandler.HEADER_SECTION, 'Crediton Date', date_today)
+    gen1_object.set_attribute(BIS4SettlementOutHandler.HEADER_SECTION, 'Batch Reference',
+                              batch_ref_format_str.format(SETL_PREFIX, settlement_obj.Oid(), settlement_obj.VersionId()))  # passing string as it is left aligned
+    gen1_object.set_attribute(BIS4SettlementOutHandler.HEADER_SECTION, 'Message Type', 'S')
+    gen1_object.set_attribute(BIS4SettlementOutHandler.HEADER_SECTION, 'Batch type', 1)
+    gen1_object.set_attribute(BIS4SettlementOutHandler.HEADER_SECTION, 'Reserved', EMPTY_VALUE_BLANK)
+
+    # Payload Section
+    gen1_object.set_attribute(BIS4SettlementOutHandler.PAYLOAD_SECTION, 'Record Type', 1)
+    gen1_object.set_attribute(BIS4SettlementOutHandler.PAYLOAD_SECTION, 'Transaction Code', transaction_code)
+
+    gen1_object.set_attribute(BIS4SettlementOutHandler.PAYLOAD_SECTION, 'Initiate Party', buyer_seller)
+    gen1_object.set_attribute(BIS4SettlementOutHandler.PAYLOAD_SECTION, 'Seller Member Code', seller_member_bic)
+    gen1_object.set_attribute(BIS4SettlementOutHandler.PAYLOAD_SECTION, 'Seller Agent Code', seller_agent_bic)
+    gen1_object.set_attribute(BIS4SettlementOutHandler.PAYLOAD_SECTION, 'Seller Reference', seller_reference)
+    gen1_object.set_attribute(BIS4SettlementOutHandler.PAYLOAD_SECTION, 'Seller Custody Code', EMPTY_VALUE_BLANK)
+    gen1_object.set_attribute(BIS4SettlementOutHandler.PAYLOAD_SECTION, 'Seller Investor Type', EMPTY_VALUE_BLANK)
+    gen1_object.set_attribute(BIS4SettlementOutHandler.PAYLOAD_SECTION, 'Buyer Member Code', buyer_member_bic)
+    gen1_object.set_attribute(BIS4SettlementOutHandler.PAYLOAD_SECTION, 'Buyer Agent Code', buyer_agent_bic)
+    gen1_object.set_attribute(BIS4SettlementOutHandler.PAYLOAD_SECTION, 'Buyer Reference', buyer_reference)
+    gen1_object.set_attribute(BIS4SettlementOutHandler.PAYLOAD_SECTION, 'Buyer Custody Code', EMPTY_VALUE_BLANK)
+    gen1_object.set_attribute(BIS4SettlementOutHandler.PAYLOAD_SECTION, 'Buyer Investor Type', EMPTY_VALUE_BLANK)
+    gen1_object.set_attribute(BIS4SettlementOutHandler.PAYLOAD_SECTION, 'Transaction Date', trade_day)
+    gen1_object.set_attribute(BIS4SettlementOutHandler.PAYLOAD_SECTION, 'Value Date', value_day)
+    gen1_object.set_attribute(BIS4SettlementOutHandler.PAYLOAD_SECTION, 'Beneficiary', EMPTY_VALUE_BLANK)
+    gen1_object.set_attribute(BIS4SettlementOutHandler.PAYLOAD_SECTION, 'Agreement Code', agreement_code)
+    gen1_object.set_attribute(BIS4SettlementOutHandler.PAYLOAD_SECTION, 'Securities Code', security_id)
+    gen1_object.set_attribute(BIS4SettlementOutHandler.PAYLOAD_SECTION, 'Nominal Amount', nominal_amt)
+    gen1_object.set_attribute(BIS4SettlementOutHandler.PAYLOAD_SECTION, 'Clean Price', clean_price)
+    gen1_object.set_attribute(BIS4SettlementOutHandler.PAYLOAD_SECTION, 'Yield', yield_amt)
+    gen1_object.set_attribute(BIS4SettlementOutHandler.PAYLOAD_SECTION, 'Repo Option', repo_option)
+    gen1_object.set_attribute(BIS4SettlementOutHandler.PAYLOAD_SECTION, 'Accrued Interest', accrued_interest)
+    gen1_object.set_attribute(BIS4SettlementOutHandler.PAYLOAD_SECTION, 'Misc', EMPTY_NUMBER_ZERO)
+    gen1_object.set_attribute(BIS4SettlementOutHandler.PAYLOAD_SECTION, 'Total Proceed', total_proceed)
+    gen1_object.set_attribute(BIS4SettlementOutHandler.PAYLOAD_SECTION, 'Transaction Type', transaction_type)
+    gen1_object.set_attribute(BIS4SettlementOutHandler.PAYLOAD_SECTION, 'Settlement Type', EMPTY_VALUE_BLANK)
+    gen1_object.set_attribute(BIS4SettlementOutHandler.PAYLOAD_SECTION, 'Tax I Date', tax_date)
+    gen1_object.set_attribute(BIS4SettlementOutHandler.PAYLOAD_SECTION, 'Tax I Nominal Amount', tax_amount)
+    gen1_object.set_attribute(BIS4SettlementOutHandler.PAYLOAD_SECTION, 'Tax I Price', EMPTY_NUMBER_ZERO)
+    gen1_object.set_attribute(BIS4SettlementOutHandler.PAYLOAD_SECTION, 'Tax II Date', EMPTY_NUMBER_ZERO)
+    gen1_object.set_attribute(BIS4SettlementOutHandler.PAYLOAD_SECTION, 'Tax II Nominal Amount', EMPTY_NUMBER_ZERO)
+    gen1_object.set_attribute(BIS4SettlementOutHandler.PAYLOAD_SECTION, 'Tax II Price', EMPTY_NUMBER_ZERO)
+    gen1_object.set_attribute(BIS4SettlementOutHandler.PAYLOAD_SECTION, 'Tax III Date', EMPTY_NUMBER_ZERO)
+    gen1_object.set_attribute(BIS4SettlementOutHandler.PAYLOAD_SECTION, 'Tax III Nominal Amount', EMPTY_NUMBER_ZERO)
+    gen1_object.set_attribute(BIS4SettlementOutHandler.PAYLOAD_SECTION, 'Tax III Price', EMPTY_NUMBER_ZERO)
+    gen1_object.set_attribute(BIS4SettlementOutHandler.PAYLOAD_SECTION, 'Tax Percentage', EMPTY_NUMBER_ZERO)
+    gen1_object.set_attribute(BIS4SettlementOutHandler.PAYLOAD_SECTION, 'Seller To Buyer Information',
+                              EMPTY_VALUE_BLANK)
+    gen1_object.set_attribute(BIS4SettlementOutHandler.PAYLOAD_SECTION, 'Repo Type', repo_type)
+
+    gen1_object.set_attribute(BIS4SettlementOutHandler.PAYLOAD_SECTION, 'Repo Maturity Date', repo_maturity_date)
+    gen1_object.set_attribute(BIS4SettlementOutHandler.PAYLOAD_SECTION, 'Repo Rate', repo_rate)
+    gen1_object.set_attribute(BIS4SettlementOutHandler.PAYLOAD_SECTION, 'Repo Yield', repo_yield)
+    gen1_object.set_attribute(BIS4SettlementOutHandler.PAYLOAD_SECTION, 'Sign', '+')
+    gen1_object.set_attribute(BIS4SettlementOutHandler.PAYLOAD_SECTION, 'Repo Accrued Interest', EMPTY_NUMBER_ZERO)
+    gen1_object.set_attribute(BIS4SettlementOutHandler.PAYLOAD_SECTION, 'Repo Maturity Total Proceed',
+                              repo_maturity_proceed)
+    gen1_object.set_attribute(BIS4SettlementOutHandler.PAYLOAD_SECTION, 'Repo Tenure', repo_tenure)
+    gen1_object.set_attribute(BIS4SettlementOutHandler.PAYLOAD_SECTION, 'Seller AID', EMPTY_VALUE_BLANK)
+    gen1_object.set_attribute(BIS4SettlementOutHandler.PAYLOAD_SECTION, 'Buyer AID', EMPTY_VALUE_BLANK)
+    gen1_object.set_attribute(BIS4SettlementOutHandler.PAYLOAD_SECTION, 'Name for Seller Customer', EMPTY_VALUE_BLANK)
+    gen1_object.set_attribute(BIS4SettlementOutHandler.PAYLOAD_SECTION, 'Name for Buyer Customer', EMPTY_VALUE_BLANK)
+    gen1_object.set_attribute(BIS4SettlementOutHandler.PAYLOAD_SECTION, 'NPWP for Seller Customer', EMPTY_VALUE_BLANK)
+    gen1_object.set_attribute(BIS4SettlementOutHandler.PAYLOAD_SECTION, 'NPWP for Buyer Customer', EMPTY_VALUE_BLANK)
+    gen1_object.set_attribute(BIS4SettlementOutHandler.PAYLOAD_SECTION, 'Address for Seller', EMPTY_VALUE_BLANK)
+    gen1_object.set_attribute(BIS4SettlementOutHandler.PAYLOAD_SECTION, 'Address for Buyer', EMPTY_VALUE_BLANK)
+    gen1_object.set_attribute(BIS4SettlementOutHandler.PAYLOAD_SECTION, 'Reserved', EMPTY_VALUE_BLANK)
+    gen1_object.set_attribute(BIS4SettlementOutHandler.PAYLOAD_SECTION, 'Reserved2', reserved2)
+
+    # Footer Section
+
+    gen1_object.set_attribute(BIS4SettlementOutHandler.FOOTER_SECTION, 'Record Type', 9)
+    gen1_object.set_attribute(BIS4SettlementOutHandler.FOOTER_SECTION, 'Total SSTS 1st Count', 1)
+    gen1_object.set_attribute(BIS4SettlementOutHandler.FOOTER_SECTION, 'Total SSTS 1st Nominal Amount', nominal_amt)
+    gen1_object.set_attribute(BIS4SettlementOutHandler.FOOTER_SECTION, 'Total SSTS 2nd Count', EMPTY_NUMBER_ZERO)
+    gen1_object.set_attribute(BIS4SettlementOutHandler.FOOTER_SECTION, 'Total SSTS 2nd Nominal Amount',
+                              EMPTY_NUMBER_ZERO)
+    gen1_object.set_attribute(BIS4SettlementOutHandler.FOOTER_SECTION, 'Reserved', EMPTY_VALUE_BLANK)
+
+    return gen1_object.get_object_gen1_format()
+
+
+def process_settlements_task(sett_logger):
+    passed_settlements = list()  # Populate string Oid to use join later
+    failed_settlement = list()  # Populate string Oid to use join later
+    add_info_spec = acm.FAdditionalInfoSpec['SentToBIS4']
+    if not add_info_spec:
+        sett_logger.ELOG('Add info SentToBIS4 not present on FSettlement.')
+    else:
+        try:
+            query_obj = acm.FStoredASQLQuery[out_settlements_query_name]
+            if query_obj:
+                for sett in query_obj.Query().Select():
+                    try:
+                        gen1_text = generate_file_stream(sett)
+                        if gen1_text == NO_SECURITY_ID or gen1_text == NO_AGREEMENT_CODE:
+                            sett_logger.LOG('{} for settlement {}. Skipping it.'.format(gen1_text, sett.Oid()))
+                            failed_settlement.append(str(sett.Oid()))
+                            continue
+                        sett_file_name = output_file_name.format(sett.Oid())
+                        output_file_name_full = os.path.join(output_folder_name, sett_file_name)
+                        with open(output_file_name_full, 'w') as fp:
+                            fp.write(gen1_text)
+                        if upload_files_to_server(ftp_dest_dir, host, port, user, password, certFile, certPassword,
+                                                  output_file_name_full):
+                            sett.AddInfoValue(add_info_spec, '1')
+                            sett.Commit()
+                            passed_settlements.append(str(sett.Oid()))
+                        else:
+                            failed_settlement.append(str(sett.Oid()))
+                    except Exception as err:
+                        # sett_logger.ELOG('Error ocurred for settlement id {}. {}'.format(sett.Oid(), err))
+                        print(traceback.format_exc())
+                        failed_settlement.append(str(sett.Oid()))
+        except Exception as err:
+            sett_logger.ELOG('Error ocurred in process_settlements_task. {}'.format(err))
+
+    return passed_settlements, failed_settlement
+
+
+def process_settlement(sett_logger, sett):
+    passed_settlements = list()
+    failed_settlement = list()
+    add_info_spec = acm.FAdditionalInfoSpec['SentToBIS4']
+    if not add_info_spec:
+        sett_logger.ELOG('Add info SentToBIS4 not present on FSettlement.')
+    else:
+        try:
+            query_obj = acm.FStoredASQLQuery[out_settlements_query_name]
+            if query_obj:
+                if query_obj.Query().Select().IsSatisfiedBy(sett):
+                    try:
+                        gen1_text = generate_file_stream(sett)
+                        if gen1_text == NO_SECURITY_ID or gen1_text == NO_AGREEMENT_CODE:
+                            sett_logger.LOG('{} for settlement {}. Skipping it.'.format(gen1_text, sett.Oid()))
+                            failed_settlement.append(str(sett.Oid()))                            
+                        else:
+                            sett_file_name = output_file_name.format(sett.Oid())
+                            output_file_name_full = os.path.join(output_folder_name, sett_file_name)
+                            with open(output_file_name_full, 'w') as fp:
+                                fp.write(gen1_text)
+                            if upload_files_to_server(ftp_dest_dir, host, port, user, password, certFile, certPassword,
+                                                      output_file_name_full):
+                                sett.AddInfoValue(add_info_spec, '1')
+                                sett.Commit()
+                                passed_settlements.append(str(sett.Oid()))
+                            else:
+                                failed_settlement.append(str(sett.Oid()))
+                    except Exception as err:
+                        sett_logger.ELOG('Error ocurred for settlement id {}. {}'.format(sett.Oid(), err))
+                        failed_settlement.append(str(sett.Oid()))
+                        print(traceback.format_exc())
+                else:
+                    sett_logger.LOG('Settlement {} not passed in filter query.'.format(sett.Oid()))
+            else:
+                sett_logger.ELOG('No query with name {} found'.format(out_settlements_query_name))
+        except Exception as err:
+            sett_logger.ELOG('Error ocurred in process_settlements_task. {}'.format(err))
+            print(traceback.format_exc())
+
+    return passed_settlements, failed_settlement
+
+
+def initialize_logging(logFolder, logFile, logLevel, app_name='BIS4OutSettlements'):
+    """
+    Initialize logger
+    :param params: parameters
+    :return: FLogger object
+    """
+    logger = None
+    try:
+        logfile = os.path.join(logFolder, logFile)
+        if logfile == '':
+            logfile = None
+
+        level = InterfaceUtils.LogLevelNameToNumber(logLevel)
+        logger = FLogger.FLogger(level=level,
+                                 name=app_name,
+                                 logToPrime=True,
+                                 logToFileAtSpecifiedPath=logfile,
+                                 logToConsole=False)
+    except Exception as err:
+        print('Error in initializing logger {}'.format(err))
+        print(traceback.format_exc())
+    return logger
+
+def upload_files_to_server(destination_dir, host, port, username, password, certFile, certPassword, source_dir):
+    """ This function uploads the file to FTP"""
+    password = EncoderUtils.get_decrypted_password(password, g_key)
+    connstr = '{}|{}|{}|{}|{}|{}'.format(host, port, username, password, certFile, certPassword)
+    return FFTPTLSOperations.write_to_ftp(source_dir, connstr, destination_dir)
+
+
+...
+
+}
+

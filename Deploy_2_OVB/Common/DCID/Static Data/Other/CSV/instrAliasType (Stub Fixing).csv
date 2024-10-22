@@ -1,0 +1,4 @@
+INSTRALIASTYPE,,,,/INSTRALIASTYPE
+ALIAS_TYPE_DESCRIPTION,NETWORK,TYPE,ALIAS_TYPE_NAME,
+Rate index with dedicated fwd curve,Yes,Instrument,STUB_ESTIMATION,
+Rate index eligible for stub fixing,,Instrument,STUB_FIXING,

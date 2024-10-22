@@ -1,0 +1,368 @@
+[
+    {
+        "FTransaction": {
+            "Objects": [
+                {
+                    "FComplianceRule": {
+                        "Definition": {
+                            "ref(RuleDefinition.Exposure)": {
+                                "Column": {
+                                    "ref(FStandardColumnCreator)": {
+                                        "Configuration": {
+                                            "ref(FColumnCreatorConfiguration)": {
+                                                "ref(FDictionary)": {
+                                                    "columnParameters": {
+                                                        "ref(FVariantDictionary)": {
+                                                            "AggCurrChoice": "Fixed Curr",
+                                                            "FixedCurr": {
+                                                                "ref(FCurrency)": "USD"
+                                                            },
+                                                            "PosCurrChoice": "Fixed Curr"
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        "ContextSym": {
+                                            "ref(FSymbol)": "Standard"
+                                        },
+                                        "OriginalColumnId": {
+                                            "ref(FSymbol)": "Portfolio Delta Yield"
+                                        }
+                                    }
+                                },
+                                "ColumnIndex": 0,
+                                "CompoundQueryLogicalOperator": "AND",
+                                "FilterQuery": null,
+                                "ForEach": "",
+                                "PythonFilterMethodName": "",
+                                "RelativeTo": false,
+                                "RelativeToColumn": null,
+                                "RelativeToColumnIndex": 0,
+                                "StoredTimeBuckets": null
+                            }
+                        },
+                        "DefinitionInfo": "Exposure",
+                        "Description": "",
+                        "Name": "Standard_PV01",
+                        "RuleCategory": {
+                            "ref(FChoiceList)": {
+                                "List": "Compliance Rule Category",
+                                "Name": "Pre-Deal"
+                            }
+                        }
+                    }
+                },
+                {
+                    "FThreshold": {
+                        "ComparisonType": "Greater",
+                        "ComplianceRule": {
+                            "ref(FComplianceRule)": "Standard_PV01"
+                        },
+                        "Coordinates": {
+                            "ref(FStaticArray)": []
+                        },
+                        "Description": "",
+                        "Parent": null,
+                        "Relative": false,
+                        "Type": {
+                            "ref(FChoiceList)": {
+                                "List": "Threshold Type",
+                                "Name": "Violation"
+                            }
+                        },
+                        "Value": 200.0
+                    }
+                },
+                {
+                    "FThreshold": {
+                        "ComparisonType": "Greater",
+                        "ComplianceRule": {
+                            "ref(FComplianceRule)": "Standard_PV01"
+                        },
+                        "Coordinates": {
+                            "ref(FStaticArray)": []
+                        },
+                        "Description": "",
+                        "Parent": {
+                            "ref(FThreshold)": {
+                                "ComparisonType": "Greater",
+                                "ComplianceRule": {
+                                    "ref(FComplianceRule)": "Standard_PV01"
+                                },
+                                "Coordinates": {
+                                    "ref(FStaticArray)": []
+                                },
+                                "Type": {
+                                    "ref(FChoiceList)": {
+                                        "List": "Threshold Type",
+                                        "Name": "Violation"
+                                    }
+                                }
+                            }
+                        },
+                        "Relative": false,
+                        "Type": {
+                            "ref(FChoiceList)": {
+                                "List": "Threshold Type",
+                                "Name": "Warning"
+                            }
+                        },
+                        "Value": 80.0
+                    }
+                },
+                {
+                    "FThreshold": {
+                        "ComparisonType": "Less or Equal",
+                        "ComplianceRule": {
+                            "ref(FComplianceRule)": "Standard_PV01"
+                        },
+                        "Coordinates": {
+                            "ref(FStaticArray)": []
+                        },
+                        "Description": "",
+                        "Parent": null,
+                        "Relative": false,
+                        "Type": {
+                            "ref(FChoiceList)": {
+                                "List": "Threshold Type",
+                                "Name": "Reporting"
+                            }
+                        },
+                        "Value": 160.0
+                    }
+                },
+                {
+                    "FAppliedRule": {
+                        "ComplianceRule": {
+                            "ref(FComplianceRule)": "Standard_PV01"
+                        },
+                        "Data": "!enc!(7II<'@A-C4X(7C:C9++:L,P$$7W_@J119:UTT4?1#68&BVZ:$+3=J]8TS!%EH0\\AOCOBRR:1RN':\"-&,]RYYZ*,B\\HYC:#>>@VU),EH<,\">9E73UK:5:&9EQAA7\\(4&\":WY'5A[Z\\#3,/89XZ+&)O2E'](:C/'\\9&B4S8^Z8^VDERT0^&YRS8G?];_IOQN#9!1`Z\"JC/J7N84K[6HPD2GQ,+#N@)XW'%-QYW1ND2?[-T&ZMO@#\\#GNZ1-B11[-+\",PU+46P][)9O7X0ZNZFAL8J4*OM-S3$;+PDL6)?A+,0C[=WS_</8E',=[3D>=0^YA&\\'`*(SB-Q0\"RS\\U3\"]RM_`/MXSC8",
+                        "EndDate": "",
+                        "Inactive": false,
+                        "ReviewDate": "",
+                        "Size": 356,
+                        "StartDate": "",
+                        "Target": {
+                            "ref(FPhysicalPortfolio)": "CB 1"
+                        },
+                        "Unit": {
+                            "ref(FSymbol)": "<FRuleJSONUtils.DecodedObject object at 0x000001F926C78F10>"
+                        }
+                    }
+                },
+                {
+                    "FThresholdValue": {
+                        "AppliedRule": {
+                            "ref(FAppliedRule)": {
+                                "ComplianceRule": {
+                                    "ref(FComplianceRule)": "Standard_PV01"
+                                },
+                                "Target": {
+                                    "ref(FPhysicalPortfolio)": "CB 1"
+                                }
+                            }
+                        },
+                        "Threshold": {
+                            "ref(FThreshold)": {
+                                "ComparisonType": "Greater",
+                                "ComplianceRule": {
+                                    "ref(FComplianceRule)": "Standard_PV01"
+                                },
+                                "Coordinates": {
+                                    "ref(FStaticArray)": []
+                                },
+                                "Type": {
+                                    "ref(FChoiceList)": {
+                                        "List": "Threshold Type",
+                                        "Name": "Violation"
+                                    }
+                                }
+                            }
+                        },
+                        "Value": 200.0
+                    }
+                },
+                {
+                    "FThresholdValue": {
+                        "AppliedRule": {
+                            "ref(FAppliedRule)": {
+                                "ComplianceRule": {
+                                    "ref(FComplianceRule)": "Standard_PV01"
+                                },
+                                "Target": {
+                                    "ref(FPhysicalPortfolio)": "CB 1"
+                                }
+                            }
+                        },
+                        "Threshold": {
+                            "ref(FThreshold)": {
+                                "ComparisonType": "Greater",
+                                "ComplianceRule": {
+                                    "ref(FComplianceRule)": "Standard_PV01"
+                                },
+                                "Coordinates": {
+                                    "ref(FStaticArray)": []
+                                },
+                                "Type": {
+                                    "ref(FChoiceList)": {
+                                        "List": "Threshold Type",
+                                        "Name": "Warning"
+                                    }
+                                }
+                            }
+                        },
+                        "Value": 80.0
+                    }
+                },
+                {
+                    "FThresholdValue": {
+                        "AppliedRule": {
+                            "ref(FAppliedRule)": {
+                                "ComplianceRule": {
+                                    "ref(FComplianceRule)": "Standard_PV01"
+                                },
+                                "Target": {
+                                    "ref(FPhysicalPortfolio)": "CB 1"
+                                }
+                            }
+                        },
+                        "Threshold": {
+                            "ref(FThreshold)": {
+                                "ComparisonType": "Less or Equal",
+                                "ComplianceRule": {
+                                    "ref(FComplianceRule)": "Standard_PV01"
+                                },
+                                "Coordinates": {
+                                    "ref(FStaticArray)": []
+                                },
+                                "Type": {
+                                    "ref(FChoiceList)": {
+                                        "List": "Threshold Type",
+                                        "Name": "Reporting"
+                                    }
+                                }
+                            }
+                        },
+                        "Value": 160.0
+                    }
+                },
+                {
+                    "FAppliedRule": {
+                        "ComplianceRule": {
+                            "ref(FComplianceRule)": "Standard_PV01"
+                        },
+                        "Data": "!enc!(7II<'@A-C4X(7C:C9+-:L,P$(3O?@J10XZUVY26$M5@,#KTT(2F[5VQMF&++`EY#?';%UDT/ZT<HHM8[3([WZ\",B\\HYC:#>>@VU),EH<,\">9U73UK:5:&9EQAA7\\(4&\":WY'5A[Z\\#3,/89XZ+&)O2E'](:C/'\\9&B4S8^Z8^VDERT0^&YRS8G?];_IOQN#9!1`Z\"JC/J7N84K[6HPD2GQ,+#N@)XW'%-QYW1ND2?[-T&ZMO@#\\#GNZ1-B11[-+\",PU+46P][)9O7X0ZNZFAL8J4*OM-S3$;+PDL6)?A',KGNX>'Q:+>U',=[3D>=0^YA&\\'`*(SB-Q0\"RS\\U3\"]RM_`/7MSB0",
+                        "EndDate": "",
+                        "Inactive": false,
+                        "ReviewDate": "",
+                        "Size": 356,
+                        "StartDate": "",
+                        "Target": {
+                            "ref(FCompoundPortfolio)": "TREASURY HO"
+                        },
+                        "Unit": {
+                            "ref(FSymbol)": "<FRuleJSONUtils.DecodedObject object at 0x000001F9276334F0>"
+                        }
+                    }
+                },
+                {
+                    "FThresholdValue": {
+                        "AppliedRule": {
+                            "ref(FAppliedRule)": {
+                                "ComplianceRule": {
+                                    "ref(FComplianceRule)": "Standard_PV01"
+                                },
+                                "Target": {
+                                    "ref(FCompoundPortfolio)": "TREASURY HO"
+                                }
+                            }
+                        },
+                        "Threshold": {
+                            "ref(FThreshold)": {
+                                "ComparisonType": "Greater",
+                                "ComplianceRule": {
+                                    "ref(FComplianceRule)": "Standard_PV01"
+                                },
+                                "Coordinates": {
+                                    "ref(FStaticArray)": []
+                                },
+                                "Type": {
+                                    "ref(FChoiceList)": {
+                                        "List": "Threshold Type",
+                                        "Name": "Violation"
+                                    }
+                                }
+                            }
+                        },
+                        "Value": 200.0
+                    }
+                },
+                {
+                    "FThresholdValue": {
+                        "AppliedRule": {
+                            "ref(FAppliedRule)": {
+                                "ComplianceRule": {
+                                    "ref(FComplianceRule)": "Standard_PV01"
+                                },
+                                "Target": {
+                                    "ref(FCompoundPortfolio)": "TREASURY HO"
+                                }
+                            }
+                        },
+                        "Threshold": {
+                            "ref(FThreshold)": {
+                                "ComparisonType": "Greater",
+                                "ComplianceRule": {
+                                    "ref(FComplianceRule)": "Standard_PV01"
+                                },
+                                "Coordinates": {
+                                    "ref(FStaticArray)": []
+                                },
+                                "Type": {
+                                    "ref(FChoiceList)": {
+                                        "List": "Threshold Type",
+                                        "Name": "Warning"
+                                    }
+                                }
+                            }
+                        },
+                        "Value": 80.0
+                    }
+                },
+                {
+                    "FThresholdValue": {
+                        "AppliedRule": {
+                            "ref(FAppliedRule)": {
+                                "ComplianceRule": {
+                                    "ref(FComplianceRule)": "Standard_PV01"
+                                },
+                                "Target": {
+                                    "ref(FCompoundPortfolio)": "TREASURY HO"
+                                }
+                            }
+                        },
+                        "Threshold": {
+                            "ref(FThreshold)": {
+                                "ComparisonType": "Less or Equal",
+                                "ComplianceRule": {
+                                    "ref(FComplianceRule)": "Standard_PV01"
+                                },
+                                "Coordinates": {
+                                    "ref(FStaticArray)": []
+                                },
+                                "Type": {
+                                    "ref(FChoiceList)": {
+                                        "List": "Threshold Type",
+                                        "Name": "Reporting"
+                                    }
+                                }
+                            }
+                        },
+                        "Value": 160.0
+                    }
+                }
+            ]
+        }
+    }
+]

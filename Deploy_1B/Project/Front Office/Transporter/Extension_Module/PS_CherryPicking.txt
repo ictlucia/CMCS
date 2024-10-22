@@ -1,0 +1,1423 @@
+#
+# Front Arena exported extension module.
+# source          ""
+# timestamp (utc) "2023-06-23 10:15:26.6"
+# ***** DO NOT EDIT! *****
+#
+name        "PS_CherryPicking"
+description "$Id$"
+
+groups {
+}
+
+decls[FColumnAppearance] {
+}
+
+clx FObject [FColumnAppearance] {
+  availableTradeQuantity_Color =
+  Bkg1=GreenTint:1;infinity
+  Bkg2=RedTint:-1;-infinity
+  BkgColumn=availableTradeQuantity
+  BkgIntervals=Bkg1;Bkg2
+  TextColumn=availableTradeQuantity
+  TextIntervals=Txt1;Txt2
+  Txt1=DarkGreen:1;infinity
+  Txt2=DarkRed:-1;-infinity
+  ValueTruncation=Disabled
+
+
+  Close =
+  Alignment=center
+
+
+}
+
+decls[FColumnDefinition] {
+  "AvailableForSale" ( "sheet columns.tradesheet" ) "";
+  "AvailableTradeQuantity" ( "sheet columns.tradesheet" ) "";
+  "MatchingTradeLinkLot" ( "sheet columns.tradesheet" ) "";
+  "Portfolio Closed Tax Lots" ( "sheet columns.tradesheet" ) "";
+}
+
+clx FTradingSheet [FColumnDefinition] {
+  AvailableForSale =
+  ExtensionAttribute=availableForSale
+  Format=ImpreciseHideNaN
+  GroupLabel=Cherry Picking
+  LabelList=AFS;Available for Sale
+
+
+  AvailableTradeQuantity =
+  ColumnAppearance=availableTradeQuantity_Color
+  Description=Available Quantity of the cherry picked trade.
+  ExtensionAttribute=availableTradeQuantity
+  Format=Imprecise
+  GroupLabel=Cherry Picking
+  Name=Available Trade Quantity
+
+
+  MatchingTradeLinkLot =
+  Description=Closed Tax Lots taking into account Matching Trade Links
+  ExtensionAttribute=matchingTradeLots
+  GroupLabel=Cherry Picking
+  LabelList=MTLLots
+  Name=Matching Trade Link Lots
+
+
+}
+
+decls[FCustomMethod] {
+}
+
+clx FTrade [FCustomMethod] {
+  GetRemainingQuantityOfCherryPickedTrade =
+  Definition=GetRemainingQuantityOfCherryPickedTrade: double read
+  Function=ReportMethods.get_remaining_quantity_of_cherrypickedtrade
+
+
+}
+
+decls[FExtensionAttribute] {
+}
+
+clx FBond [FExtensionAttribute] {
+  cherryPickCountertparty = object.Name;
+}
+
+clx FInstrument [FExtensionAttribute] {
+  cherryPickCountertparty = counterparty.Name;
+}
+
+clx FString [FExtensionAttribute] {
+  matchingTradeLotsValues = py("CherryPickingUtils", context).BuildMatchingTradeLinks(firstTradeInPosition, valuationDate);
+}
+
+clx FTrade [FExtensionAttribute] {
+  cherryPickCountertparty = instrument:cherryPickCountertparty [counterparty = object.Counterparty];
+  counterpartyFilter = simpleAndQuery("FTrade", "Counterparty.Name", "EQUAL", object.Counterparty.Name);
+  counterpartyTradesInPosition = flattenAndRemoveNil((portfolio.TradesIn(instrument)) :* "includeTradeInStatusFilter");
+  firstTradeInPosition = shunt(tradesInInstrumentPosition.IsEmpty, 
+  true->nil, 
+  default->tradesInInstrumentPosition.First);
+  includeTradeInStatusFilter = shunt(includeTradeStatus, 
+  true->object, 
+  default->nil);
+  matchingTradeLots = shunt(matchingTradeLotsValues.HasKey(instrument.Name), 
+  false->[], 
+  true->shunt(object.Portfolio, 
+    nil->[], 
+    default->shunt(matchingTradeLotsValues.At(instrument.Name).HasKey(object.Portfolio.Name), 
+      false->[], 
+      true->shunt(cherryPickCountertparty, 
+        nil->[], 
+        default->shunt(matchingTradeLotsValues.At(instrument.Name).At(object.Portfolio.Name).HasKey(cherryPickCountertparty), 
+          false->[], 
+          true->shunt(matchingTradeLotsValues.At(instrument.Name).At(object.Portfolio.Name).At(cherryPickCountertparty).HasKey(object.Oid), 
+            false->[], 
+            true->matchingTradeLotsValues.At(instrument.Name).At(object.Portfolio.Name).At(cherryPickCountertparty).At(object.Oid)))))));
+  matchingTradeLotsValues = shunt(object.Portfolio, 
+  nil->createDictionary([], []), 
+  default->shunt(object.Counterparty, 
+    nil->createDictionary([], []), 
+    default->(instrument.Name + object.Portfolio.Name + cherryPickCountertparty) :* "matchingTradeLotsValues" [firstTradeInPosition]));
+  tradesInInstrumentPosition = flattenAndRemoveNil((portfolio.TradesIn(instrument)) :* "includeTradeInStatusFilter");
+}
+
+clx FTradeRow [FExtensionAttribute] {
+  availableFaceValue = switch(isRemainingProportionValid, 
+  true->denominatedvalue((trade.FaceValue * remainingPositionProportion), trade.Currency, , ), 
+  false->denominatedvalue(0, trade.Currency, , ));
+  availableForSale = switch(trade.Quantity > 0, 
+  true->taxLot.Quantity, 
+  false->nil);
+  availableTradeQuantity = availableFaceValue.Number / instrument.ContractSize;
+  counterpartyFilter = trade:counterpartyFilter;
+  firstTradeInPosition = trade:firstTradeInPosition;
+  isRemainingProportionValid = switch((trade.Quantity <> 0), 
+  true->true, 
+  false->false);
+  matchingTradeLots = trade:matchingTradeLots;
+  matchingTradeLotsValues = trade:matchingTradeLotsValues;
+  remainingPositionProportion = switch(isRemainingProportionValid, 
+  true->(remainingQuantityOfCherryPickedTrade / trade.Quantity), 
+  false->1);
+  remainingQuantityOfCherryPickedTrade = trade.GetRemainingQuantityOfCherryPickedTrade;
+}
+
+clx FTradeSheet [FExtensionAttribute] {
+  tradesToCloseColumns = "Bought or Sold.Instrument Type.Trade Instrument.Trade Quantity.Trade Price.Trade Yield.Trade Premium. Trade Fee.Trade Value Day.Trade Counterparty.Trade Acquirer.Trade Status.Trade Trader";
+}
+
+decls[FMenuExtension] {
+}
+
+clx FTradingSheet [FMenuExtension] {
+  Cherry Picking - Match Existing Trade =
+  DisplayName=Cherry Picking - Match Existing Trade
+  Function=MatchAndClose.MatchExistingPosition
+  MenuType=GridCell
+  Standard=Yes
+
+
+  Cherry Picking - Match New Trade =
+  DisplayName=Cherry Picking - Match New Trade
+  Function=MatchAndClose.MatchNewPosition
+  MenuType=GridCell
+  Standard=Yes
+
+
+}
+
+decls[FPythonCode] {
+}
+
+clx FObject [FPythonCode] {
+  CherryPicking_UnitTests
+import acm
+import unittest
+from unittest.mock import MagicMock 
+from unittest import mock
+import MatchAndClose
+from TestingHelpers import new_FObject
+
+
+class TestCherryPicking(unittest.TestCase):
+    @mock.patch.object(MatchAndClose, 'commit', return_value=True)
+    def test_close_long_stock_position_single_trade(self, commit):
+        ins = acm.FStock['StockDefault'].Clone()
+        prf = acm.FPhysicalPortfolio.Select('').First()
+        t1  = new_FObject(acm.FTrade, Instrument=ins, Quantity=100, Price=120, Status='FO Confirmed', TradeTime='2021-01-02', Portfolio=prf)
+        
+        dlg = MatchAndClose.Match_New_Position_Dialog([t1])
+        dlg.Apply()
+        
+        commit.assert_called_once()
+        trade, tradeLinks = commit.call_args_list[0][0]
+        
+        self.assertEqual(trade.Quantity(), -100)
+        self.assertEqual(trade.Instrument(), ins)
+        self.assertEqual(trade.Portfolio(), prf)
+        self.assertEqual(trade.Status(), 'Simulated')
+        self.assertEqual(trade.Type(), 'Normal')
+        
+        self.assertEqual(len(tradeLinks), 1)
+        
+        link1 = tradeLinks[0]
+        
+        self.assertEqual(link1.MatchingQuantity(), -100)
+        self.assertEqual(link1.MatchingTrade(), t1)
+    
+    
+    @mock.patch.object(MatchAndClose, 'commit', return_value=True)
+    def test_close_long_stock_position_multiple_trades(self, commit):
+        ins = acm.FStock['StockDefault'].Clone()
+        t1 = new_FObject(acm.FTrade, Instrument=ins, Quantity=100, Price=120, Status='FO Confirmed', TradeTime='2021-01-02')
+        t2 = new_FObject(acm.FTrade, Instrument=ins, Quantity=50, Price=130, Status='FO Confirmed', TradeTime='2021-01-01')
+        
+        dlg = MatchAndClose.MatchAndCloseDialog([t1, t2])
+        dlg.Apply()
+        
+        commit.assert_called_once()
+        trade, tradeLinks = commit.call_args_list[0][0]
+        
+        self.assertEqual(trade.Quantity(), -150)
+        self.assertEqual(trade.ContractTrade(), t2)
+        self.assertEqual(trade.Instrument(), ins)
+        
+        self.assertEqual(len(tradeLinks), 2)
+        
+        link1, link2 = tuple(sorted(tradeLinks, key=lambda tradeLink: abs(tradeLink.MatchingQuantity())))
+        
+        self.assertEqual(link1.MatchingQuantity(), -50)
+        self.assertEqual(link1.MatchingTrade(), t2)
+        self.assertEqual(link2.MatchingQuantity(), -100)
+        self.assertEqual(link2.MatchingTrade(), t1)
+    
+    
+    @mock.patch.object(MatchAndClose, 'commit', return_value=True)
+    def test_close_short_stock_position_multiple_trades(self, commit):
+        ins = acm.FStock['StockDefault'].Clone()
+        t1 = new_FObject(acm.FTrade, Instrument=ins, Quantity=-100, Price=120, Status='FO Confirmed', TradeTime='2021-01-02')
+        t2 = new_FObject(acm.FTrade, Instrument=ins, Quantity=-50, Price=130, Status='FO Confirmed', TradeTime='2021-01-01')
+        
+        dlg = MatchAndClose.MatchAndCloseDialog([t1, t2])
+        dlg.Apply()
+        
+        commit.assert_called_once()
+        trade, tradeLinks = commit.call_args_list[0][0]
+        
+        self.assertEqual(trade.Quantity(), 150)
+        self.assertEqual(trade.ContractTrade(), t2)
+        
+        self.assertEqual(len(tradeLinks), 2)
+        
+        link1, link2 = tuple(sorted(tradeLinks, key=lambda tradeLink: abs(tradeLink.MatchingQuantity())))
+        
+        self.assertEqual(link1.MatchingQuantity(), 50)
+        self.assertEqual(link1.MatchingTrade(), t2)
+        self.assertEqual(link2.MatchingQuantity(), 100)
+        self.assertEqual(link2.MatchingTrade(), t1)
+    
+    
+    @mock.patch.object(MatchAndClose, 'commit', return_value=True)
+    def test_partial_close_of_short_stock_position(self, commit):
+        ins = acm.FStock['StockDefault'].Clone()
+        t1 = new_FObject(acm.FTrade, Instrument=ins, Quantity=-100, Price=120, Status='FO Confirmed', TradeTime='2021-01-02')
+        t2 = new_FObject(acm.FTrade, Instrument=ins, Quantity=-50, Price=130, Status='FO Confirmed', TradeTime='2021-01-01')
+        
+        dlg = MatchAndClose.MatchAndCloseDialog([t1, t2])
+        dlg.generatedTrade.Quantity(120)
+        dlg.Apply()
+        
+        commit.assert_called_once()
+        trade, tradeLinks = commit.call_args_list[0][0]
+        
+        self.assertEqual(trade.Quantity(), 120)
+        self.assertEqual(trade.ContractTrade(), t2)
+        
+        self.assertEqual(len(tradeLinks), 2)
+        
+        link1, link2 = tuple(sorted(tradeLinks, key=lambda tradeLink: abs(tradeLink.MatchingQuantity())))
+        
+        self.assertEqual(link1.MatchingQuantity(), 50)
+        self.assertEqual(link1.MatchingTrade(), t2)
+        self.assertEqual(link2.MatchingQuantity(), 70)
+        self.assertEqual(link2.MatchingTrade(), t1)    
+    
+    
+    def test_close_partially_closed_long_stock_position_single_trade(self):
+        mod = mock.Mock(MatchAndClose)
+        ins = acm.FStock['StockDefault'].Clone()
+        prf = acm.FPhysicalPortfolio.Select('').First()
+        t1  = new_FObject(acm.FTrade, Instrument=ins, Quantity=100, Price=120, Status='FO Confirmed', TradeTime='2021-01-02', Portfolio=prf)
+        t2  = new_FObject(acm.FTrade, Instrument=ins, Quantity=-20, Price=121, Status='FO Confirmed', TradeTime='2021-01-03', Portfolio=prf)        
+        mtl = new_FObject(acm.FMatchingTradeLink, Trade=t2, MatchingTrade=t1, MatchingQuantity=-20)
+        
+        with mock.patch.multiple('MatchAndClose', commit=MagicMock(return_value=True), matching_tradelinks=MagicMock(return_value=[mtl])):
+            dlg = MatchAndClose.MatchAndCloseDialog([t1])
+            dlg.Apply()
+            
+            MatchAndClose.commit.assert_called_once()
+            trade, tradeLinks = MatchAndClose.commit.call_args_list[0][0]
+            
+            self.assertEqual(trade.Quantity(), -80)
+            self.assertEqual(trade.Instrument(), ins)
+            self.assertEqual(trade.Portfolio(), prf)
+            self.assertEqual(trade.Status(), 'Simulated')
+            
+            self.assertEqual(len(tradeLinks), 1)
+            
+            link1 = tradeLinks[0]
+            
+            self.assertEqual(link1.MatchingQuantity(), -80)
+            self.assertEqual(link1.MatchingTrade(), t1)    
+
+
+def RunTests():    
+    suite = unittest.TestLoader().loadTestsFromTestCase(TestCherryPicking)
+    unittest.TextTestRunner(verbosity=2).run(suite)
+
+...
+
+  CherryPickingUtils
+import acm
+
+sign = lambda x: x and (1, -1)[x<0]
+
+def GetCounterpartyName(trade):
+    return acm.GetCalculatedValueFromString(trade, acm.GetDefaultContext(), 'cherryPickCountertparty', None).Value()
+
+def BuildMatchingTradeLinks(trade, valuation_date, data_dict = None):
+    if trade is None:
+        return dict()
+    if trade.Portfolio() is None:
+        return dict()
+    tradeCounterpartyName = GetCounterpartyName(trade)
+    tradesInPosition = trade.Portfolio().TradesIn(trade.Instrument()).SortByProperty('TradeTime')
+    tradesInPosition = list(filter(lambda x: GetCounterpartyName(x) == tradeCounterpartyName and trade.Status() not in ('Void', 'Simulated', 'Reservation Failed'), tradesInPosition))
+
+    if data_dict is None:
+        data_dict = dict()
+    open_lots = acm.FOrderedDictionary()
+    matching_trade_links = dict()
+
+    if not tradesInPosition:
+        return matching_trade_links
+    opening_sign = sign(tradesInPosition[0].Quantity())
+    original_lots = acm.FOrderedDictionary()
+    original_lots.AtPut(True, acm.FOrderedDictionary())
+    original_lots.AtPut(False, acm.FOrderedDictionary())
+
+    for trade in tradesInPosition:
+        if trade.Status() in ('Void', 'Simulated', 'Reservation Failed'): continue
+        if acm.Time.DateDifference(trade.TradeTime(), valuation_date) > 0 and acm.Time.DateDifference(trade.AcquireDay(), valuation_date) > 0: continue
+        for matching_trade_link in trade.MatchingTradeLinks():
+            matching_trade = matching_trade_link.MatchingTrade()
+            matched_trade = matching_trade_link.Trade()
+            if acm.Time.DateTimeToTime(matched_trade.TradeTime()) > acm.Time.DateTimeToTime(matching_trade.TradeTime()):
+                first_trade = matching_trade
+            else:
+                first_trade = trade
+            if first_trade.Oid() not in matching_trade_links:
+                matching_trade_links[first_trade.Oid()] = list()
+            matching_trade_links[first_trade.Oid()].append(matching_trade_link)
+        opening = sign(trade.Quantity()) == opening_sign
+        original_lots.At(opening).AtPut(trade.Oid(), (trade, trade.Quantity()))
+
+    for trade in tradesInPosition:
+        if trade.Status() in ('Void', 'Simulated', 'Reservation Failed'): continue
+        if acm.Time.DateDifference(trade.TradeTime(), valuation_date) > 0 and acm.Time.DateDifference(trade.AcquireDay(), valuation_date) > 0: continue
+        instrument_name = trade.Instrument().Name()
+        if instrument_name not in data_dict:
+            data_dict[instrument_name] = dict()
+        portfolio_name = trade.Portfolio().Name()
+        if portfolio_name not in data_dict[instrument_name]:
+            data_dict[instrument_name][portfolio_name] = dict()
+        counterparty_name = GetCounterpartyName(trade)
+        if counterparty_name not in data_dict[instrument_name][portfolio_name]:
+            data_dict[instrument_name][portfolio_name][counterparty_name] = dict()
+        opening = sign(trade.Quantity()) == opening_sign
+        if trade.Oid() not in data_dict[instrument_name][portfolio_name][counterparty_name]:
+            data_dict[instrument_name][portfolio_name][counterparty_name][trade.Oid()] = list()
+
+        if trade.Oid() in matching_trade_links:
+            for matching_trade_link in matching_trade_links[trade.Oid()]:
+                matching_quantity = matching_trade_link.MatchingQuantity()
+                matched_trade = matching_trade_link.Trade()
+                matching_trade = matching_trade_link.MatchingTrade()
+                if acm.Time.DateTimeToTime(matching_trade.TradeTime()) > acm.Time.DateTimeToTime(matched_trade.TradeTime()):
+                    first_trade = matched_trade
+                    sec_trade = matching_trade
+                    multi = 1
+                else:
+                    first_trade = matching_trade
+                    sec_trade = matched_trade
+                    multi = -1
+                if sec_trade.Oid() not in data_dict[instrument_name][portfolio_name][counterparty_name]:
+                    data_dict[instrument_name][portfolio_name][counterparty_name][sec_trade.Oid()] = list()
+                first_trade_opening = sign(first_trade.Quantity()) == opening_sign
+                if abs(acm.Time.DateDifference(sec_trade.TradeTime(), sec_trade.AcquireDay())) < 1:
+                    min_date = sec_trade.TradeTime()
+                else:
+                    min_date = sec_trade.AcquireDay()
+                data_dict[instrument_name][portfolio_name][counterparty_name][sec_trade.Oid()].append(acm.DenominatedValue(multi * matching_quantity, None, first_trade.Oid(), min_date))
+                _, lot_quantity = original_lots.At(first_trade_opening).At(first_trade.Oid())
+                lot_quantity -= multi * matching_quantity 
+                original_lots.At(first_trade_opening).AtPut(first_trade.Oid(), (first_trade, lot_quantity))
+                sec_trade_quantity = sec_trade.Quantity()
+                sec_trade_quantity += multi * matching_quantity
+                original_lots.At(not first_trade_opening).AtPut(sec_trade.Oid(), (sec_trade, sec_trade_quantity))
+
+        _, lot_quantity = original_lots.At(opening).At(trade.Oid())
+        if acm.Math.AlmostZero(lot_quantity, 1e-2):
+            if trade.Oid() in data_dict[instrument_name][portfolio_name][counterparty_name]: continue
+            data_dict[instrument_name][portfolio_name][counterparty_name][trade.Oid()] = list()
+            continue
+        if not open_lots:
+            open_lots.AtPut(trade.Oid(), (trade, lot_quantity))
+            data_dict[instrument_name][portfolio_name][counterparty_name][trade.Oid()] = list()
+            continue
+        _, trade_quantity = original_lots.At(opening).At(trade.Oid())
+        for open_lot_trade, open_lot_quantity in open_lots.Clone().Values():
+            if acm.Math.AlmostZero(trade_quantity, 1e-2):
+                continue
+            if sign(trade_quantity) == sign(open_lot_quantity):
+                open_lots.AtPut(trade.Oid(), (trade, trade_quantity))
+                trade_quantity = 0
+                break
+            if abs(trade_quantity) < abs(open_lot_quantity):
+                if abs(acm.Time.DateDifference(trade.TradeTime(), trade.AcquireDay())) < 1:
+                    min_date = trade.TradeTime()
+                else:
+                    min_date = trade.AcquireDay()
+                data_dict[instrument_name][portfolio_name][counterparty_name][trade.Oid()].append(acm.DenominatedValue(-trade_quantity, None, open_lot_trade.Oid(), min_date))
+                open_lot_quantity += trade_quantity
+                if open_lot_quantity == 0:
+                    open_lots.RemoveKey(open_lot_trade.Oid())
+                else:
+                    open_lots.AtPut(open_lot_trade.Oid(), (open_lot_trade, open_lot_quantity))
+                trade_quantity = 0
+                break
+            if abs(acm.Time.DateDifference(trade.TradeTime(), trade.AcquireDay())) < 1:
+                min_date = trade.TradeTime()
+            else:
+                min_date = trade.AcquireDay()
+            data_dict[instrument_name][portfolio_name][counterparty_name][trade.Oid()].append(acm.DenominatedValue(open_lot_quantity, None, open_lot_trade.Oid(), min_date))
+            trade_quantity += open_lot_quantity
+            open_lots.RemoveKey(open_lot_trade.Oid())
+
+        if trade_quantity != 0:
+            open_lots.AtPut(trade.Oid(), (trade, trade_quantity))
+    return data_dict
+
+...
+
+  FValidationCherryPick
+import ael
+import acm
+
+
+def is_matching_trade_link(entity):
+    return entity.record_type == 'MatchingTradeLink'
+
+
+def validate_transaction(transaction_list, *rest):
+    for (e, op) in transaction_list:
+        if e.record_type == 'Trade':
+            trade    = e
+            original = e.original()
+            ins      = trade.insaddr
+            
+            if op in ['Insert', 'Update']:
+                for mtl in filter(is_matching_trade_link, e.children()):
+                    mtl.matching_quantity = trade.quantity
+                    break
+    
+    return transaction_list
+
+...
+
+  FValidationCherryPick_UnitTests
+import acm
+import ael
+import unittest
+from unittest import mock
+from unittest.mock import MagicMock 
+from TestingHelpers import new_ael_trade, new_ael_instrument
+import FValidationCherryPick
+
+
+def first_of_type(seq, record_type):
+    for elem, op in seq:
+        if elem.record_type == record_type:
+            return elem
+
+
+class TestFValidationCherryPick(unittest.TestCase):
+    def test_update_single_sell_trade(self, *args):
+        bond = new_ael_instrument('Bond', insid='bond123')
+        buy  = new_ael_trade(insaddr=bond, quantity=100)
+        sell = new_ael_trade(insaddr=bond, quantity=-20)
+        upd  = MagicMock(ael.ael_entity)
+        upd.insaddr = bond
+        upd.record_type = 'Trade'
+        
+        upd.quantity = -10
+        upd.original = MagicMock(return_value=sell)
+
+        link = MagicMock()
+        link.trdnbr = sell
+        link.matching_quantity = -20
+        link.record_type = 'MatchingTradeLink'
+        
+        upd.children = lambda: [link]
+        
+        transaction_list = FValidationCherryPick.validate_transaction([(upd, 'Update')])
+        
+        trd = first_of_type(transaction_list, 'Trade')
+        mtl = trd.children()[0]
+        
+        self.assertEqual(len(transaction_list), 1)
+        self.assertEqual(mtl.matching_quantity, -10)
+        self.assertEqual(trd.quantity, -10)
+
+
+def RunTests():    
+    suite = unittest.TestLoader().loadTestsFromTestCase(TestFValidationCherryPick)
+    unittest.TextTestRunner(verbosity=2).run(suite)
+
+...
+
+  MatchAndClose
+import math
+
+import acm, ael
+import FUxCore
+from CherryPickingUtils import GetCounterpartyName
+
+context = acm.GetDefaultContext()
+sheetType = 'FTradeSheet'
+tradeSheet_CaclSpace = acm.Calculations().CreateCalculationSpace(context, sheetType)
+
+sign = lambda x: x and (1, -1)[x<0]
+
+def createMatchingTradeLink(trade, matching_trade, amount, user_defined):
+    if acm.Math.AlmostZero(amount, 1e-3): return None
+    mtl = acm.FMatchingTradeLink()
+    mtl.MatchingTrade(matching_trade)
+    mtl.Trade(trade)
+    mtl.MatchingQuantity(-amount)
+    mtl.AdditionalInfo().UserDefined(user_defined)
+    return mtl
+
+def ProcessMatchingTradeLinks(matching_trade, matched_trade):
+    matching_trade_sign = sign(matching_trade.Quantity())
+    matching_trade_instrument = matching_trade.Instrument().Name()
+    matching_trade_counterparty = matching_trade.Counterparty().Name()
+    include_sim = acm.GetCalculatedValueFromString(None, context, 'includeSimulatedTrades', None).Value()
+    include_res = acm.GetCalculatedValueFromString(None, context, 'includeReservedTrades', None).Value()
+    query = "select trdnbr, time from trade where time > '%s' and time <= '%s' order by time" % (matching_trade.TradeTime(), matched_trade.TradeTime())
+    results = ael.asql(query)
+    trades = acm.FOrderedSet()
+    trades.Add(matching_trade)
+    trades.Add(matched_trade)
+    if results:
+        trade_tuple_list = results[1][0]
+        for trade_tuple in trade_tuple_list:
+            trade = acm.FTrade[trade_tuple[0]]
+            if trade:# and trade.IncludeInCalculations(int(include_sim), int(include_res)):
+                if trade.Instrument().Name() != matching_trade_instrument: continue
+                if GetCounterpartyName(trade) != matching_trade_counterparty: continue
+                trades.Add(trade)
+
+    delete_links = acm.FSet()
+    for trade in trades:
+        for matching_trade_link in trade.MatchingTradeLinks():
+            if matching_trade_link.AdditionalInfo().UserDefined() is False:
+                delete_links.Add(matching_trade_link)
+
+    open_lots = acm.FOrderedSet()
+    match_lots = acm.FOrderedSet()
+    for trade in trades:
+        if sign(trade.Quantity()) == matching_trade_sign:
+            top_node = tradeSheet_CaclSpace.InsertItem(trade)
+            lot_available = acm.GetCalculatedValue(top_node.Item(), context, 'availableTradeQuantity').Value()
+            tradeSheet_CaclSpace.Clear()
+            trade_links = acm.FMatchingTradeLink.Select('matchingTrade = %i' % trade.Oid())
+            for trade_link in trade_links:
+                if trade_link.AdditionalInfo().UserDefined() is True:
+                    lot_available += trade_link.MatchingQuantity()
+            open_lots.Add((trade, lot_available))
+        else:
+            top_node = tradeSheet_CaclSpace.InsertItem(trade)
+            lot_required = acm.GetCalculatedValue(top_node.Item(), context, 'availableTradeQuantity').Value()
+            tradeSheet_CaclSpace.Clear()
+            match_lots.Add((trade, -lot_required))
+
+    match_links = acm.FSet()
+
+    for match_lot in match_lots:
+        remaining_quantity = match_lot[1]
+        if acm.Math.AlmostZero(remaining_quantity, 1e-6):
+            continue
+        for open_lot in open_lots:
+            lot_quantity = open_lot[1]
+            if acm.Math.AlmostZero(lot_quantity, 1e-3): continue
+            if abs(remaining_quantity) >= abs(lot_quantity):
+                match_links.Add(createMatchingTradeLink(match_lot[0], open_lot[0], lot_quantity, False))
+                remaining_quantity -= lot_quantity
+                lot_quantity = 0
+                open_lot[1] = 0
+            else:
+                match_links.Add(createMatchingTradeLink(match_lot[0], open_lot[0], remaining_quantity, False))
+                lot_quantity -= remaining_quantity
+                remaining_quantity= 0
+                open_lot[1] = lot_quantity
+                break
+            if acm.Math.AlmostZero(remaining_quantity, 1e-6):
+                break
+
+    acm.BeginTransaction()
+    try:
+        delete_links.Delete()
+        match_links.Commit()
+        acm.CommitTransaction()
+    except Exception as e:
+        acm.AbortTransaction()
+        raise e
+
+
+class Match_New_Position_Dialog(FUxCore.LayoutDialog):
+    def __init__(self, eii):
+        cells = eii.ExtensionObject().ActiveSheet().Selection().SelectedCells()
+        allTrades = acm.FArray()
+
+        for c in cells:
+            for t in c.RowObject().Trades():
+                if t not in allTrades:
+                    allTrades.Add(t)
+        posSum = 0
+        posDict = acm.FDictionary()
+        instrumentList = acm.FArray()
+
+        for t in allTrades:
+            if t.Status() not in ['Simulated', 'Void']:
+                if t.Instrument().Name() not in posDict.Keys():
+                    posDict.AtPut(t.Instrument().Name(), t.Quantity())
+                else:
+                    keyPos = posDict.At(t.Instrument().Name()) + t.Quantity()
+                    posDict.AtPut(t.Instrument().Name(), keyPos)
+
+                posSum = posSum + t.Quantity()
+
+            if t.Instrument() not in instrumentList:
+                instrumentList.Add(t.Instrument())
+
+        position = posSum
+        originalTrades = acm.FArray()
+        for i in instrumentList:
+            insTrades = acm.FArray()
+            for t in allTrades:
+                if t.Instrument() == i:
+                    insTrades.Add(t)
+
+            originalQuantity = 0
+            originalTrade = None
+            insTrades.SortByProperty('TradeTime')
+
+            #The earliest trade is the original one
+            #originalTrade = insTrades.First().ContractTrade()
+            originalTrade = insTrades.First()
+
+            originalTrades.Add(originalTrade)
+        self.originalTrades = originalTrades
+        self.instrument = allTrades.First().Instrument()
+        self.posDict = posDict
+        self.position = position
+        self.allTrades = allTrades
+        self.m_okBtn = None
+        self.m_sheet = None
+        self.m_sheetCtrl = None
+        self.m_tradeList = None
+        self.masterTrade = None
+               
+        self.availableTradeQuantity = 0.0
+        
+        for trade in self.originalTrades:
+            topNode = tradeSheet_CaclSpace.InsertItem(trade)
+            availableTradeQuantity = acm.GetCalculatedValue(topNode.Item(), context, 'availableTradeQuantity').Value()
+            self.availableTradeQuantity = self.availableTradeQuantity + availableTradeQuantity
+            tradeSheet_CaclSpace.Clear()
+        
+
+    def HandleApply( self ):
+        committedTrades = acm.FArray()
+
+        try:
+            #Commit new trades
+            for t in self.m_tradeList:
+                if abs(t.Quantity()) > abs(self.availableTradeQuantity):
+                    acm.UX().Dialogs().MessageBoxInformation(self.m_fuxDlg.Shell(), "Quantity must be less than Available Trade Quantity.")
+                else:
+                    t.Commit()
+                    committedTrades.Add(t)
+
+            for t in committedTrades:
+                for at in self.originalTrades:
+                    if t.Instrument() == at.Instrument():
+                        #Match to trade in same instrument
+                        #ProcessMatchingTradeLinks(at, t)
+                        tradeLink = acm.FMatchingTradeLink()
+                        tradeLink.Trade(t)
+                        tradeLink.MatchingTrade(at)
+                        tradeLink.MatchingQuantity(t.Quantity())
+                        tradeLink.Commit()
+
+                        #Add to deal package
+                        if at.DealPackage():
+                            package = at.DealPackage()
+                            package.AddTrade(t)
+                            package.Commit()
+
+        except Exception as e:
+            print(str(e))
+
+        return 'Done'
+
+    def ServerUpdate(self, sender, aspectSymbol, parameter):
+        pass
+
+    def UpdateControls(self):
+        pass
+
+    def OnApplyClicked(self, *rest):
+        gridColumnIterator = self.m_sheet.GridColumnIterator()
+        gridColumnIterator.Next()
+        while gridColumnIterator.GridColumn().ColumnName().AsString() != 'Yield':
+            gridColumnIterator.Next()
+        if not gridColumnIterator:
+            return
+
+        rowTreeIterator = self.m_sheet.RowTreeIterator(True)
+        rowTreeIterator.NextUsingDepthFirst()
+        decoratorList = []
+
+        while rowTreeIterator:
+            cell = self.m_sheet.GetCell(rowTreeIterator, gridColumnIterator)
+            if not cell:
+                break
+            trade_decorator = acm.FBusinessLogicDecorator.WrapObject(cell.RowObject().Trade())
+            trade_decorator.ViceVersa(cell.CachedValue() * 100)
+            decoratorList.append(trade_decorator)
+            rowTreeIterator.NextUsingDepthFirst()
+        self.m_sheet.RemoveAllRows()
+        self.m_sheet.InsertObject(decoratorList, 0)
+
+    def HandleCreate( self, dlg, layout):
+        self.m_fuxDlg = dlg
+        self.m_fuxDlg.Caption('Cherry Picking - Match New Trade' )
+        self.m_okBtn = layout.GetControl('ok')
+
+        self.m_tradeList = acm.FArray()
+        context = acm.GetDefaultContext()
+
+        for k in self.posDict.Keys():
+            trade = acm.FTrade()
+            trade.Instrument = acm.FInstrument[k]
+
+            for t in self.allTrades:
+                if t.Instrument() == trade.Instrument():
+                    trade.Apply(t)
+                    break
+
+            trade.Quantity = (self.availableTradeQuantity*-1)
+            price = trade.Instrument().used_price()
+            if not price or math.isnan(price):
+                price = acm.GetCalculatedValue(trade.Instrument(), context, 'theoreticalPrice').Value().Number()
+            if math.isnan(price):
+                price = 0.0
+
+            trade.Price     = price
+            trade.Trader    = acm.User()
+
+            #Change on Save
+            trade.TradeTime = acm.Time.TimeNow()
+
+            trade.Status    = 'Simulated'
+            trade.ValueDay  = trade.Instrument().Currency().Calendar().AdjustBankingDays(acm.Time.DateNow(), trade.Instrument().SpotBankingDaysOffset())
+            trade.AcquireDay = trade.ValueDay()
+            trade.Type      = 'Normal'
+            trade.OptionalKey = ''
+            if trade.Quantity() != 0:
+                self.m_tradeList.Add(trade)
+
+        self.m_sheetCtrl = layout.GetControl('sheet')
+
+        self.m_sheet = self.m_sheetCtrl.GetCustomControl()
+        self.m_sheet.ShowGroupLabels(0)
+        self.m_sheet.RowHeaderCaption('New Trades')
+        self.m_sheet.InsertObject(self.m_tradeList, 0)
+
+    def InitControls(self):
+        pass
+
+    def CreateLayout(self):
+        sheetDef = acm.Sheet.GetSheetDefinition('FTradeSheet')
+        sheetSetup = sheetDef.CreateSheetSetup()
+        sheetSetup.ColumnSetupExtensionAttribute('tradesToCloseColumns')
+
+        symbolKey = acm.FSymbol('SheetSetup')
+        sheetDict = acm.FDictionary()
+        sheetDict.AtPut(symbolKey, sheetSetup)
+
+        b = acm.FUxLayoutBuilder()
+
+        b.BeginVertBox('None')
+        b.AddCustom('sheet', 'sheet.FTradeSheet', 1260, 180, -1, -1, sheetDict)
+        b.  BeginHorzBox('None')
+        b.    AddSpace(500)
+        b.    AddFill()
+        #b.    AddButton('recalc', 'Apply')
+        b.    AddButton('ok', 'Match')
+        b.    AddButton('cancel', 'Cancel')
+        b.  EndBox()
+        b.EndBox()
+
+        return b
+
+class Match_Existing_Position_Dialog (FUxCore.LayoutDialog):
+    def __init__(self, eii):
+        cells = eii.ExtensionObject().ActiveSheet().Selection().SelectedCells()
+        allTrades = acm.FArray()
+
+        for c in cells:
+            for t in c.RowObject().Trades():
+                if t not in allTrades:
+                    allTrades.Add(t)
+
+        posSum = 0
+        posDict = acm.FDictionary()
+        instrumentList = acm.FArray()
+
+        for t in allTrades:
+            if t.Status() not in ['Simulated', 'Void']:
+                if t.Instrument().Name() not in posDict.Keys():
+                    posDict.AtPut(t.Instrument().Name(), t.Quantity())
+                else:
+                    keyPos = posDict.At(t.Instrument().Name()) + t.Quantity()
+                    posDict.AtPut(t.Instrument().Name(), keyPos)
+
+                posSum = posSum + t.Quantity()
+
+            if t.Instrument() not in instrumentList:
+                instrumentList.Add(t.Instrument())
+
+        position = posSum
+        originalTrades = acm.FArray()
+
+        for i in instrumentList:
+            insTrades = acm.FArray()
+            for t in allTrades:
+                if t.Instrument() == i:
+                    insTrades.Add(t)
+
+            originalQuantity = 0
+            originalTrade = None
+            insTrades.SortByProperty('TradeTime')
+
+            #The earliest trade is the original one
+            originalTrade = insTrades.First()
+
+            originalTrades.Add(originalTrade)
+
+        self.originalTrades = originalTrades
+        self.instrument = allTrades.First().Instrument()
+        self.posDict = posDict
+        self.position = position
+        self.allTrades = allTrades
+        self.m_okBtn = None
+        self.m_sheet = None
+        self.m_sheetCtrl = None
+        self.m_tradeList = None
+        self.masterTrade = None
+        
+        self.portfolio = allTrades.First().Portfolio()
+        self.acquirer = allTrades.First().Acquirer()  
+        self.availableTradeQuantity = 0.0
+        
+        for trade in self.originalTrades:
+            topNode = tradeSheet_CaclSpace.InsertItem(trade)
+            availableTradeQuantity = acm.GetCalculatedValue(topNode.Item(), context, 'availableTradeQuantity').Value()
+            self.availableTradeQuantity = self.availableTradeQuantity + availableTradeQuantity
+            tradeSheet_CaclSpace.Clear()
+
+    def AvailableTradeQuantity(self, trade):
+        topNode = tradeSheet_CaclSpace.InsertItem(trade)
+        availableTradeQuantity = acm.GetCalculatedValue(topNode.Item(), context, 'availableTradeQuantity').Value()
+        tradeSheet_CaclSpace.Clear()
+        return availableTradeQuantity
+
+    @staticmethod
+    def MatchingTradeQuantity(trade):
+        running_quantity = abs(trade.Quantity())
+        for mtl in trade.MatchingTradeLinks():
+            running_quantity -= abs(mtl.MatchingQuantity())
+        return running_quantity
+
+    def HandleApply( self ):
+        input_trade_number = self.m_tradenumberBtn.GetData()
+        try:
+            input_trade_number = int(input_trade_number)
+        except:
+            acm.UX().Dialogs().MessageBoxInformation(self.m_fuxDlg.Shell(), 'Invalid trade number')
+            print('Invalid trade number')
+            return
+
+        t = acm.FTrade[input_trade_number]
+
+        if not t:
+            acm.UX().Dialogs().MessageBoxInformation(self.m_fuxDlg.Shell(), 'Trade %s not found' %str(input_trade_number))
+            print('Trade %s not found' %str(input_trade_number))
+            return
+
+        #2020-05-18 Adding condition for Portfolio, Acquirer, Short-sell, Instrument Name
+        if t.Portfolio().Name() != self.portfolio.Name():
+            acm.UX().Dialogs().MessageBoxInformation(self.m_fuxDlg.Shell(), "Matching trades must be in the same portfolio.")
+            return
+        
+        if t.Acquirer().Name() != self.acquirer.Name():
+            acm.UX().Dialogs().MessageBoxInformation(self.m_fuxDlg.Shell(), "Matching trades must have the same acquirer.")
+            return
+        
+        if self.instrument.ShortSell() != 'Allowed' and self.availableTradeQuantity < 0:
+            acm.UX().Dialogs().MessageBoxInformation(self.m_fuxDlg.Shell(), "CherryPick must be done on the Buy Trade.")
+            return
+            
+        if len(self.originalTrades) and self.originalTrades[0].Oid() == t.Oid():
+            acm.UX().Dialogs().MessageBoxInformation(self.m_fuxDlg.Shell(), "Same trade could not be cherry-picked.")
+            return
+            
+        if t.Instrument().Name() != self.instrument.Name():
+            acm.UX().Dialogs().MessageBoxInformation(self.m_fuxDlg.Shell(), "Matching trades must have the same instrument.")
+            return
+
+        t_available = self.MatchingTradeQuantity(t)
+        if t_available <= 0:
+            acm.UX().Dialogs().MessageBoxInformation(self.m_fuxDlg.Shell(), "Matching trade has no available trade quantity.")
+            return
+
+        if abs(t.Quantity()) > abs(self.availableTradeQuantity):
+            acm.UX().Dialogs().MessageBoxInformation(self.m_fuxDlg.Shell(), "Quantity must be less than Available Trade Quantity.")
+            return
+
+        if t.Direction() == self.originalTrades[0].Direction():
+            acm.UX().Dialogs().MessageBoxInformation(self.m_fuxDlg.Shell(), "Matching trade must be in the opposite direction.")
+            return
+
+        originalTrades_nbrs = [t_tmp.Oid() for t_tmp in self.originalTrades]
+
+        for at_nbr in originalTrades_nbrs:
+            at = acm.FTrade[at_nbr]
+
+            if t.Instrument() == at.Instrument():
+                #Match to trade in same instrument
+                #ProcessMatchingTradeLinks(at, t)
+                tradeLink = acm.FMatchingTradeLink()
+                tradeLink.Trade(t)
+                tradeLink.MatchingTrade(at)
+                tradeLink.MatchingQuantity(t.Quantity())
+                tradeLink.Commit()
+                acm.UX().Dialogs().MessageBoxInformation(self.m_fuxDlg.Shell(), 'Cherry Picking Existing Trades: %s is now matched to %s' % (str(at.Oid()), str(t.Oid())))
+                print('Cherry Picking Existing Trades: %s is now matched to %s' % (str(at.Oid()), str(t.Oid())))
+
+                #Add to deal package
+                if at.DealPackage():
+                    package = at.DealPackage()
+                    package.AddTrade(t)
+                    package.Commit()
+
+        return 'Done'
+
+    def HandleCreate( self, dlg, layout):
+        self.m_fuxDlg = dlg
+        self.m_fuxDlg.Caption('Cherry Picking - Match Existing Trade' )
+        self.m_tradenumberBtn = layout.GetControl('tradenumber')
+        self.m_okBtn = layout.GetControl('ok')
+
+    def InitControls(self):
+        pass
+
+    def CreateLayout(self):
+        b = acm.FUxLayoutBuilder()
+
+        b.BeginVertBox('None')
+        b.  BeginHorzBox('None')
+        b.    AddInput('tradenumber', 'Trade Number')
+        b.    AddFill()
+        b.    AddButton('ok', 'Match')
+        b.    AddButton('cancel', 'Close')
+        b.  EndBox()
+        b.EndBox()
+
+        return b
+
+def AddTrade (self, cb):
+    trade = acm.FTrade()
+    trade.Instrument(self.instrument)
+    trade.Quantity(self.position/2)
+    trade.Price(self.instrument.Prices()[0].Last())
+    self.m_sheet.InsertObject(trade, 0)
+    self.m_tradeList.Add(trade)
+
+def MatchNewPosition(eii):
+    shell = eii.ExtensionObject().Shell()
+    customDlg = Match_New_Position_Dialog(eii)
+    #customDlg.InitControls()
+    acm.UX().Dialogs().ShowCustomDialog(shell, customDlg.CreateLayout(), customDlg)
+
+def MatchExistingPosition(eii):
+    shell = eii.ExtensionObject().Shell()
+    customDlg = Match_Existing_Position_Dialog(eii)
+    #customDlg.InitControls()
+    acm.UX().Dialogs().ShowCustomDialog(shell, customDlg.CreateLayout(), customDlg)
+
+...
+
+  ReportMethods
+
+import ael
+from functools import reduce
+import datetime
+import acm
+import traceback
+
+
+def get_user_updated_status(trade, status):
+    user_name = 'Not Found'
+    trade_number = 0
+
+    try:
+        trade_number = trade.Oid()
+        #Record type 19 corresponds to trade objects
+        #The description column tells the status of the trade
+        query = 'recordId = %d and transRecordType = 19 and description = "%s"'%(trade_number, status)
+        result = acm.FTransactionHistory.Select(query)
+
+        if len(result) > 0:
+            #Out of the multiple possible entries, the latest entry corresponds to status change is to be picked up
+            # incase of multiple record due to changes from ATS, considering latest updates.
+            first = sorted(result, key = lambda obj:obj.CreateTime(),reverse=True)[0]
+            user_name = first.UpdateUser().Name()
+
+        else:
+            print('No transaction history found for %s status for trade %d'%(status,trade_number))
+
+    except Exception as e:
+        print('Error: get_user_updated_status for %s status and %d trade'%(status, trade_number))
+        print(e)
+
+    return user_name
+
+
+# under FO Agreed username, need to check statuses - Check FO Agreed or Check FO Corrected
+# enum(Check FO Agreed) = 22, enum(Check FO Corrected) = 25
+def get_FOAgreed_username(trade):
+    statusEnum = acm.FEnumeration['enum(TradeStatus)'].Enumeration('FO Agreed')
+    username = get_user_updated_status(trade, str(statusEnum))
+    return username
+
+def get_CheckFOAgreed_username(trade):
+    statusEnum = acm.FEnumeration['enum(TradeStatus)'].Enumeration('Check FO Agreed')
+    username = get_user_updated_status(trade, str(statusEnum))
+    return username
+    
+def get_CheckFOConfirmed_username(trade):
+    statusEnum = acm.FEnumeration['enum(TradeStatus)'].Enumeration('Check FO Confirmed')
+    username = get_user_updated_status(trade, str(statusEnum)) 
+    return username
+
+def get_FOConfirmed_username(trade):
+    username = get_user_updated_status(trade, 'FO Confirmed') #enum(Check FO Confirmed) = 29
+    return username
+
+
+def get_BOConfirmed_username(trade):
+    username = get_user_updated_status(trade, 'BO Confirmed')
+    return username
+    
+def get_BOBOConfirmed_username(trade):
+    username = get_user_updated_status(trade, 'BO-BO Confirmed')
+    return username
+
+
+def get_collateral_of_basketrepo(trade):
+    collateral_trade = None
+
+    if trade.Instrument().InsType() == "BasketRepo/Reverse":
+        try:
+            tradeno = trade.Oid()
+            query = "connectedTrdnbr = %s and oid <> %s and tradeCategory = 'Collateral'" % (tradeno, tradeno)
+            trades = acm.FTrade.Select(query)
+
+            if len(trades) > 0:
+                collateral_trade = trades[0]
+            else:
+                print('No collateral trade found for basket repo / reverse trade %s'%tradeno)
+
+        except Exception as e:
+            print('Error: In get_collateral_of_basketrepo')
+            print(e)
+
+    return collateral_trade
+
+
+def get_reset_value(leg):
+    reset = 0
+
+    float_cashflows = sorted([cf for cf in leg.CashFlows() if cf.CashFlowType() == "Float Rate"],key=lambda x:x.StartDate(),reverse=False)
+
+    #Reset of first float cashflow sorted by start day to be taken
+    if(len(float_cashflows) > 0):
+        first_float_cashflow  = float_cashflows[0]
+        #First reset to be taken from the cashflow
+        reset = first_float_cashflow.Resets()[0].FixingValue()
+    else:
+        print('Float cashflow not found')
+
+    return reset
+
+
+def get_deposit_rate(instrument):
+    rate = 0
+
+    try:
+        if instrument.InsType() == "Deposit":
+            main_leg = instrument.MainLeg()
+            if main_leg.IsFixedLeg():
+                rate = main_leg.FixedRate()
+            else:
+                spread = main_leg.Spread()
+                reset = get_reset_value(main_leg)
+                rate = reset + spread
+        else:
+            print("Instrument %s is not deposit"%instrument.Name())
+    except Exception as e:
+        print('Error: in get_deposit_rate')
+        print(e)
+
+    rate_percent = rate / 100
+    return rate_percent
+
+
+
+def get_cherrypicked_trades(trade):
+    tradeno = trade.Oid()
+    query = "contractTrdnbr = %s and oid <> %s" % (tradeno, tradeno)
+    trades = acm.FTrade.Select(query)
+    return trades
+
+
+
+def get_cherrypicked_trades_available(trade):
+    tradeno = trade.Oid()
+    #tradeno = trade.ContractTrade().Oid() if trade.ContractTrade() else trade.Oid()
+    query = "matchingTrade = %s" % (tradeno)
+    matching_trade_links = acm.FMatchingTradeLink.Select(query)
+    trades = {mtl.Trade() for mtl in matching_trade_links}
+    query = "trade = %s" % (tradeno)
+    matching_trade_links = acm.FMatchingTradeLink.Select(query)
+    trades.update({mtl.MatchingTrade() for mtl in matching_trade_links})
+    #Considering BO-BO Confirmed trades only.
+    trades_captured = list(filter(lambda t: t.Status() in ('BO-BO Confirmed'), trades))
+    '''
+    #Lien he tuocnk1@hdbank.com.vn neu muon su dung doan code nay
+    trades_captured2 = []
+    for t in trades_captured:
+        if t.ValueDay() <= acm.Time.DateToday():
+            trades_captured2.append(t)
+	return trades_captured2
+    '''
+    return trades_captured
+
+def get_closing_trades_quantity_abs(trade):
+    total_quantity = 0
+    #tradeno = trade.Oid()
+    tradeno = trade.ContractTrade().Oid() if  trade.ContractTrade() else trade.Oid()
+    portfolio_id = trade.Portfolio().Oid()
+    query = "oid <> %s and contractTrdnbr = %s and type = 'Closing' and quantity < 0 and portfolio = %s"%(tradeno,tradeno,portfolio_id)
+    closing_trades = acm.FTrade.Select(query)
+    closing_trades_quantity = [t.Quantity() for t in closing_trades]
+    
+    if len(closing_trades_quantity) > 0:
+        total_quantity = reduce(lambda a,b: a + b, closing_trades_quantity)
+    
+    return abs(total_quantity)
+
+
+
+#It is assumed that 1st trade is buy trade and all further cherry picked trades are sell trdes.
+def get_remaining_quantity_of_cherrypickedtrade(trade):
+    remaining_quantity = 0.0
+
+    try:
+        total_cherrypicked_quantity = 0.0
+        cherrypicked_trades = get_cherrypicked_trades_available(trade)
+
+        if len(cherrypicked_trades) > 0:
+            cherrypicked_trades_quantity = [t.Quantity() for t in cherrypicked_trades]
+            total_cherrypicked_quantity = abs(reduce(lambda a,b: a + b,cherrypicked_trades_quantity))
+
+        closing_trades_quantity = get_closing_trades_quantity_abs(trade)
+        remaining_quantity = abs(trade.Quantity()) - total_cherrypicked_quantity - closing_trades_quantity
+        sign = trade.Quantity()/ abs(trade.Quantity())
+    except Exception as e:
+        pass
+
+    return remaining_quantity * sign
+
+
+def get_begin_balance(obj):
+    """ Get balance from last month """
+    date_today = datetime.date.today()
+    current_month = datetime.datetime.now().strftime("%m")
+
+    first_day_of_month = datetime.datetime.strptime(date_today.strftime("%Y-%m-01"), "%Y-%m-%d")
+
+    query = """select trdnbr from Trade where time < '%s' and insaddr = %s"""%(first_day_of_month, obj.Instruments().AsList().First().Oid())
+
+    col, res = ael.asql(query)
+
+    outstanding_amount = 0.0
+    for trade in res[0]:
+        acm_trade = acm.FTrade[trade[0]]
+        quantity = acm_trade.Quantity()
+        outstanding_amount = outstanding_amount + quantity
+
+    return outstanding_amount
+
+
+#It is assumed that 1 st trade is buy trade and all further cherry picked trades are sell trdes.
+def get_last_cherrypickedtrade(trade):
+    last_cherrypickedtrade = None
+
+    try:
+
+        cherrypicked_trades = get_cherrypicked_trades_available(trade)
+
+
+
+        if len(cherrypicked_trades) > 0:
+            last_cherrypickedtrade  = max(cherrypicked_trades, key = lambda a:a.Oid())
+
+
+    except Exception as e:
+        print('Error: In get_last_cherrypickedtrade')
+        print(e)
+
+    return last_cherrypickedtrade
+
+
+def getTradedInCurrentMonth(trades):
+    """ Get trades traded in current month """
+    result = acm.FIdentitySet()
+    try:
+        firstDayOfMonth = acm.Time.FirstDayOfMonth(acm.Time.DateNow())
+        for trade in trades.AsArray():
+            tradeTime = acm.Time.DateFromTime(trade.TradeTime())
+            if tradeTime >= firstDayOfMonth:
+                result.Add(trade)
+    except Exception as e:
+        print('Error: In getTradedInCurrentMonth')
+        print(e)
+    return result
+
+
+def getBuyTradesInCurrentMonth(trades):
+    """ Get BUY trades from current month """
+    result = acm.FIdentitySet()
+    try:
+        firstDayOfMonth = acm.Time.FirstDayOfMonth(acm.Time.DateNow())
+        for trade in trades.AsArray():
+            tradeTime = acm.Time.DateFromTime(trade.TradeTime())
+            if tradeTime >= firstDayOfMonth and trade.Direction() == 'Buy':
+                result.Add(trade)
+    except Exception as e:
+        print('Error: In getBuyTradesInCurrentMonth')
+        print(e)
+    return result
+
+
+def getSellTradesInCurrentMonth(trades):
+    """ Get SELL trades from current month """
+    result = acm.FIdentitySet()
+    try:
+        firstDayOfMonth = acm.Time.FirstDayOfMonth(acm.Time.DateNow())
+        for trade in trades.AsArray():
+            tradeTime = acm.Time.DateFromTime(trade.TradeTime())
+            if tradeTime >= firstDayOfMonth and trade.Direction() == 'Sell':
+                result.Add(trade)
+    except Exception as e:
+        print('Error: In getSellTradesInCurrentMonth')
+        print(e)
+    return result
+
+
+def getPrice(instrument, market_name):
+    price_in_db = None
+    try:
+        #for ins in instruments.AsArray():
+        fx_rate = instrument
+        price_ins = fx_rate.Instrument().Name().split('/')[0]
+        price_curr = fx_rate.Currency().Name()
+        price_in_db = acm.FPrice.Select01("instrument='%s' and currency='%s' and market='%s'"%(price_ins, price_curr, market_name), 'not found')
+    except Exception as e:
+        print('Error: In getPrice')
+        print(e)
+    return price_in_db
+
+
+def getBidPrice(instrument, market_price):
+    """ Get bid price from market REUTERS_SPOT """
+    bid_price = 0.0
+    price_in_db = getPrice(instrument, 'REUTERS_SPOT')
+    if price_in_db:
+        bid_price = price_in_db.Bid()
+    return bid_price
+
+
+def getAskPrice(instrument, market_price):
+    """ Get ask price from market REUTERS_SPOT """
+    ask_price = 0.0
+    price_in_db = getPrice(instrument, 'REUTERS_SPOT')
+    if price_in_db:
+        ask_price = price_in_db.Ask()
+    return ask_price
+
+
+
+collateralTradeAddInfoMap = {'Collateral_Trade_1':'Collateral_Amt1',
+                            'Collateral_Trade_2':'Collateral_Amt2',
+                            'Collateral_Trade_3':'Collateral_Amt3',
+                            'Collateral_Trade_4':'Collateral_Amt4'}
+
+def getDLTradesFromCollateralTrade(trade):    
+    query='''select 
+                    dt.trdnbr
+                from 
+                    Trade t,
+                    Trade dt,
+                    Instrument i
+                where
+                    t.trdnbr = %d
+                and (add_info(dt, 'Collateral_Trade_1') = t.trdnbr
+                or  add_info(dt, 'Collateral_Trade_2') = t.trdnbr
+                or  add_info(dt, 'Collateral_Trade_3') = t.trdnbr
+                or  add_info(dt, 'Collateral_Trade_4') = t.trdnbr)
+                and dt.status = 'BO-BO Confirmed'
+                and dt.insaddr = i.insaddr
+                and i.exp_day >= TODAY'''%(trade.Oid())
+                
+    trades = ael.asql(query)
+    return trades[1][0]
+
+
+def calcUsedCollateralAmt(trade):
+    amount = 0.0
+    for dlTradeNum in getDLTradesFromCollateralTrade(trade):
+        for key in collateralTradeAddInfoMap.keys():
+            collTrade = getattr(acm.FTrade[dlTradeNum[0]].AdditionalInfo(), key)()
+            if collTrade and collTrade.Oid() == trade.Oid():
+                collAmt = getattr(acm.FTrade[dlTradeNum[0]].AdditionalInfo(), collateralTradeAddInfoMap[key])()
+                if collAmt:
+                    amount = amount + collAmt
+                    #print('DL Trade = %d,  collTrade = %d,  collAmount = %d'%(dlTradeNum[0], collTrade.Oid(), collAmt))
+    return amount
+
+
+def GetUsedCollateralAmt(trade):
+    return calcUsedCollateralAmt(trade)
+    
+
+
+def GetCollateralEntry(trade):
+    dlTradeList = []
+    dlTrades = getDLTradesFromCollateralTrade(trade)
+    for dlTrade in dlTrades:
+        dlTradeList.append(dlTrade[0])
+    return ", ".join(str(tradeNum) for tradeNum in dlTradeList)
+
+
+#custom average price column.
+def getBuyTradesBeforeCurrentMonth(trades):
+    """ Get BUY trades before current month """
+    result = acm.FIdentitySet()
+    try:
+        firstDayOfMonth = acm.Time.FirstDayOfMonth(acm.Time.DateNow())
+        for trade in trades.AsArray():
+            tradeTime = acm.Time.DateFromTime(trade.TradeTime())
+            if tradeTime < firstDayOfMonth and trade.Direction() == 'Buy':
+                result.Add(trade)
+    except Exception as e:
+        print('Error: In getBuyTradesBeforeCurrentMonth')
+        print(e)
+    return result
+    
+    
+def getSellTradesBeforeCurrentMonth(trades):
+    """ Get SELL trades before current month """
+    result = acm.FIdentitySet()
+    try:
+        firstDayOfMonth = acm.Time.FirstDayOfMonth(acm.Time.DateNow())
+        for trade in trades.AsArray():
+            tradeTime = acm.Time.DateFromTime(trade.TradeTime())
+            if tradeTime < firstDayOfMonth and trade.Direction() == 'Sell':
+                result.Add(trade)
+    except Exception as e:
+        print('Error: In getSellTradesBeforeCurrentMonth')
+        print(e)
+    return result
+
+...
+
+}
+

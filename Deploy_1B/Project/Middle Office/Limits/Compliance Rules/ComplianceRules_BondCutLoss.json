@@ -1,0 +1,66 @@
+[
+    {
+        "FTransaction": {
+            "Objects": [
+                {
+                    "FComplianceRule": {
+                        "Definition": {
+                            "ref(RuleDefinition.Exposure)": {
+                                "Column": {
+                                    "ref(FStandardColumnCreator)": {
+                                        "Configuration": null,
+                                        "ContextSym": {
+                                            "ref(FSymbol)": "Standard"
+                                        },
+                                        "OriginalColumnId": {
+                                            "ref(FSymbol)": "Cut Loss Ratio"
+                                        }
+                                    }
+                                },
+                                "ColumnIndex": 0,
+                                "CompoundQueryLogicalOperator": "AND",
+                                "FilterQuery": null,
+                                "ForEach": "Instrument",
+                                "PythonFilterMethodName": "",
+                                "RelativeTo": false,
+                                "RelativeToColumn": null,
+                                "RelativeToColumnIndex": 0,
+                                "StoredTimeBuckets": null
+                            }
+                        },
+                        "DefinitionInfo": "Exposure",
+                        "Description": "",
+                        "Name": "Standard_BondCutLoss",
+                        "RuleCategory": {
+                            "ref(FChoiceList)": {
+                                "List": "Compliance Rule Category",
+                                "Name": "Pre-Deal"
+                            }
+                        }
+                    }
+                },
+                {
+                    "FThreshold": {
+                        "ComparisonType": "Greater",
+                        "ComplianceRule": {
+                            "ref(FComplianceRule)": "Standard_BondCutLoss"
+                        },
+                        "Coordinates": {
+                            "ref(FStaticArray)": []
+                        },
+                        "Description": "",
+                        "Parent": null,
+                        "Relative": false,
+                        "Type": {
+                            "ref(FChoiceList)": {
+                                "List": "Threshold Type",
+                                "Name": "Violation"
+                            }
+                        },
+                        "Value": 0.01
+                    }
+                }
+            ]
+        }
+    }
+]

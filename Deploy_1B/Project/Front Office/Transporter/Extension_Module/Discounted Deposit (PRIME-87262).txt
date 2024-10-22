@@ -1,0 +1,252 @@
+#
+# Front Arena exported extension module.
+# source          ""
+# timestamp (utc) "2024-09-18 10:21:14.3"
+# ***** DO NOT EDIT! *****
+#
+name        "Discounted Deposit (PRIME-87262)"
+description "$Id$"
+
+groups {
+}
+
+decls[FCustomInstrumentDefinition] {
+}
+
+clx FObject [FCustomInstrumentDefinition] {
+  IDR Term Deposit =
+  Caption=Discounted Term Deposit
+  DealPackageDefinition=
+  DefaultInstrumentName=DSDeposit
+  DefaultInstrumentUpdateHook=IdrTermDeposit.InitIdrTermDeposit
+  DefaultTradeUpdateHook=IdrTermDeposit.InitIdrTermDepositTrade
+  DisabledControls=
+  ExoticFixingsHook=
+  ExtendsConfiguration=Bill
+  FavoriteEnabledControls=
+  FilterCriteria=Instrument.AdditionalInfo.ValueAtCost=True
+  HelpFileIndex=
+  InstantiatedAs=Concrete
+  InstrumentIcon=
+  LabelOverrides=Deposit/Loan;trade_Nominal,End Cash;trade_Price,Discount Rate;
+  PanesExotic=
+  PanesInstrument=DiscountedDepositInstrumentPane,General;CustomLayout_InsPropertiesPane,Properties;CustomLayout_InsIDPane,Identifiers;CustomLayout_InstrumentRegulatoryInfo,Regulatory;
+  PanesTrade=DiscountedDepositFrontOfficePane,General;CustomLayout_BackOfficePane,Ref;CustomLayout_TradeIDPane,Identifiers;CustomLayout_BO,Ops;CustomLayout_CashFlowsPane,Cash Flows;CustomLayout_AgreementsPane,Agreements;CustomLayout_TradeAccountsPane,Accounts;CustomLayout_TradeRegulatoryInfo,Regulatory;CustomLayout_AddInfoPane,Add Info;
+  ParentMenu=Trading/Custom Instruments
+  PricingDefaultColumns=
+  PricingManualRefresh=
+  PricingShowRowHeaders=
+  ReplaceApplication=
+  SetUpFunction=
+  ShowPlaceExcluded=ins_TotalIssued;ins_IssueDay;ins_IssueDay;ins_MinimumPiece;ins_MinimumIncremental;ins_ShortSell;ins_ipa_ptynbr;ins_RedemptionType;ins_issuer_ptynbr;ins_Rating1ChlItem;ins_Rating2ChlItem;ins_Rating3ChlItem;ins_ref_price;leg_calc_type_chlnbr;ins_Notional;leg_RollingPeriod;trade_dirty;trade_accrued_int;
+  ShowPlaceInDetail=trade_value_day;
+  ShowPlaceInSlim=ins_Quotation;leg_PayDayMethod;
+  SubMenu=
+  UpdateControls=
+  VisiblePanes=
+
+
+}
+
+decls[FExtensionAttribute] {
+}
+
+clx FBill [FExtensionAttribute] {
+  isValuedAtCost = select(object.AdditionalInfo.ValueAtCost, 
+  nil->false, 
+  default->object.AdditionalInfo.ValueAtCost);
+}
+
+decls[FExtensionValue] {
+}
+
+clx CInsDef_BILL [FExtensionValue] {
+  DiscountedDepositFrontOfficePane
+vbox(;
+  hbox(;
+    vbox{;
+      trade_Nominal;
+      ins_Currency;
+      hbox(;
+        ins_LegStartDate;
+        ins_LegStartPeriod;
+      );
+      hbox(;
+        ins_LegEndDate;
+        ins_LegEndPeriod;
+      );
+      hbox(;
+        vbox(;
+          trade_Price;
+        );
+        vbox(;
+        );
+      );
+      leg_DayCountMethod;
+      trade_Premium;
+      trade_Currency;
+      trade_PositionPair;
+      trade_Broker;
+      trade_fee;
+    };
+    vbox{;
+      trade_Counterparty;
+      trade_hostid;
+      trade_prfnbr;
+      trade_MirrorPortfolio;
+      trade_your_ref;
+      trade_DiscountingType;
+      trade_value_day;
+      trade_acquire_day;
+      trade_time;
+      trade_acquirer_ptynbr;
+      trade_trader_usrnbr; 
+      salescover_TraderPortfolio;
+      salescover_TraderAcquirer;
+      trade_SettleCategoryChlItem;
+      trade_Market;
+      trade_ordnbr;
+      trade_locked_info;
+    };
+  );
+ vbox{;
+  hbox(;
+    vbox(;
+      hbox(;
+        premiumTranslation_FxRate;
+        trade_fx_get_rate;
+      );
+      premiumTranslation_FxPortfolio;
+    );
+    vbox(;
+      premiumTranslation_SettleCurrency;
+      premiumTranslation_FxAcquirer;
+    );
+    vbox(;
+      premiumTranslation_FxPrice;
+    );
+  );
+ };
+  hbox(;
+    vbox{;
+      trade_optkey1_chlnbr;
+      trade_optkey2_chlnbr;
+      trade_AdditionalInfo.DealerCode;
+      trade_AdditionalInfo.DocumentType;
+      trade_AdditionalInfo.TransactionPurpose;
+    };
+    vbox{;
+      trade_optkey3_chlnbr;
+      trade_optkey4_chlnbr;
+    };
+  );
+  hbox(;
+    vbox{;
+      trade_sales_credit;
+    };
+    vbox{;
+      trade_sales_person_usrnbr;
+    };
+  );
+  hbox(;
+    vbox{;
+      trade_trdnbr;
+      trade_Status;     
+    };
+    vbox{;
+      trade_bo_trdnbr;
+      hbox(;
+        trade_payments;
+        trade_save_new;
+      );
+    };
+  );
+);
+...
+
+  DiscountedDepositInstrumentPane
+vbox(;
+  hbox{;
+    ins_insid;
+    ins_suggest_id;
+    ins_Generic;
+  };
+  hbox(;
+    vbox{;
+      ins_Quotation;
+      ins_ValuationGrpChlItem;
+      ins_Nominal;
+    };
+    vbox{;
+      leg_PayDayMethod;
+      ins_DiscountingType;
+    };  
+  );
+);
+...
+
+}
+
+decls[FPythonCode] {
+}
+
+clx FObject [FPythonCode] {
+  FValidationDiscountedTermDeposit
+
+import acm, ael
+
+
+def validate_transaction(transaction_list, *rest):
+    for (e, op) in transaction_list:
+        if e.record_type == "Trade":
+            acmTrade = acm.FTrade[e.trdnbr]
+            if (
+                op in ("Insert", "Update")
+                and acmTrade.InstrumentSubType().Text() == "Discounted Term Deposit"
+            ):
+                if e.primary_issuance != 1:
+                    e.primary_issuance = 1
+
+                if (
+                    e.counterparty_ptynbr
+                    and e.insaddr.issuer_ptynbr != e.counterparty_ptynbr
+                ):
+                    ins_clone = e.insaddr
+                    ins_clone.issuer_ptynbr = e.counterparty_ptynbr
+                    transaction_list.append((ins_clone, "Update"))
+
+    return transaction_list
+
+
+def four_eyes_needed(transaction_list, *rest):
+    four_eye = 1
+    for (o, op) in transaction_list:
+        if o.record_type == "Instrument":
+            if op in ("Insert", "Update"):
+                for ai in o.additional_infos():
+                    if ai.addinf_specnbr.field_name == "ValueAtCost" and ai.value == "Yes":
+                        four_eye = 0
+    
+    return four_eye
+
+...
+
+  IdrTermDeposit
+import acm
+
+
+def InitIdrTermDeposit(self):
+    self.AdditionalInfo().ValueAtCost(True)
+    
+    
+def InitBillIns(self):
+    self.AdditionalInfo().ValueAtCost(False)
+    
+
+def InitIdrTermDepositTrade(trade):
+    pass
+
+...
+
+}
+

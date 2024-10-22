@@ -1,0 +1,8 @@
+MASTERAGREEMENT,,,,COLLATERALANNEX,,,,,,,,,,,,,,,,,,,,MARGININGSET,,,,,,,,/MARGININGSET,/COLLATERALANNEX,/MASTERAGREEMENT
+CLOSE_OUT_NETTING,DOCUMENT_TYPE_CHLNBR.ENTRY,DOCUMENT_TYPE_CHLNBR.LIST,NAME,ACCRUED_CASH_HANDLING,BASE_CURR.INSID,CALC_AGENT,COLLATERAL_VAL_CALC_CHLNBR.ENTRY,COLLATERAL_VAL_CALC_CHLNBR.LIST,COMMUNICATION_TYPE_CHLNBR.ENTRY,COMMUNICATION_TYPE_CHLNBR.LIST,EXPOSURE_CALC_CHLNBR.ENTRY,EXPOSURE_CALC_CHLNBR.LIST,EXPOSURE_TRADE_INCLUSION,INDEPENDENT_AMOUNT_TYPE,MARGIN_CALL_BASE_DATE,MARGIN_CALL_DAY_METHOD,MARGIN_CALL_FREQUENCY,MARGIN_TYPE,MITIGATION_METHOD,NAME,STATUS,TRANSFER_TYPE,VALID_FROM,CALL_CURR.INSID,EXPOSURE_SET_TYPE,IS_DEFAULT,MARGIN_RATIO,NAME,REHYPOTHECATION,RIGHT_OF_SUBSTITUTION,SETTLE_TYPE,,,
+Netted,ISDA,Standard Document,DvaDummyMasterAgreement,Include,IDR,Both,MtM Yesterday,Collateral Value Calculation,Manual,Margin Call Communication Type,MtM Yesterday,Exposure Calculation,All Trades,Margining Set,2024-02-15,Following,1d,Variation Margin,CTM,CSA,Active,Title Transfer,2023-02-15,IDR,Net,False,1,DvaDummyMsNoStorage,Rehypothecation,Yes,Bilateral,,,
+,,,,,,,,,,,,,,,,,,,,,,,,IDR,Net,False,1,cpy_ma,Rehypothecation,Yes,Bilateral,,,
+,,,,,,,,,,,,,,,,,,,,,,,,IDR,Net,False,1,MS New 1,Rehypothecation,Yes,Bilateral,,,
+,,,,,,,,,,,,,,,,,,,,,,,,IDR,Net,False,1,Dummy DVA Counterparty_MS,Rehypothecation,Yes,Bilateral,,,
+,,,,,,,,,,,,,,,,,,,,,,,,IDR,Net,False,1,Counterparty 4_MS,Rehypothecation,Yes,Bilateral,,,
+,,,,,,,,,,,,,,,,,,,,,,,,IDR,Net,False,1,Counterparty 1_MS,Rehypothecation,Yes,Bilateral,,,

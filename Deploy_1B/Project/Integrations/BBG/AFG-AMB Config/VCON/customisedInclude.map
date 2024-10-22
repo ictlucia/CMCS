@@ -1,0 +1,14 @@
+/* This file is intended for customisations made by Front Arena customers. */
+
+#define _CM_ExecutionReport2Trade \
+    TRADE.optional_key		   _from.ExecId \
+    TRADE.status		   "Simulated" \
+    TRADE.value_day                _from.SettlDate \
+    TRADE.quantity		   getQuantity() \
+    TRADE.premium		   getPremium() \
+    TRADE.acquire_day              _from.SettlDate \
+    TRADE.text1                    _from.NoteText[0] \
+    TRADE.COUNTERPARTY_PTYNBR.PTYID                    getCustomizedCounterpartyID() \
+    TRADE.prfnbr.prfid                    getCustomizedPortfolio() \
+
+	

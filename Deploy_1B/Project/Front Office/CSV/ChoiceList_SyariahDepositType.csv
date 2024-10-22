@@ -1,0 +1,5 @@
+CHOICELIST,,,/CHOICELIST
+LIST,ENTRY,DESCRIPTION,
+MASTER,SyariahDepositType,SyariahDepositType,
+SyariahDepositType,Mudharabah ,,
+SyariahDepositType,Mudharabah with asset,,

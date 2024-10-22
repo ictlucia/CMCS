@@ -1,0 +1,9 @@
+USERPROFILE,PROFILECOMPONENT,,,,,/PROFILECOMPONENT,/USERPROFILE
+PROFID,COMPNBR.COMPNAME,COMPNBR.TYPE,ALLOW_CREATE,ALLOW_WRITE,ALLOW_DELETE,,
+CISO_MAKER,UserProfile,DBObject,Yes,Yes,Yes,,
+,User,DBObject,Yes,Yes,Yes,,
+,TransHst,DBObject,Yes,Yes,,,
+,Organisation,DBObject,Yes,Yes,Yes,,
+,Group,DBObject,Yes,Yes,Yes,,
+,Run Script,Operation,,,,,
+,Run Create User,Operation,,,,,

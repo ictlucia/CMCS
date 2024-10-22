@@ -1,0 +1,915 @@
+[
+    {
+        "FTransaction": {
+            "Objects": [
+                {
+                    "FComplianceRule": {
+                        "Definition": {
+                            "ref(RuleDefinition.PositionAndRiskControl)": {
+                                "Column": {
+                                    "ref(FStandardColumnCreator)": {
+                                        "Configuration": {
+                                            "ref(FColumnCreatorConfiguration)": {
+                                                "ref(FDictionary)": {
+                                                    "columnParameters": {
+                                                        "ref(FVariantDictionary)": {
+                                                            "AggCurrChoice": "Fixed Curr",
+                                                            "CEMHierarchyChoice": {
+                                                                "ref(FHierarchy)": "CEM Parameters"
+                                                            },
+                                                            "FixedCurr": {
+                                                                "ref(FCurrency)": "USD"
+                                                            },
+                                                            "PosCurrChoice": "Fixed Curr"
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        "ContextSym": {
+                                            "ref(FSymbol)": "Standard"
+                                        },
+                                        "OriginalColumnId": {
+                                            "ref(FSymbol)": "Counterparty CEM Limit"
+                                        }
+                                    }
+                                },
+                                "ColumnIndex": 0,
+                                "CompoundQueryLogicalOperator": "AND",
+                                "FilterQuery": {
+                                    "ref(FArray)": [
+                                        {
+                                            "ref(FStoredASQLQuery)": {
+                                                "Cid": "FASQL Query",
+                                                "Name": "Limit_CEM",
+                                                "User": null
+                                            }
+                                        }
+                                    ]
+                                },
+                                "ForEach": "",
+                                "PythonFilterMethodName": "",
+                                "RelationType": "Explicit",
+                                "RelativeTo": false,
+                                "RelativeToColumn": null,
+                                "RelativeToColumnIndex": 0,
+                                "StoredTimeBuckets": null,
+                                "TradeRelation": "AdditionalInfo.LimitPartyTarget.RiskCountry.Name"
+                            }
+                        },
+                        "DefinitionInfo": "PositionAndRiskControl",
+                        "Description": "",
+                        "Name": "LOG_CTY",
+                        "RuleCategory": {
+                            "ref(FChoiceList)": {
+                                "List": "Compliance Rule Category",
+                                "Name": "Pre-Deal"
+                            }
+                        }
+                    }
+                },
+                {
+                    "FThreshold": {
+                        "ComparisonType": "Greater",
+                        "ComplianceRule": {
+                            "ref(FComplianceRule)": "LOG_CTY"
+                        },
+                        "Coordinates": {
+                            "ref(FStaticArray)": []
+                        },
+                        "Description": "",
+                        "Parent": null,
+                        "Relative": false,
+                        "Type": {
+                            "ref(FChoiceList)": {
+                                "List": "Threshold Type",
+                                "Name": "Violation"
+                            }
+                        },
+                        "Value": 100.0
+                    }
+                },
+                {
+                    "FThreshold": {
+                        "ComparisonType": "Greater",
+                        "ComplianceRule": {
+                            "ref(FComplianceRule)": "LOG_CTY"
+                        },
+                        "Coordinates": {
+                            "ref(FStaticArray)": []
+                        },
+                        "Description": "",
+                        "Parent": {
+                            "ref(FThreshold)": {
+                                "ComparisonType": "Greater",
+                                "ComplianceRule": {
+                                    "ref(FComplianceRule)": "LOG_CTY"
+                                },
+                                "Coordinates": {
+                                    "ref(FStaticArray)": []
+                                },
+                                "Type": {
+                                    "ref(FChoiceList)": {
+                                        "List": "Threshold Type",
+                                        "Name": "Violation"
+                                    }
+                                }
+                            }
+                        },
+                        "Relative": true,
+                        "Type": {
+                            "ref(FChoiceList)": {
+                                "List": "Threshold Type",
+                                "Name": "Warning"
+                            }
+                        },
+                        "Value": 85.0
+                    }
+                },
+                {
+                    "FThreshold": {
+                        "ComparisonType": "Less or Equal",
+                        "ComplianceRule": {
+                            "ref(FComplianceRule)": "LOG_CTY"
+                        },
+                        "Coordinates": {
+                            "ref(FStaticArray)": []
+                        },
+                        "Description": "",
+                        "Parent": null,
+                        "Relative": false,
+                        "Type": {
+                            "ref(FChoiceList)": {
+                                "List": "Threshold Type",
+                                "Name": "Reporting"
+                            }
+                        },
+                        "Value": 85.0
+                    }
+                },
+                {
+                    "FAppliedRule": {
+                        "ComplianceRule": {
+                            "ref(FComplianceRule)": "LOG_CTY"
+                        },
+                        "Data": "!enc!(7II<'@A-#(R(7C:C9$]\"L,P#(7WG$+D`KF`&S\"8S*%#=Q&K(/`?CC/X]B4Q;=W6@8Z2'M_3DSHQR1`,D[YNAA0FA)0#P:67BU7>(KM^[`\"$ICL[3NS=4S!''RBF?,P!Q*1XV><8<YL!((9*=&\"'-_>H`T:TE\"BNIS;5OO./^MMQ1Q8`TRJ=OJ'9Z(S];XQFE-)LF+VB-Q<O5PA5_:G<7S(^`&G=A\\0",
+                        "EndDate": "2025-01-17",
+                        "Inactive": false,
+                        "ReviewDate": "2024-12-17",
+                        "Size": 228,
+                        "StartDate": "2024-01-17",
+                        "Target": {
+                            "ref(FChoiceList)": {
+                                "List": "Country of Risk",
+                                "Name": "United States"
+                            }
+                        },
+                        "Unit": {
+                            "ref(FSymbol)": ""
+                        }
+                    }
+                },
+                {
+                    "FThresholdValue": {
+                        "AppliedRule": {
+                            "ref(FAppliedRule)": {
+                                "ComplianceRule": {
+                                    "ref(FComplianceRule)": "LOG_CTY"
+                                },
+                                "Target": {
+                                    "ref(FChoiceList)": {
+                                        "List": "Country of Risk",
+                                        "Name": "United States"
+                                    }
+                                }
+                            }
+                        },
+                        "Threshold": {
+                            "ref(FThreshold)": {
+                                "ComparisonType": "Greater",
+                                "ComplianceRule": {
+                                    "ref(FComplianceRule)": "LOG_CTY"
+                                },
+                                "Coordinates": {
+                                    "ref(FStaticArray)": []
+                                },
+                                "Type": {
+                                    "ref(FChoiceList)": {
+                                        "List": "Threshold Type",
+                                        "Name": "Violation"
+                                    }
+                                }
+                            }
+                        },
+                        "Value": 30000000000.0
+                    }
+                },
+                {
+                    "FThresholdValue": {
+                        "AppliedRule": {
+                            "ref(FAppliedRule)": {
+                                "ComplianceRule": {
+                                    "ref(FComplianceRule)": "LOG_CTY"
+                                },
+                                "Target": {
+                                    "ref(FChoiceList)": {
+                                        "List": "Country of Risk",
+                                        "Name": "United States"
+                                    }
+                                }
+                            }
+                        },
+                        "Threshold": {
+                            "ref(FThreshold)": {
+                                "ComparisonType": "Greater",
+                                "ComplianceRule": {
+                                    "ref(FComplianceRule)": "LOG_CTY"
+                                },
+                                "Coordinates": {
+                                    "ref(FStaticArray)": []
+                                },
+                                "Type": {
+                                    "ref(FChoiceList)": {
+                                        "List": "Threshold Type",
+                                        "Name": "Warning"
+                                    }
+                                }
+                            }
+                        },
+                        "Value": 85.0
+                    }
+                },
+                {
+                    "FThresholdValue": {
+                        "AppliedRule": {
+                            "ref(FAppliedRule)": {
+                                "ComplianceRule": {
+                                    "ref(FComplianceRule)": "LOG_CTY"
+                                },
+                                "Target": {
+                                    "ref(FChoiceList)": {
+                                        "List": "Country of Risk",
+                                        "Name": "United States"
+                                    }
+                                }
+                            }
+                        },
+                        "Threshold": {
+                            "ref(FThreshold)": {
+                                "ComparisonType": "Less or Equal",
+                                "ComplianceRule": {
+                                    "ref(FComplianceRule)": "LOG_CTY"
+                                },
+                                "Coordinates": {
+                                    "ref(FStaticArray)": []
+                                },
+                                "Type": {
+                                    "ref(FChoiceList)": {
+                                        "List": "Threshold Type",
+                                        "Name": "Reporting"
+                                    }
+                                }
+                            }
+                        },
+                        "Value": 25500000000.0
+                    }
+                },
+                {
+                    "FAppliedRule": {
+                        "ComplianceRule": {
+                            "ref(FComplianceRule)": "LOG_CTY"
+                        },
+                        "Data": "!enc!(7II<'@A-#(R(7C:C9$]\"L,P#(7WG$+D`KF`&S\"8S*%#=Q&K(/`?CC/X]B4Q;=W6@8Z2'M_3DSHQR1`,D[YNAA0FA)0#P:67BU7>(KM^[`\"$ICL[3NS=4S!''RBF?,P!Q*1XV><8<YL!((9*=&\"'-_>H`T:TE\"BNIS;5OO./^MMQ1Q8`TRJ=OJ'9Z(S];XQFE-)LF+VB-Q<O5PA5_:G<7S(^`&G=A\\0",
+                        "EndDate": "2025-01-17",
+                        "Inactive": false,
+                        "ReviewDate": "2024-12-17",
+                        "Size": 228,
+                        "StartDate": "2024-01-17",
+                        "Target": {
+                            "ref(FChoiceList)": {
+                                "List": "Country of Risk",
+                                "Name": "Singapura"
+                            }
+                        },
+                        "Unit": {
+                            "ref(FSymbol)": ""
+                        }
+                    }
+                },
+                {
+                    "FThresholdValue": {
+                        "AppliedRule": {
+                            "ref(FAppliedRule)": {
+                                "ComplianceRule": {
+                                    "ref(FComplianceRule)": "LOG_CTY"
+                                },
+                                "Target": {
+                                    "ref(FChoiceList)": {
+                                        "List": "Country of Risk",
+                                        "Name": "Singapura"
+                                    }
+                                }
+                            }
+                        },
+                        "Threshold": {
+                            "ref(FThreshold)": {
+                                "ComparisonType": "Greater",
+                                "ComplianceRule": {
+                                    "ref(FComplianceRule)": "LOG_CTY"
+                                },
+                                "Coordinates": {
+                                    "ref(FStaticArray)": []
+                                },
+                                "Type": {
+                                    "ref(FChoiceList)": {
+                                        "List": "Threshold Type",
+                                        "Name": "Violation"
+                                    }
+                                }
+                            }
+                        },
+                        "Value": 2000000000.0
+                    }
+                },
+                {
+                    "FThresholdValue": {
+                        "AppliedRule": {
+                            "ref(FAppliedRule)": {
+                                "ComplianceRule": {
+                                    "ref(FComplianceRule)": "LOG_CTY"
+                                },
+                                "Target": {
+                                    "ref(FChoiceList)": {
+                                        "List": "Country of Risk",
+                                        "Name": "Singapura"
+                                    }
+                                }
+                            }
+                        },
+                        "Threshold": {
+                            "ref(FThreshold)": {
+                                "ComparisonType": "Greater",
+                                "ComplianceRule": {
+                                    "ref(FComplianceRule)": "LOG_CTY"
+                                },
+                                "Coordinates": {
+                                    "ref(FStaticArray)": []
+                                },
+                                "Type": {
+                                    "ref(FChoiceList)": {
+                                        "List": "Threshold Type",
+                                        "Name": "Warning"
+                                    }
+                                }
+                            }
+                        },
+                        "Value": 85.0
+                    }
+                },
+                {
+                    "FThresholdValue": {
+                        "AppliedRule": {
+                            "ref(FAppliedRule)": {
+                                "ComplianceRule": {
+                                    "ref(FComplianceRule)": "LOG_CTY"
+                                },
+                                "Target": {
+                                    "ref(FChoiceList)": {
+                                        "List": "Country of Risk",
+                                        "Name": "Singapura"
+                                    }
+                                }
+                            }
+                        },
+                        "Threshold": {
+                            "ref(FThreshold)": {
+                                "ComparisonType": "Less or Equal",
+                                "ComplianceRule": {
+                                    "ref(FComplianceRule)": "LOG_CTY"
+                                },
+                                "Coordinates": {
+                                    "ref(FStaticArray)": []
+                                },
+                                "Type": {
+                                    "ref(FChoiceList)": {
+                                        "List": "Threshold Type",
+                                        "Name": "Reporting"
+                                    }
+                                }
+                            }
+                        },
+                        "Value": 1700000000.0
+                    }
+                },
+                {
+                    "FAppliedRule": {
+                        "ComplianceRule": {
+                            "ref(FComplianceRule)": "LOG_CTY"
+                        },
+                        "Data": "!enc!(7II<'@A-#(R(7C:C9$]\"L,P#(7WG$+D`KF`&S\"8S*%#=Q&K(/`?CC/X]B4Q;=W6@8Z2'M_3DSHQR1`,D[YNAA0FA)0#P:67BU7>(KM^[`\"$ICL[3NS=4S!''RBF?,P!Q*1XV><8<YL!((9*=&\"'-_>H`T:TE\"BNIS;5OO./^MMQ1Q8`TRJ=OJ'9Z(S];XQFE-)LF+VB-Q<O5PA5_:G<7S(^`&G=A\\0",
+                        "EndDate": "2025-01-17",
+                        "Inactive": false,
+                        "ReviewDate": "2024-12-17",
+                        "Size": 228,
+                        "StartDate": "2024-01-17",
+                        "Target": {
+                            "ref(FChoiceList)": {
+                                "List": "Country of Risk",
+                                "Name": "Jepang"
+                            }
+                        },
+                        "Unit": {
+                            "ref(FSymbol)": ""
+                        }
+                    }
+                },
+                {
+                    "FThresholdValue": {
+                        "AppliedRule": {
+                            "ref(FAppliedRule)": {
+                                "ComplianceRule": {
+                                    "ref(FComplianceRule)": "LOG_CTY"
+                                },
+                                "Target": {
+                                    "ref(FChoiceList)": {
+                                        "List": "Country of Risk",
+                                        "Name": "Jepang"
+                                    }
+                                }
+                            }
+                        },
+                        "Threshold": {
+                            "ref(FThreshold)": {
+                                "ComparisonType": "Greater",
+                                "ComplianceRule": {
+                                    "ref(FComplianceRule)": "LOG_CTY"
+                                },
+                                "Coordinates": {
+                                    "ref(FStaticArray)": []
+                                },
+                                "Type": {
+                                    "ref(FChoiceList)": {
+                                        "List": "Threshold Type",
+                                        "Name": "Violation"
+                                    }
+                                }
+                            }
+                        },
+                        "Value": 4000000000.0
+                    }
+                },
+                {
+                    "FThresholdValue": {
+                        "AppliedRule": {
+                            "ref(FAppliedRule)": {
+                                "ComplianceRule": {
+                                    "ref(FComplianceRule)": "LOG_CTY"
+                                },
+                                "Target": {
+                                    "ref(FChoiceList)": {
+                                        "List": "Country of Risk",
+                                        "Name": "Jepang"
+                                    }
+                                }
+                            }
+                        },
+                        "Threshold": {
+                            "ref(FThreshold)": {
+                                "ComparisonType": "Greater",
+                                "ComplianceRule": {
+                                    "ref(FComplianceRule)": "LOG_CTY"
+                                },
+                                "Coordinates": {
+                                    "ref(FStaticArray)": []
+                                },
+                                "Type": {
+                                    "ref(FChoiceList)": {
+                                        "List": "Threshold Type",
+                                        "Name": "Warning"
+                                    }
+                                }
+                            }
+                        },
+                        "Value": 85.0
+                    }
+                },
+                {
+                    "FThresholdValue": {
+                        "AppliedRule": {
+                            "ref(FAppliedRule)": {
+                                "ComplianceRule": {
+                                    "ref(FComplianceRule)": "LOG_CTY"
+                                },
+                                "Target": {
+                                    "ref(FChoiceList)": {
+                                        "List": "Country of Risk",
+                                        "Name": "Jepang"
+                                    }
+                                }
+                            }
+                        },
+                        "Threshold": {
+                            "ref(FThreshold)": {
+                                "ComparisonType": "Less or Equal",
+                                "ComplianceRule": {
+                                    "ref(FComplianceRule)": "LOG_CTY"
+                                },
+                                "Coordinates": {
+                                    "ref(FStaticArray)": []
+                                },
+                                "Type": {
+                                    "ref(FChoiceList)": {
+                                        "List": "Threshold Type",
+                                        "Name": "Reporting"
+                                    }
+                                }
+                            }
+                        },
+                        "Value": 3400000000.0
+                    }
+                },
+                {
+                    "FAppliedRule": {
+                        "ComplianceRule": {
+                            "ref(FComplianceRule)": "LOG_CTY"
+                        },
+                        "Data": "!enc!(7II<'@A-#(R(7C:C9$]\"L,P#(7WG$+D`KF`&S\"8S*%#=Q&K(/`?CC/X]B4Q;=W6@8Z2'M_3DSHQR1`,D[YNAA0FA)0#P:67BU7>(KM^[`\"$ICL[3NS=4S!''RBF?,P!Q*1XV><8<YL!((9*=&\"'-_>H`T:TE\"BNIS;5OO./^MMQ1Q8`TRJ=OJ'9Z(S];XQFE-)LF+VB-Q<O5PA5_:G<7S(^`&G=A\\0",
+                        "EndDate": "2025-01-01",
+                        "Inactive": false,
+                        "ReviewDate": "",
+                        "Size": 228,
+                        "StartDate": "",
+                        "Target": {
+                            "ref(FChoiceList)": {
+                                "List": "Country of Risk",
+                                "Name": "Perancis"
+                            }
+                        },
+                        "Unit": {
+                            "ref(FSymbol)": ""
+                        }
+                    }
+                },
+                {
+                    "FThresholdValue": {
+                        "AppliedRule": {
+                            "ref(FAppliedRule)": {
+                                "ComplianceRule": {
+                                    "ref(FComplianceRule)": "LOG_CTY"
+                                },
+                                "Target": {
+                                    "ref(FChoiceList)": {
+                                        "List": "Country of Risk",
+                                        "Name": "Perancis"
+                                    }
+                                }
+                            }
+                        },
+                        "Threshold": {
+                            "ref(FThreshold)": {
+                                "ComparisonType": "Greater",
+                                "ComplianceRule": {
+                                    "ref(FComplianceRule)": "LOG_CTY"
+                                },
+                                "Coordinates": {
+                                    "ref(FStaticArray)": []
+                                },
+                                "Type": {
+                                    "ref(FChoiceList)": {
+                                        "List": "Threshold Type",
+                                        "Name": "Violation"
+                                    }
+                                }
+                            }
+                        },
+                        "Value": 1000000000.0
+                    }
+                },
+                {
+                    "FThresholdValue": {
+                        "AppliedRule": {
+                            "ref(FAppliedRule)": {
+                                "ComplianceRule": {
+                                    "ref(FComplianceRule)": "LOG_CTY"
+                                },
+                                "Target": {
+                                    "ref(FChoiceList)": {
+                                        "List": "Country of Risk",
+                                        "Name": "Perancis"
+                                    }
+                                }
+                            }
+                        },
+                        "Threshold": {
+                            "ref(FThreshold)": {
+                                "ComparisonType": "Greater",
+                                "ComplianceRule": {
+                                    "ref(FComplianceRule)": "LOG_CTY"
+                                },
+                                "Coordinates": {
+                                    "ref(FStaticArray)": []
+                                },
+                                "Type": {
+                                    "ref(FChoiceList)": {
+                                        "List": "Threshold Type",
+                                        "Name": "Warning"
+                                    }
+                                }
+                            }
+                        },
+                        "Value": 85.0
+                    }
+                },
+                {
+                    "FThresholdValue": {
+                        "AppliedRule": {
+                            "ref(FAppliedRule)": {
+                                "ComplianceRule": {
+                                    "ref(FComplianceRule)": "LOG_CTY"
+                                },
+                                "Target": {
+                                    "ref(FChoiceList)": {
+                                        "List": "Country of Risk",
+                                        "Name": "Perancis"
+                                    }
+                                }
+                            }
+                        },
+                        "Threshold": {
+                            "ref(FThreshold)": {
+                                "ComparisonType": "Less or Equal",
+                                "ComplianceRule": {
+                                    "ref(FComplianceRule)": "LOG_CTY"
+                                },
+                                "Coordinates": {
+                                    "ref(FStaticArray)": []
+                                },
+                                "Type": {
+                                    "ref(FChoiceList)": {
+                                        "List": "Threshold Type",
+                                        "Name": "Reporting"
+                                    }
+                                }
+                            }
+                        },
+                        "Value": 850000000.0
+                    }
+                },
+                {
+                    "FAppliedRule": {
+                        "ComplianceRule": {
+                            "ref(FComplianceRule)": "LOG_CTY"
+                        },
+                        "Data": "!enc!(7II<'@A-#(R(7C:C9$]\"L,P#(7WG$+D`KF`&S\"8S*%#=Q&K(/`?CC/X]B4Q;=W6@8Z2'M_3DSHQR1`,D[YNAA0FA)0#P:67BU7>(KM^[`\"$ICL[3NS=4S!''RBF?,P!Q*1XV><8<YL!((9*=&\"'-_>H`T:TE\"BNIS;5OO./^MMQ1Q8`TRJ=OJ'9Z(S];XQFE-)LF+VB-Q<O5PA5_:G<7S(^`&G=A\\0",
+                        "EndDate": "",
+                        "Inactive": false,
+                        "ReviewDate": "",
+                        "Size": 228,
+                        "StartDate": "",
+                        "Target": {
+                            "ref(FChoiceList)": {
+                                "List": "Country of Risk",
+                                "Name": "Inggris"
+                            }
+                        },
+                        "Unit": {
+                            "ref(FSymbol)": ""
+                        }
+                    }
+                },
+                {
+                    "FThresholdValue": {
+                        "AppliedRule": {
+                            "ref(FAppliedRule)": {
+                                "ComplianceRule": {
+                                    "ref(FComplianceRule)": "LOG_CTY"
+                                },
+                                "Target": {
+                                    "ref(FChoiceList)": {
+                                        "List": "Country of Risk",
+                                        "Name": "Inggris"
+                                    }
+                                }
+                            }
+                        },
+                        "Threshold": {
+                            "ref(FThreshold)": {
+                                "ComparisonType": "Greater",
+                                "ComplianceRule": {
+                                    "ref(FComplianceRule)": "LOG_CTY"
+                                },
+                                "Coordinates": {
+                                    "ref(FStaticArray)": []
+                                },
+                                "Type": {
+                                    "ref(FChoiceList)": {
+                                        "List": "Threshold Type",
+                                        "Name": "Violation"
+                                    }
+                                }
+                            }
+                        },
+                        "Value": 500000000.0
+                    }
+                },
+                {
+                    "FThresholdValue": {
+                        "AppliedRule": {
+                            "ref(FAppliedRule)": {
+                                "ComplianceRule": {
+                                    "ref(FComplianceRule)": "LOG_CTY"
+                                },
+                                "Target": {
+                                    "ref(FChoiceList)": {
+                                        "List": "Country of Risk",
+                                        "Name": "Inggris"
+                                    }
+                                }
+                            }
+                        },
+                        "Threshold": {
+                            "ref(FThreshold)": {
+                                "ComparisonType": "Greater",
+                                "ComplianceRule": {
+                                    "ref(FComplianceRule)": "LOG_CTY"
+                                },
+                                "Coordinates": {
+                                    "ref(FStaticArray)": []
+                                },
+                                "Type": {
+                                    "ref(FChoiceList)": {
+                                        "List": "Threshold Type",
+                                        "Name": "Warning"
+                                    }
+                                }
+                            }
+                        },
+                        "Value": 85.0
+                    }
+                },
+                {
+                    "FThresholdValue": {
+                        "AppliedRule": {
+                            "ref(FAppliedRule)": {
+                                "ComplianceRule": {
+                                    "ref(FComplianceRule)": "LOG_CTY"
+                                },
+                                "Target": {
+                                    "ref(FChoiceList)": {
+                                        "List": "Country of Risk",
+                                        "Name": "Inggris"
+                                    }
+                                }
+                            }
+                        },
+                        "Threshold": {
+                            "ref(FThreshold)": {
+                                "ComparisonType": "Less or Equal",
+                                "ComplianceRule": {
+                                    "ref(FComplianceRule)": "LOG_CTY"
+                                },
+                                "Coordinates": {
+                                    "ref(FStaticArray)": []
+                                },
+                                "Type": {
+                                    "ref(FChoiceList)": {
+                                        "List": "Threshold Type",
+                                        "Name": "Reporting"
+                                    }
+                                }
+                            }
+                        },
+                        "Value": 425000000.0
+                    }
+                },
+                {
+                    "FAppliedRule": {
+                        "ComplianceRule": {
+                            "ref(FComplianceRule)": "LOG_CTY"
+                        },
+                        "Data": "!enc!(7II<'@A-#(R(7C:C9$]\"L,P#(7WG$+D`KF`&S\"8S*%#=Q&K(/`?CC/X]B4Q;=W6@8Z2'M_3DSHQR1`,D[YNAA0FA)0#P:67BU7>(KM^[`\"$ICL[3NS=4S!''RBF?,P!Q*1XV><8<YL!((9*=&\"'-_>H`T:TE\"BNIS;5OO./^MMQ1Q8`TRJ=OJ'9Z(S];XQFE-)LF+VB-Q<O5PA5_:G<7S(^`&G=A\\0",
+                        "EndDate": "",
+                        "Inactive": false,
+                        "ReviewDate": "",
+                        "Size": 228,
+                        "StartDate": "",
+                        "Target": {
+                            "ref(FChoiceList)": {
+                                "List": "Country of Risk",
+                                "Name": "Hongkong"
+                            }
+                        },
+                        "Unit": {
+                            "ref(FSymbol)": ""
+                        }
+                    }
+                },
+                {
+                    "FThresholdValue": {
+                        "AppliedRule": {
+                            "ref(FAppliedRule)": {
+                                "ComplianceRule": {
+                                    "ref(FComplianceRule)": "LOG_CTY"
+                                },
+                                "Target": {
+                                    "ref(FChoiceList)": {
+                                        "List": "Country of Risk",
+                                        "Name": "Hongkong"
+                                    }
+                                }
+                            }
+                        },
+                        "Threshold": {
+                            "ref(FThreshold)": {
+                                "ComparisonType": "Greater",
+                                "ComplianceRule": {
+                                    "ref(FComplianceRule)": "LOG_CTY"
+                                },
+                                "Coordinates": {
+                                    "ref(FStaticArray)": []
+                                },
+                                "Type": {
+                                    "ref(FChoiceList)": {
+                                        "List": "Threshold Type",
+                                        "Name": "Violation"
+                                    }
+                                }
+                            }
+                        },
+                        "Value": 100000000.0
+                    }
+                },
+                {
+                    "FThresholdValue": {
+                        "AppliedRule": {
+                            "ref(FAppliedRule)": {
+                                "ComplianceRule": {
+                                    "ref(FComplianceRule)": "LOG_CTY"
+                                },
+                                "Target": {
+                                    "ref(FChoiceList)": {
+                                        "List": "Country of Risk",
+                                        "Name": "Hongkong"
+                                    }
+                                }
+                            }
+                        },
+                        "Threshold": {
+                            "ref(FThreshold)": {
+                                "ComparisonType": "Greater",
+                                "ComplianceRule": {
+                                    "ref(FComplianceRule)": "LOG_CTY"
+                                },
+                                "Coordinates": {
+                                    "ref(FStaticArray)": []
+                                },
+                                "Type": {
+                                    "ref(FChoiceList)": {
+                                        "List": "Threshold Type",
+                                        "Name": "Warning"
+                                    }
+                                }
+                            }
+                        },
+                        "Value": 85.0
+                    }
+                },
+                {
+                    "FThresholdValue": {
+                        "AppliedRule": {
+                            "ref(FAppliedRule)": {
+                                "ComplianceRule": {
+                                    "ref(FComplianceRule)": "LOG_CTY"
+                                },
+                                "Target": {
+                                    "ref(FChoiceList)": {
+                                        "List": "Country of Risk",
+                                        "Name": "Hongkong"
+                                    }
+                                }
+                            }
+                        },
+                        "Threshold": {
+                            "ref(FThreshold)": {
+                                "ComparisonType": "Less or Equal",
+                                "ComplianceRule": {
+                                    "ref(FComplianceRule)": "LOG_CTY"
+                                },
+                                "Coordinates": {
+                                    "ref(FStaticArray)": []
+                                },
+                                "Type": {
+                                    "ref(FChoiceList)": {
+                                        "List": "Threshold Type",
+                                        "Name": "Reporting"
+                                    }
+                                }
+                            }
+                        },
+                        "Value": 85000000.0
+                    }
+                }
+            ]
+        }
+    }
+]

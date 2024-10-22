@@ -1,0 +1,158 @@
+TEXTOBJECT,,,,/TEXTOBJECT
+DATA,NAME,SIZE,TYPE,
+"<?xml version='1.0' encoding='UTF-8'?>\
+<FrontArenaPrimeSheetExport>\
+<!--PRIME Version: 2022.4.6-->\
+<FDictionary type =""AcmDomain"">\
+  <Element>\
+  <FAssociation type =""AcmDomain"">\
+    <associationKey type =""Property"">\
+      <FSymbol type =""AcmDomain"">\
+        <Text type =""Property"">\
+          <string type =""AcmDomain"">PortfolioGrouper</string>\
+        </Text>\
+      </FSymbol>\
+    </associationKey>\
+    <associationValue type =""Property"">\
+      <FChainedGrouper type =""AcmDomain"">\
+        <label type =""Property"">\
+          <FSymbol type =""AcmDomain"">\
+            <Text type =""Property"">\
+              <string type =""AcmDomain"">Portoflio / Deal Package ID</string>\
+            </Text>\
+          </FSymbol>\
+        </label>\
+        <split type =""Property"">\
+          <bool type =""AcmDomain"">false</bool>\
+        </split>\
+        <groupers type =""Property"">\
+          <FArray type =""AcmDomain"">\
+            <Element>\
+            <FAttributeGrouper type =""AcmDomain"">\
+              <label type =""Property"">\
+                <FSymbol type =""AcmDomain"">\
+                  <Text type =""Property"">\
+                    <string type =""AcmDomain"">Portfolio Name</string>\
+                  </Text>\
+                </FSymbol>\
+              </label>\
+              <split type =""Property"">\
+                <bool type =""AcmDomain"">false</bool>\
+              </split>\
+              <methodCollection type =""Property"">\
+                <FArray type =""AcmDomain"">\
+                  <Element>\
+                  <FSymbol type =""AcmDomain"">\
+                    <Text type =""Property"">\
+                      <string type =""AcmDomain"">Trade.Portfolio.Name</string>\
+                    </Text>\
+                  </FSymbol>\
+                  </Element>\
+                </FArray>\
+              </methodCollection>\
+              <attributeType type =""Property"">\
+                <int type =""AcmDomain"">-1</int>\
+              </attributeType>\
+              <subjectClass type =""Property"">\
+                <FDomain type =""AcmDomain"">\
+                  <DomainName type =""Property"">\
+                    <string type =""AcmDomain"">FInstrumentAndTradesGrouperSubject</string>\
+                  </DomainName>\
+                </FDomain>\
+              </subjectClass>\
+              <ignoreNullLevels type =""Property"">\
+                <int type =""AcmDomain"">0</int>\
+              </ignoreNullLevels>\
+              <Method type =""Property"">\
+                <FSymbol type =""AcmDomain"">\
+                  <Text type =""Property"">\
+                    <string type =""AcmDomain"">Trade.Portfolio.Name</string>\
+                  </Text>\
+                </FSymbol>\
+              </Method>\
+            </FAttributeGrouper>\
+            </Element>\
+            <Element>\
+            <FAttributeGrouper type =""AcmDomain"">\
+              <split type =""Property"">\
+                <bool type =""AcmDomain"">false</bool>\
+              </split>\
+              <methodCollection type =""Property"">\
+                <FArray type =""AcmDomain"">\
+                  <Element>\
+                  <FSymbol type =""AcmDomain"">\
+                    <Text type =""Property"">\
+                      <string type =""AcmDomain"">Trade.DealPackage.Name</string>\
+                    </Text>\
+                  </FSymbol>\
+                  </Element>\
+                </FArray>\
+              </methodCollection>\
+              <attributeType type =""Property"">\
+                <int type =""AcmDomain"">-1</int>\
+              </attributeType>\
+              <subjectClass type =""Property"">\
+                <FDomain type =""AcmDomain"">\
+                  <DomainName type =""Property"">\
+                    <string type =""AcmDomain"">FInstrumentAndTradesGrouperSubject</string>\
+                  </DomainName>\
+                </FDomain>\
+              </subjectClass>\
+              <ignoreNullLevels type =""Property"">\
+                <int type =""AcmDomain"">0</int>\
+              </ignoreNullLevels>\
+              <Method type =""Property"">\
+                <FSymbol type =""AcmDomain"">\
+                  <Text type =""Property"">\
+                    <string type =""AcmDomain"">Trade.DealPackage.Name</string>\
+                  </Text>\
+                </FSymbol>\
+              </Method>\
+            </FAttributeGrouper>\
+            </Element>\
+          </FArray>\
+        </groupers>\
+      </FChainedGrouper>\
+    </associationValue>\
+  </FAssociation>\
+  </Element>\
+  <Element>\
+  <FAssociation type =""AcmDomain"">\
+    <associationKey type =""Property"">\
+      <FSymbol type =""AcmDomain"">\
+        <Text type =""Property"">\
+          <string type =""AcmDomain"">positionBasedPartitioningByGrouper</string>\
+        </Text>\
+      </FSymbol>\
+    </associationKey>\
+    <associationValue type =""Property"">\
+      <FDictionary type =""AcmDomain"">\
+      </FDictionary>\
+    </associationValue>\
+  </FAssociation>\
+  </Element>\
+  <Element>\
+  <FAssociation type =""AcmDomain"">\
+    <associationKey type =""Property"">\
+      <FSymbol type =""AcmDomain"">\
+        <Text type =""Property"">\
+          <string type =""AcmDomain"">RowModifier2</string>\
+        </Text>\
+      </FSymbol>\
+    </associationKey>\
+    <associationValue type =""Property"">\
+      <FRowModifier type =""AcmDomain"">\
+        <propKeys type =""Property"">\
+          <FArray type =""AcmDomain"">\
+          </FArray>\
+        </propKeys>\
+        <propVals type =""Property"">\
+          <FArray type =""AcmDomain"">\
+          </FArray>\
+        </propVals>\
+      </FRowModifier>\
+    </associationValue>\
+  </FAssociation>\
+  </Element>\
+</FDictionary>\
+</FrontArenaPrimeSheetExport>",Portoflio / Deal Package ID,5480,Stored Grouper,

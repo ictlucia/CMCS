@@ -1,0 +1,6 @@
+CHOICELIST,,,,/CHOICELIST
+DESCRIPTION,LIST,SORT_ORDER,ENTRY,
+Branch,ADM Choicelist Mappings,,Trade.optkey1_chlnbr,
+Interface,ADM Choicelist Mappings,,Trade.optkey2_chlnbr,
+Product Type,ADM Choicelist Mappings,,Trade.optkey3_chlnbr,
+Category,ADM Choicelist Mappings,,Trade.optkey4_chlnbr,

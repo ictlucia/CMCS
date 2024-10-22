@@ -1,0 +1,9 @@
+USERPROFILE,,PROFILECOMPONENT,,,,/PROFILECOMPONENT,/USERPROFILE
+DESCRIPTION,PROFID,ALLOW_CREATE,ALLOW_WRITE,COMPNBR.COMPNAME,COMPNBR.TYPE,,
+FO Maker,FO_MAKER,Yes,Yes,Trade,DBObject,,
+,,Yes,Yes,Instrument,DBObject,,
+,,,,FO Maker,Operation,,
+,,,,Void Input,Operation,,
+,,,,Modify FO,Operation,,
+,,,,Modify FO Part,Operation,,
+,,,,Modify Confirmed,Operation,,

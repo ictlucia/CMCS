@@ -1,0 +1,1155 @@
+#
+# Front Arena exported extension module.
+# source          ""
+# timestamp (utc) "2024-03-07 06:48:22.4"
+# ***** DO NOT EDIT! *****
+#
+name        "PS_BIS4_InSettlements"
+description ""
+
+groups {
+}
+
+decls[FParameters] {
+}
+
+clx FObject [FParameters] {
+  InSettlementsParams =
+  logFilename=BIS4_InSettlements_LOG_{}.txt
+  SETL_PREFIX=77
+  TRADE_PREFIX=77
+
+
+}
+
+decls[FPythonCode] {
+}
+
+clx FObject [FPythonCode] {
+  BI_SSSS_In_Settlements
+"""----------------------------------------------------------------------------------------------------
+MODULE:
+    BI_SSSS_In_Settlements
+
+DESCRIPTION:
+    Entry point to invoke the BIS4 In Settlements run task gui.
+
+-------------------------------------------------------------------------------------------------------"""
+import acm, ael, traceback
+import os
+import ParametersReader
+import BIS4Common, ReasonCode
+reload(BIS4Common)
+
+# get value from FParameter
+SettlementsParams = ParametersReader.get_params('InSettlementsParams')
+
+log_file_name = SettlementsParams['logFilename'].format(acm.Time.DateToday().replace('-', ''))
+SETL_PREFIX = SettlementsParams['SETL_PREFIX']
+TRADE_PREFIX = SettlementsParams['TRADE_PREFIX']
+
+
+class BIS4Settlements(BIS4Common.BIS4_TaskBase):
+    def __init__(self):
+        super(BIS4Settlements, self).__init__()
+
+    def update_settlement_diary_and_status(self, settlement_record, diary_text, status):
+        settlement_status = ''
+        if status == 'ACK':
+            settlement_status = 'Acknowledged'
+        elif status == 'NACK':
+            settlement_status = 'Not Acknowledged'
+
+        try:
+            acm.BeginTransaction()
+            rec_updated = False
+            if settlement_status:
+                settlement_record.Status(settlement_status)
+                rec_updated = True
+
+            if diary_text:
+                reason = ReasonCode.reason_code_map.get(diary_text, '')
+                if reason:
+                    diary_text = diary_text + ":" + reason
+                if not settlement_record.HasDiary():
+                    diary_obj = acm.FSettlementDiary()
+                    diary_obj.AddNote(diary_text)
+                    diary_obj.Commit()
+
+                    settlement_record.Diary(diary_obj)
+                else:
+                    #settlement_record.AddDiaryNote(diary_text)                    
+                    diary_obj = settlement_record.Diary()
+                    diary_obj.AddNote(diary_text)
+                    diary_obj.Commit()
+                rec_updated = True
+
+            if rec_updated:
+                settlement_record.Commit()
+                acm.CommitTransaction()                
+            else:
+                pass
+                acm.AbortTransaction()
+                
+        except Exception:
+            acm.AbortTransaction()
+            raise
+
+    def process_incoming_file(self, file_path):
+        ret_val = False
+        with open(file_path) as fp:
+            data = fp.read()
+            data = data.split('\n')
+            #header = data[0]
+            payload_lines = [payload for payload in data if payload][1:-1]
+            #footer = data[-1]
+            buyer_reference_start_index = 115 - 1  # adjust 0 index
+            seller_reference_start_index = 67 - 1  # adjust 0 index
+            auth_error_flag_start_index = 25 - 1  # adjust 0 index
+            transaction_code_start_index = 2 - 1  # adjust 0 index
+            reserved_start_index = 943 - 1  # adjust 0 index
+            seller_buyer_reference_length = 10
+            auth_error_flag_length = 1
+            reserved_length = 59
+            transaction_code_length = 3
+            
+            for payload in payload_lines:
+                try:
+                    auth_error_flag = payload[auth_error_flag_start_index:auth_error_flag_start_index + auth_error_flag_length]
+                    reserved = payload[reserved_start_index:reserved_start_index + reserved_length]
+                    seller_reference = payload[
+                                       seller_reference_start_index:seller_reference_start_index + seller_buyer_reference_length]
+                    buyer_reference = payload[
+                                      buyer_reference_start_index:buyer_reference_start_index + seller_buyer_reference_length]
+                    transaction_code = payload[
+                                       transaction_code_start_index:transaction_code_start_index + transaction_code_length]
+
+                    settlement_ref = 0
+                    reserved = reserved.strip()
+                                        
+                    if seller_reference and seller_reference.startswith(SETL_PREFIX):
+                        settlement_ref = seller_reference.replace(SETL_PREFIX, '', 1).strip()
+                        
+                    if buyer_reference and buyer_reference.startswith(SETL_PREFIX):
+                        settlement_ref = buyer_reference.replace(SETL_PREFIX, '', 1).strip()                        
+
+                    settlement_record = acm.FSettlement[settlement_ref]
+
+                    if settlement_record:
+                        if auth_error_flag == 'Y':
+                            self.update_settlement_diary_and_status(settlement_record, reserved, 'NACK')
+                            ret_val = True
+                            self._logger.LOG('Settlement with reference {} updated with NACK status.'.format(settlement_ref))
+                        else:
+                            last_char_transaction_code = transaction_code[-1]
+                            if last_char_transaction_code == '7':
+                                self.update_settlement_diary_and_status(settlement_record, reserved, '')
+                                ret_val = True
+                                self._logger.LOG(
+                                    'Settlement with reference {} updated with entry in the diary.'.format(settlement_ref))
+                            elif last_char_transaction_code == '8':
+                                self.update_settlement_diary_and_status(settlement_record, '', 'ACK')
+                                ret_val = True
+                                self._logger.LOG('Settlement with reference {} updated with ACK status.'.format(settlement_ref))
+                    else:
+                        self._logger.LOG(
+                            'Settlement with reference {} not found in FrontArena. File read {}'.format(settlement_ref, fp.name))
+                except Exception as err:
+                    self._logger.LOG('Error while processing record in the file. {} Line content {}.'.format(err, payload))
+                    
+
+        return ret_val
+        
+        
+    def process_task(self, params):
+        files_processed = list()
+        files_failed = list()
+        self._logger.LOG('Start process_bis4_in settlement')
+        input_folder = params['inputFolder'].SelectedDirectory().AsString()
+        archive_folder = params['archiveFolder'].SelectedDirectory().AsString()
+
+        if input_folder == archive_folder:
+            self._logger.LOG('Input and archive folders cannot be same.')
+        else:
+            with os.scandir(input_folder) as dir_iter:
+                for settlement_file in dir_iter:
+                    try:
+                        processed_successfully = self.process_incoming_file(settlement_file)
+                    except Exception as err:
+                        processed_successfully = False
+                        self._logger.LOG('Error while processing file {}. {}.'.format(settlement_file.name, err))
+
+                    if processed_successfully:
+                        try:
+                            self.rename_and_archive_file(settlement_file, archive_folder)
+                            files_processed.append(settlement_file.name)
+                        except Exception as err:
+                            self._logger.LOG('Error while archiving file {}. {}.'.format(settlement_file.name, err))
+                            files_failed.append(settlement_file.name)         
+                            self.rename_and_archive_file(settlement_file, os.path.join(archive_folder,'Error'))
+                    else:
+                        files_failed.append(settlement_file.name)
+                        self.rename_and_archive_file(settlement_file, os.path.join(archive_folder,'Error'))
+        self._logger.LOG('End process_bis4_in settlement')
+
+        self._logger.LOG(
+            '--------------------------Stats Summary Start-------------------------------------------------')
+        self._logger.LOG(
+            'Files processed successfully. {}'.format('Zero' if not files_processed else ', '.join(files_processed)))
+        self._logger.LOG('Files failed. {}'.format('Zero' if not files_failed else ', '.join(files_failed)))
+        self._logger.LOG('--------------------------Stats Summary End-------------------------------------------------')
+
+
+ael_gui_parameters = {'windowCaption': "BIS4 In Settlements"}
+
+ael_variables = BIS4Settlements()
+ael_variables.LoadDefaultValues(__name__)
+app_name = 'InSettlements'
+
+
+def ael_main(params):
+    """
+    AEL main function
+    :param params: GUI parameters
+    :return: None
+    """
+    bis4_holding_position_loger = None
+    try:
+        bis4_holding_position_loger = BIS4Common.initialize_logging(params, log_file_name, app_name)
+        if bis4_holding_position_loger:
+            bis4_holding_position_loger.LOG('Execution started.')
+            ael_variables.set_logger(bis4_holding_position_loger)
+            ael_variables.process_task(params)
+    except Exception as err:
+        if bis4_holding_position_loger is not None:
+            bis4_holding_position_loger.ELOG(str(err))
+        print(traceback.format_exc())
+        print('Error in ael main. {}'.format(err))
+
+...
+
+  BIS4Common
+"""----------------------------------------------------------------------------------------------------
+MODULE:
+    BIS4Common
+
+DESCRIPTION:
+    Common file for all BIS4 implementations.
+
+-------------------------------------------------------------------------------------------------------"""
+import acm, ael, traceback
+import csv, os, shutil
+from datetime import datetime
+import ParametersReader, InterfaceUtils
+import FLogger, FRunScriptGUI
+
+# get value from FPArameter
+holdingPositionParams = ParametersReader.get_params('InHoldingPositionParams')
+
+log_file_name = holdingPositionParams['logFilename'].format(acm.Time.DateToday().replace('-', ''))
+
+BIS4_INS_ALIAS='BI-SSSS ALIAS'
+BIS4_FTP_KEY = 'KDUR6973'
+class BIS4_TaskBase(FRunScriptGUI.AelVariablesHandler):
+    def __init__(self):
+        logLevels = [FLogger.FLogger.INFO, FLogger.FLogger.ERROR, FLogger.FLogger.WARNING, FLogger.FLogger.DEBUG]
+        
+        folderPicker = FRunScriptGUI.DirectorySelection()
+
+        gui_vars = [
+            ['inputFolder', 'Folder Path_Input', folderPicker, None, folderPicker, 1, 1,
+             'The file path from where the files will be picked.', None, 1],
+            ['archiveFolder', 'Folder Path_Archive', folderPicker, None, folderPicker, 1, 1,
+             'The file path where the files will be moved after processing.', None, 1],
+            ['logToConsole', 'Log to console_Logging', 'int', [1, 0], 1, 1, 0,
+             'Whether logging should be done in the Log Console or not.'],
+            ['log_folder', 'Log folder_Logging', folderPicker, None, folderPicker, 0, 1,
+             'Select where to store the log file',
+             0, None],
+            ['log_level', 'Log level_Logging', 'string', logLevels, FLogger.FLogger.DEBUG, 1, 0]
+        ]
+        self._logger = None
+        FRunScriptGUI.AelVariablesHandler.__init__(self, gui_vars)
+        
+        
+    def set_logger(self, logger):
+        """
+        This function sets the logger
+        :param logger: FLogger
+        :return: None
+        """
+        self._logger = logger
+        
+    def archive_file(self, bis4_file, archive_folder):
+        #os.replace(bis4_file, os.path.join(archive_folder, bis4_file.name))
+        shutil.move(bis4_file, archive_folder)
+    
+    def rename_and_archive_file(self, settlement_file, archive_folder):
+        date_today = acm.Time.DateToday()
+        first_part, second_part = os.path.splitext(settlement_file.name)
+        final_archive_folder=os.path.join(archive_folder, first_part+'_'+date_today+second_part)
+        self.archive_file(settlement_file, final_archive_folder)
+        
+    def process_input_record(self, data):
+        pass
+
+    def process_task(self, params):
+        files_processed = list()
+        files_failed = list()
+        self._logger.LOG('Start process_task')
+        input_folder = params['inputFolder'].SelectedDirectory().AsString()
+        archive_folder = params['archiveFolder'].SelectedDirectory().AsString()
+        
+        if input_folder == archive_folder:
+            self._logger.LOG('Input and archive folders cannot be same.')
+        else:
+            with os.scandir(input_folder) as dir_iter:
+                for bis4_file in dir_iter:
+                    if bis4_file.name.endswith('.csv'):#process only CSV files.
+                        try:
+                            processed_successfully = True
+                            with open(bis4_file, newline='') as csvfile:
+                                csvreader = csv.reader(csvfile)
+                                for count, row in enumerate(csvreader):
+                                    if count == 0:
+                                        continue #Ignore the header
+                                    try:
+                                        if not self.process_input_record(row):                                        
+                                            processed_successfully = False
+                                    except Exception as err:
+                                        processed_successfully = False
+                                        self._logger.LOG('Error while processing row {}. {}.'.format(row, err))
+                                        self._logger.LOG(traceback.format_exc())
+                        except Exception as err:
+                            processed_successfully = False
+                            self._logger.LOG('Error while processing file {}. {}.'.format(bis4_file.name, err))
+                            self._logger.LOG(traceback.format_exc())
+                        
+                        if processed_successfully:
+                            self.rename_and_archive_file(bis4_file, archive_folder)
+                            files_processed.append(bis4_file.name)
+                        else:
+                            files_failed.append(bis4_file.name)
+                            self.rename_and_archive_file(bis4_file, os.path.join(archive_folder,'Error'))
+            
+        
+        
+        self._logger.LOG('--------------------------Stats Summary Start-------------------------------------------------')
+        self._logger.LOG('Files processed successfully. {}'.format('Zero' if not files_processed else ', '.join(files_processed)))
+        self._logger.LOG('Files failed. {}'.format('Zero' if not files_failed else ', '.join(files_failed)))
+        self._logger.LOG('--------------------------Stats Summary End-------------------------------------------------')
+        
+        self._logger.LOG('Finish process_task')
+    
+
+def initialize_logging(params, logfile_name, app_name):
+    """
+    Initialize logger
+    :param params: parameters
+    :return: FLogger object
+    """
+    logger = None
+    try:
+        logFolder = params['log_folder']
+        logfolderString = logFolder.SelectedDirectory().AsString()
+        logfile = os.path.join(logfolderString, logfile_name)
+        if logfile == '':
+            logfile = None
+
+        logLevel = params['log_level']
+        level = InterfaceUtils.LogLevelNameToNumber(logLevel)
+        print('level: ', level)
+        logger = FLogger.FLogger(level=level,
+                                 name=app_name,
+                                 logToPrime=True,
+                                 logToFileAtSpecifiedPath=logfile,
+                                 logToConsole=False)
+    except Exception as err:
+        print('Error in initializing logger {}'.format(err))
+        print(traceback.format_exc())
+    return logger
+
+
+
+...
+
+  ReasonCode
+"""----------------------------------------------------------------------------------------------------
+MODULE:
+    ResonCode
+
+DESCRIPTION:
+    Reason code for BIS4 In Settlement
+
+-------------------------------------------------------------------------------------------------------"""
+reason_code_map = {
+    "EA1":"Text block has invalid format",
+    "EA10":"Credit account does not belong to this BIC",
+    "EA100":"Query was canceled manually",
+    "EA101":"TTC values are different in 26T and 72 fields",
+    "EA11":"Not all debit accounts are found",
+    "EA12":"Sender has no rights to send message of this type",
+    "EA13":"Field 79 has invalid format",
+    "EA14":"Value Date is invalid",
+    "EA15":"Account code not found",
+    "EA16":"Message is corrupted",
+    "EA17":"Message could not be accepted due to business day schedule (check that business day is active and period is activated)",
+    "EA18":"Amount has invalid format",
+    "EA19":"Credit account cannot be equal to debit account",
+    "EA2":"Debit account not found",
+    "EA20":"BIC of credit account has invalid format",
+    "EA21":"BIC of debit account has invalid format",
+    "EA22":"There are active instructions in the system",
+    "EA23":"Another period still active",
+    "EA24":"Duplicated or missed debit accounts",
+    "EA25":"Invalid bussines day period",
+    "EA26":"Error weight is more than possible",
+    "EA27":"Cache should be updated",
+    "EA28":"Wrong format",
+    "EA29":"Field 75 has invalid format",
+    "EA3":"Credit account not found or BIC is invalid",
+    "EA30":"BIC is unknown or invalid",
+    "EA31":"Wrong board operation",
+    "EA32":"Wrong data in field",
+    "EA33":"Wrong Credentials",
+    "EA34":"Undefined Error Code",
+    "EA35":"Participant has more that one account",
+    "EA36":"Wrong certificate is used! Wrong abonent:",
+    "EA37":"Wrong Message Sender",
+    "EA38":"Wrong session id for user substitution",
+    "EA39":"Query is rejected by external system",
+    "EA4":"Filed 11S has invalid format",
+    "EA40":"Wrong priority",
+    "EA41":"Wrong data in reply",
+    "EA42":"Related message was rejected or not found",
+    "EA43":"Wrong Credentials",
+    "EA44":"Decryption error",
+    "EA45":"Wrong direct participant for BIC",
+    "EA46":"Gridlock resolution required",
+    "EA47":"User is not active",
+    "EA48":"SWIFT field option used does not correspond with participant parameters",
+    "EA49":"Rejected by External Validator",
+    "EA5":"Message is duplicated",
+    "EA50":"Number of clearing documents is too low - must have 9 documents",
+    "EA51":"Wrong document step",
+    "EA52":"Query has been rejected",
+    "EA53":"Wrong number of repetitive sequences in the message",
+    "EA54":"Credit accounts should be the same",
+    "EA59":"Reference of the original reservation not found",
+    "EA6":"Reference document is not found",
+    "EA60":"Failed to activate period",
+    "EA61":"Instruction value is more then allowed",
+    "EA62":"User can not use private network",
+    "EA64":"Adapter can not be used as service bureau",
+    "EA65":"Wrong service bureau",
+    "EA68":"Invalid type of document for the type of transaction",
+    "EA7":"Message has incompatible type with reference instruction",
+    "EA70":"Wrong Credentials",
+    "EA71":"Payment amount is less than allowed for the RTGS system",
+    "EA72":"Balance is not defined for account",
+    "EA74":"Participant can not authorize document",
+    "EA75":"Instruction value is less then allowed",
+    "EA76":"Batch value is more then allowed",
+    "EA77":"Batch value is less then allowed",
+    "EA78":"Payment value is more than allowed",
+    "EA79":"Payment value is less than allowed",
+    "EA8":"Sender is not owner of this account",
+    "EA80":"Field expected",
+    "EA81":"Account has beed duplicated",
+    "EA82":"Account is not reconciled",
+    "EA88":"Account type code must be CLIA",
+    "EA9":"Message subtype is unknown",
+    "EA90":"Payment currency and account currency mismatch",
+    "EA91":"Exchange between the accounts of one participant denied",
+    "EA92":"Invalid currency rate",
+    "EA93":"The document is already processed",
+    "EA94":"Invalid currency rate direction",
+    "EA95":"This operation is not allowed",
+    "EA98":"Query is already canceled",
+    "EA99":"Query is already processed",
+    "EL10":"Wrong template string for account code",
+    "EL100":"More than one default subaccount exists",
+    "EL11":"Wrong template string for amount",
+    "EL12":"Wrong template string for currency code",
+    "EL13":"Package has another route_step",
+    "EL14":"Unable to define reply type for the query",
+    "EL15":"Invalid type for outgoing message",
+    "EL16":"Wrong message type symbol",
+    "EL17":"Invalid Error code",
+    "EL18":"Too many rows in error description",
+    "EL19":"Total sum not equal to the sum for debited accounts",
+    "EL21":"Invalid data in source message",
+    "EL22":"Error in entry template",
+    "EL23":"Error creating text of SWIFT message",
+    "EL24":"Invalid reference to incoming message",
+    "EL25":"Invalid field in incoming message",
+    "EL26":"Invalid value of message user priority",
+    "EL27":"Invalid data in incoming message",
+    "EL28":"Account is not open",
+    "EL29":"Invalid Account close date",
+    "EL3":"Invalid type of message",
+    "EL30":"No record in balances for account",
+    "EL31":"Amount is less than system minimum amount",
+    "EL32":"Amount is greater than system maximum amount",
+    "EL33":"Amount is less than participant minimum amount",
+    "EL34":"Amount is greater than participant maximum amount",
+    "EL35":"Payment is wrong formatted",
+    "EL36":"Wrong number of the batches",
+    "EL37":"Wrong total amount of the batches",
+    "EL38":"Duplicated file reference",
+    "EL39":"Payment is not found",
+    "EL4":"Accounts have different currencies",
+    "EL40":"Instruction not found",
+    "EL41":"Instruction already rejected",
+    "EL42":"Number of instructions is wrong",
+    "EL43":"MT102 amount is not equal to sum of instructions within it",
+    "EL44":"File is not accepted due to errors in batch(es)",
+    "EL45":"Instruction value is greater than maximum participant instruction value",
+    "EL46":"Instruction value is less than minimum participant instruction value",
+    "EL47":"Payment value is greater than maximum participant batch value",
+    "EL48":"Payment value is less than minimum participant Payment value",
+    "EL49":"File value is greater than maximum participant file value",
+    "EL5":"Wrong number of instructions in package",
+    "EL50":"File value is less than minimum participant file value",
+    "EL5059":"Duplication of documents with the same Trade Debit/Credit BIC",
+    "EL51":"Account is invalid",
+    "EL52":"BIC is invalid",
+    "EL53":"Account should be specified",
+    "EL54":"Transaction reference is duplicated",
+    "EL55":"Payment reference is duplicated",
+    "EL56":"All instructions are rejected",
+    "EL57":"Invalid data in msg_num_of_batches",
+    "EL58":"Invalid data in msg_amount",
+    "EL59":"Invalid data in trans_type_code",
+    "EL6":"Some instructions already belong to other packages",
+    "EL60":"Wrong codeword or field for copy detalisation",
+    "EL61":"Wrong codeword in request filter of field 75",
+    "EL62":"Wrong session id",
+    "EL64":"Invalid MIR for OUTPUT Message",
+    "EL65":"Invalid field option for BIC",
+    "EL7":"Different route steps in instructions",
+    "EL70":"Instruction Rejected",
+    "EL71":"Debit and credit accounts are the same",
+    "EL72":"Instruction rejected by unwind",
+    "EL8":"Number of instructions in package not equal to DOC_PACKETS.NUM_DOCS",
+    "EL80":"Wrong instrument Type",
+    "EL81":"Wrong operation code",
+    "EL82":"Wrong submission date",
+    "EL83":"Account is locked for clearing",
+    "EL84":"Participant is restricted to interact with contrary party by MT104",
+    "EL9":"Instructions have different value dates",
+    "EP101":"Unknown message type",
+    "EP103":"Too few parameters",
+    "EP106":"Invalid value",
+    "EP107":"Invalid direction",
+    "EP108":"Invalid user identifier",
+    "EP109":"Invalid participant identifier",
+    "EP110":"Invalid message identifier",
+    "EP111":"Invalid transaction identifier",
+    "EP112":"Invalid package identifier",
+    "EP113":"Invalid account",
+    "EP114":"Invalid currency code",
+    "EP115":"Invalid status of participant",
+    "EP116":"Invalid operation",
+    "EP117":"Invalid type of limit",
+    "EP118":"Invalid type of overdraft",
+    "EP119":"Invalid expression",
+    "EP120":"Invalid business day",
+    "EP121":"Invalid transaction status",
+    "EP122":"Invalid value date",
+    "EP123":"Invalid step",
+    "EP124":"Invalid date",
+    "EP125":"Instruction is not included in the package",
+    "EP126":"Business day already opened",
+    "EP127":"User suspended",
+    "EP128":"User in default",
+    "EP129":"Participant is suspended",
+    "EP130":"Participant is in default",
+    "EP131":"Could not change user status (less)",
+    "EP132":"Could not change user status (more)",
+    "EP133":"Could not change participant status (less)",
+    "EP134":"Could not change participant status (more)",
+    "EP135":"Debit already locked",
+    "EP136":"Credit already locked",
+    "EP137":"Debit already unlocked",
+    "EP138":"Credit already unlocked",
+    "EP139":"Account limit already exists",
+    "EP140":"Account limit does not exist",
+    "EP141":"Could not change account limit (less)",
+    "EP142":"Could not change account limit (more)",
+    "EP143":"Account limit too big",
+    "EP144":"Account overdraft already exists",
+    "EP145":"Account overdraft does not exist",
+    "EP146":"Could not change overdraft (less)",
+    "EP147":"Could not change overdraft (more)",
+    "EP148":"Overdraft too big",
+    "EP149":"Could not change overdraft limit (less)",
+    "EP150":"Could not change overdraft limit (more)",
+    "EP151":"Overdraft limit too big",
+    "EP152":"Could not change participant overdraft limit (less)",
+    "EP153":"Could not change participant overdraft limit (more)",
+    "EP154":"Participant overdraft limit too big",
+    "EP155":"Could not change overdraft limit (less)",
+    "EP156":"Could not change overdraft limit (more)",
+    "EP157":"Overdraft limit too big",
+    "EP158":"Debit of account is locked",
+    "EP159":"Credit of account is locked",
+    "EP160":"Hard check failed",
+    "EP161":"Participant overdraft has been exceeded",
+    "EP162":"System overdraft has been exceeded",
+    "EP163":"Soft check failed",
+    "EP164":"Too many instructions in the package",
+    "EP165":"Operation could not be completed. Payment has been settled.",
+    "EP166":"Operation could not be completed. Payment has been rejected.",
+    "EP167":"Instruction is not conditional",
+    "EP168":"Package is not splitable",
+    "EP169":"Invalid status",
+    "EP170":"Invalid query id",
+    "EP171":"Wrong query status",
+    "EP172":"Participant is not suspended",
+    "EP173":"Participant is not defaulted",
+    "EP174":"Wrong Credentials",
+    "EP175":"Duplicated confirmation",
+    "EP176":"Reject confirmation",
+    "EP177":"Instruction is not rejected",
+    "EP178":"Enforced cancellation",
+    "EP179":"Returns exists",
+    "EP180":"Invalid previous business day closing balance",
+    "EP181":"Invalid date of previous business day",
+    "EP182":"Invalid amount",
+    "EP183":"Lack of funds",
+    "EP184":"Queued or rejected due to external reasons",
+    "EP185":"MT 204 is queued",
+    "EP186":"Board already created",
+    "EP187":"Board not found",
+    "EP188":"Settlement is not permitted in this value date",
+    "EP189":"User already has an open session",
+    "EP190":"Invalid account activity",
+    "EP191":"Invalid priority",
+    "EP192":"User is locked",
+    "EP193":"Password was NOT changed: Password is duplicated. You are trying to use password that was already used. Please try again.",
+    "EP195":"Gridlock data too old",
+    "EP196":"Bilateral limit exceeded",
+    "EP197":"Participant does not have settlement account",
+    "EP198":"Invalid bilateral limit type",
+    "EP199":"Debit amount is not equal to credit",
+    "EP2":"Payment was rejected",
+    "EP200":"EST more than system time",
+    "EP201":"LST less then system time",
+    "EP202":"Participant does not have account",
+    "EP203":"Participant has more than one settlement account",
+    "EP204":"Participant does not have settlement account",
+    "EP205":"Settlement account does not exist",
+    "EP206":"Message is corrupted",
+    "EP207":"ILF limit exceeded",
+    "EP208":"Integrity error. Accounts and Participants mismatch or accounts currency mismatch",
+    "EP209":"Unable to change transaction value date",
+    "EP21":"Active operday not found",
+    "EP210":"The value date of international outgoing transfer for the currency is invalid",
+    "EP211":"Password was NOT changed: Password cannot be changed before minimal usage time will be elapsed.",
+    "EP212":"Password was NOT changed: Password is too short. It is not compliant with system security policy. Please try again.",
+    "EP213":"Password was NOT changed: Password is not strong enough.",
+    "EP215":"Password was NOT changed: Password contains disallowed characters.",
+    "EP216":"Password was NOT changed: Password starts from disallowed character.",
+    "EP217":"Reserve value violates restriction for minimum value of this type",
+    "EP218":"User has been locked due to long idle period",
+    "EP223":"Multilateral limit exceeded",
+    "EP224":"Operation cannot be performed since the document is not in an appropriate state",
+    "EP226":"The requested ILF limit is less than already granted ILF amount",
+    "EP227":"More than one settlement account",
+    "EP228":"Invalid value date: holiday for currency",
+    "EP229":"Invalid value date: holiday for participant",
+    "EP230":"Invalid value date: holiday for country",
+    "EP231":"Enforced cancellation: value date is a sudden holiday",
+    "EP232":"Invalid value date: holiday for currency, participant and country",
+    "EP233":"Invalid value date: holiday for currency and participant",
+    "EP234":"Invalid value date: holiday for currency and country",
+    "EP235":"Invalid value date: holiday for participant and country",
+    "EP236":"Enforced cancellation: holiday for currency, participant and country",
+    "EP237":"Enforced cancellation: holiday for currency and participant",
+    "EP238":"Enforced cancellation: holiday for currency and country",
+    "EP239":"Enforced cancellation: holiday for participant and country",
+    "EP240":"Enforced cancellation: holiday for currency",
+    "EP241":"Enforced cancellation: holiday for participant",
+    "EP242":"Enforced cancellation: holiday for country",
+    "EP243":"Enforced cancellation: sudden holiday and no future value date available for transaction",
+    "EP244":"Wrong reserve type for RESDEBIT",
+    "EP245":"Wrong reserve type for RESCREDI",
+    "ER1":"Access rights are not assigned",
+    "ER10":"Participant cannot lock account",
+    "ER11":"Participant cannot unlock account",
+    "ER12":"Wrong priority value",
+    "ER13":"Participant cannot cancel instruction",
+    "ER14":"Participant cannot set overdraft for account",
+    "ER15":"Participant cannot set overdraft limit for account",
+    "ER16":"Participant cannot set overdraft limit for participant",
+    "ER17":"Participant cannot set overdraft limit for whole system",
+    "ER18":"Participant cannot set limit for account",
+    "ER19":"Participant cannot confirm related instruction type",
+    "ER20":"Participant cannot debit account",
+    "ER21":"Participant cannot credit account",
+    "ER22":"Participant cannot change priority of instruction with this type",
+    "ER23":"Participant cannot lock participant",
+    "ER24":"Participant cannot lock user",
+    "ER25":"Participant Check - Invalid Message Type",
+    "ER26":"Participant is not owner of message",
+    "ER28":"Participant cannot get account report on specified account",
+    "ER29":"Participant cannot change business day period",
+    "ER30":"User cannot send message",
+    "ER31":"User cannot substitute other user",
+    "ER32":"User cannot change Business Day Period",
+    "ER33":"User cannot resolve gridlock",
+    "ER34":"User cannot perform archiving",
+    "ER35":"User cannot approve right changes",
+    "ER36":"User cannot create Request to Change Access Rights",
+    "ER40":"Cannot send message at that business day period",
+    "ER41":"Settlement is not allowed for the participant in this period",
+    "ER50":"Account cannot accept document with priority specified at this business day period",
+    "ER60":"Participant cannot get report on specified participant",
+    "ER61":"Participant can not settle payments by type",
+    "ER62":"Participant can not settle payments by priorities",
+    "ER63":"Participant can not accept payments by type",
+    "ER64":"Participant can not set reserve by type",
+    "ER65":"Participant can not increase reserve",
+    "ER66":"Participant can not decrease reserve",
+    "ER68":"No rights to authorize payment",
+    "ER69":"Participant is not allowed to change transaction value date",
+    "ER7":"Participant cannot send message in current period",
+    "ER70":"Allowed TTC by Priority",
+    "ER71":"Allow presence of payments by Transaction Type Code",
+    "ER8":"Participant cannot resolve gridlock",
+    "ER9":"Participant cannot perform archiving",
+    "EX1001":"Wrong number of lines, field",
+    "EX1002":"Line 1, Slash is missed, field",
+    "EX1003":"Line 1, Mandatory subfield 1 is empty, field",
+    "EX1004":"Line 1, Wrong length of subfield, field",
+    "EX1005":"Line 1, Leading double slash is expected, field",
+    "EX1006":"Line 2, Mandatory subfield 1 is empty, field",
+    "EX1007":"Line 2, Wrong length of subfield, field",
+    "EX1008":"Line 2, Validation rule is violated, subfield 2, field",
+    "EX1009":"Line 2, Mandatory subfield is empty, field",
+    "EX1010":"Line 2, Slash is missed, field",
+    "EX1011":"Line 1, Mandatory subfield 2 is empty, field",
+    "EX1012":"Line 2, Validation rule is violated, subfield 1, field",
+    "EX1013":"Line 1, Validation rule is violated, subfield 2, field",
+    "EX1014":"Line 1, Mandatory subfield 3 is empty, field",
+    "EX1015":"Line 1, Mandatory subfield 4 is empty, field",
+    "EX1016":"Field must correspond to Sender to Receiver Info",
+    "EX1017":"Line 1, Mandatory subfield 3 is empty, field",
+    "EX1018":"Field 26T should correspond to files 72 CODTYPTR",
+    "EX1019":"Wrong TranstypeCode for the message type",
+    "EX1020":"Validation rule is violated, field",
+    "EX1100":"Wrong TranstypeCode for the message type",
+    "EX1101":"Wrong number of lines, field",
+    "EX1102":"Line 1, Slash is missed, field",
+    "EX1103":"Line 1, Mandatory subfield 1 is empty, field",
+    "EX1104":"Line 1, Wrong length of subfield, field",
+    "EX1105":"Line 1, Leading double slash is expected, field",
+    "EX1106":"Line 2, Mandatory subfield 1 is empty, field",
+    "EX1107":"Line 2, Wrong length of subfield, field",
+    "EX1108":"Line 2, Validation rule is violated, subfield 2, field",
+    "EX1109":"Line 2, Mandatory subfield is empty, field",
+    "EX1110":"Line 2, Slash is missed, field",
+    "EX1111":"Line 1, Mandatory subfield 2 is empty, field",
+    "EX1112":"Line 2, Validation rule is violated, subfield 1, field",
+    "EX1113":"Line 1, Validation rule is violated, subfield 2, field",
+    "EX1114":"Line 1, Mandatory subfield 3 is empty, field",
+    "EX1115":"Line 1, Mandatory subfield 4 is empty, field",
+    "EX1116":"Field must correspond to Sender to Receiver Info",
+    "EX1117":"Line 1, Mandatory subfield 3 is empty, field",
+    "EX1118":"Field 26T should correspond to files 72 CODTYPTR",
+    "EX1119":"Wrong TranstypeCode for the message type",
+    "EX1120":"Validation rule is violated, field",
+    "EX1201":"Wrong number of lines, field",
+    "EX1202":"Line 1, Slash is missed, field",
+    "EX1203":"Line 1, Mandatory subfield 1 is empty, field",
+    "EX1204":"Line 1, Wrong length of subfield, field",
+    "EX1205":"Line 1, Leading double slash is expected, field",
+    "EX1206":"Line 2, Mandatory subfield 1 is empty, field",
+    "EX1207":"Line 2, Wrong length of subfield, field",
+    "EX1208":"Line 2, Validation rule is violated, subfield 2, field",
+    "EX1209":"Line 2, Mandatory subfield is empty, field",
+    "EX1210":"Line 2, Slash is missed, field",
+    "EX1211":"Line 1, Mandatory subfield 2 is empty, field",
+    "EX1212":"Line 2, Validation rule is violated, subfield 1, field",
+    "EX1213":"Line 1, Validation rule is violated, subfield 2, field",
+    "EX1214":"Line 1, Mandatory subfield 3 is empty, field",
+    "EX1215":"Line 1, Mandatory subfield 4 is empty, field",
+    "EX1216":"Field must correspond to Sender to Receiver Info",
+    "EX1217":"Line 1, Mandatory subfield 3 is empty, field",
+    "EX1218":"Field 26T should correspond to files 72 CODTYPTR",
+    "EX1219":"Wrong TranstypeCode for the message type",
+    "EX1220":"Validation rule is violated, field",
+    "EX1301":"Wrong number of lines, field",
+    "EX1302":"Line 1, Slash is missed, field",
+    "EX1303":"Line 1, Mandatory subfield 1 is empty, field",
+    "EX1304":"Line 1, Wrong length of subfield, field",
+    "EX1305":"Line 1, Leading double slash is expected, field",
+    "EX1306":"Line 2, Mandatory subfield 1 is empty, field",
+    "EX1307":"Line 2, Wrong length of subfield, field",
+    "EX1308":"Line 2, Validation rule is violated, subfield 2, field",
+    "EX1309":"Line 2, Mandatory subfield is empty, field",
+    "EX1310":"Line 2, Slash is missed, field",
+    "EX1311":"Line 1, Mandatory subfield 2 is empty, field",
+    "EX1312":"Line 2, Validation rule is violated, subfield 1, field",
+    "EX1313":"Line 1, Validation rule is violated, subfield 2, field",
+    "EX1314":"Line 1, Mandatory subfield 3 is empty, field",
+    "EX1315":"Line 1, Mandatory subfield 4 is empty, field",
+    "EX1316":"Field must correspond to Sender to Receiver Info",
+    "EX1317":"Line 1, Mandatory subfield 3 is empty, field",
+    "EX1318":"Field 26T should correspond to files 72 CODTYPTR",
+    "EX1319":"Wrong TranstypeCode for the message type",
+    "EX1320":"Validation rule is violated, field",
+    "EX1401":"Wrong number of lines in the field",
+    "EX1402":"Line 1, slash is missed, field",
+    "EX1403":"Line 1, first mandatory subfield is empty, field",
+    "EX1411":"Line 1, second mandatory subfield is empty, field",
+    "EX1420":"Validation rule is violated, field",
+    "EX1439":"Line1, wrong length of subfield 5",
+    "EX1440":"Line1, wrong length of subfield 1",
+    "EX1441":"Line1, wrong length of subfield 2",
+    "EX1442":"Line1, wrong length of subfield 3",
+    "EX1443":"Line1, wrong length of subfield 4",
+    "EX1444":"Line2, wrong length of subfield 1",
+    "EX1445":"Line2, wrong length of subfield 2",
+    "EX1461":"NONREF keyword expected",
+    "EX1462":"(N) keyword expected",
+    "EX1527":"Unknown or invalid BIC",
+    "EX1627":"Unknown or invalid BIC",
+    "EX1728":"Keyword is required",
+    "EX1829":"104 expected",
+    "EX1927":"Line2, Incorrect BIC",
+    "EX201":"Wrong number of lines, field",
+    "EX202":"Line 1, Slash is missed, field",
+    "EX203":"Line 1, Mandatory subfield 1 is empty, field",
+    "EX204":"Line 1, Wrong length of subfield, field",
+    "EX205":"Line 1, Leading double slash is expected, field",
+    "EX206":"Line 2, Mandatory subfield 1 is empty, field",
+    "EX207":"Line 2, Wrong length of subfield, field",
+    "EX208":"Line 2, Validation rule is violated, subfield 2, field",
+    "EX209":"Line 2, Mandatory subfield is empty, field",
+    "EX210":"Line 2, Slash is missed, field",
+    "EX2101":"Wrong number of lines, field",
+    "EX2102":"Line 1, slash is missed, field",
+    "EX2103":"Line 1, first mandatory subfield is empty, field",
+    "EX2104":"Line 1, subfield lenght is incorrect, field",
+    "EX2107":"Line 2, subfield lenght is incorrect, field",
+    "EX211":"Line 1, Mandatory subfield 2 is empty, field",
+    "EX212":"Line 2, Validation rule is violated, subfield 1, field",
+    "EX2120":"Validation rule is violated, field",
+    "EX2121":"Line 1, wrong format of line",
+    "EX2122":"Line 2, wrong format of line",
+    "EX2123":"Line 3, wrong format of line",
+    "EX2124":"Line 4, wrong format of line",
+    "EX213":"Line 1, Validation rule is violated, subfield 2, field",
+    "EX214":"Line 1, Mandatory subfield 3 is empty, field",
+    "EX215":"Line 1, Mandatory subfield 4 is empty, field",
+    "EX216":"Field must correspond to Sender to Receiver Info",
+    "EX217":"Line 1, Mandatory subfield 3 is empty, field",
+    "EX218":"Field 26T should correspond to files 72 CODTYPTR",
+    "EX219":"Wrong TranstypeCode for the message type",
+    "EX220":"Validation rule is violated, field",
+    "EX221":"Line 1, Validation rule is violated, subfield 1, field",
+    "EX225":"Line 2, Wrong number of subfields",
+    "EX226":"Line 1, Wrong number of subfields",
+    "EX2261":"NONREF keyword expected",
+    "EX2262":"(N) keyword expected",
+    "EX239":"Line1, wrong length of subfield 5",
+    "EX240":"Line1, wrong length of subfield 1",
+    "EX241":"Line1, wrong length of subfield 2",
+    "EX242":"Line1, wrong length of subfield 3",
+    "EX243":"Line1, wrong length of subfield 4",
+    "EX244":"Line2, wrong length of subfield 1",
+    "EX245":"Line2, wrong length of subfield 2",
+    "EX2500":"Invalid money nominations are found",
+    "EX261":"NONREF keyword expected",
+    "EX262":"(N) keyword expected",
+    "EX301":"Wrong number of lines, field",
+    "EX302":"Line 1, Slash is missed, field",
+    "EX303":"Line 1, Mandatory subfield 1 is empty, field",
+    "EX304":"Line 1, Wrong length of subfield, field",
+    "EX305":"Line 1, Leading double slash is expected, field",
+    "EX306":"Line 2, Mandatory subfield 1 is empty, field",
+    "EX307":"Line 2, Wrong length of subfield, field",
+    "EX308":"Line 2, Validation rule is violated, subfield 2, field",
+    "EX309":"Line 2, Mandatory subfield is empty, field",
+    "EX310":"Line 2, Slash is missed, field",
+    "EX311":"Line 1, Mandatory subfield 2 is empty, field",
+    "EX312":"Line 2, Validation rule is violated, subfield 1, field",
+    "EX313":"Line 1, Validation rule is violated, subfield 2, field",
+    "EX314":"Line 1, Mandatory subfield 3 is empty, field",
+    "EX315":"Line 1, Mandatory subfield 4 is empty, field",
+    "EX316":"Field must correspond to Sender to Receiver Info",
+    "EX317":"Line 1, Mandatory subfield 3 is empty, field",
+    "EX318":"Field 26T should correspond to files 72 CODTYPTR",
+    "EX319":"Wrong TranstypeCode for the message type",
+    "EX320":"Validation rule is violated, field",
+    "EX339":"Line1, wrong length of subfield 5",
+    "EX340":"Line1, wrong length of subfield 1",
+    "EX341":"Line1, wrong length of subfield 2",
+    "EX342":"Line1, wrong length of subfield 3",
+    "EX343":"Line1, wrong length of subfield 4",
+    "EX344":"Line2, wrong length of subfield 1",
+    "EX345":"Line2, wrong length of subfield 2",
+    "EX361":"NONREF keyword expected",
+    "EX362":"(N) keyword expected",
+    "EX401":"Wrong number of lines, field",
+    "EX402":"Line 1, Slash is missed, field",
+    "EX403":"Line 1, Mandatory subfield 1 is empty, field",
+    "EX404":"Line 1, Wrong length of subfield, field",
+    "EX405":"Line 1, Leading double slash is expected, field",
+    "EX406":"Line 2, Mandatory subfield 1 is empty, field",
+    "EX407":"Line 2, Wrong length of subfield, field",
+    "EX408":"Line 2, Validation rule is violated, subfield 2, field",
+    "EX409":"Line 2, Mandatory subfield is empty, field",
+    "EX410":"Line 2, Slash is missed, field",
+    "EX411":"Line 1, Mandatory subfield 2 is empty, field",
+    "EX412":"Line 2, Validation rule is violated, subfield 1, field",
+    "EX413":"Line 1, Validation rule is violated, subfield 2, field",
+    "EX414":"Line 1, Mandatory subfield 3 is empty, field",
+    "EX415":"Line 1, Mandatory subfield 4 is empty, field",
+    "EX416":"Field must correspond to Sender to Receiver Info",
+    "EX417":"Line 1, Mandatory subfield 3 is empty, field",
+    "EX418":"Field 26T should correspond to files 72 CODTYPTR",
+    "EX419":"Wrong TranstypeCode for the message type",
+    "EX420":"Validation rule is violated, field",
+    "EX444":"error validator",
+    "EX501":"Wrong number of lines, field",
+    "EX502":"Line 1, Slash is missed, field",
+    "EX503":"Line 1, Mandatory subfield 1 is empty, field",
+    "EX504":"Line 1, Wrong length of subfield, field",
+    "EX505":"Line 1, Leading double slash is expected, field",
+    "EX506":"Line 2, Mandatory subfield 1 is empty, field",
+    "EX507":"Line 2, Wrong length of subfield, field",
+    "EX508":"Line 2, Validation rule is violated, subfield 2, field",
+    "EX509":"Line 2, Mandatory subfield is empty, field",
+    "EX510":"Line 2, Slash is missed, field",
+    "EX511":"Line 1, Mandatory subfield 2 is empty, field",
+    "EX512":"Line 2, Validation rule is violated, subfield 1, field",
+    "EX513":"Line 1, Validation rule is violated, subfield 2, field",
+    "EX514":"Line 1, Mandatory subfield 3 is empty, field",
+    "EX515":"Line 1, Mandatory subfield 4 is empty, field",
+    "EX516":"Field must correspond to Sender to Receiver Info",
+    "EX517":"Line 1, Mandatory subfield 3 is empty, field",
+    "EX518":"Field 26T should correspond to files 72 CODTYPTR",
+    "EX519":"Wrong TranstypeCode for the message type",
+    "EX520":"Validation rule is violated, field",
+    "EX601":"Wrong number of lines, field",
+    "EX602":"Line 1, Slash is missed, field",
+    "EX603":"Line 1, Mandatory subfield 1 is empty, field",
+    "EX604":"Line 1, Wrong length of subfield, field",
+    "EX605":"Line 1, Leading double slash is expected, field",
+    "EX606":"Line 2, Mandatory subfield 1 is empty, field",
+    "EX607":"Line 2, Wrong length of subfield, field",
+    "EX608":"Line 2, Validation rule is violated, subfield 2, field",
+    "EX609":"Line 2, Mandatory subfield is empty, field",
+    "EX610":"Line 2, Slash is missed, field",
+    "EX611":"Line 1, Mandatory subfield 2 is empty, field",
+    "EX612":"Line 2, Validation rule is violated, subfield 1, field",
+    "EX613":"Line 1, Validation rule is violated, subfield 2, field",
+    "EX614":"Line 1, Mandatory subfield 3 is empty, field",
+    "EX615":"Line 1, Mandatory subfield 4 is empty, field",
+    "EX616":"Field must correspond to Sender to Receiver Info",
+    "EX617":"Line 1, Mandatory subfield 3 is empty, field",
+    "EX618":"Field 26T should correspond to files 72 CODTYPTR",
+    "EX619":"Wrong TranstypeCode for the message type",
+    "EX620":"Validation rule is violated, field",
+    "EX701":"Wrong number of lines, field",
+    "EX702":"Line 1, Slash is missed, field",
+    "EX703":"Line 1, Mandatory subfield 1 is empty, field",
+    "EX704":"Line 1, Wrong length of subfield, field",
+    "EX705":"Line 1, Leading double slash is expected, field",
+    "EX706":"Line 2, Mandatory subfield 1 is empty, field",
+    "EX707":"Line 2, Wrong length of subfield, field",
+    "EX708":"Line 2, Validation rule is violated, subfield 2, field",
+    "EX709":"Line 2, Mandatory subfield is empty, field",
+    "EX710":"Line 2, Slash is missed, field",
+    "EX711":"Line 1, Mandatory subfield 2 is empty, field",
+    "EX712":"Line 2, Validation rule is violated, subfield 1, field",
+    "EX713":"Line 1, Validation rule is violated, subfield 2, field",
+    "EX714":"Line 1, Mandatory subfield 3 is empty, field",
+    "EX715":"Line 1, Mandatory subfield 4 is empty, field",
+    "EX716":"Field must correspond to Sender to Receiver Info",
+    "EX717":"Line 1, Mandatory subfield 3 is empty, field",
+    "EX718":"Field 26T should correspond to files 72 CODTYPTR",
+    "EX719":"Wrong TranstypeCode for the message type",
+    "EX720":"Validation rule is violated, field",
+    "EX721":"Line 1, Validation rule is violated, subfield 1, field",
+    "EX725":"Line 2, Wrong number of subfields",
+    "EX726":"Line 1, Wrong number of subfields",
+    "EX739":"Line1, wrong length of subfield 5",
+    "EX740":"Line1, wrong length of subfield 1",
+    "EX741":"Line1, wrong length of subfield 2",
+    "EX742":"Line1, wrong length of subfield 3",
+    "EX743":"Line1, wrong length of subfield 4",
+    "EX744":"Line2, wrong length of subfield 1",
+    "EX745":"Line2, wrong length of subfield 2",
+    "EX761":"NONREF keyword expected",
+    "EX762":"(N) keyword expected",
+    "EX801":"Wrong number of lines, field",
+    "EX802":"Line 1, Slash is missed, field",
+    "EX803":"Line 1, Mandatory subfield 1 is empty, field",
+    "EX804":"Line 1, Wrong length of subfield, field",
+    "EX805":"Line 1, Leading double slash is expected, field",
+    "EX806":"Line 2, Mandatory subfield 1 is empty, field",
+    "EX807":"Line 2, Wrong length of subfield, field",
+    "EX808":"Line 2, Validation rule is violated, subfield 2, field",
+    "EX809":"Line 2, Mandatory subfield is empty, field",
+    "EX810":"Line 2, Slash is missed, field",
+    "EX811":"Line 1, Mandatory subfield 2 is empty, field",
+    "EX812":"Line 2, Validation rule is violated, subfield 1, field",
+    "EX813":"Line 1, Validation rule is violated, subfield 2, field",
+    "EX814":"Line 1, Mandatory subfield 3 is empty, field",
+    "EX815":"Line 1, Mandatory subfield 4 is empty, field",
+    "EX816":"Field must correspond to Sender to Receiver Info",
+    "EX817":"Line 1, Mandatory subfield 3 is empty, field",
+    "EX818":"Field 26T should correspond to files 72 CODTYPTR",
+    "EX819":"Wrong TranstypeCode for the message type",
+    "EX820":"Validation rule is violated, field",
+    "EX830":"Invalid date",
+    "EX839":"Line1, wrong length of subfield 5",
+    "EX840":"Line1, wrong length of subfield 1",
+    "EX841":"Line1, wrong length of subfield 2",
+    "EX842":"Line1, wrong length of subfield 3",
+    "EX843":"Line1, wrong length of subfield 4",
+    "EX844":"Line2, wrong length of subfield 1",
+    "EX845":"Line2, wrong length of subfield 2",
+    "EX856":"Line1, wrong format of subfield 1",
+    "EX857":"Line1, wrong format of subfield 2",
+    "EX858":"Line1, wrong format of subfield 3",
+    "EX859":"Line1, wrong format of subfield 4",
+    "EX860":"Line1, wrong format of subfield 5",
+    "EX901":"Wrong number of lines, field",
+    "EX902":"Line 1, Slash is missed, field",
+    "EX903":"Line 1, Mandatory subfield 1 is empty, field",
+    "EX904":"Line 1, Wrong length of subfield, field",
+    "EX905":"Line 1, Leading double slash is expected, field",
+    "EX906":"Line 2, Mandatory subfield 1 is empty, field",
+    "EX907":"Line 2, Wrong length of subfield, field",
+    "EX908":"Line 2, Validation rule is violated, subfield 2, field",
+    "EX909":"Line 2, Mandatory subfield 2 is empty, field",
+    "EX910":"Line 2, Slash is missed, field",
+    "EX911":"Line 1, Mandatory subfield 2 is empty, field",
+    "EX912":"Line 2, Validation rule is violated, subfield 1, field",
+    "EX913":"Line 1, Validation rule is violated, subfield 2, field",
+    "EX914":"Line 1, Mandatory subfield 3 is empty, field",
+    "EX915":"Line 1, Mandatory subfield 4 is empty, field",
+    "EX916":"Field must correspond to Sender to Receiver Info",
+    "EX917":"Line 1, Mandatory subfield 3 is empty, field",
+    "EX918":"Field 26T should correspond to files 72 CODTYPTR",
+    "EX919":"Wrong TranstypeCode for the message type",
+    "EX920":"Validation rule is violated, field",
+    "EX930":"Invalid date",
+    "EX939":"Line1, wrong length of subfield 5",
+    "EX940":"Line1, wrong length of subfield 1",
+    "EX941":"Line1, wrong length of subfield 2",
+    "EX942":"Line1, wrong length of subfield 3",
+    "EX943":"Line1, wrong length of subfield 4",
+    "EX944":"Line2, wrong length of subfield 1",
+    "EX945":"Line2, wrong length of subfield 2",
+    "EX956":"Line1, wrong format of subfield 1",
+    "EX957":"Line1, wrong format of subfield 2",
+    "EX958":"Line1, wrong format of subfield 3",
+    "EX959":"Line1, wrong format of subfield 4",
+    "EX960":"Line1, wrong format of subfield 5",
+    "IF000":"ALL ok",
+    "IF100":"double reltrn",
+    "IF101":"transaction date does not match with system date",
+    "IF102":"no registered member",
+    "IF103":"identic record",
+    "IF104":"invalid tx type",
+    "IF105":"amount capping",
+    "IF106":"amount handling",
+    "IF107":"black list",
+    "IF108":"valid txtype",
+    "IF109":"Invalid characters",
+    "IF110":"Invalid sender correspondent",
+    "IF111":"Invalid recv correspondent",
+    "IF112":"Invalid from account no",
+    "IF113":"Invalid to account no",
+    "IF114":"Invalid branch code",
+    "IF116":"invalid department",
+    "IF117":"Invalid Currency",
+    "IF118":"Invalid InterestRate",
+    "IF119":"Invalid ExchangeRate",
+    "IF127":"Account Number BlackList",
+    "IF500":"DUPLICATE COMMTRN",
+    "IF501":"AGREEMENT CODE DOES NOT EXIST",
+    "IF506":"seller/buyer suspended",
+    "IF507":"seller/buyer agent",
+    "IF508":"securities not active",
+    "IF509":"securities not eligible",
+    "IF510":"securities not tradeable",
+    "IF511":"invalid transaction date",
+    "IF512":"invalid value date",
+    "IF513":"invalid account",
+    "IF514":"invalid intra position",
+    "IF515":"invalid pair broker",
+    "IF516":"invalid ctp",
+    "IF517":"no proceed info",
+    "IF518":"no priority",
+    "IF519":"Securities code not found",
+    "IF523":"Invalid Agent Account",
+    "IF524":"Duplicate Transaction",
+    "IF526":"Amount Param",
+    "IF527":"Invalid Repo Maturity Date",
+    "IF528":"Duplicate Comm Trn",
+    "IF555":"wrong transfer code",
+    "IF600":"Ready To Send",
+    "IF601":"Invalid Receiver Acc No",
+    "IF602":"Receiver ori Acc Name is not the same with core",
+    "IF666":"undefined error...",
+    "IF700":"Invalid Receiver Acc No",
+    "IF701":"Receiver ori Acc Name is not the same with core",
+    "IF702":"Receiver Acc No is closed",
+    "IF703":"Status Receiver Acc",
+    "IF704":"Batara Pos Receiver Acc",
+    "IF705":"KU (Kiriman Uang) Receiver Acc",
+    "IF706":"Account Dormant",
+    "IF707":"Invalid Currency or Valas",
+    "IF708":"Invalid Resident or Stranger",
+    "IF709":"Account is in foreign currency",
+    "IF710":"Invalid Receiver Acc No for Virtual Account",
+    "IF711":"Receiver ori Acc Name is not the same with core for Virtual Account",
+    "IF712":"Receiver Acc No is closed for Virtual Account",
+    "IF713":"Status Receiver Acc for Virtual Account",
+    "IF714":"Batara Pos Receiver Acc for Virtual Account",
+    "IF715":"KU (Kiriman Uang) Receiver Acc for Virtual Account",
+    "IF716":"Account Dormant for Virtual Account",
+    "IF717":"Invalid Currency or Valas for Virtual Account",
+    "IF718":"Invalid Resident or Stranger for Virtual Account",
+    "IF719":"Virtual Account is not Active",
+    "IF720":"Settle From BDS",
+    "IF721":"Error When Uploaded",
+    "IF722":"Error When Uploaded ( Decimal data error pd field valuta date )",
+    "IF723":"Error When Uploaded ( Invalid valuta date )",
+    "IF724":"Error When Uploaded ( Decimal data error pd field bor )",
+    "IF725":"Error When Uploaded( Duplicate data )",
+    "IF726":"Error When Uploaded( Duplicate data )",
+    "IF727":"Error When Uploaded ( Decimal data error pd field amount )",
+    "IF729":"Error When Posting BDS ( Rekening tdk ada )",
+    "IF730":"Error When Posting BDS ( Rekening tutup )",
+    "IF731":"Error When Posting BDS ( Rekening dorman )",
+    "IF732":"Error When Posting BDS ( Rekening tutup hari ini )",
+    "IF733":"Error When Posting BDS ( Blokir kredit )",
+    "IF734":"Error When Posting BDS",
+    "IF735":"Reject From Confirm or Final",
+    "IF736":"KU Transaction",
+    "IF742":"Received Transaction has been sent",
+    "IF743":"RPKP Transaction has been sent",
+    "IF744":"Pending Transaction has been sent",
+    "IF752":"Received Transaction",
+    "IF753":"RPKP Transaction",
+    "IF754":"Pending Transaction",
+    "IF777":"Virtual Account Transaction",
+    "IF782":"Reject From VBS",
+    "IF783":"No Respon from VBS",
+    "IF784":"Reversal Transaction",
+    "IF785":"Reversal Transaction Sucessfully"
+}
+
+
+...
+
+}
+

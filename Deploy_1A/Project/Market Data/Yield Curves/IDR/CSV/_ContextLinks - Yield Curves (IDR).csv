@@ -1,0 +1,9 @@
+CONTEXTLINK,,,,,,,,,,/CONTEXTLINK
+CONTEXT_SEQNBR.NAME,INSADDR.INSID,GROUP_CHLNBR.LIST,GROUP_CHLNBR.ENTRY,CURR.INSID,DISC_TYPE_CHLNBR.LIST,DISC_TYPE_CHLNBR.ENTRY,MAPPING_TYPE,NAME,TYPE,
+Global,,,,IDR,DiscType,FX,Instrument,IDR-FX,Yield Curve,
+Global,USD,,,IDR,,,Instrument,IDR-FX,Yield Curve,
+Global,,,,IDR,DiscType,IBOR,Instrument,IDR-SWAP,Yield Curve,
+Global,,,,IDR,DiscType,ARR,Instrument,IDR-OIS,Yield Curve,
+Global,,,,IDR,,,Instrument,IDR-SWAP,Yield Curve,
+Global,,,,IDR,DiscType,CCS-BASIS,Instrument,IDR-FX-CCSBasis,Yield Curve,
+Global,USD,,,IDR,DiscType,CCS-BASIS,Instrument,IDR-FX-CCSBasis,Yield Curve,

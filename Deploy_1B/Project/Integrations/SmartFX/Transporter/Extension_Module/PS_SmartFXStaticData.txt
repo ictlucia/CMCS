@@ -1,0 +1,814 @@
+#
+# Front Arena exported extension module.
+# source          ""
+# timestamp (utc) "2024-08-08 17:36:20.1"
+# ***** DO NOT EDIT! *****
+#
+name        "PS_SmartFXStaticData"
+description ""
+
+groups {
+}
+
+decls[FColumnDefinition] {
+}
+
+clx FTradingSheet [FColumnDefinition] {
+  Alert Last Checked Value =
+  ColumnAppearance=AlignmentLeft
+  Description=Shows the latest limits utilization.
+  GroupLabel=Alert
+  InitialWidth=180
+  LabelList=Last Checked Value
+  Method=Breaches.Last.Watermark
+  ShowErrorHashmark=FullMessage
+  ValueDomain=string
+
+
+}
+
+decls[FParameters] {
+}
+
+clx FObject [FParameters] {
+  SmartFXStaticDataConfig =
+  CEMLimits=['Counterparty CEM Limit']
+  FirstRunDate=
+  ForceUpdateAppliedRules=[]
+  NotionalLimits=['Currency Notional', 'Position']
+  TradeFilter=SmartFXStaticDataTrades
+
+
+  SmartFXStaticDataLogParams =
+  logFileName=SMARTFX_STATIC_DATA_LOG_{}.txt
+
+
+  SmartFXStaticDBParam =
+  DATABASE=NTCSSTGDB
+  DRIVER=ODBC Driver 17 for SQL Server
+  PWD=P@ssw0rdNtcs#
+  SERVER=10.243.212.173
+  UID=AdminNTCS
+
+
+}
+
+decls[FPythonCode] {
+}
+
+clx FObject [FPythonCode] {
+  SmartFXCustomerLimit
+"""----------------------------------------------------------------------------------------------------
+MODULE:
+    SmartFXCustomerLimit
+
+DESCRIPTION:
+    Entry point to invoke the SmartFXCustomerLimit run task gui.
+
+-------------------------------------------------------------------------------------------------------"""
+import ParametersReader
+import acm, ast
+import FRunScriptGUI
+import FLogger
+import os
+import traceback
+import InterfaceUtils
+import SmartFXStaticDataManager
+import SmartFXStaticDataUtils
+
+DB = ParametersReader.get_params("SmartFXStaticDBParam")
+CONFIG_PARAM = ParametersReader.get_params("SmartFXStaticDataConfig")
+LOG_PARAM = ParametersReader.get_params("SmartFXStaticDataLogParams")
+LOG_FILE_NAME = LOG_PARAM['logFileName'].format(acm.Time.DateToday().replace('-', ''))
+APP_NAME = 'SmartFXStaticData'
+QUERY = [query.Name() for query in acm.FStoredASQLQuery.Select("subType='FAppliedRule'")]
+QUERY.sort()
+FOLDER_PICKER = FRunScriptGUI.DirectorySelection()
+ael_gui_parameters = {'windowCaption': 'SmartFX Static Data'}
+LOG_LEVELS = [FLogger.FLogger.INFO, FLogger.FLogger.ERROR, FLogger.FLogger.WARNING, FLogger.FLogger.DEBUG]
+STATIC_DATA_OBJ = None
+LOGGER = None
+
+
+def initialize_logging(params, logfile_name, app_name):
+    """
+    Initialize logger
+    :param params: parameters
+    :return: FLogger object
+    """
+    global LOGGER
+    
+    if LOGGER is None:
+        logfile = None
+        try:
+            logFolder = params['log_folder']
+            logfolderString = logFolder.SelectedDirectory().AsString()
+            if logfolderString:
+                if logfile_name:
+                    logfile = os.path.join(logfolderString, logfile_name)
+
+            logLevel = params['log_level']
+            log_to_console = params['log_to_console']
+            level = InterfaceUtils.LogLevelNameToNumber(logLevel)
+            LOGGER = FLogger.FLogger(level=level,
+                                     name=app_name,
+                                     logToPrime=True,
+                                     logToFileAtSpecifiedPath=logfile,
+                                     logToConsole=log_to_console)
+        except Exception as err:
+            print('Error in initializing logger {}'.format(err))
+            print(traceback.format_exc())
+    
+
+
+# NAME = 0  # internal name
+# TEXT = 1  # GUI Text
+# TYPE = 2  # object type
+# VALUES = 3  # valid values
+# DEFAULT = 4  # default
+# MANDATORY = 5  # mandatory
+# MULTI = 6  # multiple selection
+# TIP = 7  # floating tip
+# CB = 8  # callback
+# ENABLED = 9  # enabled
+
+ael_variables = [
+    ['applied_rule_query', 'Applied Rules_Input', 'string', QUERY, 'SmartFXAppliedRules', 1, 0,
+     'Applied Rules', None, 1],
+    ['todays_trade_query', 'Todays Trades_Input', 'string', QUERY, 'SmartFXAppliedRulesTrades', 1, 0,
+     'Todays trades', None, 1],
+    ['log_folder', 'Log Folder_Logging', FOLDER_PICKER, None, FOLDER_PICKER, 0, 1, 'Select where to store the log file',
+     0, None],
+    ['log_level', 'Log Level_Logging', 'string', LOG_LEVELS, FLogger.FLogger.DEBUG, 1, 0],
+    ['log_to_console', 'Log to console_Logging', 'int', [1, 0], 1, 1, 0,
+     'Whether logging should be done in the Log Console or not.']]
+
+def process_applied_rules(params, first_start, processed_applied_rule_cache):
+    stored_query_name = params['applied_rule_query']
+    stored_query = acm.FStoredASQLQuery[stored_query_name]
+    
+    LOGGER.LOG('Execution started for applied rule. First start {}'.format(first_start))
+    if stored_query:
+        if first_start:
+            applied_rules = acm.FAppliedRule.Select('')
+        else:
+            applied_rules = stored_query.Query().Select().Sort()
+            
+        for applied_rule in applied_rules:
+            try:
+                LOGGER.LOG(51 * '-')
+                LOGGER.LOG('Processing AppliedRule {}'.format(applied_rule.Name()))
+                error_txt = ''
+                #error_txt = STATIC_DATA_OBJ.populate_table_customer_limit(applied_rule, first_start)
+                error_txt = STATIC_DATA_OBJ.populate_table_customer_limit_static_data(applied_rule, processed_applied_rule_cache)
+                if error_txt:
+                    LOGGER.LOG('Ignored AppliedRule {}. {}'.format(applied_rule.Name(), error_txt))
+                LOGGER.LOG(50 * '-')  # Keep it 50 and instead of 51 to avoid logging optimization
+            except Exception as err:
+                LOGGER.ELOG('Error in processing Applied Rule {}. {}'.format(applied_rule, err))
+                print(traceback.format_exc())
+
+        for applied_rule in SmartFXStaticDataUtils.force_update_applied_rules():
+            try:
+                LOGGER.LOG(51 * '-')
+                LOGGER.LOG('Processing forced AppliedRule {}'.format(applied_rule.Name()))
+                error_txt = ''
+                #error_txt = STATIC_DATA_OBJ.populate_table_customer_limit(applied_rule, first_start)
+                error_txt = STATIC_DATA_OBJ.populate_table_customer_limit_static_data(applied_rule, processed_applied_rule_cache)
+                if error_txt:
+                    LOGGER.LOG('Ignored AppliedRule {}. {}'.format(applied_rule.Name(), error_txt))
+                LOGGER.LOG(50 * '-')  # Keep it 50 and instead of 51 to avoid logging optimization
+            except Exception as err:
+                LOGGER.ELOG('Error in processing Applied Rule {}. {}'.format(applied_rule, err))
+                print(traceback.format_exc())
+    else:
+        LOGGER.ELOG('Query with name {} does not exist in FA.'.format(stored_query_name))
+        
+
+def process_trades(params, processed_applied_rule_cache):
+    def get_applied_rule_from_trade(trade):
+        cp = trade.Counterparty()
+        ret_val = []
+        if cp:
+            ret_val = acm.FAppliedRule.Select('targetId={}'.format(cp.Oid()))
+        
+        return ret_val
+            
+    stored_query_name = params['todays_trade_query']
+    stored_query = acm.FStoredASQLQuery[stored_query_name]
+    
+    LOGGER.LOG('Execution started for trades.')
+    if stored_query:
+        active_trades = stored_query.Query().Select().Sort()
+        applied_rule_processed = set()
+        
+        for active_trade in active_trades:
+            try:
+                for applied_rule in get_applied_rule_from_trade(active_trade):
+                    try:
+                        LOGGER.LOG(51 * '-')
+                        LOGGER.LOG('Processing trade {}'.format(active_trade.Oid()))
+                        if applied_rule.Oid() in applied_rule_processed or applied_rule.Oid() in processed_applied_rule_cache:
+                            LOGGER.DLOG('AppliedRule {} already processed'.format(applied_rule.Name()))
+                            continue # Don't process applied rule again if already processed. Mutiple trade can have same applied rule.
+                        
+                        error_txt = ''
+                        #error_txt = STATIC_DATA_OBJ.populate_table_customer_limit(applied_rule, first_start)
+                        error_txt = STATIC_DATA_OBJ.populate_table_customer_limit_active_trade(applied_rule)
+                        applied_rule_processed.add(applied_rule.Oid())
+                        if error_txt:
+                            LOGGER.LOG('Ignored trade {}. {}'.format(active_trade.Oid(), error_txt))
+                        LOGGER.LOG(50 * '-')  # Keep it 50 and instead of 51 to avoid logging optimization
+                    except Exception as err:
+                        LOGGER.ELOG('Inner loop. Error in processing trade {}. {}'.format(active_trade.Oid(), err))
+                        print(traceback.format_exc()) 
+            except Exception as err:
+                        LOGGER.ELOG('Error in processing trade {}. {}'.format(active_trade.Oid(), err))
+                        print(traceback.format_exc())        
+    else:
+        LOGGER.ELOG('Query with name {} does not exist in FA.'.format(stored_query_name))
+        
+    
+def ael_main(params):
+    """
+    Entry point for the run task GUI
+    :param params: Parameters
+    :return: None
+    """
+    try:
+        global STATIC_DATA_OBJ, LOGGER
+        processed_applied_rule_cache = set()
+        initialize_logging(params, LOG_FILE_NAME, APP_NAME)
+
+        if STATIC_DATA_OBJ is None:
+            STATIC_DATA_OBJ = SmartFXStaticDataManager.get_data_base_manager(logger_obj=LOGGER,
+                                                                             db_driver=DB['DRIVER'],
+                                                                             db_name=DB['DATABASE'],
+                                                                             db_password=DB['PWD'],
+                                                                             db_server=DB['SERVER'],
+                                                                             db_uid=DB['UID'],
+                                                                             cem_limits=ast.literal_eval(
+                                                                                 CONFIG_PARAM['CEMLimits']),
+                                                                             notional_limits=ast.literal_eval(
+                                                                                 CONFIG_PARAM['NotionalLimits']))
+            STATIC_DATA_OBJ.connect()
+            LOGGER.LOG('Connected to the database {} on server {}'.format(DB['DATABASE'], DB['SERVER']))
+        first_start = SmartFXStaticDataUtils.is_first_run_ever()
+        process_applied_rules(params, first_start, processed_applied_rule_cache)
+        if not first_start:
+            process_trades(params, processed_applied_rule_cache)
+        SmartFXStaticDataUtils.update_start_day()
+        LOGGER.LOG('Execution ended')
+    except Exception as err:
+        print(str(err))
+        print(traceback.format_exc())
+
+...
+
+  SmartFXStaticDataManager
+"""----------------------------------------------------------------------------------------------------
+MODULE:
+    SmartFXStaticDataManager
+
+DESCRIPTION:
+    Module to implement the class handling the connection and insert/update actions to the database table.
+
+-------------------------------------------------------------------------------------------------------"""
+import pyodbc
+import acm, math, time
+import SmartFXStaticDataUtils
+
+DB_MGR_OBJ = None
+g_calc_space   = acm.Calculations().CreateCalculationSpace(acm.GetDefaultContext(), 'FRuleResultSheet')
+
+
+class SmartFXStaticDataManager(object):
+    
+
+    def __init__(self, logger_obj, db_driver, db_name, db_password, db_server, db_uid, cem_limits, notional_limits):
+        """ Initialize members """
+        self._logger = logger_obj
+        self._db_driver = db_driver
+        self._db_name = db_name
+        self._db_password = db_password
+        self._db_server = db_server
+        self._db_uid = db_uid
+        self._cem_limits = cem_limits
+        self._notional_limits = notional_limits
+        self._rule_result_remaining = None
+        self._rule_result_util = None
+        
+        
+        
+                    
+
+        self._agreement_number_add_info = acm.FAdditionalInfoSpec['AgreementNumber']
+        self._agreement_date_add_info = acm.FAdditionalInfoSpec['AgreementDate']
+        self._renewal_number_add_info = acm.FAdditionalInfoSpec['RenewalNumber']
+        self._renewal_date_add_info = acm.FAdditionalInfoSpec['RenewalDate']
+        self._application_no_add_info = acm.FAdditionalInfoSpec['ApplicationNumber']
+        #self._limit_currency = acm.FAdditionalInfoSpec['LimitCurrency']
+
+        self._connection = None        
+        
+        
+    def on_result(self, a_tasks):
+        a_tasks = a_tasks.Result()
+        for a_task in a_tasks:
+            if a_task.Result():
+                _result = a_task.Result()[0]                
+                self._rule_result_remaining = g_calc_space.CalculateValue(_result, 'Rule Result Remaining')              
+                formatter = acm.Get('formats/Detailed')
+                #self._rule_result_util =  formatter.Parse(formatter.Format(100*g_calc_space.CalculateValue(_result, 'Rule Result Utilization %')))
+                self._rule_result_util =  g_calc_space.CalculateValue(_result, 'Rule Result Utilization %')
+                
+                                    
+        
+    def get_fixed_currency(self, compliance_rule):
+        fixed_curr_name = None
+        error_log = ''
+        # cr = acm.FComplianceRule['Standard_Daily_StopLoss']
+        rule_def = compliance_rule.Definition()
+        if rule_def:
+            if hasattr(rule_def, 'Column'):
+                col = rule_def.Column()
+                if col:
+                    config = col.Configuration()
+                    if config:
+                        param_dict = config.ParamDict()
+                        if param_dict:
+                            var_dict = param_dict.At('columnParameters')
+                            if var_dict:
+                                fixed_curr = var_dict.At('FixedCurr')
+                                if fixed_curr:
+                                    fixed_curr_name = fixed_curr.Name()
+                                else:
+                                    error_log = 'Fixed currency not found.'
+                            else:
+                                error_log = 'Variant dict not found.'
+                        else:
+                            error_log = 'Param dict not found.'
+                    else:
+                        error_log = 'Configuration not found.'
+                else:
+                    error_log = 'Column not found.'
+        else:
+            error_log = 'Rule definition not found.'
+
+        return fixed_curr_name, error_log 
+    
+    def Execute(self,asyncTasks, block):
+        def WaitFor(block, timeout=1000):
+            start = time.time()
+            while not block():
+                if time.time() - start >= timeout:
+                    print('timeOut')
+                    return False
+                acm.PollAllEvents()
+            return True
+            
+        WaitFor(lambda : all(task.IsCompleted() for task in asyncTasks))
+        block(acm.AsyncTask.FromResult(asyncTasks))
+
+    def connect(self):
+        """
+        This function establishes connection to database
+        :return: None
+        """
+        if self._connection is None:
+            self._connection = pyodbc.connect(
+                "DRIVER={{{}}};SERVER={};ENCRYPT=no;UID={};PWD={}".format(self._db_driver, self._db_server,
+                                                                          self._db_uid,
+                                                                          self._db_password), autocommit=True)
+            self._cursor = self._connection.cursor()
+            self._cursor.execute('use {};'.format(self._db_name))
+
+    def _notional_or_cem(self, applied_rule):
+        """
+        This function checks if the applied rule is of type notional or CEM
+        :param applied_rule: FAppliedRule
+        :return: int
+        """
+        ret_val = None
+        try:
+            column_name = applied_rule.ComplianceRule().Definition().Column().Columns()[0].ColumnName().Text()
+            if column_name in self._cem_limits:
+                ret_val = SmartFXStaticDataUtils.CEM_RULE
+            elif column_name in self._notional_limits:
+                ret_val = SmartFXStaticDataUtils.NOTIONAL_RULE
+        except Exception as err:
+            raise Exception('Error in _notional_or_cem {}'.format(err))
+        return ret_val, column_name
+
+    def populate_table_customer_limit_active_trade(self, applied_rule):
+        """
+        This function executes the stored procedure to insert/update the records
+        :param applied_rule: FAppliedRule
+        :return: boolean
+        """
+        
+        def get_val(val, is_number=False):
+            if is_number:
+                ret_val = 'NULL' if val is None else val
+            else:
+                ret_val = 'NULL' if not val else '\'{}\''.format(val)
+            return ret_val
+        
+        error_txt = ''
+        
+        is_notional_or_cem, column_name = self._notional_or_cem(applied_rule)
+        if is_notional_or_cem in [SmartFXStaticDataUtils.NOTIONAL_RULE, SmartFXStaticDataUtils.CEM_RULE]:
+            active = 'Active'
+            end_date = applied_rule.EndDate()
+            start_date = applied_rule.StartDate()
+            update_date = acm.Time.DateToday()
+            if end_date < acm.Time.DateToday() or applied_rule.Inactive():
+                active = 'Inactive'
+                
+            id = applied_rule.Oid()
+            comp_rule_name = applied_rule.ComplianceRule().Name()
+                            
+            if SmartFXStaticDataUtils.is_rule_active(applied_rule) or active == 'Active':                                 
+                self._logger.DLOG("Calculating value for compliance {}...".format(applied_rule.ComplianceRule().Name()))
+                self._logger.DLOG("Calculating value for applied rule {}...".format(applied_rule.Name()))
+                currency, error_txt = self.get_fixed_currency(applied_rule.ComplianceRule())
+                if currency:                        
+                    cem_limit_remaining_val = None
+                    cem_limit_used_val = None
+                    notional_limi_remaining_val = None
+                    notional_limit_used_val = None
+                    self._rule_result_remaining = None
+                    self._rule_result_util = None
+                    threshold_val_notional = None
+                    threshold_val_cem = None
+                    
+                    if is_notional_or_cem == SmartFXStaticDataUtils.NOTIONAL_RULE:
+                        limitType = "Notional Limit"
+                        
+                        for i in applied_rule.ThresholdValues():
+                            if i.Threshold().Type().Name() == 'Violation':
+                                threshold_val_notional = i.FieldValue()
+                                if not threshold_val_notional:
+                                    threshold_val_notional = i.Threshold().DefaultValue()   
+                                self._rule_result_remaining = threshold_val_notional
+                                self._rule_result_util = 0
+                                break
+            
+                    elif is_notional_or_cem == SmartFXStaticDataUtils.CEM_RULE:
+                        limitType = "CEM Limit"
+                        
+                        for i in applied_rule.ThresholdValues():
+                            if i.Threshold().Type().Name() == 'Violation':
+                                threshold_val_cem = i.FieldValue()
+                                if not threshold_val_cem:
+                                    threshold_val_cem = i.Threshold().DefaultValue()
+                                self._rule_result_remaining = threshold_val_cem
+                                self._rule_result_util = 0
+                                break
+                    if (threshold_val_notional is not None) and (threshold_val_cem is not None):
+                        if is_notional_or_cem == SmartFXStaticDataUtils.NOTIONAL_RULE:
+                            self.Execute([applied_rule.Check()], self.on_result)     
+                            notional_limi_remaining_val = self._rule_result_remaining
+                            notional_limit_used_val = self._rule_result_util * float(threshold_val_notional)
+                        
+                        elif is_notional_or_cem == SmartFXStaticDataUtils.CEM_RULE:
+                            self.Execute([applied_rule.Check()], self.on_result)
+                            cem_limit_remaining_val = self._rule_result_remaining
+                            cem_limit_used_val = self._rule_result_util  * float(threshold_val_cem)
+                        
+
+                        self._logger.DLOG("Processing record with values {},{},{},{},{},{},{}".format(
+                            get_val(id, True),
+                            get_val(comp_rule_name),
+                            get_val(notional_limi_remaining_val, True),
+                            get_val(notional_limit_used_val, True),
+                            get_val(cem_limit_remaining_val, True),
+                            get_val(cem_limit_used_val, True),
+                            get_val(update_date)))
+                        self._cursor.execute(
+                            "exec UpdateLimitUtilization {},{},{},{},{},{}".format(
+                                get_val(id, True),
+                                get_val(notional_limi_remaining_val, True),
+                                get_val(notional_limit_used_val, True),
+                                get_val(cem_limit_remaining_val, True),
+                                get_val(cem_limit_used_val, True),
+                                get_val(update_date)))
+                    else:
+                        self._logger.LOG("Skipped - ThresholdValues with type ''Violation' not found")
+                else:
+                    error_txt = 'Fixed currency not found becasue {}.'.format(error_txt)                  
+                                      
+            else:
+                error_txt = 'Skipping inactive applied rule {}.'.format(applied_rule.Name())
+            SmartFXStaticDataUtils.update_inactive_cache(active, applied_rule)
+        else:
+            error_txt = 'Column {} is not present in CEM or Notional Limits as per parameters.'.format(column_name)
+        return error_txt
+    
+        
+    def populate_table_customer_limit_static_data(self, applied_rule, processed_applied_rule_cache):
+        """
+        This function executes the stored procedure to insert/update the records
+        :param applied_rule: FAppliedRule
+        :return: boolean
+        """
+
+        def get_val(val, is_number=False):
+            if is_number:
+                ret_val = 'NULL' if val is None else val
+            else:
+                ret_val = 'NULL' if not val else '\'{}\''.format(val)
+            return ret_val
+        
+        error_txt = ''
+        
+        is_notional_or_cem, column_name = self._notional_or_cem(applied_rule)
+        if is_notional_or_cem in [SmartFXStaticDataUtils.NOTIONAL_RULE, SmartFXStaticDataUtils.CEM_RULE]:
+            active = 'Active'
+            end_date = applied_rule.EndDate()
+            start_date = applied_rule.StartDate()
+            update_date = acm.Time.DateToday()
+            if end_date < acm.Time.DateToday() or applied_rule.Inactive():
+                active = 'Inactive'
+                
+            id = applied_rule.Oid()
+            comp_rule_name = applied_rule.ComplianceRule().Name()
+            cif = applied_rule.Target().HostId()
+            party_name = applied_rule.Target().Name()
+            threshold_val_notional = None
+            threshold_val_cem = None
+                
+                
+            currency, error_txt = self.get_fixed_currency(applied_rule.ComplianceRule())
+            if currency:                        
+                cem_limit_remaining_val = None
+                cem_limit_used_val = None
+                notional_limi_remaining_val = None
+                notional_limit_used_val = None
+                limitType = None
+                self._rule_result_remaining = None
+                self._rule_result_util = None
+                
+                agreement_no = applied_rule.AddInfoValue(self._agreement_number_add_info)
+                agreement_date = applied_rule.AddInfoValue(self._agreement_date_add_info)
+                renewal_no = applied_rule.AddInfoValue(self._renewal_number_add_info)
+                renewal_date = applied_rule.AddInfoValue(self._renewal_date_add_info)
+                application_no = applied_rule.AddInfoValue(self._application_no_add_info)
+                
+                if is_notional_or_cem == SmartFXStaticDataUtils.NOTIONAL_RULE:
+                    limitType = "Notional Limit"
+                    
+                    for i in applied_rule.ThresholdValues():
+                        if i.Threshold().Type().Name() == 'Violation':
+                            threshold_val_notional = i.FieldValue()
+                            if not threshold_val_notional:
+                                threshold_val_notional = i.Threshold().DefaultValue()
+                            self._rule_result_remaining = threshold_val_notional
+                            self._rule_result_util = 0
+                            break
+            
+                elif is_notional_or_cem == SmartFXStaticDataUtils.CEM_RULE:
+                    limitType = "CEM Limit"
+                    
+                    for i in applied_rule.ThresholdValues():
+                        if i.Threshold().Type().Name() == 'Violation':
+                            threshold_val_cem = i.FieldValue()
+                            if not threshold_val_cem:
+                                threshold_val_cem = i.Threshold().DefaultValue()
+                            self._rule_result_remaining = threshold_val_cem
+                            self._rule_result_util = 0
+                            break
+                if (threshold_val_notional is not None) and (threshold_val_cem is not None):
+                    if is_notional_or_cem == SmartFXStaticDataUtils.NOTIONAL_RULE:
+                        self.Execute([applied_rule.Check()], self.on_result)     
+                        notional_limi_remaining_val = self._rule_result_remaining
+                        notional_limit_used_val = self._rule_result_util * float(threshold_val_notional)
+                            
+                    elif is_notional_or_cem == SmartFXStaticDataUtils.CEM_RULE:
+                        self.Execute([applied_rule.Check()], self.on_result)
+                        cem_limit_remaining_val = self._rule_result_remaining
+                        cem_limit_used_val = self._rule_result_util * float(threshold_val_cem)
+                        
+                    processed_applied_rule_cache.add(applied_rule.Oid())
+                        
+                    self._logger.DLOG("Processing record with values {},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{}".format(
+                            get_val(id, True),
+                            get_val(comp_rule_name),
+                            get_val(currency),
+                            get_val(cif),
+                            get_val(limitType),
+                            get_val(party_name),
+                            get_val(threshold_val_notional, True),
+                            get_val(notional_limi_remaining_val, True),
+                            get_val(notional_limit_used_val, True),
+                            get_val(threshold_val_cem, True),
+                            get_val(cem_limit_remaining_val, True),
+                            get_val(cem_limit_used_val, True),
+                            get_val(agreement_no),
+                            get_val(agreement_date),
+                            get_val(renewal_no),
+                            get_val(renewal_date),
+                            get_val(application_no),
+                            get_val(start_date),
+                            get_val(end_date),
+                            get_val(active),
+                            get_val(update_date)))
+                    self._cursor.execute(
+                        "exec InsertUpdateUtilizationStaticData {},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{}".format(
+                            get_val(id, True),
+                            get_val(comp_rule_name),
+                            get_val(currency),
+                            get_val(cif),
+                            get_val(limitType),
+                            get_val(party_name),
+                            get_val(threshold_val_notional, True),
+                            get_val(notional_limi_remaining_val, True),
+                            get_val(notional_limit_used_val, True),
+                            get_val(threshold_val_cem, True),
+                            get_val(cem_limit_remaining_val, True),
+                            get_val(cem_limit_used_val, True),
+                            get_val(agreement_no),
+                            get_val(agreement_date),
+                            get_val(renewal_no),
+                            get_val(renewal_date),
+                            get_val(application_no),
+                            get_val(start_date),
+                            get_val(end_date),
+                            get_val(active),
+                            get_val(update_date)))
+                else:
+                    self._logger.LOG("Skipped - ThresholdValues with type ''Violation' not found")
+            else:
+                error_txt = 'Fixed currency not found becasue {}.'.format(error_txt)
+        else:
+            error_txt = 'Column {} is not present in CEM or Notional Limits as per parameters.'.format(column_name)
+        return error_txt
+
+
+def get_data_base_manager(logger_obj, db_driver, db_name, db_password, db_server, db_uid, cem_limits, notional_limits):
+    """ This function returns an object of SmartFXStaticDataManager"""
+    global DB_MGR_OBJ
+    if DB_MGR_OBJ is None:
+        DB_MGR_OBJ = SmartFXStaticDataManager(logger_obj, db_driver, db_name, db_password, db_server, db_uid,
+                                              cem_limits, notional_limits)
+    return DB_MGR_OBJ
+
+
+...
+
+  SmartFXStaticDataUtils
+"""----------------------------------------------------------------------------------------------------
+MODULE:
+    SmartFXStaticDataUtils
+
+DESCRIPTION:
+    Module to implement the util functions involved in performance improvement.
+
+-------------------------------------------------------------------------------------------------------"""
+import acm, math, time, ParametersReader,ast
+CONFIG_PARAM = ParametersReader.get_params("SmartFXStaticDataConfig")
+INACTIVE_RULE_CACHE = set()
+ACTIVE_RULE_CACHE = set()
+NOTIONAL_THREHOLD_CACHE = dict()
+CEM_THREHOLD_CACHE = dict()
+ACTIVE_TRADE_CACHE = dict()
+CEM_RULE = 1
+NOTIONAL_RULE = 2
+
+def has_active_trades(target_party):
+    ret_val = False
+    trade_query = acm.FStoredASQLQuery[CONFIG_PARAM['TradeFilter']].Query()
+    trade_query.AddAttrNode('Counterparty.Oid', 'EQUAL', target_party.Oid())
+    current_no_of_trades = len(trade_query.Select())
+            
+    prev_no_of_trades = ACTIVE_TRADE_CACHE.get(target_party.Oid(), 0)
+    
+    #print('prev_no_of_trades',prev_no_of_trades)
+    
+    if prev_no_of_trades != current_no_of_trades or current_no_of_trades > 0:
+        ret_val = True
+        
+    ACTIVE_TRADE_CACHE.update({target_party.Oid():current_no_of_trades})        
+        
+    return ret_val
+
+def force_update_applied_rules():
+    data_config = ParametersReader.get_params("SmartFXStaticDataConfig")
+    update_rule_ids = ast.literal_eval(data_config['ForceUpdateAppliedRules'])
+    update_rules = list()
+    for rule_id in update_rule_ids:
+        update_rules.append(acm.FAppliedRule[rule_id])
+        
+    commonParameterDict = dict()
+    for i in data_config:
+        commonParameterDict[i] = data_config[i]
+        
+    commonParameterDict.update({'ForceUpdateAppliedRules' : '[]'})
+    
+    SaveParameterValues('SmartFXStaticDataConfig', commonParameterDict)
+    return update_rules
+    
+    
+def update_inactive_cache(active_flag, applied_rule):
+    change_in_val = False
+    app_rule_oid = applied_rule.Oid()
+    if active_flag == 'Inactive':
+        if app_rule_oid not in INACTIVE_RULE_CACHE:
+            INACTIVE_RULE_CACHE.add(app_rule_oid)
+            change_in_val = True
+        ACTIVE_RULE_CACHE.discard(app_rule_oid)      
+    elif active_flag == 'Active':
+        if app_rule_oid not in ACTIVE_RULE_CACHE:
+            ACTIVE_RULE_CACHE.add(app_rule_oid)
+            change_in_val = True
+        INACTIVE_RULE_CACHE.discard(app_rule_oid)
+        
+        
+    return change_in_val
+    
+    
+def update_threshold_cache(applied_rule, is_notional_or_cem, threshold_val_notional, threshold_val_cem):
+    change_in_val = False
+    app_rule_oid = applied_rule.Oid()
+    if is_notional_or_cem == NOTIONAL_RULE:
+        threshold_val_notional_cache = NOTIONAL_THREHOLD_CACHE.get(app_rule_oid)
+        if threshold_val_notional_cache != threshold_val_notional:
+            change_in_val = True
+        NOTIONAL_THREHOLD_CACHE.update({app_rule_oid:threshold_val_notional})        
+    elif is_notional_or_cem == CEM_RULE:
+        threshold_val_cem_cache = CEM_THREHOLD_CACHE.get(app_rule_oid)
+        if threshold_val_cem_cache != threshold_val_cem:
+            change_in_val = True
+        CEM_THREHOLD_CACHE.update({app_rule_oid:threshold_val_cem})        
+    return change_in_val
+
+'''    
+def update_inactive_cache_1(active_flag, applied_rule):
+    change_in_val = False
+    app_rule_oid = applied_rule.Oid()
+    if active_flag == 'Inactive':
+        if app_rule_oid not in INACTIVE_RULE_CACHE:
+            INACTIVE_RULE_CACHE.add(app_rule_oid)
+            change_in_val = True
+    elif active_flag == 'Active':
+        if app_rule_oid in INACTIVE_RULE_CACHE:
+            INACTIVE_RULE_CACHE.discard(applied_rule.Oid())
+            change_in_val = True
+        
+    return change_in_val
+'''    
+    
+def is_rule_active(applied_rule):
+    return applied_rule.Oid() not in INACTIVE_RULE_CACHE
+    
+
+def is_first_run_of_the_day():
+    config_param = ParametersReader.get_params("SmartFXStaticDataConfig")
+    return True if config_param['FirstRunDate'] != acm.Time.DateNow() else False
+    
+def is_first_run_ever():
+    config_param = ParametersReader.get_params("SmartFXStaticDataConfig")
+    return True if not config_param['FirstRunDate']  else False
+    
+def SaveParameterValues(name, parameters, ignore=None):
+    """
+    This function save the FParameters
+    :param name: Name
+    :param parameters: Parameters
+    :param ignore:
+    :return: None
+    """
+    # name = "TrialBalanceParameters"
+    context = acm.GetDefaultContext()
+    updateString = None
+    for key, val in parameters.items():
+        if not ignore or (key not in ignore):
+            if type(val) == type([]) or type(val) == type(()):
+                val = ",".join(val)
+            if not updateString:
+                updateString = "FObject:%s =\n" % (name)
+            updateString += "%s=%s\n" % (key.replace(' ', '_'), val)
+    if updateString:
+        context.EditImport('FParameters', updateString, False, 'PS_SmartFXStaticData')
+        module = acm.FExtensionModule['PS_SmartFXStaticData']
+        module.Commit()
+        
+def update_start_day():
+    commonParameterDict = dict()
+    for i in CONFIG_PARAM:
+        commonParameterDict[i] = CONFIG_PARAM[i]
+        
+    commonParameterDict.update({'FirstRunDate' : acm.Time.DateNow()})
+    
+    SaveParameterValues('SmartFXStaticDataConfig', commonParameterDict)
+    
+    
+    
+        
+        
+
+
+...
+
+}
+

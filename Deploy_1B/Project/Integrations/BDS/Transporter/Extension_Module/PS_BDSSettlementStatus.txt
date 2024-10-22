@@ -1,0 +1,194 @@
+#
+# Front Arena exported extension module.
+# source          ""
+# timestamp (utc) "2023-02-08 06:14:51.1"
+# ***** DO NOT EDIT! *****
+#
+name        "PS_BDSSettlementStatus"
+description ""
+
+groups {
+}
+
+decls[FParameters] {
+}
+
+clx FObject [FParameters] {
+  BDSSettlementStatusConfig =
+  CertificateFile=C:\Projects\FADealPostingWebServer\test_cer.crt
+  KeyFile=C:\Projects\FADealPostingWebServer\test_key.key
+  listeningURL=dealExpiryStatus
+  ServerPort=8085
+
+
+}
+
+decls[FPythonCode] {
+}
+
+clx FObject [FPythonCode] {
+  BDSSettlementStatusMapper
+"""-----------------------------------------------------------------------------------------------------
+MODULE
+    BDSSettlementStatusMapper
+
+DESCRIPTION: This module provides the base class for providing mapping of JSON data to Deal.
+
+-------------------------------------------------------------------------------------------------------"""
+import ael, traceback
+import acm
+
+
+class BDSSettlementStatusMapper(object):
+    SUCCESS_RESPONSE = "0"
+    FAIL_RESPONSE = "1"
+
+    RESPONSE_DICT = {
+        "responseCode": "",
+        "responseMessage": ""
+    }
+
+    def __init__(self, json_data):
+        """
+        Initialise member variables
+        :param json_string: string containing input in JSON format
+        """
+        self._data_dict = json_data
+        self._ref = self._data_dict.get('REFF', '')
+
+
+
+    def process_trade(self):
+        """
+        This function process the json data and updates the status
+        :return: None
+        """
+
+        try:
+            ael.poll()
+            error_text = ''
+            deal_exp_spec = acm.FAdditionalInfoSpec['DealCodeExpiryStat']
+
+            trade_obj = acm.FTrade.Select01("optionalKey='{}'".format(self._ref), None)
+            if trade_obj:
+                trade_obj.AddInfoValue(deal_exp_spec, 'Y')
+                trade_obj.Commit()
+                BDSSettlementStatusMapper.RESPONSE_DICT['responseCode'] = BDSSettlementStatusMapper.SUCCESS_RESPONSE
+                BDSSettlementStatusMapper.RESPONSE_DICT['responseMessage'] = "Success. Updated the deal id {} in FA.".format(trade_obj.Oid())
+            else:
+                error_text = 'Deal with REFF {} not found in FA.'.format(self._ref)
+        except Exception as err:
+            error_text = 'Error handling deal with REFF {}. {}'.format(self._ref, err)
+            print(traceback.format_exc())
+
+        if error_text:
+            BDSSettlementStatusMapper.RESPONSE_DICT['responseCode'] = BDSSettlementStatusMapper.FAIL_RESPONSE
+            BDSSettlementStatusMapper.RESPONSE_DICT['responseMessage'] = error_text
+        return BDSSettlementStatusMapper.RESPONSE_DICT
+
+...
+
+  BDSSettlementStatusServer
+"""--------------------------------------------------------------------------------------------------
+MODULE:
+    SmartFXInquiryDealServer : Module for handing the server functions
+
+DESCRIPTION: This module uses flask and provides functions for handling webserver functions from client.
+-------------------------------------------------------------------------------------------------------"""
+from flask import Flask, request
+from BDSSettlementStatusMapper import BDSSettlementStatusMapper
+import traceback
+import json
+import ParametersReader
+
+app = Flask(__name__)
+
+settlement_statu_config = ParametersReader.get_params('BDSSettlementStatusConfig')
+litening_url = settlement_statu_config['listeningURL']
+
+
+@app.route("/", methods=['GET'])
+def welcome():
+    """
+    This function handles the default client request
+    :return: string
+    """
+    return "Welcome to FrontArena webserver for setting expiry status on deals!"
+
+
+@app.route("/{}".format(litening_url), methods=['POST'])
+def postdeal():
+    """
+    This function handles the inquiry deal request from client.
+    :return: JSON object
+    """
+    response_dict = BDSSettlementStatusMapper.RESPONSE_DICT
+    try:
+        json_data = request.get_json()
+        settlement_status_obj = BDSSettlementStatusMapper(json_data)
+        response_dict = settlement_status_obj.process_trade()
+        print(response_dict)
+    except Exception as err:
+        response_dict['responseCode'] = BDSSettlementStatusMapper.FAIL_RESPONSE
+        response_dict['responseMessage'] = 'Error occurred {}.'.format(err)
+        print(traceback.format_exc())
+
+    return json.dumps(response_dict)
+
+
+
+
+
+...
+
+  BDSSettlementStatusServerMain
+"""--------------------------------------------------------------------------------------------------
+MODULE:
+    BDSSettlementStatusServerMain : Main module for ATS
+
+DESCRIPTION: This module uses gevent to run the webserver in start method.
+             The start never returns and hence work and stop functions are not called.
+-------------------------------------------------------------------------------------------------------"""
+
+from gevent.pywsgi import WSGIServer
+import BDSSettlementStatusServer, ParametersReader
+
+
+def server_routine():
+    """
+    This function starts the gevent WSGI
+    :return: None
+    """
+    try:
+        settlement_statu_config = ParametersReader.get_params('BDSSettlementStatusConfig')
+        key_file = settlement_statu_config['KeyFile']
+        server_port = settlement_statu_config['ServerPort']
+        cert_file = settlement_statu_config['CertificateFile']
+
+        if not server_port.isdigit():
+            raise Exception('Port should be integer. Supplied {}'.format(server_port))
+
+        bind = ('0.0.0.0', int(server_port))
+        app = BDSSettlementStatusServer.app
+        g_server = WSGIServer(bind, app, keyfile=key_file, certfile=cert_file)
+        print('Started webserver.', g_server)
+        g_server.serve_forever()
+    except Exception as err:
+        print(err)
+        return False
+
+
+def start():
+    """ ATS start """
+    try:
+        server_routine()
+    except Exception as err:
+        print(err)
+
+
+
+
+...
+
+}
+

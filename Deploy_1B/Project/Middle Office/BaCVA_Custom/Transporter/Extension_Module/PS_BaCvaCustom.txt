@@ -1,0 +1,25 @@
+#
+# Front Arena exported extension module.
+# source          ""
+# timestamp (utc) "2024-10-13 04:14:26.6"
+# ***** DO NOT EDIT! *****
+#
+name        "PS_BaCvaCustom"
+description ""
+
+groups {
+}
+
+decls[FExtensionAttribute] {
+}
+
+clx FBasketRepo [FExtensionAttribute] {
+  compactPositionSaccrMarkToMarketValues = discountAndFilterCurrency(compactPositionSaccrMarkToMarketValuesOverride, reportingDiscountCurves, reportingDate, compactPositionFilterUnit);
+  compactPositionSaccrMarkToMarketValuesOverride = shunt(compactPositionRiskPosition > 0, 
+  true->(abs(compactPositionProfitAndLossValues.EndNominal) - creditLossAllowance) / saccrAlpha, 
+  default->(abs(compactPositionProfitAndLossValues.EndNominal) + compactPositionProfitAndLossValues.InstrumentAccrued - creditLossAllowance) / saccrAlpha);
+  creditLossAllowance = shunt(object.AdditionalInfo.CreditLossAllowance, 
+  nil->ccrZero, 
+  default->denominatedvalue(object.AdditionalInfo.CreditLossAllowance, currency, , ));
+}
+

@@ -1,0 +1,665 @@
+#
+# Front Arena exported extension module.
+# source          ""
+# timestamp (utc) "2024-07-23 05:55:53.6"
+# ***** DO NOT EDIT! *****
+#
+name        "PS_CollateralManagement_Overrides"
+description ""
+
+groups {
+}
+
+decls[FColumnDefinition] {
+  "Margining Security Value" ( "sheet columns.dealsheet" ) "";
+  "Margining Unadjusted Security Value" ( "sheet columns.dealsheet" ) "";
+  "Price x Face Value Margin CCY" ( "sheet columns.dealsheet" "sheet columns.tradesheet" ) "";
+  "Trade Price x Face Value" ( "sheet columns.dealsheet" "sheet columns.tradesheet" ) "";
+}
+
+clx FTradingSheet [FColumnDefinition] {
+  Price x Face Value Margin CCY =
+  ExtensionAttribute=tradePriceXfaceValueMarginCCY
+  Format=DetailedShowZeroAndNaN
+  GroupLabel=Collateral Custom Field
+  LabelList=Price x Face Value Margin CCY;Price x Face Value MCCY
+  Name=Price x Face Value Margin CCY
+  Parameters=CollateralUseYesterdayMtM;MarginingUseTradePrice;CollateralActionTypeOverride
+
+
+  Trade Price x Face Value =
+  ExtensionAttribute=tradePriceXfaceValue
+  GroupLabel=Collateral Custom Field
+  LabelList=Price x Face Value;Trade Price x Face Value
+  Name=Trade Price x Face Value
+
+
+}
+
+decls[FExtensionAttribute] {
+}
+
+clx FTradeRow [FExtensionAttribute] {
+  tradePriceXfaceValue = trade.FaceValue * trade.Price / 100;
+  tradePriceXfaceValueMarginCCY = tradePriceXfaceValue * marginingSecurityValueTradePriceFxRates;
+}
+
+decls[FMenuExtension] {
+}
+
+clx FFrame [FMenuExtension] {
+  Collateral Manager =
+  Function=CollateralManagerUx.StartApplicationInstance
+  MenuType=Application
+  ParentMenu=Admin
+  ProfileComponent=Collateral Manager
+
+
+}
+
+decls[FPythonCode] {
+}
+
+clx FObject [FPythonCode] {
+  BookCollateral
+import acm
+import FUxCore
+
+class BookCollateral(FUxCore.MenuItem):
+    def __init__(self,extObj):
+        self.m_extObj = extObj
+
+    @staticmethod
+    def TradeHasMarginingSet(trade):
+        if trade:
+            tradeDecorator = acm.FBusinessLogicDecorator.WrapObject(trade)
+            marginingSet = tradeDecorator.MarginingSet()
+            if marginingSet:
+                return True
+        return False
+
+    @staticmethod
+    def CreateCollateralDeal(trade):
+        cpty = trade.Counterparty()
+        acquirer = trade.Acquirer()
+        tradeDecorator = acm.FBusinessLogicDecorator.WrapObject(trade)
+        marginingSet = tradeDecorator.MarginingSet()
+
+        deal = acm.Deal.NewAsDecorator('Collateral')
+        deal.SetAttribute('trade_counterparty', cpty)
+        deal.SetAttribute('trade_acquirer', acquirer)
+
+        if marginingSet:
+            marginCall = marginingSet.CreateMarginCall()
+            marginCallDeco = acm.FBusinessLogicDecorator.WrapObject(marginCall, None)
+            suggestedAmount = marginCallDeco.SuggestMarginCallAmount()
+            marginCall.AgreedAmount(marginCallDeco.SuggestedAmount())
+            collateralTrade=deal.Trades().First()
+            marginCallLink = marginCall.AddTrade(collateralTrade, 'Deliver')
+
+            deal.SetAttribute('marginCallTradeLink', marginCallLink)
+            deal.SetAttribute('trade_marginingSet', marginingSet)
+
+            collateralTradeDecorator = acm.FBusinessLogicDecorator.WrapObject(collateralTrade)
+            collateralTradeDecorator.SuggestCollateralPortfolio()
+            return deal
+            return collateralTradeDecorator.DecoratedObject()
+        return deal
+
+    def Invoke(self,eii):
+        extObj = eii.ExtensionObject()
+        shell =  extObj.Shell()
+        trade =  extObj.OriginalTrade()
+        if trade and BookCollateral.TradeHasMarginingSet(trade):
+            deal = BookCollateral.CreateCollateralDeal(trade)
+            acm.StartApplication('Deal', deal)
+        else:
+            acm.UX().Dialogs().MessageBoxInformation(shell, "Not possible to book collateral with missing margining set on trade.")
+
+    def Enabled(self):
+        return BookCollateral.TradeHasMarginingSet(self.m_extObj.OriginalTrade())
+        
+    def Applicable(self):
+        return True
+
+# ######################### Perform book collateral ####################################
+def PerformBookCollateral(extObj):
+    return BookCollateral(extObj)
+
+...
+
+  CollMgmntInventoryDockWindow
+import acm
+import CollMgmntDockWindowBase
+import CollMgmntSheetUtil
+import MarginingEligibility
+from CollMgmntConfigurationBase import DefaultColumnBase
+
+SHEET_COLUMNS = DefaultColumnBase.EligibleInventoryColumns()
+TIME_BUCKET_SHEET_COLUMNS = DefaultColumnBase.EligibleInventoryBucketColumns()
+TIME_BUCKET = DefaultColumnBase.EligibleInventoryBuckets()
+
+INVENTORY_SHEET_PANE_CONTENT_KEY = '_InventorytSheetPaneContentKey'
+
+class InventoryDockWindow(CollMgmntDockWindowBase.DockWindowBase):
+    def __init__(self, sheetSelectionCB, shellCb):
+        CollMgmntDockWindowBase.DockWindowBase.__init__(self, sheetSelectionCB, shellCb)
+        self._prfSheet = None
+        self._selectedMarginingSets = None
+
+    def GetGrouper(self):
+        allGroupers = acm.Risk().GetAllBuiltInPortfolioGroupers()
+        if allGroupers.HasKey('Underlying Split All'):
+            return allGroupers.At('Underlying Split All')
+        if allGroupers.HasKey('Underlying'):
+            return allGroupers.At('Underlying')
+        return None
+        
+    def PortfolioSheet(self):
+        return self._prfSheet
+        
+    def CreateDockWindow(self, frame):
+        frame.CreateCustomDockWindow(self, 'inventoryDockWindow', 'Eligible Inventory', 'Right', None, True, True)
+     
+    def HandleCreate(self):
+        layout = self.SetLayout(self.CreateLayout())
+        sheetCtrl = layout.GetControl('prfSheet')
+        self._prfSheet = sheetCtrl.GetCustomControl()
+        
+        self.PortfolioSheet().ShowGroupLabels(True)
+        self.InsertSheetColumns()
+        self.InsertRowsIntoSheet()
+        
+    def InsertSheetColumns(self):
+        CollMgmntSheetUtil.RemoveAllColumns(self.PortfolioSheet())
+        CollMgmntSheetUtil.InsertDefaultColumns(self.PortfolioSheet(), SHEET_COLUMNS, TIME_BUCKET_SHEET_COLUMNS, TIME_BUCKET)
+        
+    def CreateQuery(self, marginingSet):
+        filter = marginingSet.EligibleInventoryFilter()
+        if filter:
+            acquirers = filter['acquirers']
+            portfolios = filter['portfolios']
+            return MarginingEligibility.EligibilityTradeQuery(marginingSet, direction = 'Post', validDate = acm.Time.DateToday(),   includeSecFinance = True, acquirers = acquirers, portfolios = portfolios)
+        else:
+            return None
+
+    def InsertRowsIntoSheet(self):
+        CollMgmntSheetUtil.RemoveAllRows(self.PortfolioSheet())
+        grouper = self.GetGrouper()
+        if self._selectedMarginingSets:
+            for cell in self._selectedMarginingSets.SelectedCells():
+                if cell.IsHeaderCell():
+                    treeSpec = cell.TreeSpecification()
+                    if treeSpec:
+                        marginingSet = treeSpec.OriginObject().MarginingSet()
+                        query = self.CreateQuery(marginingSet)
+                        if query is not None:
+                            treeProxy = CollMgmntSheetUtil.InsertItem(self.PortfolioSheet(), query)
+                            if treeProxy:
+                                treeProxy.ApplyGrouper(grouper)
+                                treeProxy.Expand(True)
+                            
+    def HandleOnIdle(self):
+        newSelection = self.MarginingSetSheetSelection()
+        if newSelection != self._selectedMarginingSets:
+            self._selectedMarginingSets = newSelection
+            self.InsertRowsIntoSheet()
+ 
+    def RegisterCommands(self):
+        return []
+
+    def RegisterDynamicCommands(self, builder):
+        pass
+        
+    def CreateLayout(self):
+        builder = acm.FUxLayoutBuilder()
+        builder.BeginVertBox('None')
+        builder.AddCustom('prfSheet', 'sheet.FPortfolioSheet', 700, 200, -1, -1, self.PortfolioSheetSetup())
+        builder.EndBox()
+        return builder
+
+    def PortfolioSheetSetup(self):
+        sheetDefinition = acm.Sheet().GetSheetDefinition(acm.FPortfolioSheet)
+        sheetSetup = sheetDefinition.CreateSheetSetup()
+        #2023 04 06: FIS PS Richard Milford, modify to not use distributed mode, as FRTB requires APS sub-workers while collateral manager does not work wiht sub-workers
+        sheetSetup.DistributedMode(False)
+        sheetSetupDict = {acm.FSymbol('SheetSetup'):sheetSetup}
+        return sheetSetupDict
+
+    def GetSaveLayoutContentDict(self, sheetContentDict):
+        contents = CollMgmntSheetUtil.GetSheetContents(self.PortfolioSheet())
+        sheetContentDict.AtPut(INVENTORY_SHEET_PANE_CONTENT_KEY, contents)
+
+    def SetSavedLayoutContents(self, savedContentDict):
+        sheetContents = savedContentDict.At(INVENTORY_SHEET_PANE_CONTENT_KEY)
+        if sheetContents:
+            CollMgmntSheetUtil.SetSheetContents(self.PortfolioSheet(), sheetContents)
+
+...
+
+  CollMgmntMarginingSetPositionDockWindow
+import acm
+import CollMgmntDockWindowBase
+import CollMgmntSheetUtil
+import CollMgmntCommandItems
+from CollMgmntConfigurationBase import DefaultColumnBase
+from CollateralManagementUtils import GetSubPoolGrouper
+
+SHEET_COLUMNS = DefaultColumnBase.MarginingSetPosition()
+MARGIN_CALL_SHEET_PANE_CONTENT_KEY = '_MarginCallSheetPaneContentKey'
+
+class MarginingSetPositionDockWindow(CollMgmntDockWindowBase.DockWindowBase):
+    def __init__(self, sheetSelectionCB, shellCb):
+        CollMgmntDockWindowBase.DockWindowBase.__init__(self, sheetSelectionCB, shellCb)
+        self._prfSheet = None
+        self._sheetSelection  = None
+        self._selectedMarginingSets = None
+
+    def PortfolioSheet(self):
+        return self._prfSheet
+        
+    def CreateDockWindow(self, frame):
+        frame.CreateCustomDockWindow(self, 'marginingSetPositionDockWindow', 'Positions per Margining Set', 'Right', None, True, True)
+     
+    def HandleCreate(self):
+        layout = self.SetLayout(self.CreateLayout())
+        sheetCtrl = layout.GetControl('prfSheet')
+        self._prfSheet = sheetCtrl.GetCustomControl()
+        
+        self.PortfolioSheet().ShowGroupLabels(False)
+        self.PortfolioSheet().AddDependent(self)
+        self.InsertSheetColumns()
+
+    def SheetSelection(self):
+        rowObjects = []
+        if self._sheetSelection:
+            rowObjects = self._sheetSelection
+        return rowObjects
+  
+    def ServerUpdate(self, sender, aspectSymbol, parameter):
+        if sender and str(aspectSymbol) == 'SelectionChanged':
+            self._sheetSelection = sender.Selection()
+      
+    def InsertSheetColumns(self):
+        CollMgmntSheetUtil.RemoveAllColumns(self.PortfolioSheet())
+        CollMgmntSheetUtil.InsertDefaultColumns(self.PortfolioSheet(), SHEET_COLUMNS)
+
+    def CreateGrouper(self, marginingSet):
+        collateralOrExposureGrouper = acm.FAttributeGrouper('Trade.IsCollateralOrExposure')
+        topGrouper = GetSubPoolGrouper(marginingSet)
+        if topGrouper:
+            groupers = acm.FArray()
+            groupers.Add(topGrouper)
+            groupers.Add(collateralOrExposureGrouper)
+            return acm.FChainedGrouper(groupers)
+        else:
+            return collateralOrExposureGrouper
+        
+
+    def InsertRowsIntoSheet(self):
+        CollMgmntSheetUtil.RemoveAllRows(self.PortfolioSheet())
+        if self._selectedMarginingSets:
+            for cell in self._selectedMarginingSets.SelectedCells():
+                if cell.IsHeaderCell():
+                    treeSpec = cell.TreeSpecification()
+                    if treeSpec:
+                        treeConfig = acm.Sheet.CreateTreeConfiguration(acm.FPortfolioSheet)
+                        marginingSet = CollMgmntSheetUtil.GetMarginingSetFromTreeSpecification(treeSpec)
+                        grouper = self.CreateGrouper(marginingSet)
+                        
+                        treeSpec.Grouper(grouper)
+                        treeConfig.TreeSpecification(treeSpec)
+                        treeConfig.VisibilityOptions().IncludeSingleInstruments(True)
+
+                        treeProxy = CollMgmntSheetUtil.InsertItem(self.PortfolioSheet(), treeConfig)
+                        if treeProxy:
+                            treeProxy.Expand(True)
+                            visibilityControler = treeProxy.VisibilityController()
+                            visibilityControler.ShowZeroPositions(False)
+
+                    self.PortfolioSheet().SimulateGlobalValue('Portfolio Hide Zero Positions Choice', 'Exposure and Collateral Positions')
+
+
+    def HandleOnIdle(self):
+        newSelection = self.MarginingSetSheetSelection()
+        if newSelection != self._selectedMarginingSets:
+            self._sheetSelection = None
+            self._selectedMarginingSets = newSelection
+            self.InsertRowsIntoSheet()
+ 
+    def CreateInterestRateStatementCommandCB(self):
+        return CollMgmntCommandItems.InterestRateStatementCommandItem(self.SheetSelection, self.Shell)        
+        
+    def CreateInitiateSubstituteCollateralCommandCB(self):
+        return CollMgmntCommandItems.InitiateSubstituteCollateralCommandItem(self.SheetSelection, self.Shell)        
+                
+    def CreateReceiveSubstituteCollateralCommandCB(self):
+        return CollMgmntCommandItems.ReceiveSubstituteCollateralCommandItem(self.SheetSelection, self.Shell)        
+        
+    def RegisterCommands(self):
+        commands =[
+        ['rateStatement',                        'View', 'Interest Rate Statement',  'Interest Rate Statement',                         '',  '', self.CreateInterestRateStatementCommandCB,     False],
+        ['substituteCollateralInitiateRequest',  'View', 'Substitute Collateral',    'Initiate request to substitute collateral',       '',  '', self.CreateInitiateSubstituteCollateralCommandCB,      False],
+        ['substituteCollateralReceiveRequest',   'View', 'Substitute Collateral',    'Counterparty requests to substitute collateral',  '',  '', self.CreateReceiveSubstituteCollateralCommandCB,      False]
+        ]
+        return commands
+
+    def RegisterDynamicCommands(self, builder):
+        pass
+                
+    def CreateLayout(self):
+        builder = acm.FUxLayoutBuilder()
+        builder.BeginVertBox('None')
+        builder.AddCustom('prfSheet', 'sheet.FPortfolioSheet', 700, 200, -1, -1, self.PortfolioSheetSetup())
+        builder.EndBox()
+        return builder
+
+    def PortfolioSheetSetup(self):
+        sheetDefinition = acm.Sheet().GetSheetDefinition(acm.FPortfolioSheet)
+        sheetSetup = sheetDefinition.CreateSheetSetup()
+        #2023 04 06: FIS PS Richard Milford, modify to not use distributed mode, as FRTB requires APS sub-workers while collateral manager does not work wiht sub-workers
+        sheetSetup.DistributedMode(False)
+        sheetSetupDict = {acm.FSymbol('SheetSetup'):sheetSetup}
+        return sheetSetupDict
+
+    def GetSaveLayoutContentDict(self, sheetContentDict):
+        contents = CollMgmntSheetUtil.GetSheetContents(self.PortfolioSheet())
+        sheetContentDict.AtPut(MARGIN_CALL_SHEET_PANE_CONTENT_KEY, contents)
+
+    def SetSavedLayoutContents(self, savedContentDict):
+        sheetContents = savedContentDict.At(MARGIN_CALL_SHEET_PANE_CONTENT_KEY)
+        if sheetContents:
+            CollMgmntSheetUtil.SetSheetContents(self.PortfolioSheet(), sheetContents)
+    
+
+...
+
+  CollMgmntMarginingSetTradesViewerDockWindow
+import acm
+import CollMgmntDockWindowBase
+import CollMgmntSheetUtil
+from CollMgmntConfigurationBase import DefaultColumnBase
+
+SHEET_COLUMNS = DefaultColumnBase.MarginingSetTradesViewer()
+MARGINING_SET_TRADES_VIEWER_CONTENT_KEY = '_MarginingSetTradesViewerDockWindowContentKey'
+
+class MarginingSetTradesViewerDockWindow(CollMgmntDockWindowBase.DockWindowBase):
+    def __init__(self, sheetSelectionCB, shellCb):
+        CollMgmntDockWindowBase.DockWindowBase.__init__(self, sheetSelectionCB, shellCb)
+        self._tradesSheet = None
+        self._selectedMarginingSets = None
+
+    def TradeSheet(self):
+        return self._tradesSheet
+        
+    def CreateDockWindow(self, frame):
+        frame.CreateCustomDockWindow(self, 'marginingSetTradesViewerDockWindow', 'Trades Viewer', 'Right', None, True, True)
+     
+    def HandleCreate(self):
+        layout = self.SetLayout(self.CreateLayout())
+        sheetCtrl = layout.GetControl('tradeSheet')
+        self._tradesSheet = sheetCtrl.GetCustomControl()
+        
+        self.TradeSheet().ShowGroupLabels(False)
+        self.InsertSheetColumns()
+        
+    def InsertSheetColumns(self):
+        CollMgmntSheetUtil.RemoveAllColumns(self.TradeSheet())
+        CollMgmntSheetUtil.InsertDefaultColumns(self.TradeSheet(), SHEET_COLUMNS)
+            
+    def InsertRowsIntoSheet(self):
+        CollMgmntSheetUtil.RemoveAllRows(self.TradeSheet())
+        if self._selectedMarginingSets:
+            for cell in self._selectedMarginingSets.SelectedCells():
+                if cell.IsHeaderCell():
+                    if self.TradeSheet():
+                        treeProxy = self.TradeSheet().GridBuilder().InsertItem(cell.TreeSpecification())
+                        if treeProxy:
+                            treeProxy.Expand(True)
+
+    def HandleOnIdle(self):
+        newSelection = self.MarginingSetSheetSelection()
+        if newSelection != self._selectedMarginingSets:
+            self._selectedMarginingSets = newSelection
+            self.InsertRowsIntoSheet()
+ 
+    def RegisterCommands(self):
+        return []
+
+    def RegisterDynamicCommands(self, builder):
+        pass
+                
+    def CreateLayout(self):
+        builder = acm.FUxLayoutBuilder()
+        builder.BeginVertBox('None')
+        builder.AddCustom('tradeSheet', 'sheet.FTradeSheet', 700, 200, -1, -1, self.TradeSheetSetup())
+        builder.EndBox()
+        return builder
+
+    def TradeSheetSetup(self):
+        sheetDefinition = acm.Sheet().GetSheetDefinition(acm.FTradeSheet)
+        sheetSetup = sheetDefinition.CreateSheetSetup()
+        #2023 04 06: FIS PS Richard Milford, modify to not use distributed mode, as FRTB requires APS sub-workers while collateral manager does not work wiht sub-workers
+        sheetSetup.DistributedMode(False)
+        sheetSetupDict = {acm.FSymbol('SheetSetup'):sheetSetup}
+        return sheetSetupDict
+
+    def GetSaveLayoutContentDict(self, sheetContentDict):
+        contents = CollMgmntSheetUtil.GetSheetContents(self.TradeSheet())
+        sheetContentDict.AtPut(MARGINING_SET_TRADES_VIEWER_CONTENT_KEY, contents)
+
+    def SetSavedLayoutContents(self, savedContentDict):
+        sheetContents = savedContentDict.At(MARGINING_SET_TRADES_VIEWER_CONTENT_KEY)
+        if sheetContents:
+            CollMgmntSheetUtil.SetSheetContents(self.TradeSheet(), sheetContents)
+    
+
+...
+
+  CollMgmntPortfolioSheetPane
+import acm
+from CollMgmntPanesBase import PanesBase
+import CollMgmntCommandItems
+import CollMgmntSheetUtil
+import FUxCore
+from CollMgmntConfigurationBase import DefaultColumnBase
+
+PRF_SHEET_PANE_CONTENT_KEY = '_PrfSheetPaneContentKey_'
+SHEET_COLUMNS = DefaultColumnBase.MarginingSets()
+
+class PortfolioSheetPane(PanesBase):
+    def __init__(self, shellCb):
+        self._shellCb = shellCb
+        self._prfSheet = None
+        self._sheetSelection  = None
+        
+    def QueryRefreshNeededCB(self, queryRefreshNeededCB):
+        self._queryRefreshNeededCB = queryRefreshNeededCB
+        
+    def RefreshNeeded(self):
+        return self._queryRefreshNeededCB()
+        
+    def GetMarginingSetsCB(self, getMarginingSetsCB):
+        self._getMarginingSetsCB = getMarginingSetsCB
+        
+    def GetMarginingSets(self):
+        return self._getMarginingSetsCB()
+    
+    def PortfolioSheet(self):
+        return self._prfSheet
+        
+    def SheetSelection(self):
+        rowObjects = []
+        if self._sheetSelection:
+            rowObjects = self._sheetSelection
+        return rowObjects
+
+    def OnRefreshButtonClicked(self, *args):
+        self.InsertQueryResult()
+        
+    def HandleCreate(self, creationInfo):
+        builder = acm.FUxLayoutBuilder()
+        
+        builder.BeginVertBox()
+        builder.AddCustom('prfSheet', 'sheet.FPortfolioSheet', 400, 500, -1, -1, self.PortfolioSheetSetup())
+        builder.BeginHorzBox()
+        builder.AddFill()
+        builder.AddButton('refreshMarginingSet', 'Refresh')
+        builder.EndBox()
+        builder.EndBox()
+        
+        pane = creationInfo.AddPane(builder,"prfSheetPane")
+        
+        prfSheetCtrl = pane.GetControl('prfSheet')
+        self._prfSheet = prfSheetCtrl = prfSheetCtrl.GetCustomControl()
+        
+        self._refreshButtonCtrl = pane.GetControl('refreshMarginingSet')
+        self._refreshButtonCtrl.AddCallback("Activate", self.OnRefreshButtonClicked, None)
+        self.InsertSheetColumns()
+        
+        self.PortfolioSheet().ShowGroupLabels(False)
+        self.PortfolioSheet().AddDependent(self)
+        
+    def UpdateControls(self):
+        self._refreshButtonCtrl.Visible(self.RefreshNeeded())
+        
+    def HandleOnIdle(self):
+        self.UpdateControls()
+        
+    def CreateStartProcessCommandCB(self):
+        return CollMgmntCommandItems.StartProcessCommandItem(self.SheetSelection, self._shellCb)
+        
+    def CreateStartProcessPostCommandCB(self):
+        return CollMgmntCommandItems.StartProcessPostCommandItem(self.SheetSelection, self._shellCb)
+        
+    def CreateStartProcessReceiveCommandCB(self):
+        return CollMgmntCommandItems.StartProcessReceiveCommandItem(self.SheetSelection, self._shellCb)
+
+    def CreateOpenProcessCommandCB(self):
+        return CollMgmntCommandItems.OpenProcessCommandItem(self.SheetSelection, self._shellCb)
+
+    def CreateOpenAgreementCommandCB(self):
+        return CollMgmntCommandItems.OpenAgreementCommandItem(self.SheetSelection, self._shellCb)
+        
+    def CreateMarginCallHistoryCommandCB(self):
+        return CollMgmntCommandItems.MarginCallHistoryCommandItem(self.SheetSelection, self._shellCb)
+        
+    def CreateOpenRatingsApplicationCommandCB(self):
+        return CollMgmntCommandItems.OpenRatingsApplicationCommandItem(self.SheetSelection, self._shellCb)
+        
+    def CreateCheckEligibilityCommandCB(self):
+        return CollMgmntCommandItems.CheckEligibilityCommandItem(self.SheetSelection, self._shellCb)
+        
+    def CreateLocateCollateralCommandCB(self):
+        return CollMgmntCommandItems.LocateCollateralCommandItem(self.SheetSelection, self._shellCb)
+        
+    def CreateConcentrationLimitsAdminCommandCB(self):
+        return CollMgmntCommandItems.ConcentrationLimitsAdminCommandItem(self.SheetSelection, self._shellCb)
+
+    def RegisterCommands(self):
+        commands =[
+        ['startProcess',                'View', 'Start Process',             'Start Margin Call Business Process',   '',  '', self.CreateStartProcessCommandCB,                 False],
+        
+        ['openProcess',                 'View', 'Open Process',              'Open Margin Call Business Process',    '',  '', self.CreateOpenProcessCommandCB,                  False],
+        ['openAgreement',               'View', 'Collateral Agreement',      'Open Collateral Agreement',            '',  '', self.CreateOpenAgreementCommandCB,                False],
+        ['openHistory',                 'View', 'Margin Call History',       'Margin Call History',                  '',  '', self.CreateMarginCallHistoryCommandCB,            False],
+        ['openRatings',                 'View', 'Ratings Application',       'Ratings Application',                  '',  '', self.CreateOpenRatingsApplicationCommandCB,       False],
+        ['checkEligibility',            'View', 'Check Eligibility',         'Check Eligibility',                    '',  '', self.CreateCheckEligibilityCommandCB,             False],
+        ['locateCollateral',            'View', 'Locate Collateral',         'Locate Collateral',                    '',  '', self.CreateLocateCollateralCommandCB,             False],
+        ['concentrationLimitsAmind',    'View', 'Concentration Limits Admin','Concentration Limits Admin',           '',  '', self.CreateConcentrationLimitsAdminCommandCB,     False],
+        
+        ]
+        return commands
+
+    def CreateStartProcessPostCmdCB(self):
+        return CollMgmntCommandItems.OpenAgreementCommandItem(self.SheetSelection, self._shellCb)
+
+    def CreateStartProcessReceiveCmdCB(self):
+        return CollMgmntCommandItems.OpenAgreementCommandItem(self.SheetSelection, self._shellCb)
+
+    @FUxCore.aux_cb
+    def DynamicStartProcessCommands(self, notUsed, cd):
+        menuBuilder = cd.At('menuBuilder')
+        saveCommands = []
+        saveCommands.append(['startProcessPost', '', 'Post', '', '', '', self.CreateStartProcessPostCommandCB, False])
+        saveCommands.append(['startProcessReceive', '', 'Receive', '', '', '', self.CreateStartProcessReceiveCommandCB, False])
+        menuBuilder.RegisterCommands(FUxCore.ConvertCommands(saveCommands))
+    
+    def RegisterDynamicCommands(self, builder):
+        builder.RegisterDynamicCommand('startProcess', True, False, self.DynamicStartProcessCommands, self)
+        
+    def ServerUpdate(self, sender, aspectSymbol, parameter):
+        if sender and str(aspectSymbol) == 'SelectionChanged':
+            self._sheetSelection = sender.Selection()
+
+    def InsertSheetColumns(self):
+        CollMgmntSheetUtil.RemoveAllColumns(self.PortfolioSheet())
+        CollMgmntSheetUtil.InsertDefaultColumns(self.PortfolioSheet(), SHEET_COLUMNS)
+        
+    def CreateGrouper(self):
+        return None
+        
+    def InsertQueryResult(self):
+        marginingSets = self.GetMarginingSets()
+        self.InsertMarginingSetsToSheet(marginingSets)
+        
+    def InsertMarginingSetsToSheet(self, marginingSets): 
+        try:
+            CollMgmntSheetUtil.RemoveAllRows(self.PortfolioSheet())               
+            for marginSet in marginingSets:
+                grouper = self.CreateGrouper()
+                treeConfig = acm.Sheet.CreateTreeConfiguration(acm.FPortfolioSheet)
+                treeSpec = treeConfig.TreeSpecification()
+                treeSpec.OriginObject(marginSet.AsPortfolio())
+                treeSpec.Grouper(grouper)
+                treeConfig.VisibilityOptions().IncludeSingleInstruments(False)
+                CollMgmntSheetUtil.InsertItem(self.PortfolioSheet(), treeConfig)
+        except Exception as e:
+            print('InsertQuery Failed', e)
+            
+    def PortfolioSheetSetup(self):
+        sheetDefinition = acm.Sheet().GetSheetDefinition(acm.FPortfolioSheet)
+        sheetSetup = sheetDefinition.CreateSheetSetup()
+        #2023 04 06: FIS PS Richard Milford, modify to not use distributed mode, as FRTB requires APS sub-workers while collateral manager does not work wiht sub-workers
+        sheetSetup.DistributedMode(False)
+        sheetSetupDict = {acm.FSymbol('SheetSetup'):sheetSetup}
+        return sheetSetupDict
+
+    def GetSaveLayoutContentDict(self, sheetContentDict):
+        contents = CollMgmntSheetUtil.GetSheetContents(self.PortfolioSheet())
+        sheetContentDict.AtPut(PRF_SHEET_PANE_CONTENT_KEY, contents)
+        
+    def SetSavedLayoutContents(self, savedContentDict):
+        sheetContents = savedContentDict.At(PRF_SHEET_PANE_CONTENT_KEY)
+        if sheetContents:
+            CollMgmntSheetUtil.SetSheetContents(self.PortfolioSheet(), sheetContents)
+
+...
+
+  FValidationCollateralMA
+import acm, ael
+
+class ValidationError(Exception):
+    """Base class for all validation errors."""
+
+def validate_transaction(transaction_list, *rest):
+    for entity, operation in transaction_list:
+        if operation == 'Delete':
+            continue
+        if entity.record_type != 'Trade':
+            continue
+        if entity.category != 'Collateral':
+            continue
+        acm_trade = acm.Ael.AelToFObject(entity)
+        master_agreement = acm_trade.MasterAgreement()
+        if not master_agreement:
+            continue
+        margining_sets = acm_trade.MarginingSets()
+        if not margining_sets:
+            raise ValidationError('Cannot save collateral trade with Master Agreement and no Margining Set')
+    return transaction_list
+
+...
+
+}
+

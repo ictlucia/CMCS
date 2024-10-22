@@ -1,0 +1,170 @@
+[
+    {
+        "FTransaction": {
+            "Objects": [
+                {
+                    "FComplianceRule": {
+                        "Definition": {
+                            "ref(RuleDefinition.PositionAndRiskControl)": {
+                                "Column": {
+                                    "ref(FStandardColumnCreator)": {
+                                        "Configuration": null,
+                                        "ContextSym": {
+                                            "ref(FSymbol)": "Standard"
+                                        },
+                                        "OriginalColumnId": {
+                                            "ref(FSymbol)": "General Exposure"
+                                        }
+                                    }
+                                },
+                                "ColumnIndex": 0,
+                                "CompoundQueryLogicalOperator": "AND",
+                                "FilterQuery": null,
+                                "ForEach": "",
+                                "PythonFilterMethodName": "",
+                                "RelationType": "Explicit",
+                                "RelativeTo": false,
+                                "RelativeToColumn": null,
+                                "RelativeToColumnIndex": 0,
+                                "StoredTimeBuckets": null,
+                                "TradeRelation": "Counterparty.Name"
+                            }
+                        },
+                        "DefinitionInfo": "PositionAndRiskControl",
+                        "Description": "",
+                        "Name": "Standard_Notional",
+                        "RuleCategory": {
+                            "ref(FChoiceList)": {
+                                "List": "Compliance Rule Category",
+                                "Name": "Pre-Deal"
+                            }
+                        }
+                    }
+                },
+                {
+                    "FThreshold": {
+                        "ComparisonType": "Greater",
+                        "ComplianceRule": {
+                            "ref(FComplianceRule)": "Standard_Notional"
+                        },
+                        "Coordinates": {
+                            "ref(FStaticArray)": []
+                        },
+                        "Description": "",
+                        "Parent": null,
+                        "Relative": false,
+                        "Type": {
+                            "ref(FChoiceList)": {
+                                "List": "Threshold Type",
+                                "Name": "Violation"
+                            }
+                        },
+                        "Value": 100.0
+                    }
+                },
+                {
+                    "FAppliedRule": {
+                        "ComplianceRule": {
+                            "ref(FComplianceRule)": "Standard_Notional"
+                        },
+                        "Data": "!enc!(7II<'@A-C4X(7C:C9(_3\\,P$,7W?(I3AXXD,%!03:2@R`,#K2BPN_%1&3FVY5RDYMLCQZ)_P*GJQ3K?Z=W[/3ECO').*Y1OO<9:D``:',+3K&K:VK9\"F5F9`3\")7\\HH4M;\\#JR]=>AI&/L`C->J\"7WAA[0&`,M/AD;9_*@[UDYXT2*A[R;7G/A=_YO^NS%(1@&%767DI]`]3FE?BY%$B8^)90?TI/&8@CNO>Z-HDG\\SM%NK+P\"_XYXN$7;DE=DE!.::ECS8>]FL7C](Z>ZFQL9*E*OM-S8$-EZ\"H-@7X=SRQ[O%/5\\\\/Q3S'2U9'K6/>00OAP\"B\\T@<$,OL/)7P_<H?_.+..P",
+                        "EndDate": "",
+                        "Inactive": false,
+                        "ReviewDate": "",
+                        "Size": 355,
+                        "StartDate": "",
+                        "Target": {
+                            "ref(FCounterParty)": "Counterparty 1"
+                        },
+                        "Unit": {
+                            "ref(FSymbol)": "<FRuleJSONUtils.DecodedObject object at 0x000001F9276F7B80>"
+                        }
+                    }
+                },
+                {
+                    "FThresholdValue": {
+                        "AppliedRule": {
+                            "ref(FAppliedRule)": {
+                                "ComplianceRule": {
+                                    "ref(FComplianceRule)": "Standard_Notional"
+                                },
+                                "Target": {
+                                    "ref(FCounterParty)": "Counterparty 1"
+                                }
+                            }
+                        },
+                        "Threshold": {
+                            "ref(FThreshold)": {
+                                "ComparisonType": "Greater",
+                                "ComplianceRule": {
+                                    "ref(FComplianceRule)": "Standard_Notional"
+                                },
+                                "Coordinates": {
+                                    "ref(FStaticArray)": []
+                                },
+                                "Type": {
+                                    "ref(FChoiceList)": {
+                                        "List": "Threshold Type",
+                                        "Name": "Violation"
+                                    }
+                                }
+                            }
+                        },
+                        "Value": 200.0
+                    }
+                },
+                {
+                    "FAppliedRule": {
+                        "ComplianceRule": {
+                            "ref(FComplianceRule)": "Standard_Notional"
+                        },
+                        "Data": "!enc!(7II<'@A-C4X(7C:C9(_3\\,P$,7W?`JK0T<20`Q53:0(DX&!5A38W?BH#CFVY5RDYMLCQZ)_P*GJQ3K?Z=W[/3GC=>6<1E!OO08A23(:'+#'6=6TPK82S:S,&.,*OM`@H36_`VMO'7@:QCYCO!;8A+[T0UJ#,9Z?#(VR^5%WK)WTL@4\"WTVN.?&[_C?]=V.0C`((7674I]0]3&E?BY%$B8^)90?TI/&8@CNO>X,TR;\\9VJW5%X#?84^7\"#OR:'8)@;FF91WLO6Q6KQ^$NKL1T%@%:K7]AH:8C9<D5NR+<&[KQ=W#_?/B213S'2UY'K6/>00OAP\"B\\T@<$,OL/)7P_<H?_VC.1`",
+                        "EndDate": "2024-01-31",
+                        "Inactive": false,
+                        "ReviewDate": "2023-12-31",
+                        "Size": 355,
+                        "StartDate": "2023-01-31",
+                        "Target": {
+                            "ref(FCounterParty)": "Counterparty 2"
+                        },
+                        "Unit": {
+                            "ref(FSymbol)": "<FRuleJSONUtils.DecodedObject object at 0x000001F9253E9CD0>"
+                        }
+                    }
+                },
+                {
+                    "FThresholdValue": {
+                        "AppliedRule": {
+                            "ref(FAppliedRule)": {
+                                "ComplianceRule": {
+                                    "ref(FComplianceRule)": "Standard_Notional"
+                                },
+                                "Target": {
+                                    "ref(FCounterParty)": "Counterparty 2"
+                                }
+                            }
+                        },
+                        "Threshold": {
+                            "ref(FThreshold)": {
+                                "ComparisonType": "Greater",
+                                "ComplianceRule": {
+                                    "ref(FComplianceRule)": "Standard_Notional"
+                                },
+                                "Coordinates": {
+                                    "ref(FStaticArray)": []
+                                },
+                                "Type": {
+                                    "ref(FChoiceList)": {
+                                        "List": "Threshold Type",
+                                        "Name": "Violation"
+                                    }
+                                }
+                            }
+                        },
+                        "Value": 300.0
+                    }
+                }
+            ]
+        }
+    }
+]

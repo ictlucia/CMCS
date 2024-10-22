@@ -1,0 +1,609 @@
+#
+# Front Arena exported extension module.
+# source          ""
+# timestamp (utc) "2021-07-19 03:46:18.5"
+# ***** DO NOT EDIT! *****
+#
+name        "PS_Tools"
+description ""
+
+groups {
+}
+
+decls[FPythonCode] {
+}
+
+clx FObject [FPythonCode] {
+  AddInfoUtils
+import acm, ael
+
+
+def set_addinfo(obj, addInfoName, addInfoValue):
+    '''
+    Set addinfo value on object.
+    addInfoValue must be a string.
+    '''
+
+    found = False
+
+    for ai in obj.additional_infos():
+        if ai.addinf_specnbr.field_name == addInfoName:
+            ai.value = addInfoValue
+            found    = True
+
+    if not found:
+        addInfoNew                = ael.AdditionalInfo.new(obj)
+        addInfoNew.value          = addInfoValue
+        addInfoNew.addinf_specnbr = ael.AdditionalInfoSpec[addInfoName]
+
+
+def delete_addinfo(obj, addInfoName):
+    for ai in obj.additional_infos():
+        if ai.addinf_specnbr.field_name == addInfoName:
+            try:
+                ai.delete()
+            except:
+                print("Failed to delete '%s'" % addInfoName)
+    
+
+...
+
+  AMBReader
+import collections
+import sys, traceback
+
+import acm
+import amb
+import time
+
+isConnected = False
+ambMsgNbr = 0
+eventDeque = collections.deque()
+
+class AMBReader(object):
+    def __init__(self, params, func):
+        self.func = func
+        self.server = params['server']
+        self.port = params['port']
+        self.receiver = params['receiver']
+        self.subjects = params['subjects']
+
+    def Start(self):
+        global isConnected
+
+        if not isConnected:
+            self.ConnectToAMB()
+            isConnected = True
+
+        if len(eventDeque) <= 0:
+            print('>>> Waiting for events...\n')
+
+    def Work(self):
+        global isConnected
+
+        if not isConnected:
+            self.ReconnectToAMB()
+            isConnected = True
+
+        while len(eventDeque) > 0:
+            queueMember = eventDeque.popleft()
+            (eventCopy, channel, msgNbr) = queueMember
+            print('>>> Processing event with mid %d (%d in queue).' % (eventCopy.id, len(eventDeque)))
+            buf = amb.mbf_create_buffer_from_data(eventCopy.data_p)
+            msg = buf.mbf_read()
+            try:
+                self.func(msg)
+            except Exception as e:
+                print('>>> Exception caught when processing message with mid %d.' % (eventCopy.id))
+                traceback.print_exc(file=sys.stdout)
+                print('>>> AMBA Message:\n%s' % (msg.mbf_object_to_string()))
+                #Commented raising the exception to continue further message processing 14 Mar
+
+            try:
+                amb.mb_queue_accept(channel, eventCopy, str(msgNbr))
+            except Exception:
+                print("Did not succeed to accept queue message %s, trying again" % (str(msgNbr)))
+                amb.mb_queue_accept(channel, eventCopy, str(msgNbr))
+
+            if msg:
+                msg.mbf_destroy_object()
+            if buf:
+                buf.mbf_destroy_buffer()
+
+            print('>>> Waiting for events...\n')
+
+    def Stop(self):
+        statusMessage = 'Stop called at %s' % (time.ctime())
+        print(statusMessage)
+
+    def Status(self):
+        pass
+
+    def ConnectToAMB(self):
+        ambAddress = '%s:%s'% (self.server, self.port)
+        print('Connecting to AMB at ' + ambAddress)
+        amb.mb_init(ambAddress)
+        print('Connected successful')
+
+        reader = amb.mb_queue_init_reader(self.receiver, event_cb, None)
+
+        for aSubject in self.subjects.split(','):
+            try:
+                amb.mb_queue_enable(reader, aSubject)
+            except RuntimeError as e:
+                print('Could not set up subscription for ' + aSubject)
+                raise e
+        print('Polling for messages')
+        amb.mb_poll()
+
+    def ReconnectToAMB(self):
+        isReconnected = False
+        while True:
+            print('Trying to reconnect in 20 seconds to AMB...')
+            time.sleep(20.0)
+            isReconnected = self.__Reconnect()
+            if isReconnected:
+                break
+
+    def __Reconnect(self):
+        try:
+            self.ConnectToAMB()
+            return True
+        except RuntimeError as e:
+            return False
+
+    def stop():
+        pass
+
+def event_cb(channel, event, arg):
+    global ambMsgNbr
+    global isConnected
+
+    eventString = amb.mb_event_type_to_string(event.event_type)
+    if eventString == 'Status':
+        try:
+            ambMsgNbr = int(event.status.status)
+        except ValueError:
+            ambMsgNbr = 0
+    elif eventString == 'Message':
+        ambMsgNbr += 1
+        eventDeque.append((amb.mb_copy_message(event.message), channel, ambMsgNbr))
+        print('Added event with mid %d (%d in queue).' % (event.message.id, len(eventDeque)))
+    elif eventString == 'Disconnect':
+        isConnected = False
+    else:
+        print('Unknown event %s' % eventString)
+
+...
+
+  AMBWriter
+
+import amb
+
+class AMBResponse(object):
+    def __init__(self):
+        self.status = None
+        self.isConnected = False
+
+class AMBWriter(object):
+    def __init__(self, params):
+        self.server = params['Server']
+        self.port = params['Port']
+        self.sender = params['Sender']
+        self.subject = params['Subject']
+        self.ambResponse = AMBResponse()
+        self.writer = None
+
+        self.ConnectToAMB()
+        self.ambResponse.isConnected = True
+
+    def Write(self, message):
+        if not self.ambResponse.isConnected:
+            self.ReconnectToAMB()
+            self.ambResponse.isConnected = True
+
+        self.ambResponse.status += 1
+        amb.mb_queue_write(self.writer, self.subject, message, \
+                len(message), str(self.ambResponse.status))
+
+    def ConnectToAMB(self):
+        ambAddress = '%s:%s'% (self.server, self.port)
+        amb.mb_init(ambAddress)
+        self.writer = amb.mb_queue_init_writer(self.sender, AMBWriter.event_cb, self.ambResponse)
+        print('writer to AMB at %s' % self.writer)
+        print('Connected to AMB at ' + ambAddress)
+        print("Status: %s" % self.ambResponse.status)
+        if not self.ambResponse.status:
+            self.ambResponse.status = 0
+        self.ambResponse.status = int(self.ambResponse.status)
+
+    def ReconnectToAMB(self):
+        isReconnected = False
+        while True:
+            print('Trying to reconnect in 20 seconds to AMB...')
+            time.sleep(20.0)
+            isReconnected = self.__Reconnect()
+            if isReconnected:
+                break
+
+    def __Reconnect(self):
+        try:
+            self.ConnectToAMB()
+            return True
+        except RuntimeError as e:
+            return False
+
+    @staticmethod
+    def event_cb(channel, event, ambResponse):
+        eventstring = amb.mb_event_type_to_string(event.event_type)
+        if eventstring == 'Status':
+            ambResponse.status = event.status.status
+        elif eventstring == 'Disconnect':
+            ambResponse.isConnected = False
+
+...
+
+  FEmailTransfer
+import collections
+
+class FEmailTransfer(object):
+
+    class SMTPServer(object):
+        """Stores SMTP server details."""
+        def __init__(self, hostname, port=25, username=None, password=None, tls_mode=False):
+            self.hostname = hostname
+            self.port = int(port)
+            self.username = username
+            self.password = password
+            self.tls_mode = tls_mode
+
+    class Message(object):
+        """Stores common email message details."""
+        def __init__(self, to, subject, sender, body, cc = None):
+            self.to = to
+            self.cc = cc or []
+            self.subject = subject
+            self.sender = sender
+            self.body = body
+
+            if not isinstance(self.to, collections.Iterable) or isinstance(self.to, str):
+                self.to = [self.to, ]
+            if not isinstance(self.cc, collections.Iterable) or isinstance(self.cc, str):
+                self.cc = [self.cc, ]
+            
+            self.recipients = self.to + self.cc
+
+    def __init__(self, server, message):
+        self._ValidateSMTPServer(server)
+        self._server = server
+        self._ValidateMessage(message)
+        self._message = message
+
+    def Send(self):
+        import smtplib
+        server = smtplib.SMTP()
+        server.connect(self._server.hostname, self._server.port)
+        if self._server.tls_mode:
+            server.starttls()
+        if self._server.username:
+            server.login(self._server.username, self._server.password)
+        server.verify(self._message.recipients)
+        msg = self._GetEmailMessage(self._message)
+        server.sendmail(self._message.sender, self._message.recipients, msg.as_string())
+        server.quit()
+        logger.info("Email notification successfully sent to: {}".format(self._message.recipients))
+
+    @staticmethod
+    def _ValidateSMTPServer(server):
+        if (not server or
+                server.hostname is None or
+                not isinstance(server.port, int)):
+            raise ValueError('Invalid SMTP server: ' + str(vars(server)))
+
+    @staticmethod
+    def _ValidateMessage(message):
+        if (not message or
+            not message.recipients or
+                message.sender is None):
+            raise ValueError('Invalid email message: ' + str(vars(message)))
+
+    @staticmethod
+    def _GetEmailMessage(message):
+        from email.mime.multipart import MIMEMultipart
+        from email.mime.text import MIMEText
+
+        msg = MIMEMultipart()
+        msg['To'] = ', '.join(message.to)
+        msg['Cc'] = ', '.join(message.cc)
+        msg['Subject'] = message.subject
+        msg['From'] = message.sender
+        msg.attach(MIMEText(message.body, 'plain'))
+        return msg
+        
+
+...
+
+  ParametersReader
+
+import acm
+
+class dict2(dict):
+    def __init__(self, *args, **kwargs):
+        self.update(*args, **kwargs)
+
+    def __getitem__(self, key):
+        if not dict.__contains__(self, key):
+            return ''
+        else:
+            return dict.__getitem__(self, key)
+
+    def update(self, *args, **kwargs):
+        for k, v in dict(*args, **kwargs).items():
+            self[k] = v
+
+def convert_fparameters_to_dict(param):
+    return dict2((str(p), str(param.At(p))) for p in param)
+
+def get_params(param_name):
+    param = acm.GetDefaultContext().GetExtension('FParameters', 'FObject', param_name)
+    if param:
+        param = param.Value()
+        return convert_fparameters_to_dict(param)
+
+    return dict2()
+
+...
+
+  RunScriptUtils
+import acm
+
+
+def ael_var(key, *, label, datatype, candidates, default, mandatory=1, multiple=0, description='', hook=None, enabled=1, dialog=None):
+    return [key, label, datatype, candidates, default, mandatory, multiple, description, hook, enabled, dialog]
+
+...
+
+  TestingHelpers
+import acm, ael
+
+
+def new_FObject(fclass, **field_values):
+    res = fclass()
+    
+    for methodName, value in field_values.items():
+        method = getattr(res, methodName)
+        obj    = method(value)
+    
+    return res
+
+
+def new_ael_object(cls, **field_values):
+    res = cls.new()
+    
+    for field, value in field_values.items():
+        setattr(res, field, value)
+    
+    return res
+
+
+def make_ael_party(**field_values):
+    return new_ael_object(ael.Party, **field_values)
+
+
+def set_attributes(obj, **field_values):
+    for field, value in field_values.items():
+        setattr(obj, field, value)
+
+
+def new_ael_instrument(instype, **field_values):
+    res = ael.Instrument.new(instype)
+    
+    set_attributes(res, **field_values)
+    
+    return res
+
+
+def new_ael_trade(insaddr, **field_values):
+    res = ael.Trade.new(insaddr)
+    
+    for field, value in field_values.items():
+        setattr(res, field, value)
+    
+    return res
+
+
+def new_ael_instrument_alias(ins, **field_values):
+    res = ael.InstrumentAlias.new(ins)
+    
+    set_attributes(res, **field_values)
+    
+    return res
+
+...
+
+  TestingHelpersACM
+import acm, ael
+
+
+def new_FObject(fclass, **field_values):
+    res = fclass()
+    
+    for methodName, value in field_values.items():
+        method = getattr(res, methodName)
+        obj    = method(value)
+    
+    return res
+
+
+def NewSettlement(**field_values):
+    return new_FObject(acm.FSettlement, **field_values)
+
+
+def NewAddInfo(**field_values):
+    assert(field_values['Parent'])
+    assert(field_values['AddInf'])
+    assert('FieldValue' in field_values)
+    
+    return new_FObject(acm.FAdditionalInfo, **field_values)
+
+
+...
+
+  TimeUtils
+import acm
+
+
+def date_range(firstDay, lastDay):
+    diff = acm.Time.DateDifference(lastDay, firstDay)
+
+    for offset in range(diff):
+        yield acm.Time.DateAddDelta(firstDay, 0, 0, offset)
+
+    yield acm.Time.DateAddDelta(firstDay, 0, 0, diff)
+
+
+def is_banking_day(day, *calInfos):
+    return not any(calInfo.IsNonBankingDay(day) for calInfo in calInfos)
+
+
+def make_is_banking_day(*calInfos):
+    return lambda day: is_banking_day(day, *calInfos)
+
+
+def business_day_range(firstDay, lastDay, *calInfos):
+    dates          = date_range(firstDay, lastDay)
+    is_banking_day = make_is_banking_day(*calInfos)
+    banking_days   = filter(is_banking_day, dates)
+
+    return banking_days
+
+
+def GetBusinessDaysBetweenTradeAndValueDate(trade):
+    tradeDate = acm.Time.AsDate(trade.TradeTime())
+    valueDate = trade.ValueDay()
+    calInfo1  = trade.Instrument().Calendar().CalendarInformation()
+    calInfo2  = trade.Currency().Calendar().CalendarInformation()
+    dates     = business_day_range(trade.TradeTime(), trade.ValueDay(), calInfo1, calInfo2)
+    count     = sum(1 for day in dates)
+
+    return max(count - 1, 0)
+
+...
+
+  TimeUtilsUnitTests
+import acm
+from TimeUtils import business_day_range
+import unittest
+from unittest import mock
+
+
+mon = '2021-03-22'
+tue = '2021-03-23'
+wed = '2021-03-24'
+thu = '2021-03-25'
+fri = '2021-03-26'
+sat = '2021-03-27'
+sun = '2021-03-28'
+
+
+class TestTimeUtils(unittest.TestCase):
+    def test_business_day_range_one_calendar(self):
+        calInfo = mock.create_autospec(acm.FCalendarInformation)
+        calInfo.IsNonBankingDay = lambda day: day >= sat
+        
+        dates = set(business_day_range(mon, sun, calInfo))
+        
+        self.assertTrue(mon in dates)
+        self.assertTrue(tue in dates)
+        self.assertTrue(wed in dates)
+        self.assertTrue(thu in dates)
+        self.assertTrue(fri in dates)
+        self.assertTrue(sat not in dates)
+        self.assertTrue(sun not in dates)
+
+
+    def test_business_day_range_two_calendars(self):
+        calInfo1 = mock.create_autospec(acm.FCalendarInformation)
+        calInfo2 = mock.create_autospec(acm.FCalendarInformation)
+        calInfo1.IsNonBankingDay = lambda day: day >= sat
+        calInfo2.IsNonBankingDay = lambda day: day == wed
+        
+        dates = set(business_day_range(mon, sun, calInfo1, calInfo2))
+        
+        self.assertTrue(mon in dates)
+        self.assertTrue(tue in dates)
+        self.assertTrue(wed not in dates)
+        self.assertTrue(thu in dates)
+        self.assertTrue(fri in dates)
+        self.assertTrue(sat not in dates)
+        self.assertTrue(sun not in dates)
+
+
+def RunTests():    
+    suite = unittest.TestLoader().loadTestsFromTestCase(TestTimeUtils)
+    unittest.TextTestRunner(verbosity=2).run(suite)
+
+...
+
+  UserProfileUtils
+import acm, ael
+import traceback
+
+
+def is_component_in_user_profile(compname, ctype='Operation'):
+    if compname == 'Always':
+        return 1
+    
+    for profile in get_mapped_profiles():
+        for comp in profile.profile_components():
+            if comp.compnbr.compname.lower() == compname.lower() and comp.compnbr.type == ctype:
+                return 1     
+
+    return 0
+
+
+def generate_mapped_profiles():
+    user = ael.user()
+
+    for link in user.profile_links():
+        yield link.profnbr
+
+    for link in ael.GroupProfileLink.select('grpnbr=' + str(user.grpnbr.grpnbr)):
+        yield link.profnbr
+
+
+def get_mapped_profiles():
+    try:
+        return list(generate_mapped_profiles())
+    except Exception as e:
+        logger.ELOG('Error: Could not get mapped profiles')
+        logger.ELOG(e)
+        logger.ELOG(traceback.format_exc())
+
+
+...
+
+  ValidationErrors
+import acm
+
+
+class ValidationError(Exception):
+    """Base class for all validation errors."""
+
+
+class DataValidationError(ValidationError):
+    """Validation error that concerns data."""
+
+
+class AccessValidationError(ValidationError):
+    """Validation Error that concerns access violation."""
+
+
+class RegulationValidationError(ValidationError):
+    """Validation Error that originates in a regulation."""
+
+
+...
+
+}
+

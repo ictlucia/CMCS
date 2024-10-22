@@ -1,0 +1,88 @@
+#
+# Front Arena exported extension module.
+# source          ""
+# timestamp (utc) "2023-02-28 02:52:29.6"
+# ***** DO NOT EDIT! *****
+#
+name        "PS_CollateralMtM"
+description "$Id$"
+
+groups {
+}
+
+decls[FColumnDefinition] {
+  "MarginingSet" ( "sheet columns.portfoliosheet" ) "";
+}
+
+decls[FExtensionAttribute] {
+}
+
+clx FInstrument [FExtensionAttribute] {
+  collateralMarkToMarketValueBase = select(collateralPricePositionAxis, 
+  nil->collateralMarkToMarketValueBaseConverted, 
+  default->scenarioaxis(collateralMarkToMarketValueBaseConverted, , , collateralPricePositionAxis));
+  collateralMarkToMarketValueBaseConverted = convertToCurrency(object:collateralMarkToMarketValues [displayCurrency, collateralUseYesterdayMtM, collateralActionTypeOverride, forwardFxRateConversion, useHaircutFactor, collateralHaircutSource, singleTradePosition, groupingSpotDiscountDate, tradeCategoryInclusionMaskDefault = tradeCategoryInclusionMaskCollateral, tradeStatusInclusionMaskDefault = tradeStatusInclusionMaskAll, marginingHaircutRuleQuantity, useCleanPrice, useDirtyHaircutMethod], collateralValueFxRates, displayCurrency);
+  collateralMarkToMarketValues = select(useCleanPrice, 
+  true->double(marketPriceClean / marketPriceDirty) * select(useHaircutFactor, 
+    true->unadjustedCollateralMarkToMarketValues * collateralHaircutFactor, 
+    false->unadjustedCollateralMarkToMarketValues), 
+  false->select(useDirtyHaircutMethod, 
+    true->unadjustedCollateralMarkToMarketValues * collateralHaircutFactor, 
+    false->select(useHaircutFactor, 
+      true->unadjustedCollateralMarkToMarketValues * collateralHaircutFactor, 
+      false->unadjustedCollateralMarkToMarketValues)));
+}
+
+clx FInstrumentAndTrades [FExtensionAttribute] {
+  collateralMarkToMarketValueBase = select(collateralPricePositionAxis, 
+  nil->collateralMarkToMarketValueBaseConverted, 
+  default->scenarioaxis(collateralMarkToMarketValueBaseConverted, , , collateralPricePositionAxis));
+  collateralMarkToMarketValueBaseConverted = convertToCurrency(collateralMarkToMarketValues, collateralValueFxRates, displayCurrency);
+  collateralMarkToMarketValues = openCollateralInstrument :* "collapse(collateralMarkToMarketValues)" [collateralHaircutSource, filterUnit, groupingSpotDiscountDate, isSplitAllGrouped, positionObject, priceSource, tradeStatusInclusionMaskDefault, useHaircutFactor, valuesOnSpotOverride, tradeCategoryInclusionMaskDefault = tradeCategoryInclusionMaskCollateral, projectedPayments = [], useCleanPrice, useDirtyHaircutMethod];
+  marginingSetCollateralValueCustom = select(collateralAnnexCollateralValueCalculation, 
+  nil->nil, 
+  "None"->throwError("Collateral Value Calculation is set to None"), 
+  "GMRA Indonesia: Clean Price Methodology"->object :* "marginingSetMarkToMarketValue" [marginingSetAllowFromGrouper = true, collateralUseYesterdayMtM = false, collateralUseYesterdayPosition = false, tradeStatusInclusionMaskDefault, marginingIncludeCashInterest, marginingApplyHaircut = true, useCleanPrice = true, useDirtyHaircutMethod = false], 
+  "GMRA Indonesia: Dirty Price Methodology"->object :* "marginingSetMarkToMarketValue" [marginingSetAllowFromGrouper = true, collateralUseYesterdayMtM = false, collateralUseYesterdayPosition = false, tradeStatusInclusionMaskDefault, marginingIncludeCashInterest, marginingApplyHaircut = true, useCleanPrice = false, useDirtyHaircutMethod = true], 
+  "GMRA International: Dirty Price Method"->object :* "marginingSetMarkToMarketValue" [marginingSetAllowFromGrouper = true, collateralUseYesterdayMtM = false, collateralUseYesterdayPosition = false, tradeStatusInclusionMaskDefault, marginingIncludeCashInterest, marginingApplyHaircut = true, useCleanPrice = false, useDirtyHaircutMethod = false], 
+  "MtM Yesterday"->object :* "marginingSetMarkToMarketValue" [marginingSetAllowFromGrouper = true, collateralUseYesterdayMtM, collateralUseYesterdayPosition, tradeStatusInclusionMaskDefault, marginingIncludeCashInterest, marginingApplyHaircut], 
+  default->object :* "marginingSetCollateralValueCustom" [marginingSetAllowFromGrouper = true, collateralUseYesterdayMtM, collateralUseYesterdayPosition, tradeStatusInclusionMaskDefault, marginingIncludeCashInterest, marginingApplyHaircut]);
+  marginingSetMarkToMarketValue = nil;
+  marginingSetMarkToMarketValueImpl = object :* "collateralMarkToMarketValueBase" [collateralUseYesterdayMtM, collateralUseYesterdayPosition, useHaircutFactor, collateralHaircutSource = marginingSet, tradeStatusInclusionMaskDefault, displayCurrency = marginingSetDisplayCurrency, useCleanPrice, useDirtyHaircutMethod];
+}
+
+clx FMarginingSetInstrumentAndTrades [FExtensionAttribute] {
+  marginingSetMarkToMarketValue = object :* "marginingSetMarkToMarketValueImpl" [useHaircutFactor = marginingApplyHaircut, collateralUseYesterdayMtM, collateralUseYesterdayPosition, tradeStatusInclusionMaskDefault, useCleanPrice, useDirtyHaircutMethod] - marginingSetMarkToMarketValueAccrued;
+}
+
+clx FMultiInstrumentAndTrades [FExtensionAttribute] {
+  collateralMarkToMarketValues = sumOf(openCollateralInstruments :* "collapse(collateralMarkToMarketValues)" [collateralHaircutSource, filterUnit, groupingSpotDiscountDate, isSplitAllGrouped, positionObject, priceSource, tradeStatusInclusionMaskDefault, useHaircutFactor, valuesOnSpotOverride, tradeCategoryInclusionMaskDefault = tradeCategoryInclusionMaskCollateral, projectedPayments = [], useCleanPrice, useDirtyHaircutMethod]);
+  marginingSetMarkToMarketValue = select(marginingGroupedOnSubPool, 
+  false->nil, 
+  default->object :* "marginingSetMarkToMarketValueImpl" [useHaircutFactor = marginingApplyHaircut, marginingSet, collateralUseYesterdayMtM, collateralUseYesterdayPosition, tradeStatusInclusionMaskDefault, useCleanPrice, useDirtyHaircutMethod] - marginingSetMarkToMarketValueAccrued);
+}
+
+clx FObject [FExtensionAttribute] {
+  useCleanPrice = false;
+  useDirtyHaircutMethod = false;
+}
+
+clx FSingleInstrumentAndTrades [FExtensionAttribute] {
+  marginingSetMarkToMarketValue = select(marginingSet, 
+  nil->nil, 
+  default->object :* "marginingSetMarkToMarketValueImpl" [useHaircutFactor = marginingApplyHaircut, marginingSet, collateralUseYesterdayMtM, collateralUseYesterdayPosition, tradeStatusInclusionMaskDefault, useCleanPrice, useDirtyHaircutMethod] - marginingSetMarkToMarketValueAccrued);
+}
+
+clx FTrade [FExtensionAttribute] {
+  collateralMarkToMarketValueBase = instrument:collateralMarkToMarketValueBase [displayCurrency, collateralUseYesterdayMtM, forwardFxRateConversion, collateralActionTypeOverride, valuesOnSpotOverride, useHaircutFactor, collateralHaircutSource, singleTradePosition, groupingSpotDiscountDate, filterUnit = nil, marginingHaircutRuleQuantity, useCleanPrice, useDirtyHaircutMethod];
+}
+
+clx FTradeRow [FExtensionAttribute] {
+  collateralMarkToMarketValues = shunt(isOpenCollateralPosition, 
+  true->instrument :* "collateralMarkToMarketValues" [collateralActionTypeOverride, marginingHaircutRuleQuantity, collateralHaircutSource, filterUnit, groupingSpotDiscountDate, includeAllTrades, isSplitAllGrouped, priceSource, singleTradePosition, tradeStatusInclusionMaskDefault, useHaircutFactor, valuesOnSpotOverride, tradeCategoryInclusionMaskDefault = tradeCategoryInclusionMaskCollateral, projectedPayments = [], useCleanPrice, useDirtyHaircutMethod], 
+  false->instrumentSpotZero);
+  marginingSetMarkToMarketValue = select(marginingSet, 
+  nil->nil, 
+  default->object :* "marginingSetMarkToMarketValueImpl" [useHaircutFactor = marginingApplyHaircut, marginingSet, collateralUseYesterdayMtM, collateralUseYesterdayPosition, tradeStatusInclusionMaskDefault, useCleanPrice, useDirtyHaircutMethod] - marginingSetMarkToMarketValueAccrued);
+}
+

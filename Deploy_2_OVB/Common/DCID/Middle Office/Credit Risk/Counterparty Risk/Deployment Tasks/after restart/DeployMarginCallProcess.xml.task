@@ -1,0 +1,2 @@
+<?xml version='1.0' encoding='ISO-8859-1'?>
+<FAelTask><acm_version>2021.1.2, Apr 19 2021</acm_version><version>0 $Id$</version><update_time>2021-12-03 06:47:21</update_time><object_name>DeployMarginCallProcess</object_name><owner>ARENASYS</owner><protection>3072</protection><module>DeployCollateralManagement</module><context>Standard</context><parameter /><historylength /><description /><logfilename /><group /><groupstatus>None</groupstatus><historylengthunit>None</historylengthunit></FAelTask>

@@ -1,0 +1,28 @@
+#
+# Front Arena exported extension module.
+# source          ""
+# timestamp (utc) "2023-02-03 06:55:41.7"
+# ***** DO NOT EDIT! *****
+#
+name        "ATS_ATCIRD_RETB"
+description ""
+
+groups {
+}
+
+decls[FParameters] {
+}
+
+clx FObject [FParameters] {
+  FRDAMBConfig =
+  FRD_AMB_SENDER='ATCI_RD_SENDER_RETB' #AMB channel name on which we put our messages. Entry should be present in the amb system table
+
+
+  FRDConfig =
+  FRD_SERVER_HOST='10.243.211.141' #Hostname/IP of the RD TOF source
+  FRD_SERVER_PORT='2505'
+  FRD_TCID='RETB' #The TCID for this instance
+
+
+}
+

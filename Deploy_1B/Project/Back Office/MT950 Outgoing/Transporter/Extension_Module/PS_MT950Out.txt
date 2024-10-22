@@ -1,0 +1,427 @@
+#
+# Front Arena exported extension module.
+# source          ""
+# timestamp (utc) "2024-05-30 17:30:08.3"
+# ***** DO NOT EDIT! *****
+#
+name        "PS_MT950Out"
+description ""
+
+groups {
+}
+
+decls[FParameters] {
+}
+
+clx FObject [FParameters] {
+  MT950Out_Config =
+  Destination=SFTP#DIR,SFTP
+
+
+  PS_SFTP_Details =
+  AppName=PS_MT950_Out
+  SFTP_Destination=.
+  SFTP_Host=10.243.130.24
+  SFTP_Password=0x4wrzCu8K0woPCh8KIwodywqM=
+  SFTP_Port=2222
+  SFTP_UserName=sftp_nostro
+
+
+}
+
+decls[FPythonCode] {
+}
+
+clx FObject [FPythonCode] {
+  MT950Out
+"""
+MODULE:
+    MT950Out
+
+DESCRIPTION:
+    This module developed by PS tp provides the customizable class for generating MT950 outgoing Messages.
+
+"""
+
+import os
+from datetime import datetime
+import random, traceback
+
+import acm, ael
+from FLogger import FLogger
+
+import FSFTPOperations
+import FSwiftMLUtils
+import EncoderUtils
+
+date_today = acm.Time.DateToday().replace('-', '')
+logfile_name = f'MT950_{date_today}.txt'
+date_time_today = acm.Time.TimeNow().split('.')[0].replace('-','').replace(' ','').replace(':','')
+
+log = FLogger.GetLogger('MT950')
+log_levels = [FLogger.INFO, FLogger.ERROR, FLogger.WARNING, FLogger.DEBUG]
+
+account_names = []
+
+MT950_FTP_KEY = 'OWKR7341'
+
+def GetAccountList(party_name, acct_type1='Cash', acct_type2='Cash and Security'):
+    #Ticket: TCSTCSPBDT-435093: According to the ticket we need to include Cash and Security as a part of account list
+    accountList = acm.FAccount.Select(f"accountType in ('{acct_type1}','{acct_type2}') and party='{party_name}'").AsList()
+    return accountList
+
+
+def GetPartyList():
+    return acm.FInternalDepartment.Select("").AsList()
+
+
+def GetAcquirerAccount():
+    # party = fieldValues[index]
+    part_list = GetPartyList()
+    account_names.clear()
+
+    for each_party in part_list:
+        acq_acct = GetAccountList(each_party.Name())
+        if acq_acct:
+            account_names.extend(acq_acct)
+
+    return account_names
+
+
+def PickFolder():
+    res = acm.FFileSelection()
+    res.PickDirectory(True)
+    return res
+
+
+def LogLevelNameToNumber(level):
+    if level == FLogger.INFO:    return 1
+    if level == FLogger.DEBUG:   return 2
+    if level == FLogger.WARNING: return 3
+    if level == FLogger.ERROR:   return 4
+    return 1
+
+
+def GetSettlements(account, value_date):
+    filtered_sett = []
+    query_name = 'MT950_{}'.format(account.Name())
+    accnt_spe_sett_query =  acm.FStoredASQLQuery[query_name]
+    if accnt_spe_sett_query:
+        filtered_sett = accnt_spe_sett_query.Query().Select()
+    else:
+        log.WLOG("Not able to find Account Specific Query -%s" % query_name)
+    return filtered_sett
+
+
+def GetOpeningBalance(account):
+    amount = 0
+    if account.AdditionalInfo().OpeningBalance():
+        str = account.AdditionalInfo().OpeningBalance().split('_')
+        #ticket TCSTCSPBDT-435090
+        if str[1][0] == 'C':
+            amount = float(str[1][1:]) * -1
+        else:
+            amount = float(str[1][1:])
+    return amount
+
+
+def UpdateAccountAddinfo(closing_balance, account):
+    try:
+        credit_debit = GetCreditOrDebitMark(closing_balance)    
+        str = '{}_{}{}'.format(date_today, credit_debit, abs(closing_balance))
+        account.AdditionalInfo().OpeningBalance = str
+        account.Commit()
+        log.DLOG("Account Addinfo OpeningBalance Updated with - {}".format(str))
+    except Exception as e:
+        log.ELOG("Error in UpdateAccountAddinfo {}".format(e))
+    
+def GetClosingBalance(account, settlements):
+    closing_balance = 0
+    opening_balace = GetOpeningBalance(account)
+    amount = sum([sett.Amount() for sett in settlements])
+    closing_balance = amount + opening_balace
+    return closing_balance
+    #addinfo OpeningBalance -with proer description - MMDDYYYY_D/CAmount
+
+def GetCreditOrDebitMark(amount):
+    #ticket TCSTCSPBDT-435090
+    return 'C' if amount < 0 else 'D'
+
+
+def GetEntryDate():
+    return datetime.today().strftime('%y%m%d')
+
+
+def GetValueDay(settlement):
+    value_day = datetime.strptime(settlement.ValueDay(), '%Y-%m-%d')
+    return value_day.strftime('%y%m%d')
+
+
+def AmountToSwift(amount):
+    swift_amount = str(abs(round(amount, 2)))
+    if swift_amount.count('.'):
+        swift_amount = swift_amount.replace('.', ',')
+    else:
+        swift_amount = swift_amount + ','
+    return swift_amount.rstrip('0')
+
+
+def GetCurrency(account):
+    return account.Currency().Name()
+
+
+def CreateHeaderBlock(account):
+    try:
+        log.DLOG("Started creating Header block")
+        sender_bic = account.Bic().Alias()
+        receiver_bic = account.NetworkAlias().Alias()
+        #TCSTCSPBDT-435411
+        header = f'{{1:F01{receiver_bic}ASTL0000000000}}{{2:I950{sender_bic}XXXXN3}}{{4:\n'
+        log.DLOG("Created Header block - %s" % header)
+        return header
+    except Exception as e:
+        log.ELOG("Error in function CreateHeaderBlock -%s" % e)
+
+
+def CreateTag20():
+    try:
+        log.DLOG("Started creating tag 20")
+        now = datetime.now()
+        timestamp = int(datetime.timestamp(now))
+        tag20 = f':20:{timestamp}\n'
+        log.DLOG("Created tag 20 - %s" % tag20)
+        return tag20
+    except Exception as e:
+        log.ELOG("Error in function CreateTag20 -%s" % e)
+
+
+def CreateTag25(account):
+    try:
+        log.DLOG("Started creating tag 25")
+        tag25 = f':25:{account.Account()}OUR\n'
+        log.DLOG("Created tag 25 - %s" % tag25)
+        return tag25
+    except Exception as e:
+        log.ELOG("Error in function CreateTag25 -%s" % e)
+
+
+def CreateTag28():
+    try:
+        log.DLOG("Started creating tag 28")
+        statement_number = random.randint(1000, 9999)
+        tag28 = f':28C:{statement_number}/1\n'
+        log.DLOG("Created tag 28 - %s" % tag28)
+        return tag28
+    except Exception as e:
+        log.ELOG("Error in function CreateTag28 -%s" % e)
+
+
+def CreateTag60F(account):
+    try:
+        log.DLOG("Started creating tag 60F")
+        opening_balance = GetOpeningBalance(account)
+        debit_credit_mark = GetCreditOrDebitMark(opening_balance)
+        entry_date = GetEntryDate()
+        currency = GetCurrency(account)
+        amount = AmountToSwift(opening_balance)
+
+        tag60F = f':60F:{debit_credit_mark}{entry_date}{currency}{amount}\n'
+        log.DLOG("Created tag 60F - %s" % tag60F)
+        return tag60F
+    except Exception as e:
+        log.ELOG("Error in function CreateTag60F -%s" % e)
+
+def GetReference(sett):
+    ref = ''
+    settle_id_included = True
+    counter_party = sett.Counterparty()
+    if counter_party.Name() in ['EXIMBILL', 'TPS', 'BPS']:
+        if sett.Text():
+            ref = sett.Text()
+            settle_id_included = False
+        else:
+            ref = f"FAS{sett.Oid()}"            
+    else:
+        ext_obj = FSwiftMLUtils.FSwiftExternalObject.get_external_object(acm_obj=sett, integration_type='Outgoing')
+        if ext_obj and ext_obj.IntegrationSubtype() in ['MT202', 'MT210']:
+            swift_message = FSwiftMLUtils.get_outgoing_mt_message(sett)
+            ref = FSwiftMLUtils.get_field_value(swift_message, '20')            
+        else:
+            ref = f"FAS{sett.Oid()}"            
+    return ref, settle_id_included        
+    
+            
+def CreateTag61(account, settlements):
+    try:
+        log.DLOG("Started creating tag 61")
+        tag61 = ''
+        if len(settlements) == 0:
+            settlements = GetSettlements(account)
+
+        for sett in settlements:
+            value_day = GetValueDay(sett)
+            debit_credit_mark = GetCreditOrDebitMark(sett.Amount())
+            entry_date = GetEntryDate()[2:]
+            currency = GetCurrency(account)[2]
+            amount = AmountToSwift(sett.Amount())
+            ref_account_owner, settle_id_included = GetReference(sett)
+            sett_id = f"FAS{sett.Oid()}"
+            if settle_id_included: #Generated by FA
+                tag61 += f':61:{value_day}{entry_date}{debit_credit_mark}{currency}{amount}NMSC{ref_account_owner}//{sett_id}\n'
+            else: #Surrounding system
+                tag61 += f':61:{value_day}{entry_date}{debit_credit_mark}{currency}{amount}NMSC{ref_account_owner}//{sett_id}\n{ref_account_owner}\n'
+        log.DLOG("Created tag 61 - %s" % tag61)
+        return tag61
+    except Exception as e:
+        log.ELOG("Error in function CreateTag61 -%s" % e)
+
+
+
+    
+def CreateTag62F(account, settlements):
+    try:
+        log.DLOG("Started creating tag 62F")
+        closing_balance = GetClosingBalance(account, settlements)
+        debit_credit_mark = GetCreditOrDebitMark(closing_balance)
+        entry_date = GetEntryDate()
+        currency = GetCurrency(account)
+        amount = AmountToSwift(closing_balance)
+
+        tag62F = f':62F:{debit_credit_mark}{entry_date}{currency}{amount}\n'
+        log.DLOG("Created tag 62F - %s" % tag62F)
+        return tag62F
+
+    except Exception as e:
+        log.ELOG("Error in function CreateTag62F -%s" % e)
+
+
+def CreateFooterBlock():
+    return '-}'
+
+
+def GetConnectionDetails():
+    try:
+        log.LOG("Reading SFTP details from FParameter - PS_SFTP_Details")
+        config_param = FSwiftMLUtils.Parameters('PS_SFTP_Details')
+        app_name = getattr(config_param, 'AppName', None)
+
+        sftp_host = getattr(config_param, 'SFTP_Host', None)
+        sftp_port = getattr(config_param, 'SFTP_Port', None)
+        sftp_user = getattr(config_param, 'SFTP_UserName', None)
+        sftp_password = getattr(config_param, 'SFTP_Password', None)
+        sftp_destination = getattr(config_param, 'SFTP_Destination', None)
+        pwd = EncoderUtils.get_decrypted_password(sftp_password, MT950_FTP_KEY)
+        sftp_conn_str = '{}:{}:{}:{}'.format(sftp_host, sftp_port, sftp_user, pwd)
+        return app_name, sftp_conn_str, sftp_destination
+
+    except Exception as e:
+        log.ELOG("Error in function GetConnectionDetails -%s" % e)
+
+
+def UpdateSettlementAddInfo(settlements):
+    try:
+        for each_sett in settlements:
+            each_sett.AdditionalInfo().SentToIRSCitynet = 'Yes'
+            each_sett.Commit()
+            log.LOG("Setting Settlement {} Addinfo SentToIRSCitynet to 'Yes'".format(each_sett.Oid()))
+    except Exception as e:
+        log.ELOG("Error in function UpdateSettlementAddInfo -%s" % e)
+
+
+def GenerateMT950(account, settlements):
+    message = ''
+
+    message += CreateHeaderBlock(account)
+    message += CreateTag20()
+    message += CreateTag25(account)
+    message += CreateTag28()
+    message += CreateTag60F(account)
+    message += CreateTag61(account, settlements)
+    message += CreateTag62F(account, settlements)
+    message += CreateFooterBlock()
+
+    return message
+
+
+ael_variables = [
+    ['account', 'Account', 'string', GetAcquirerAccount(), None, 1, 1, 'Select Account(s)', None, 1],
+    
+    ['file_path', 'Output File Path', PickFolder(), None, PickFolder(), 1, 1,
+     'The file path to the directory where the MT950 should be kept.', None, 1],
+    ['log_to_console', 'Log to console_Logging', 'int', [1, 0], 1, 1, 0,
+     'Whether logging should be done in the Log Console or not.'],
+    ['log_folder', 'Log folder_Logging', PickFolder(), None, PickFolder(), 0, 1, 'Select where to store the log file',
+     0, None],
+    ['log_level', 'Log level_Logging', 'string', log_levels, FLogger.INFO, 1, 0],
+]
+
+
+def ael_main(params):
+    try:
+        accounts = params['account']
+        value_date = acm.Time.DateToday()
+        file_path = params['file_path']
+
+        # logging parametres
+        log_level = params['log_level']
+        log_folder = params['log_folder']
+        log_to_console = params['log_to_console']
+
+        log.Reinitialize(level=LogLevelNameToNumber(log_level), logToConsole=log_to_console)
+
+        if log_folder:
+            log_folder_string = log_folder.SelectedDirectory().AsString()
+            log_path = os.path.join(log_folder_string, logfile_name)
+
+            log.Reinitialize(logToFileAtSpecifiedPath=log_path)
+
+        log.LOG("Started Creating MT950 for accounts - %s" % str(accounts))
+
+        out_folder_string = file_path.SelectedDirectory().AsString()
+        log.DLOG("Output folder - %s" % out_folder_string)
+        app_name, sftp_conn_str, sftp_destination = GetConnectionDetails()
+        for each_account in accounts:
+            try:
+                file_name = f'MT950_{each_account}_{date_time_today}.txt'
+                output_file = os.path.join(out_folder_string, file_name)
+                log.LOG("Started Processing for Account -  %s" % (each_account))
+                account_obj = acm.FAccount.Select01(f"name='{each_account}'", None)
+                settlements = GetSettlements(account_obj, value_date)
+                if len(settlements) <= 0:
+                    log.LOG("Skipped Processing for Account -  %s as no Settlement found." % (each_account))
+                    continue
+                sett_oid = [sett.Oid() for sett in settlements]
+                log.LOG("Selected Settlement(s)- %s for account - %s" % (sett_oid, each_account))
+                mt950_message = GenerateMT950(account_obj, settlements)
+                log.LOG("Messge generated as %s" % (mt950_message))
+
+                with open(output_file, 'w') as mt950_file:
+                    mt950_file.write(mt950_message)
+
+                log.LOG("Message written to file %s" % (output_file))
+                log.LOG("Started Uploading to SFTP Host - %s" % (sftp_conn_str.split(':')[0]))
+                
+                #based of FParameter use SFTP or folder 
+                mt950_config_param = FSwiftMLUtils.Parameters('MT950Out_Config')
+                destination  = getattr(mt950_config_param, 'Destination', None)
+                if destination == 'SFTP':
+                    result = FSFTPOperations.write_to_sftp(app_name, output_file, sftp_conn_str, sftp_destination)
+                else:
+                    result = True
+                if result:
+                    UpdateSettlementAddInfo(settlements)
+                    #updating addinfo on successfull generation of MT950
+                    closing_balance = GetClosingBalance(account_obj, settlements)
+                    UpdateAccountAddinfo(closing_balance, account_obj)
+                log.LOG("Execution complete")
+            except Exception as err:
+                log.ELOG('Error in processing account {}'.format(each_account))
+                print(traceback.format_exc())
+    except Exception as err:
+        print('Error in ael main {}'.format(err))
+        print(traceback.format_exc())
+
+...
+
+}
+

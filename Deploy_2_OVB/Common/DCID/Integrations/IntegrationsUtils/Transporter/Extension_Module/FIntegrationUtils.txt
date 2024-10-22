@@ -1,0 +1,2054 @@
+#
+# FIS exported extension module.
+# source          ""
+# timestamp (utc) "2020-08-27 10:57:37.6"
+# ***** DO NOT EDIT! *****
+#
+name        "IntegrationUtils"
+description ""
+
+groups {
+}
+
+decls[FParameters] {
+}
+
+clx FObject [FParameters] {
+  FIntegrationUtilsAMBConfig=
+FINTEGRATIONUTILS_AMB_DETAILS=''
+FINTEGRATIONUTILS_KERBEROS_PRINCIPLE=''#Require in kerberos connection e.g. 'email id' etc.
+FINTEGRATIONUTILS_KERBEROS_SINGLE_SIGNON= #Require in kerberos connection e.g. 0 or 1
+
+  FIntegrationUtilsConfig=
+FINTEGRATIONUTILS_VERSION='1.0.32'
+FINTEGRATIONUTILS_APPLICATION={'xml':'C:/Program Files/Internet Explorer/iexplore.exe', \
+                               'txt':'C:/Program Files/Notepad++/notepad++.exe'}#{'file format':'path for corresponding application'}
+
+
+
+
+}
+
+decls[FPythonCode] {
+}
+
+clx FObject [FPythonCode] {
+  FIntegrationTestComponentUtils
+"""------------------------------------------------------------------------
+MODULE
+    FIntegrationTestComponentUtils -
+DESCRIPTION:
+    The module that contains APIs to be used for testing sanity of the component
+RESTRICTIONS/ LIMITATIONS:
+    1. Any modifications to the scripts/ encrypted modules/ clear text code within
+     the core is not supported.
+    2. This module is not customizable
+    3. The component may not work as expected with any modifications done to this
+     module at user end
+--------------------------------------------------------------------------"""
+import ast
+import acm
+import FLogger
+logger = FLogger.FLogger(name=__name__, level=1)
+
+
+def checkTradeTypeExists(trade_type):
+    """returns True if the trade type in the input argument exists in ADS, else returns False"""
+    trade_type_enum = None
+    trade_type_enum_exists = False
+    try:
+        trade_type_enum = acm.EnumFromString('TradeType', trade_type)
+        if trade_type_enum:
+            trade_type_enum_exists = True
+    except:
+        pass
+    if not trade_type_enum:
+        logger.error("TradeType <%s> is not supported in ADS" % trade_type)
+    return trade_type_enum_exists
+
+
+def checkPartyExists(party_name):#this function needs to be moved into FIntegrationUtils
+    """returns the party object if the party name in the input argument exists in ADS"""
+    valid_party = acm.FParty[party_name]
+    if not valid_party:
+        logger.error("Party <%s> does not exist in ADS."%party_name)
+    return valid_party
+
+
+def checkPartyExistsWithType(party_name, party_type=None):
+    """returns True if the party of a given type exists in ADS, else it returns False"""
+    valid_party = False
+    if party_type:
+        try:
+            valid_party = eval("acm." + party_type + "['" + party_name + "']")
+            if not valid_party:
+                valid_party = checkPartyExists(party_name)
+                if valid_party:
+                    logger.warn("Party <%s> is expected to be of type <%s>.\
+                     However, it exists in ADS of type <%s>"%(party_name,\
+                                                              party_type, valid_party.Type()))
+            else:
+                valid_party = True
+        except:
+            pass
+    else:
+        valid_party = checkPartyExists(party_name)
+        if valid_party:
+            logger.debug("Party <%s> exists in ADS of type <%s>"%(party_name, valid_party.Type()))
+            valid_party = True
+    return valid_party
+
+def checkAliasTypeExists(acm_object_type, alias_type):
+    """returns True is the alias Type on the mentioned class in the\
+    input argument exists in ADS, else it returns False"""
+    alias_type_exists = False
+    alias_type_lookup = {'Party' : 'FPartyAliasType', 'Instrument' : 'FInstrAliasType'}
+    if acm_object_type in alias_type_lookup.keys():
+        val = "acm." + alias_type_lookup[acm_object_type] + "['" + alias_type + "']"
+        try:
+            alias_type_obj = eval("acm." + alias_type_lookup[\
+                                acm_object_type] + "['" + alias_type + "']")
+            logger.debug("AliasType <%s> exists on <%s>"%(alias_type, acm_object_type))
+            if not alias_type_obj:
+                logger.error("AliasType <%s> does not exist on <%s>"%(alias_type, acm_object_type))
+            else:
+                alias_type_exists = True
+        except:
+            pass
+    return alias_type_exists
+
+def checkAliasValuesExists(parent_object_type, alias_type, alias_name):
+    """returns True is an alias of a specific type on the class exists in ADS, else returns False"""
+    alias_exists = True
+    alias_type_count = len(eval("acm." + alias_type + '.Select("type = ' + "'" + \
+                alias_name + "'" + '")'))
+    if alias_type_count == 0:
+        logger.warn("<%s> is not set on %s(s) in ADS. Please check the data preparation"%(\
+        alias_name, parent_object_type))
+        alias_exists = False
+    return alias_exists
+
+def checkAddInfoSpecExists(acm_class, addinfo_spec_name):
+    """returns True if the AdditionalInfoSpec exists on the given class. else returns False """
+    addinfo_spec_exists = False
+    addinfo_spec = acm.FAdditionalInfoSpec[addinfo_spec_name]
+    if addinfo_spec:
+        if addinfo_spec.RecType() == acm_class:
+            logger.debug("<%s> on <%s> exists in ADS."%(acm_class, addinfo_spec_name))
+            addinfo_spec_exists = True
+        else:
+            logger.error("<%s> exists on <%s> instead of on <%s> in ADS."%(\
+                addinfo_spec_name, acm_class, addinfo_spec.RecType()))
+    else:
+        logger.error("<%s> on <%s> does not exist in ADS"%(addinfo_spec_name, acm_class))
+    return addinfo_spec_exists
+
+def checkChoiceLists(choice_list, choice_list_vals):
+    """check if the ChoiceList exists along with all the values that are required in it"""
+    all_choice_lists_exist = True
+    updated_choice_list_vals = []
+    for choice_list_val in choice_list_vals:
+        update_choice_list = choice_list_val
+        if len(choice_list_val) > 39:
+            update_choice_list = choice_list_val[0:39]
+        updated_choice_list_vals.append(update_choice_list)
+    choice_lists_adm = acm.FChoiceList.Select("list = '%s'"%choice_list)
+    choice_list_adm_names = []
+    for choice_list_adm in choice_lists_adm:
+        choice_list_adm_names.append(choice_list_adm.Name())
+    if choice_lists_adm:
+        if len(choice_lists_adm) < len(choice_list_vals):
+            logger.warn("All ChoiceList values for <%s> does not exist within ADS."%(choice_list))
+            all_choice_lists_exist = False
+        else:
+            for choice_list_val in updated_choice_list_vals:               
+                if choice_list_val.strip() not in choice_list_adm_names:
+                    logger.error("<%s> is not in ChoiceList <%s> in ADS."%(\
+                            choice_list_val.strip(), choice_list))
+                    all_choice_lists_exist = False
+    else:
+        logger.error("ChoiceList <%s> does not exist in ADS"%choice_list)
+        all_choice_lists_exist = False
+    return all_choice_lists_exist
+
+def checkStateChartExists(state_chart_name):
+    """check if the statechart exists"""
+    state_chart_exists = False
+    state_chart = acm.FStateChart[state_chart_name]
+    if state_chart:
+        state_chart_exists = True
+    else:
+        logger.error("StateChart <%s> does not exist in ADS"%state_chart_name)
+    return state_chart_exists
+
+def checkStateChartAddInfoExists(state_chart_name, addinfo_val, addinfo_spec_name):
+    """check if the AddInfo for a given AddInfoSpec exists on the given statechart"""
+    state_chart_addinfo_exists = False
+    state_chart = acm.FStateChart[state_chart_name]
+    if state_chart:
+        add_info = eval("state_chart.AdditionalInfo()." + addinfo_spec_name + "()")
+        if add_info:
+            if add_info == addinfo_val:
+                state_chart_addinfo_exists = True
+            else:
+                logger.error("AdditionalInfo <%s> on StateChart <%s> has value <%s>\
+                 instead of <%s> in ADS"%(addinfo_spec_name,\
+                                           state_chart_name, add_info, addinfo_val))
+        else:
+            logger.error("AdditionalInfo <%s> does not exist in StateChart\
+             <%s> in ADS"%(addinfo_spec_name, state_chart_name))
+    else:
+        logger.error("StateChart <%s> does not exist in ADS"%state_chart_name)
+    return state_chart_addinfo_exists
+
+
+def get_fparameter_value(fparameter, module_name):
+    """get the value of the given FParameter in the given module"""
+    ext_obj = acm.GetDefaultContext().GetExtension('FParameters', 'FObject', module_name)
+    fparameter_val = None
+    for key in ext_obj.Value().Keys():
+        if key.AsString() == fparameter:
+            fparameter_val = ext_obj.Value()[key]
+            fparameter_val = str(fparameter_val).split('#')[0]
+            if fparameter_val.count('{'):
+                fparameter_val = fparameter_val.replace("'", "")
+            if fparameter_val.find("'") == 0:
+                fparameter_val = fparameter_val[1:]
+                fparameter_val = fparameter_val[:-1]
+            if fparameter_val.find('"') == 0:
+                fparameter_val = fparameter_val[1:]
+                fparameter_val = fparameter_val[:-1]
+    return fparameter_val
+
+
+def get_all_mandatory_fparameters(fparameter, module_name, fparameters_dict):
+    """get all the mandatory FParameters"""
+    ext_obj = acm.GetDefaultContext().GetExtension('FParameters', 'FObject', module_name)
+    key_list = []
+    val_list = []
+    for key in ext_obj.Value().Keys():
+        key_list.append(str(key))
+    for vals in ext_obj.Value().Values():
+        vals = str(vals).split('#')[0]
+        if vals.count('{') == 0:
+            vals = vals.replace("'", "")
+        val_list.append(str(vals))
+    params_dict = dict(list(zip(key_list, val_list)))
+    for each_val in params_dict:
+        if params_dict[each_val] or params_dict[each_val].upper() != 'NONE':
+            fparameters_dict[each_val] = params_dict[each_val]
+        else:
+            logger.error("FParameter <%s> is a mandatory FParameter\
+             and its value is missing"%each_val)
+    return fparameters_dict
+
+
+def checkDataPrepOnParty(component_name, party):
+    """check if all the data preparation on the party is\
+     in place on the basis of the component that it is being used in"""
+    data_prep_ready = True
+    if component_name == 'AMWI-DealTaker':
+        alias_name = None
+        for alias in party.Aliases():
+            if alias.Type().Name() == 'MarkitWireID':
+                alias_name = alias.Name()
+                break
+        if party.LEI() or party.Swift() or alias_name:
+            logger.debug("Party <%s> has the required data prep in place"%party.Name())
+        else:
+            data_prep_ready = False
+            logger.error("Party<%s> does not have MarkitWireID/LEI/BIC setup."%party.Name())
+    return data_prep_ready
+
+
+def testChannel(channel, event, arg):
+    """event callback for testing"""
+    pass
+
+
+def checkAMBChannelExists(message_broker, channel_name, application_name='', kerberosPrinciple=None, singleSignOn=None):
+    """check if the provided channel is present in the AMB"""
+    import amb
+    channel_exists = False
+    is_amb_connected = False
+    from FIntegrationUtils import FIntegrationUtils
+    if message_broker:
+        try:
+            is_amb_connected = FIntegrationUtils().connect_amb(application_name, message_broker, kerberosPrinciple, singleSignOn)
+            if not is_amb_connected:
+                logger.error('AMB connection is not initialized. Please check if AMB is up and running.')
+                return is_amb_connected
+            if channel_name:
+                reader = amb.mb_queue_init_reader(channel_name, testChannel, None)
+                if reader:
+                    channel_exists = True
+                else:
+                    logger.error(\
+                        "The AMB channel <%s> is not present in ADS. Kindly check up your setup."%\
+                            channel_name)
+            else:
+                logger.error(\
+                    "The AMB channel details are not mentioned. Kindly check up your setup.")
+            amb.mb_close()
+        except Exception as error:
+            logger.error("Exception while connecting to AMB. Error: <%s>"%str(error))
+    else:
+        logger.error("The AMB details are not mentioned. Kindly check up your setup.")
+    return channel_exists
+
+
+def checkAMBConnection(message_broker, application_name='', kerberosPrinciple=None, singleSignOn=None):
+    """check if the given AMB details can be connected"""
+    import amb
+    from FIntegrationUtils import FIntegrationUtils
+    is_amb_connected = False
+    if message_broker:
+        try:
+            is_amb_connected = FIntegrationUtils().connect_amb(application_name, message_broker, kerberosPrinciple, singleSignOn)
+            amb.mb_close()
+        except Exception as error:
+            logger.error("Exception while connecting to AMB. Error: <%s>"%str(error))
+    else:
+        logger.error("The AMB details are not mentioned. Kindly check up your setup.")
+    return is_amb_connected
+
+
+def checkMandatoryFParamaters(mandatory_fparameters):
+    """checks of the given dictionary of FParameters are present in ADS with value"""
+    fparameter_list = []
+    fparameters_dict = {}
+    fparameters_present = True
+    for each_list in mandatory_fparameters.values():
+        fparameter_list.extend(each_list)
+    for module in mandatory_fparameters:
+        for fparameter in mandatory_fparameters[module]:
+            fparameters_dict = get_all_mandatory_fparameters(fparameter, module, fparameters_dict)
+    for each_fparameter in fparameter_list:
+        if each_fparameter in fparameters_dict.keys():
+            fparameter_value = fparameters_dict[each_fparameter]
+            if (not fparameter_value) or str(fparameter_value).upper() == 'NONE':
+                logger.error("FParameter <%s>'s value is mandatory and it is not set in ADS."%\
+                                each_fparameter)
+                fparameters_present = False
+            else:
+                logger.debug("FParameter------", each_fparameter)
+        else:
+            logger.error("FParameter <%s> is mandatory and is not present in ADS."%\
+                            each_fparameter)
+    return fparameters_present
+
+def checkRegulatoryAPIExists(acm_object, attr_list):
+    """check for the presense of the pre-requistes in the ADS required for\
+     the functioning for the RegulatorySupport"""
+    acm_object_type = None
+    reg_info = None
+    regulatory_apis_exist = True
+    try:
+        if acm_object.IsKindOf(acm.FTrade):
+            acm_object_type = 'Trade'
+        elif acm_object.IsKindOf(acm.FInstrument):
+            acm_object_type = 'Instrument'
+        elif acm_object.IsKindOf(acm.FContact):
+            acm_object_type = 'Contact'
+        elif acm_object.IsKindOf(acm.FParty):
+            acm_object_type = 'Party'
+        elif acm_object.IsKindOf(acm.FPerson):
+            acm_object_type = 'Person'
+    except:
+        pass
+    try:
+        reg_info = acm_object.RegulatoryInfo()
+    except:
+        logger.error("RegulatoryInfo instance on the %s is not accessible. Import\
+        the RegulatorySupport package for expected functionality."%acm_object_type)
+        regulatory_apis_exist = False
+    if reg_info:
+        for each_api in attr_list:
+            try:
+                eval('reg_info.' + each_api + '()')
+            except:
+                logger.error("API <%s> is not found on %s.RegulatoryInfo"%(\
+                                each_api, acm_object_type))
+                regulatory_apis_exist = False
+    return regulatory_apis_exist
+
+
+...
+
+  FIntegrationUtils
+import sys
+import string
+import os
+import re, base64
+import functools
+import threading
+try:
+    import acm
+except Exception:
+    pass
+
+try:
+    import ael
+except Exception:
+    pass
+
+try:
+    import amb
+except Exception:
+    pass
+
+
+class ConfirmationEnum(object):
+    """Confirmation Enums
+    """
+
+    @staticmethod
+    def GetConfirmationStatusEnum():
+        """ Returns Confirmation status Enum class
+        """
+        from FConfirmationEnums import ConfirmationStatus
+        return ConfirmationStatus
+
+    @staticmethod
+    def GetConfirmationTypeEnum():
+        """Returns Confirmation Type Enum class
+        """
+        from FConfirmationEnums import ConfirmationType
+        return ConfirmationType
+
+
+class OPDocumentsEnum(object):
+    """ Operations documents Enum
+    """
+
+    @staticmethod
+    def GetOperationsDocumentStatusEnum():
+        """Returns Operations Document status Enum class
+        """
+        from FOperationsDocumentEnums import OperationsDocumentStatus
+        return OperationsDocumentStatus
+
+    @staticmethod
+    def GetOperationsDocumentTypeEnum():
+        """Returns Operations Document Type Enum class
+        """
+        from FOperationsDocumentEnums import OperationsDocumentType
+        return OperationsDocumentType
+
+
+class Parameters(object):
+    """ Class to read FParameters"""
+
+    def __init__(self, *names):
+        try:
+            self.param_name_list = []
+            self.get_data(*names)
+        except Exception as error:
+            raise error
+            # Not sure where we are using this , hence skipping it for now
+            # self.get_local_data(*names)
+
+    def suppress_deprecated_attribute(self, fparam_name, attrib_name):
+        """ Suppresses deprecated attributes """
+        if 'FSwiftReaderConfig' == fparam_name:
+            deprecated_dict = {'FSWIFT_AMB_HOST': 'AMBAddress',
+                               'FSWIFT_AMB_READER': 'AMBReceiver',
+                               'FSWIFT_AMB_SUBJECT': 'AMBReceiverSubject',
+                               'FSWIFT_RELEASE_VERSION': 'version',
+                               'FSWIFT_MODULES': 'Modules',
+                               'FSWIFT_SENDER_SOURCE': 'AMBSenderSource'}
+
+            name_found = deprecated_dict.get(attrib_name)
+            if name_found:
+                return name_found
+
+        return attrib_name
+
+    def get_data(self, *names):
+        """ Read the FParameters from the Extension Manager"""
+        for fparam in names:
+            ext_context = acm.FExtensionContext[acm.GetDefaultContext().Name()]
+            param_object = ext_context.GetExtension('FParameters',
+                                                    'FObject', fparam)
+            try:
+                template = param_object.Value()
+            except AttributeError as error:
+                if not param_object:
+                    raise Exception("FParameter %s not present" % fparam) from error
+                else:
+                    raise Exception("Unable to get content of FParameter %s. Exception : %s" % (fparam, error)) from error
+
+            for k in template.Keys():  # First set all the parameters
+                param_name = str(k)
+                attribute_name = str(template.At(k)).split('#')[0].strip()
+                if(bool(re.search("(\%[A-Za-z0-9_A-Za-z0-9]+\%)|(\${[A-Za-z0-9_A-Za-z0-9]+})",attribute_name)) == True):
+                    words_pattern = '[A-Z0-9(\_)A-Z0-9]+'
+                    env_variable = re.findall(words_pattern, attribute_name, flags=re.IGNORECASE)
+                    env_variable_list = []
+                    for curr_var in env_variable:
+                        temp_var = os.environ.get(curr_var)
+                        if temp_var is None :
+                            env_variable_list.append(curr_var)
+                            continue
+                        env_variable_list.append(temp_var)
+                    for i in range(0,len(env_variable)):
+                        attribute_name = str.replace(attribute_name,env_variable[i],env_variable_list[i])
+                    attribute_name = re.sub('\$|{|}|\%', "", attribute_name)              
+                setattr(self, param_name, attribute_name)
+                self.param_name_list.append(param_name)
+
+            for k in template.Keys():  # Now override the value of old over new
+                param_name = str(k)
+                param_name_supp = self.suppress_deprecated_attribute(fparam, param_name)
+                if param_name_supp != param_name:
+                    attribute_name = str(template.At(k)).split('#')[0].strip()
+                    setattr(self, param_name_supp, attribute_name)
+            self.module_name = param_object.Module().Name()
+
+    def get_local_data(self, *names):
+        """ Read the FParameters from the Extension Manager"""
+        for fparam in names:
+            file_name = os.path.join('Parameters', fparam + '.py')
+            try:
+                with open(file_name) as file_handle:
+                    for line in file_handle:
+                        param_value = line.split('#')[0].strip()
+                        lhs, rhs = param_value.split('=')
+                        setattr(self, lhs, rhs)
+            except Exception:
+                pass
+
+    def get_param_name_list(self):
+        return self.param_name_list
+    
+    def read_config_parameters(self, extension_list):
+        """read config parameters"""
+        key_list = []
+        val_list = []
+        try:
+            context = acm.GetDefaultContext()
+            for extn in extension_list:
+                config_extension = context.GetExtension("FParameters", "FObject", extn)
+                if config_extension:
+                    for key in config_extension.Value().Keys():
+                        key_list.append(str(key))
+                    for vals in config_extension.Value().Values():
+                        vals = str(vals).split('#')[0]
+                        vals = vals.replace("'", "")
+                        vals = vals.replace('"', "")
+                        val_list.append(str(vals))
+            params_dict = dict(list(zip(key_list, val_list)))
+        except Exception:
+            params_dict = {}
+        return params_dict
+        
+
+
+class FIntegrationUtils(object):
+    def get_contacts(self, party):
+        """get the contacts that are available on the party"""
+        contacts = set()
+        for contact in party.Contacts():
+            contacts.add(contact.Fullname())
+        return list(contacts)
+
+    def get_party_handle(self, party_val):
+        """get the actual party object from the given input - either string or party obj"""
+        party_handle = None
+        try:
+            if isinstance(party_val, str):
+                party_handle = acm.FParty[party_val]
+            elif party_val.IsKindOf(acm.FParty):
+                party_handle = party_val
+        except Exception:
+            # this exception is hit when the IsKindOf is called on a None party object that is being sent
+            pass
+        return party_handle
+
+    def get_instrument_handle(self, ins_val):
+        """get the actual instrument object from the given input - either string or instrument obj"""
+        instrument_handle = None
+        try:
+            if isinstance(ins_val, str):
+                instrument_handle = acm.FInstrument[ins_val]
+            elif ins_val.IsKindOf(acm.FInstrument):
+                instrument_handle = ins_val
+        except Exception:
+            # this exception is hit when the IsKindOf is called on a None instrument object that is being sent
+            pass
+        return instrument_handle
+
+    def is_valid_choice_list_val(self, choice_list, choice_list_val):
+        """validate that the given value is an entry for the given choicelist"""
+        is_valid_choice_list = False
+        choicelists = acm.FChoiceList.Select("list = '%s' and name = '%s'" % (choice_list, choice_list_val))
+        if choicelists:
+            is_valid_choice_list = True
+        return is_valid_choice_list
+
+    def get_choice_list(self, choice_list, choice_list_val):
+        """get the choicelist object from the given query"""
+        choicelist_val = None
+        choicelists = acm.FChoiceList.Select("list = '%s' and name = '%s'" % (choice_list, choice_list_val))
+        if choicelists:
+            choicelist_val = choicelists[0]
+        return choicelist_val
+
+    def get_valid_contact(self, party, contact):
+        """validate if the given contact exists on the give party"""
+        valid_contact = None
+        contact_name = None
+        try:
+            if contact.IsKindOf(acm.FContact):
+                contact_name = contact.Fullname()
+        except Exception:
+            contact_name = contact
+        for contactVal in party.Contacts():
+            if contactVal.Fullname() == contact_name:
+                valid_contact = contactVal
+                break
+        return valid_contact
+
+    def create_additional_info_spec(self, add_info_spec_attr):
+        """ Create additional info's"""
+        ais = acm.FAdditionalInfoSpec[add_info_spec_attr['FieldName']]
+        if ais:
+            raise AddInfoSpecAlreadyExits("Additional info <%s> exists on table <%s>" % (
+                add_info_spec_attr['FieldName'], add_info_spec_attr['Table']))
+        ais = acm.FAdditionalInfoSpec()
+        self.set_additional_info_spec_attr(ais, add_info_spec_attr)
+
+    def set_additional_info_spec(self, add_info_spec_attr, filter=None):
+        """set the additionalInfoSpec attributes"""
+        ais = acm.FAdditionalInfoSpec[add_info_spec_attr['FieldName']]
+        if not ais:
+            ais = acm.FAdditionalInfoSpec()
+        self.set_additional_info_spec_attr(ais, add_info_spec_attr, filter)
+
+    def get_additional_info_spec(self, add_info, rec_addr):
+        """get the additionalinfo instance on the given acm object for a given addInfoSpec"""
+        add_info_obj = None
+        add_info_spec = acm.FAdditionalInfoSpec[add_info]
+        if add_info_spec:
+            try:
+                add_info_objs = acm.FAdditionalInfo.Select(
+                    'addInf=%d and recaddr =%d' % (add_info_spec.Oid(), rec_addr.Oid()))
+                if add_info_objs:
+                    add_info_obj = add_info_objs[0]
+            except Exception as err:
+                raise Exception('Error while accessing additional info %s' % (add_info)) from err
+
+        else:
+            raise AddInfoSpecNotExist('%s is not a valid AdditionalInfoSpec' % (add_info))
+        return add_info_obj
+
+    def get_alias_type(self, alias_typ):
+        """get the alias type instance on the given acm object for a given alias type name"""
+        alias_typ_spec = None
+        alias_typ_spec = acm.FInstrAliasType[alias_typ]
+        if not alias_typ_spec:
+            raise AliasTypeSpecNotExist('%s is not a valid AliasType' % (alias_typ))
+        return alias_typ_spec
+
+    def get_alias_val(self, alias_typ, rec_addr):
+        """get the alias value instance on the given acm object for a given alias type name"""
+        alias_val = None
+        alias_typ_obj = self.get_alias_type(alias_typ)
+        if alias_typ_obj:
+            try:
+                alias_obj = acm.FInstrumentAlias.Select01(
+                    'type=%d and instrument =%d' % (alias_typ_obj.Oid(), rec_addr.Oid()), 'Not found')
+                if alias_obj:
+                    alias_val = alias_obj.Alias()
+
+            except Exception as err:
+                raise Exception(
+                    'Error while accessing %s Alias for %s : %s' % (alias_typ, str(rec_addr.Name()), str(err))) from err
+
+        return alias_val
+
+    def get_isda_index_tenor_alias_val(self, rec_addr):
+        """get the ISDAIndexTenor alias value for the acm FInstrument object"""
+        alias_typ_name = 'ISDAIndexTenor'
+        alias_typ_obj = None
+        alias_val = None
+        reg = '\d{1,2}[M|Y|D]{1}'
+        alias_typ_spec = acm.FInstrAliasType[alias_typ_name]
+        if alias_typ_spec:
+            try:
+                alias_typ_obj = acm.FInstrumentAlias.Select01(
+                    'type=%d and instrument =%d' % (alias_typ_spec.Oid(), rec_addr.Oid()), 'Not found')
+                if alias_typ_obj:
+                    alias = alias_typ_obj.Alias()
+                    alias_val = alias
+                    if alias.find('-') != -1:
+                        split_text = alias.split('-')
+                        data_to_strip = split_text[-1]
+                        pattern = re.compile(reg)
+                        if pattern.match(data_to_strip):
+                            alias_val = '-'.join(split_text[:-1])
+            except Exception as err:
+                raise Exception('Error while accessing Alias %s : %s' % (alias_typ_name, str(err))) from err
+
+        else:
+            raise AliasTypeSpecNotExist('%s is not a valid AliasType' % (alias_typ_name))
+        return alias_val
+
+    def get_isda_index_tenor_addinfo_val(self, rec_addr):
+        """get the ISDAIndexTenor AddInfo value for the acm FInstrument object"""
+        addinfo_spec_name = 'ISDAIndexTenor'
+        addinfo_spec_obj = None
+        addinfo_val = None
+        reg = '\d{1,2}[M|Y|D]{1}'
+        addinfo_spec = acm.FAdditionalInfoSpec[addinfo_spec_name]
+        if addinfo_spec:
+            try:
+                addinfo_spec_obj = acm.FAdditionalInfo.Select01(
+                    'addInf=%d and recaddr =%d' % (addinfo_spec.Oid(), rec_addr.Oid()), 'Not found')
+                if addinfo_spec_obj:
+                    addinfo = addinfo_spec_obj.FieldValue()
+                    addinfo_val = addinfo
+                    if addinfo.find('-') != -1:
+                        split_text = addinfo.split('-')
+                        data_to_strip = '-' + split_text[-1]
+                        pattern = re.compile(reg)
+                        if pattern.match(data_to_strip):
+                            alias_val = '-'.join(split_text[:-1])
+            except Exception as err:
+                raise Exception('Error while accessing AdditionalInfo %s : %s' % (addinfo_spec_name, str(err))) from err
+
+        else:
+            raise AdditionalInfoSpecNotExist('%s is not a valid AdditionalInfoSpec' % (addinfo_spec_name))
+        return addinfo_val
+
+    def get_isda_index_tenor(self, rec_addr):
+        index_tenor_val = ''
+        exception_str = ''
+        try:
+            index_tenor_val = self.get_isda_index_tenor_alias_val(rec_addr)
+        except Exception as e:
+            exception_str += str(e)
+
+        if not index_tenor_val:
+            try:
+                index_tenor_val = self.get_isda_index_tenor_addinfo_val(rec_addr)
+            except Exception as e:
+                exception_str += '\n' + str(e)
+        if exception_str:
+            raise Exception(exception_str)
+        return index_tenor_val
+
+    def get_data_type_type(self, type_val):
+        """get the DataTypeType to be set on the AddInfoSpec while creating it"""
+        date_type_type = None
+        try:
+            if type_val in acm.FEnumeration['enum(B92StandardType)'].Choices():
+                date_type_type = acm.FEnumeration['enum(B92StandardType)'].Enumeration(type_val)
+            elif type_val in acm.FEnumeration['enum(B92RecordType)'].Choices():
+                date_type_type = acm.FEnumeration['enum(B92RecordType)'].Enumeration(type_val)
+        except Exception:
+            if type_val in acm.FEnumeration['enum(B92StandardType)'].Elements():
+                date_type_type = acm.FEnumeration['enum(B92StandardType)'].Enumeration(type_val)
+            elif type_val in acm.FEnumeration['enum(B92RecordType)'].Elements():
+                date_type_type = acm.FEnumeration['enum(B92RecordType)'].Enumeration(type_val)
+        return date_type_type
+
+    def set_additional_info_spec_attr(self, ais, add_info_spec_attr, filter=None):
+        """ Set additional info spec attributes"""
+        try:
+            ais.FieldName(add_info_spec_attr['FieldName'])
+            ais.Description(add_info_spec_attr['Description'])
+
+            ais.DefaultValue(add_info_spec_attr['Default'])
+
+            ais.DataTypeGroup = acm.FEnumeration['enum(B92DataGroup)'].Enumeration(add_info_spec_attr['TypeGroup'])
+            ais.DataTypeType(self.get_data_type_type(add_info_spec_attr['Type']))
+
+            ais.RecType = add_info_spec_attr['Table']
+
+            if add_info_spec_attr['Type'] == 'ChoiceList':
+                choiceListValues = []
+                if 'Values' in add_info_spec_attr.keys():
+                    choiceListValues = add_info_spec_attr['Values']
+                try:
+                    self.create_choice_list(add_info_spec_attr['Description'], choiceListValues,
+                                            add_info_spec_attr['Description'])
+                except ChoiceListAlreadyExist:
+                    pass
+            if filter:
+                for each_sub_table in filter:
+                    try:
+                        ais.AddSubType(each_sub_table)
+                    except Exception:
+                        # it means this subType does not exist for this PRIME version. No point in raising exception here as this insType is not available on this acm Version.
+                        pass
+            ais.Commit()
+
+        except Exception as err:
+            raise Exception("Error occured while committing AddInfoSpec <%s>. Error: <%s>" % (
+                add_info_spec_attr['FieldName'], str(err))) from err
+
+    def update_element_in_choice_list(self, cl_name, cl_val, cl_val_description=None, cl_sort_order=None):
+        """update the given element in the given choicelist with its description and sort order"""
+        query = "list = '%s' and name ='%s'" % (cl_name, cl_val[0:39])
+        cl_object = acm.FChoiceList.Select01(query, None)
+        if cl_object:
+            try:
+                cl_object.List = cl_name
+                cl_object.Name = cl_val
+                if cl_val_description:
+                    cl_object.Description(cl_val_description)
+                if cl_sort_order:
+                    cl_object.SortOrder(cl_sort_order)
+                cl_object.Commit()
+            except Exception as err:
+                raise Exception("Error in update_element_in_choice_list", str(err)) from err
+        else:
+            raise Exception(
+                "Either Choice list <%s> does not exist or it does not contain element <%s>" % (cl_name, cl_val))
+
+    def insert_element_in_choice_list(self, cl_name, cl_val, cl_val_description=None, cl_sort_order=None):
+        """insert the given element into the given choicelist with its description and sort order"""
+        query = "list = '%s' and name ='%s'" % (cl_name, cl_val[0:39])
+        cl_object = acm.FChoiceList.Select01(query, None)
+        if not cl_object:
+            cl_object = acm.FChoiceList()
+        else:
+            raise ChoiceListAlreadyExist("Choice list <%s> already contains element <%s>" % (cl_name, cl_val))
+        try:
+            cl_object.List = cl_name
+            cl_object.Name = cl_val
+            if cl_val_description:
+                cl_object.Description(cl_val_description)
+            if cl_sort_order:
+                cl_object.SortOrder(cl_sort_order)
+            cl_object.Commit()
+        except Exception as err:
+            raise Exception("Error in insert_element_in_choice_list", str(err)) from err
+
+    def remove_element_from_choice_list(self, cl_name, cl_val):
+        """remove the given element from the given choicelist"""
+        query = "list = '%s' and name ='%s'" % (cl_name, cl_val[0:39])
+        cl_object = acm.FChoiceList.Select01(query, None)
+        if cl_object:
+            try:
+                cl_object.Delete()
+            except Exception as err:
+                raise Exception("Error in remove_element_from_choice_list", str(err)) from err
+        else:
+            raise ChoiceListNotFound("<%s> does not exist in <%s> ChoiceList" % (cl_val, cl_name))
+
+    def delete_choice_list(self, cl_name):
+        """delete the given choicelist"""
+        cl_object = acm.FChoiceList[cl_name]
+        if cl_object:
+            cl_values = None
+            try:
+                cl_values = cl_object.Choices().AsList()
+            except Exception:
+                cl_values = cl_object.Elements().AsList()
+            for cl_val in cl_values:
+                self.remove_element_from_choice_list(cl_name, cl_val.Name())
+            self.remove_element_from_choice_list('MASTER', cl_name)
+
+    def create_choice_list(self, cl_name, cl_values=[], description=None, bMaster=True, bUpdate=False):
+        """create the choicelist with the given values"""
+        cl_object = None
+        choicelist_name = cl_name
+        if bMaster:
+            try:
+                self.insert_element_in_choice_list('MASTER', cl_name, description)
+            except ChoiceListAlreadyExist:
+                if bUpdate:
+                    self.update_element_in_choice_list('MASTER', cl_name, description)
+        for cl_val in cl_values:
+            cl_val_description = None
+            cl_val_sort_order = None
+            if 'description' in cl_val.keys():
+                cl_val_description = cl_val['description']
+            if 'sort_order' in cl_val.keys():
+                cl_val_sort_order = cl_val['sort_order']
+            if 'name' in cl_val.keys():
+                choicelist_name = cl_val['name']
+            try:
+                self.insert_element_in_choice_list(cl_name, choicelist_name, cl_val_description, cl_val_sort_order)
+            except ChoiceListAlreadyExist as err:
+                if bUpdate:
+                    self.update_element_in_choice_list(cl_name, choicelist_name, cl_val_description, cl_val_sort_order)
+                else:
+                    raise ChoiceListAlreadyExist(str(err)) from err
+        return cl_object
+
+    def update_additional_info_spec(self, spec_name, add_info_spec_attr):
+        """ Update additional info spec"""
+        ais = acm.FAdditionalInfoSpec[spec_name]
+        if ais:
+            self.set_additional_info_spec(ais, add_info_spec_attr)
+
+    def set_additional_info(self, add_info_spec, pObject, value):
+        """set additional Info"""
+        if getattr(pObject.AdditionalInfo(), add_info_spec, None) is None:
+            raise AddInfoSpecNotExist("Additional info %s does not exist on %s" % (add_info_spec, pObject.ClassName()))
+        try:
+            setattr(pObject.AdditionalInfo(), add_info_spec, value)
+            pObject.Commit()
+        except Exception as err:
+            raise Exception(
+                "Error occurred during setting AddInfo %s with value %s. Error %s" % (add_info_spec, value, str(err))) from err
+
+    def create_additional_info(self, ais, pObject, value):
+        """create new additional Info"""
+        try:
+            if str(value) not in ['None',
+                                  '']:  # added as this are considered valid values for 15.1 and it tries to apply these values and throws error
+                ai = acm.FAdditionalInfo()
+                ai.Recaddr = pObject.Oid()
+                ai.AddInf = ais.Oid()
+                ai.FieldValue(value)
+                ai.Commit()
+        except Exception as err:
+            raise Exception(
+                "Error occurred during adding AddInfo %s with value %s. Error %s" % (ais.Name(), value, str(err))) from err
+
+    def delete_add_info_spec(self, add_info_spec):
+        ais = acm.FAdditionalInfoSpec[add_info_spec]
+        if ais:
+            try:
+                if ais.DataTypeGroup() == 'RecordRef' and \
+                        acm.EnumToString('B92RecordType', ais.DataTypeType()).AsString() == 'ChoiceList':
+                    self.delete_choice_list(ais.Description())
+                ais.Delete()
+
+            except Exception as err:
+                raise Exception("Error occured while deleting AddInfoSpec <%s>. Error: <%s>" % (add_info_spec, str(err))) from err
+        else:
+            raise AddInfoSpecNotExist("AddInfoSpec <%s> does not exist in database" % add_info_spec)
+
+    def update_addtional_info(self, ai, value=None):
+        """update the additional info"""
+        try:
+            if str(value) not in ['None',
+                                  '']:  # added as this are considered valid values for 15.1 and it tries to apply these values and throws error
+                aiC = ai.Clone()
+                aiC.FieldValue(value)
+                ai.Apply(aiC)
+                ai.Commit()
+            else:
+                ai.Delete()
+        except Exception as err:
+            raise Exception(
+                "Error occurred while updating AddInfo %s with value %s. Error %s" % (
+                    ai.AddInf().Name(), value, str(err))) from err
+
+    def get_extension_contents(self, ext_type, ext_name):
+        """ Get Extension contents for given type and name"""
+
+        contents = ''
+        ext_obj = acm.GetDefaultContext().GetExtension(ext_type, 'FObject', ext_name)
+        if ext_obj:
+            contents = ext_obj.Value()
+        return contents
+
+    '''def import_modules_from_string(self, modules):
+        """ Import the modules from string"""
+        imported_modules = []
+        for module in modules:
+            imp_module = None
+            try:
+                try:
+                    import importlib
+                    imp_module = importlib.import_module(module)
+                except:
+                    imp_module = __import__(module)
+                imported_modules.append(imp_module)
+            except Exception, error:
+                self.notifier.ERROR(str(error))
+        return imported_modules'''
+
+    def import_modules_from_string(self, modules):
+        """ Import the modules from string"""
+        try:
+            imported_modules = []
+            for module in modules:
+                imp_module = None
+                imp_module = self.import_module_from_string(module)
+                if imp_module:
+                    imported_modules.append(imp_module)
+            return imported_modules
+        except Exception as err:
+            raise Exception("Exception in import_modules_from_string : %s" % str(err)) from err
+
+    def import_module_from_string(self, module):
+        """ Import the module from string"""
+        imp_module = None
+        try:
+            import importlib
+            imp_module = importlib.import_module(module)
+        except Exception:
+            imp_module = __import__(module)
+        return imp_module
+
+    def get_doc_string_for_modules(self, ext_module):
+        """ Get the doc string foe extension modules"""
+        module_doc_strings = []
+        try:
+            ext_mod = acm.FExtensionModule[ext_module]
+            if ext_mod:
+                python_exts = ext_mod.GetAllExtensions('FPythonCode')
+                module_names = python_exts.Transform('Name', acm.FArray, None)
+                module_names = module_names.Transform('Text', acm.FArray, None)
+                modules = self.import_modules_from_string(module_names)
+                for module in modules:
+                    module_doc_strings.append((module.__file__, module.__doc__))
+        except Exception as error:
+            raise Exception("Exception in get_doc_string_for_modules : %s" % str(error)) from error
+        return module_doc_strings
+
+    def python_version(self):
+        """ Return python version"""
+        python_version = sys.version.split()[0]
+        major, minor, micro = python_version.split('.')
+        return str(major) + str(minor)
+
+    def create_alias_type(self, alias_on, alias_description, alias_type_name, name):
+        acmAlias = None
+        if alias_on == 'Party':
+            acmAlias = acm.FPartyAliasType.Select("name='%s'" % name)
+            alias_on_val = 'Party'
+        if alias_on == 'Instrument':
+            acmAlias = acm.FInstrAliasType.Select("name='%s'" % name)
+            alias_on_val = 'Instr'
+        if not acmAlias:
+            alias = eval("acm.F" + alias_on_val + "AliasType()")
+            alias.AliasTypeDescription(alias_description)
+            alias.AliasTypeName(alias_type_name)
+            alias.Name(name)
+            alias.Type(alias_on)
+            alias.Commit()
+        else:
+            raise AliasTypeAlreadyExist("AliasType <%s> exists on table <%s>" % (alias_type_name, alias_on))
+
+    def isBool(self, input_val):
+        """check if the provided input is really a boolean value or not"""
+        if isinstance(input_val, str):
+            if input_val.upper() in ['FALSE', '0', 'NO']:
+                input_val = False
+            elif input_val.upper() in ['TRUE', '1', 'YES']:
+                input_val = True
+            else:
+                input_val = None
+        elif isinstance(input_val, int):
+            if input_val == 0:
+                input_val = False
+            if input_val == 1:
+                input_val = True
+        return input_val
+
+    def remove_choicelist_entry(self, choices,
+                                choicelists):  # multiple choices can be removed from multiple choicelists.
+        """delete the given choicelist entry"""
+        for choicelist in choicelists:
+            for choice in choices:
+                self.remove_element_from_choice_list(choicelist, choice)
+
+    @staticmethod
+    def get_acm_version():
+        """ Get the acm version"""
+        version = None
+        try:
+            version = (float(".".join(acm.ShortVersion().strip(string.ascii_letters).split(".")[0:2])))
+        except Exception:
+            val = ".".join(acm.ShortVersion().strip(string.ascii_letters).split(".")[0:2])
+            version = (float(val.split('.')[0]))
+        return version
+
+    @staticmethod
+    def get_acm_version_override():
+        """ Override the acm version"""
+        context = acm.GetDefaultContext()
+        extn = "FIntegrationUtilsOverride"
+        config_extension = context.GetExtension("FParameters", "FObject", extn)
+        if config_extension:
+            ver = config_extension.Value()['ACM_VERSION_OVERRIDE']
+            ver = float(ver.Text())
+        else:
+            ver = FIntegrationUtils.get_acm_version()
+        return ver
+
+    def get_dates(self, date_string, instrument=None):
+        # Convert yesterday to business day
+        valid_date = None
+        try:
+            date_string_input = date_string.upper()
+            if date_string_input == 'Y' or date_string_input == 'YESTERDAY':
+                date_string = '-1d'
+            try:
+                valid_date = ael.date_from_string(date_string)
+            except Exception:
+                try:
+                    valid_date = self.ParseDateField(date_string, instrument)
+                except Exception:
+                    date_parameter = date_string.upper()
+                    if date_parameter.upper() == 'T' or date_parameter.upper() == 'TODAY' or \
+                            date_parameter == '':
+                        valid_date = ael.date_today()
+                    elif date_parameter.upper() == 'Y' or date_parameter.upper() == 'YESTERDAY':
+                        valid_date = ael.date_today().add_days(-1)
+                    else:
+                        print("Please enter dates in formats supported" \
+                              + " as mentioned in documentation")
+        except Exception as error:
+            print("Could not load module ael or incorrect date format.", str(error))
+
+        return valid_date
+
+    def ParseDateField(self, date_parameter, instrument=None):
+        valid_date = ''
+        try:
+            if date_parameter:
+                date_string = date_parameter.lstrip('-0123456789')
+                days = date_parameter[:len(date_string) * -1]
+                calendar = None
+
+                if len(date_string) == 4:  # Business center
+                    date_string = date_string.upper()
+                    try:
+                        calendar = acm.FCalendar.Select01('businessCenter=%s' % date_string, 'Not found')
+                        if not calendar:
+                            print(
+                                "Please enter valid date, Calendar with business center %s not in database" % date_string)
+                    except Exception as ex:
+                        # For older version of prime where business calendar field not in calendar
+                        print("Please enter valid date, Cannot find calendar with business center %s, %s" % (
+                            date_string, str(ex)))
+
+                elif len(date_string) == 3:  # Currency
+                    date_string = date_string.upper()
+                    curr_from_db = acm.FInstrument[date_string]
+                    if curr_from_db:
+                        calendar = curr_from_db.Calendar()
+                    else:
+                        print("Please enter valid date, Cannot find currency %s in database" % date_string)
+
+                elif len(date_string) == 1 and date_string == 'd':
+                    if instrument:
+                        instrument = instrument[0]
+                        print("Get instrument <%s> calendar" % instrument.Name())
+                        calendar = instrument.SettlementCalendar()
+                        if not calendar:
+                            if instrument.Currency() and instrument.Currency().Calendar():
+                                calendar = instrument.Currency().Calendar()
+                    else:
+                        valid_date = ael.date_today().add_period(date_parameter)
+
+                else:
+                    valid_date = ael.date_today().add_period(date_parameter)
+
+                if calendar and days.lstrip('-').isdigit():
+                    valid_date = calendar.AdjustBankingDays(ael.date_today(), int(days))
+
+                if valid_date:
+                    valid_date = ael.date_from_string(str(valid_date))
+        except Exception as error:
+            print("Could not load module ael or incorrect date format.", str(error))
+
+        return valid_date
+
+    def unlink_external_object(self, ael_object):
+        if ael_object:
+            if ael_object.record_type == 'Instrument':
+                ext_obj = acm.FExternalObject.Select("instrument=%d" % ael_object.insaddr)
+                if ext_obj:
+                    for i in ext_obj[:]:
+                        try:
+                            i.Instrument = None
+                            i.Commit()
+                        except Exception as err:
+                            raise Exception("Exception in unlink ExternalObject from Instrument : %s" % str(i.insid)) from err
+            elif ael_object.record_type == 'Settlement':
+                ext_obj = acm.FExternalObject.Select("settlement=%d" % ael_object.seqnbr)
+                if ext_obj:
+                    for i in ext_obj[:]:
+                        try:
+                            i.Settlement = None
+                            i.Commit()
+                        except Exception as err:
+                            raise Exception("Exception in unlink ExternalObject from Settlement : %s" % str(i.seqnbr)) from err
+            elif ael_object.record_type == 'Confirmation':
+                ext_obj = acm.FExternalObject.Select("confirmation=%d" % ael_object.seqnbr)
+                if ext_obj:
+                    for i in ext_obj[:]:
+                        try:
+                            i.Confirmation = None
+                            i.Commit()
+                        except Exception as err:
+                            raise Exception("Exception in unlink ExternalObject from Confirmation : %s" % str(i.seqnbr)) from err
+            elif ael_object.record_type == 'Party':
+                ext_obj = acm.FExternalObject.Select("party=%d" % ael_object.ptynbr)
+                if ext_obj:
+                    for i in ext_obj[:]:
+                        try:
+                            i.Party = None
+                            i.Commit()
+                        except Exception as err:
+                            raise Exception("Exception in unlink ExternalObject from Party : %s" % str(i.ptyid)) from err
+            elif ael_object.record_type == 'CorpAction':
+                ext_obj = acm.FExternalObject.Select("corpAction=%d" % ael_object.seqnbr)
+                if ext_obj:
+                    for i in ext_obj[:]:
+                        try:
+                            i.CorpAction = None
+                            i.Commit()
+                        except Exception as err:
+                            raise Exception("Exception in unlink ExternalObject from CorpAction : %s" % str(i.name)) from err
+
+    def create_price_semantic(self, semantic_name, provider_type):
+        """Creating price semantic"""
+        is_created = False
+        semantic_obj = acm.FPriceSemantic[semantic_name]
+        if not semantic_obj:
+            try:
+                priceSemantic = acm.FPriceSemantic()
+                priceSemantic.Name(semantic_name)
+                priceSemantic.ProviderType(provider_type)
+                priceSemantic.Commit()
+                is_created = True
+            except Exception as err:
+                raise Exception('Error creating semantic {} : {}'.format(semantic_name, str(err))) from err
+        else:
+            raise AlreadyExist("Semantic {} already exists in db".format(semantic_name))
+        return is_created
+
+    def create_marketplace(self, market_place_name):
+        """Creating price Market Place"""
+        is_created = False
+        market_obj = acm.FMarketPlace[market_place_name]
+        if not market_obj:
+
+            try:
+                party = acm.FMarketPlace()
+                party.Name(market_place_name)
+                party.Commit()
+                is_created = True
+            except Exception as err:
+                raise Exception('Error creating market place {} : {}'.format(market_place_name, str(err))) from err
+        else:
+            raise AlreadyExist("Market Place {} already exists in db".format(market_place_name))
+        return is_created
+
+    def create_distributor(self, dist_name, dist_type):
+        """Creating price distributor"""
+        is_created = False
+        dist_obj = acm.FPriceDistributor[dist_name]
+        if not dist_obj:
+            try:
+                price_dist = acm.FPriceDistributor()
+                price_dist.Name(dist_name)
+                price_dist.DistributorType(dist_type)
+                price_dist.Commit()
+                is_created = True
+            except Exception as err:
+                raise Exception('Error creating distributor {} : {}'.format(dist_name, str(err))) from err
+        else:
+            raise AlreadyExist("Distributor {} already exists in db".format(dist_name))
+        return is_created
+
+    def trigger_event(self, bpr, event_name, notes=None, param=None):
+        """ Trigger event on given business process"""
+        if bpr and bpr.CanHandleEvent(event_name):
+            notes_collection = [str(notes)] if notes else None
+            bpr.HandleEvent(event_name, param, notes_collection)
+            bpr.Commit()
+            return bpr
+
+    def create_task(self, taskname, ael_params, moduleName='FArchiveBusinessProcesses'):
+        """ Create the Task"""
+        try:
+            task_obj = acm.FAelTask[taskname]
+            if not task_obj:
+                task_obj = acm.FAelTask()
+                task_obj.Name(taskname)
+                task_obj.ModuleName(moduleName)
+                task_obj.Parameters(ael_params)
+                task_obj.Commit()
+                return task_obj
+        except Exception as err:
+            raise Exception("Error occurred in create_or_update_task: %s" % str(err)) from err
+
+    def create_business_process_archive_task(self, sc_states, sc_name, sc_date='First of Month'):
+        """ Creates archive tasks"""
+        ael_params = {}
+        ael_params['Date'] = sc_date
+        task_exists_already = False
+        expected_states = [state.Name() for state in acm.FStateChart[sc_name].States()]
+        if sc_states not in expected_states:
+            raise Exception('Error while creating archive task.'
+                            'got invalid state.Got {0}.Expected states {1}'.format(sc_states, expected_states))
+        ael_params['StateChart'] = sc_name
+        ael_params['States'] = sc_states
+
+        task_name = "Archive{}BusinessProcess".format(sc_name)
+
+        if self.create_task(task_name, ael_params) is None:
+            task_exists_already = True
+        return task_exists_already
+
+    def get_state_chart_states(self, sc_name):
+        """ Get the states for given state chart"""
+        sc = acm.FStateChart[sc_name]
+        return sc.States().Transform('Name', acm.FArray, None) if sc else []
+
+    def get_fparameter_value(self, context, module, parameter):
+        """ Get FParameter value
+        :param context: Extension context
+        :param module: Extension module from context
+        :param FParameter: FParameter name from module specifed
+        :return: FParameter value
+        """
+        param_value = ''
+        try:
+            if context:
+                ext_context = acm.FExtensionContext[context]
+                if ext_context:
+                    param_config = ext_context.GetExtension('FParameters', 'FObject', module)
+                    if param_config:
+                        param_value = param_config.Value().At(parameter)
+                        #param_value datatype is FSymbol. Convert FSymbol to text we can use Text() method but it add " in start and end of string. 
+                        param_value = str(param_value).split('#')[0]
+        except Exception as error:
+            print(str(error))
+        return param_value
+
+    def connect_amb(self, application, amb_address=None, kerberosPrinciple=None, singleSignOn=None):
+        """ Connect to AMB
+        :param amb_address: AMB connection string (Host:Port)
+        :return: bool: True if connected else False
+        """
+        is_connected = False
+
+        if not amb_address:
+            amb_address = self.get_fparameter_value(acm.GetDefaultContext().Name(), 'FIntegrationUtilsAMBConfig','FINTEGRATIONUTILS_AMB_DETAILS')
+            if not amb_address:
+                print("AMB details not present in FIntegrationUtils FParameter. Hence unable to connect to AMB.")
+                return is_connected
+            else:                
+                amb_address = amb_address.replace("'","")             
+        if not kerberosPrinciple:
+            kerberosPrinciple = self.get_fparameter_value(acm.GetDefaultContext().Name(), 'FIntegrationUtilsAMBConfig','FINTEGRATIONUTILS_KERBEROS_PRINCIPLE')
+            if kerberosPrinciple:
+                kerberosPrinciple = kerberosPrinciple.replace("'","")
+        if not singleSignOn and kerberosPrinciple:
+            singleSignOn = self.get_fparameter_value(acm.GetDefaultContext().Name(), 'FIntegrationUtilsAMBConfig','FINTEGRATIONUTILS_KERBEROS_SINGLE_SIGNON')
+
+        amb_addr, ambUser, ambPassword = "", "", ""
+        amb_details = amb_address.split("/")
+        if len(amb_details) > 0 and amb_details[0]:
+            amb_addr = amb_details[0]
+        if len(amb_details) > 1 and amb_details[1]:
+            ambUser = amb_details[1]
+        if len(amb_details) > 2 and amb_details[2]:
+            ambPassword = amb_details[2]
+        
+        if kerberosPrinciple:
+            print("connecting to AMB using Kerberos")
+
+        if hasattr(acm, 'AMBUtils') and hasattr(acm.AMBUtils, 'ConnectToAMB'):
+            try:
+                if kerberosPrinciple:
+                    acm.AMBUtils.ConnectToAMB(amb_addr, application, ambUser, True, kerberosPrinciple, singleSignOn)
+                else:
+                    acm.AMBUtils.ConnectToAMB(amb_addr, application, ambUser)
+                is_connected = True
+                print("Connected to AMB '%s' using ConnectToAMB()." % amb_addr)
+            except Exception as error:
+                print("Cannot connect to AMB using ConnectToAMB(). ",error)
+        else:
+            print("AMBUtils.ConnectToAMB() not found. Trying connecting mb_init() or mb_init_kerb2()")
+            if not is_connected:                
+                if kerberosPrinciple and not ambPassword:
+                    try:
+                        import FPassword
+                        ambPassword = FPassword.get_amb_password(ambUser, application)
+                        print("Imported FPassword module for application " + application)
+                    except:
+                        print("Could not import FPassword module")
+                try:
+                    if kerberosPrinciple:
+                        amb.mb_init_kerb2(amb_addr, kerberosPrinciple, ambUser, ambPassword, application, singleSignOn)
+                    else:
+                        amb.mb_init(amb_address)
+                    is_connected = True
+                    print("Connected to AMB '%s'." % amb_addr)
+                except Exception as error:
+                    print("Could not connect to AMB '%s'. %s" % (amb_addr, str(error)))
+                    try:
+                        if hasattr(amb, 'mb_enable_unicode'):
+                            amb.mb_enable_unicode()
+                            if kerberosPrinciple:
+                                amb.mb_init_kerb2(amb_addr, kerberosPrinciple, ambUser, ambPassword, application, singleSignOn)
+                            else:
+                                amb.mb_init(amb_address)
+                            is_connected = True
+                            print("Connected to unicode AMB '%s'." % amb_addr)
+                        else:
+                            print("Could not connect to unicode AMB, because 'amb' has no attribute 'mb_enable_unicode'.")
+                    except Exception as error:
+                        print("Could not connect to unicode AMB '%s'. %s" % (amb_addr, str(error)))
+        
+        return is_connected
+
+    def isValidSedolCusip(self, sec_idstr, identifier):
+        """check the length of security type SEDOL and CUSIP"""
+        flag = False
+        if identifier == 'SEDOL':
+            if len(sec_idstr) == 7:
+                flag = True
+            else:
+                flag = False
+        else:
+            if len(sec_idstr) == 9:
+                flag = True
+            else:
+                flag = False       
+                    
+        return flag 
+
+    def view_externalobject_content(self, extObj):
+        """ Display external Object text in application exe specified in  
+            FIntegrationUtilsConfig:FINTEGRATIONUTILS_APPLICATION, if not specified,
+            then display will be on default application
+        """
+        if extObj:
+            data = extObj.Data().Text()
+                
+            if extObj.StorageType() == 'xml' and extObj.IntegrationType() == 'AMWI':
+                """data is in format eg. b'abc\ndef', replacing \n by newline and extracting data between ' '
+                """
+                data = data.replace('\\n','\n')
+                data = data[2:-1]
+                    
+            if extObj.StorageType():
+                fileType = extObj.StorageType()
+            else:
+                fileType = 'txt'
+            
+            prime_dir = acm.GetFunction('getLogDir', 0)()
+                                          
+            fileName = prime_dir + extObj.Trade().Name() + "." + fileType
+            if os.path.exists(fileName):
+                os.remove(fileName)
+            
+            file = open(fileName,"w")
+            file.write(data)
+            file.close()
+            app_path=''
+            import webbrowser
+            from ast import literal_eval
+            try:
+                app_address = self.get_fparameter_value(acm.GetDefaultContext().Name(), 'FIntegrationUtilsConfig', 'FINTEGRATIONUTILS_APPLICATION')
+                if app_address:                  
+                    app_addr_dict = literal_eval(app_address) #Convert str to dict
+                    if app_addr_dict:
+                        app_path = app_addr_dict.get(fileType)
+            except Exception as e:
+                print("Exception in view_externalobject_content : %s"%str(e)) 
+                
+            if not app_path or not os.path.isfile(app_path) or not os.path.exists(app_path) :
+                print("App Path at FINTEGRATIONUTILS_APPLICATION : %s is incorrect, displaying SWML in default app " % (app_path))
+                webbrowser.open_new_tab(fileName)
+            else:
+                app_path = app_path + " %s &"
+                print("App Path fetched from FINTEGRATIONUTILS_APPLICATION : %s" % (app_path))
+                webbrowser.get(app_path).open_new_tab(fileName)
+                
+        else:
+            print("External Object reference does not exist")
+        
+        return 
+        
+    def get_current_version(self, module):
+        """Returns the Current installed version for Dependent Modules"""
+        installed_version = ''
+        if module == 'FFTPLibrary':
+            try:
+                import FFTPLibraryInstalledComponent
+                obj=FFTPLibraryInstalledComponent.Diagnostics()
+                installed_version = obj._version                
+            except Exception:                
+                pass
+            return installed_version
+            
+        elif module == 'FANotification':
+            try:
+                import FANotificationInstalledComponent
+                obj=FANotificationInstalledComponent.Diagnostics()
+                installed_version = obj._version                
+            except Exception:
+                pass                
+            return installed_version
+    
+        elif module == 'RegulatorySupport/RegulatoryInfoLib':
+            try:
+                import FRegulatoryInstalledComponent
+                obj=FRegulatoryInstalledComponent.Diagnostics()
+                installed_version = obj._version                
+            except Exception:
+                pass
+            return installed_version
+            
+        elif module == 'FIntegrationUtils':
+            try:
+                module="IntegrationUtils"
+                version_string ='FINTEGRATIONUTILS_VERSION'
+                module_version_db = ''
+                module_version = ''
+                ext_module = acm.FExtensionModule[module]
+                if ext_module:
+                    # Read  FINTEGRATIONUTILS_VERSION from IntegrationUtils module
+                    extensions_list = ext_module.GetAllExtensions('FParameters')
+                    if extensions_list:
+                        for a_extension in extensions_list:
+                            for e_key in a_extension.Value().Keys():
+                                if str(e_key) == version_string:
+                                    module_version_db = str(a_extension.Value().Values()[0]).replace("'", '')
+                                    installed_version = module_version_db                
+            except Exception:
+                pass
+            return installed_version
+ 
+    def delete_ext_obj_and_text_obj(self, ext_obj):
+        """ Take the Text Object linked with the External Object. First delete External Object and then delete the Text Object
+        :param External Object
+        """
+        try:
+            if ext_obj:
+                text_object = ext_obj.Data()
+                ext_obj.Delete()
+                text_object.Delete()
+        except Exception as e:
+            print("Exception in delete_ext_obj_and_text_obj : %s"%str(e))
+
+class FManageOperation(object):
+    @staticmethod
+    def get_operation_component_type():
+        """ Get Operation component type"""
+        componentTypes = acm.FEnumeration['enum(ComponentType)']
+        return componentTypes.Enumeration('Operation')
+
+    @staticmethod
+    def user_has_operation_permission(user, operation):
+        """ Returns True if user has permission else False"""
+        return user.IsAllowed(operation, FManageOperation.get_operation_component_type())
+
+    @staticmethod
+    def operation_exists(operation):
+        """ Returns true if given operation exists else False"""
+        is_operation_exist = True
+        compType = 'Operation'
+        queryString = 'name=\'%s\' and type=\'%s\'' % (operation, compType)
+        op = acm.FComponent.Select01(queryString, '')
+        if op is None:
+            is_operation_exist = False
+        return is_operation_exist
+
+    @staticmethod
+    def add_operation(operationName):
+        """ Add component of type operation"""
+        operation_exists_already = True
+        if not FManageOperation.operation_exists(operationName):
+            operation = FManageOperation.get_operation_component_type()
+            component = acm.FComponent()
+            component.Name(operationName)
+            component.Type(operation)
+            component.Commit()
+            operation_exists_already = False
+        return operation_exists_already
+
+    @staticmethod
+    def HasUserRights(operationName):
+        """ Check if the calling user has the permission to perform operation"""
+        has_right = True
+        if FManageOperation.operation_exists(operationName):
+            if not FManageOperation.user_has_operation_permission(acm.User(), operationName):
+                has_right = False
+        return has_right
+
+
+class FParamsEncode(object):
+    def __init__(self):
+        self.__key = 'FrontArenaOTC'
+        self.__key = self.__key
+
+    def get_key(self):
+        return self.__key
+
+    def set_encrypted_password(self, content):
+        """set the encoded value for the given content"""
+        enc = []
+        for i in range(len(content)):
+            key_c = self.__key[i % len(self.__key)]
+            enc_c = chr((ord(content[i]) + ord(key_c)) % 256)
+            enc.append(enc_c)
+        if sys.version_info[0] < 3:
+            encoded_value = '0x4' + base64.urlsafe_b64encode("".join(enc))
+        else:
+            enc_string = "".join(enc)
+            enc_encoded = enc_string.encode('UTF-8')
+            encoded_value = base64.urlsafe_b64encode(enc_encoded)
+            encoded_value = b'0x4' + encoded_value
+        return encoded_value
+
+    def get_decrypted_password(self, content):
+        """get the encoded value for the given content"""
+        dec = []
+        content = content[3:]
+        if sys.version_info[0] < 3:
+            enc = base64.urlsafe_b64decode(content)
+        else:
+            enc = base64.urlsafe_b64decode(content).decode('UTF-8')
+        for i in range(len(enc)):
+            key_c = self.__key[i % len(self.__key)]
+            dec_c = chr((256 + ord(enc[i]) - ord(key_c)) % 256)
+            dec.append(dec_c)
+        return "".join(dec)
+
+    def get_string(self, content):
+        try:
+            if isinstance(content, bytes):
+                content = content.decode('utf-8')
+        except:
+            pass
+        try:
+            if isinstance(content, unicode):
+                content = content.encode('ascii', 'replace')
+        except:
+            pass
+        return content
+
+
+# -----------------exception classes---------------------------------------------------
+
+class AddInfoSpecAlreadyExits(Exception):
+    def _set_message(self, message):
+        self.message = message
+
+    def _get_message(self):
+        return self.message
+
+    message = property(_get_message, _set_message)
+
+
+class AddInfoSpecNotExist(Exception):
+    def _set_message(self, message):
+        self.message = message
+
+    def _get_message(self):
+        return self.message
+
+    message = property(_get_message, _set_message)
+
+
+class ChoiceListAlreadyExist(Exception):
+    def _set_message(self, message):
+        self.message = message
+
+    def _get_message(self):
+        return self.message
+
+    message = property(_get_message, _set_message)
+
+
+class ChoiceListNotFound(Exception):
+    def _set_message(self, message):
+        self.message = message
+
+    def _get_message(self):
+        return self.message
+
+    message = property(_get_message, _set_message)
+
+
+class AliasTypeSpecNotExist(Exception):
+    def _set_message(self, message):
+        self.message = message
+
+    def _get_message(self):
+        return self.message
+
+    message = property(_get_message, _set_message)
+
+
+class AdditionalInfoSpecNotExist(Exception):
+    def _set_message(self, message):
+        self.message = message
+
+    def _get_message(self):
+        return self.message
+
+    message = property(_get_message, _set_message)
+
+
+class AliasTypeAlreadyExist(Exception):
+    def _set_message(self, message):
+        self.message = message
+
+    def _get_message(self):
+        return self.message
+
+    message = property(_get_message, _set_message)
+
+
+class AlreadyExist(Exception):
+    def _set_message(self, message):
+        self.message = message
+
+    def _get_message(self):
+        return self.message
+
+    message = property(_get_message, _set_message)
+
+
+def RemoveOperationsDocument(settlementOrConfirmation):
+    if settlementOrConfirmation.Status() == "Pending Cancellation":
+        return RemoveOperationsDocumentPendingCancellation()
+    else:
+        return RemoveOperationsDocumentDefault(settlementOrConfirmation)
+
+
+def RemoveOperationsDocumentPendingCancellation():
+    query = acm.CreateFASQLQuery(acm.FOperationsDocument, 'AND')
+    orNode = query.AddOpNode('OR')
+    AddCancellationNodeTree(orNode)
+    return query.Select()
+
+
+def RemoveOperationsDocumentDefault(settlementOrConfirmation):
+    query = acm.CreateFASQLQuery(acm.FOperationsDocument, 'AND')
+    orNode = query.AddOpNode('OR')
+
+    if settlementOrConfirmation.IsKindOf(acm.FSettlement):
+        query.AddAttrNode('Settlement.Oid', 'EQUAL', settlementOrConfirmation.Oid())
+    if settlementOrConfirmation.IsKindOf(acm.FConfirmation):
+        query.AddAttrNode('Confirmation.Oid', 'EQUAL', settlementOrConfirmation.Oid())
+
+    OPERATIONS_DOCUMENT_STATUS = OPDocumentsEnum.GetOperationsDocumentStatusEnum()
+    orNode.AddAttrNode('Status', 'EQUAL', OPERATIONS_DOCUMENT_STATUS.EXCEPTION)
+    orNode.AddAttrNode('Status', 'EQUAL', OPERATIONS_DOCUMENT_STATUS.SEND_FAILED)
+    orNode.AddAttrNode('Status', 'EQUAL', OPERATIONS_DOCUMENT_STATUS.GENERATED)
+    orNode.AddAttrNode('Status', 'EQUAL',
+                       OPERATIONS_DOCUMENT_STATUS.PENDING_GENERATION)  # Since we are changing the OperationDocumentStatus to PENDING_GENERATION
+    AddCancellationNodeTree(orNode)
+    return RemoveAckedOpdocsThatAreCancelled(query.Select(), settlementOrConfirmation)
+
+
+def AddCancellationNodeTree(parentNode):
+    """Tree for finding operations documents belonging to n92 settlements no
+    matter if they failed or were successful. This search is needed in order to
+    clean opdocs before resending the settlement in status Release/Pending Cancellation."""
+    cancellationNode = parentNode.AddOpNode('AND')
+    cancellationStatusNode = cancellationNode.AddOpNode('OR')
+    OPERATIONS_DOCUMENT_STATUS = OPDocumentsEnum.GetOperationsDocumentStatusEnum()
+    cancellationStatusNode.AddAttrNode('Status', 'EQUAL', OPERATIONS_DOCUMENT_STATUS.SEND_FAILED)
+    cancellationStatusNode.AddAttrNode('Status', 'EQUAL', OPERATIONS_DOCUMENT_STATUS.SENT_SUCCESSFULLY)
+    cancellationMtsNode = cancellationNode.AddOpNode('OR')
+    cancellationMtsNode.AddAttrNode('SwiftMessageType', 'EQUAL', 192)
+    cancellationMtsNode.AddAttrNode('SwiftMessageType', 'EQUAL', 192199)
+    cancellationMtsNode.AddAttrNode('SwiftMessageType', 'EQUAL', 292)
+    cancellationMtsNode.AddAttrNode('SwiftMessageType', 'EQUAL', 292299)
+
+
+def RemoveAckedOpdocsThatAreCancelled(selection, rec):
+    """Deployed selection-list will be extended with already cancelled opdocs.
+    Applies only for settlements."""
+    if not rec.IsKindOf(acm.FSettlement):
+        return selection
+    ackedMTs = []
+    cancellationMTs = []
+    OPERATIONS_DOCUMENT_STATUS = OPDocumentsEnum.GetOperationsDocumentStatusEnum()
+    for opdoc in rec.Documents():
+        if (opdoc.Status() == OPERATIONS_DOCUMENT_STATUS.SENT_SUCCESSFULLY) or opdoc.Status() == 'Sent successfully':
+            if str(opdoc.SwiftMessageType()).find("92") > -1:
+                cancellationMTs.append(opdoc)
+            else:
+                ackedMTs.append(opdoc)
+
+    if len(ackedMTs) <= len(cancellationMTs):
+        # match so that already sent MT is cancelled, then it is ok to remove opdoc
+        for mtOrig in ackedMTs:
+            if mtOrig not in selection:
+                selection.Add(mtOrig)
+
+    return selection
+
+
+def _assertIsSettlementOrConfirmation(fObject):
+    assert hasattr(fObject, 'IsKindOf') and (fObject.IsKindOf(acm.FSettlement) or fObject.IsKindOf(
+        acm.FConfirmation)), "Argument not of type FSettlement or FConfirmation"
+
+
+def InSendDocumentStatus(fObject):
+    """ Function InSendDocumentStatus
+        Returns True if the FObject has a status which allows for
+        the dispatch of an FOperationsDocument
+
+        INPUT:  FObject fObject (FSettlement or FConfirmation)
+        OUTPUT: bool True or False  
+    """
+    in_send_document_status = False
+    try:
+        import FOperationsDocumentProcess
+        _assertIsSettlementOrConfirmation(fObject)
+        in_send_document_status = FOperationsDocumentProcess.InSendDocumentStatus(fObject)
+    except Exception:
+        pass
+    return in_send_document_status
+
+class StateChartCreator(object):
+    """
+    This class provides helper function to create statechart.
+    """
+    @staticmethod
+    def get_states(definition):
+        """Get state names from transition dictionary."""
+        state_names = set(definition.keys())  # Get from_state
+        for all_transitions in list(definition.values()):  # Get to_state for each from_state
+            to_states = set(all_transitions.values())
+            state_names = state_names | to_states  # Add to_state to from_state
+        return state_names
+
+    @staticmethod
+    def create_states(sc, state_names):
+        """Create states for given state chart"""
+        existing_states = sc.StatesByName()
+        for state_name in state_names:
+            if state_name not in existing_states:
+                sc.CreateState(state_name)
+        sc.Commit()
+
+    @staticmethod
+    def create_transitions(sc, definition):
+        """Create events for given state chart from transition dictionary."""
+        states = sc.StatesByName()
+        for state_name, transitions in list(definition.items()):
+            state = states.At(state_name)
+            for event_name, to_state_name in list(transitions.items()):
+                event = acm.FStateChartEvent(event_name)
+                if state.TransitionForEvent(event) and state.TransitionForEvent(
+                        event).ToState().Name() != to_state_name:
+                    transition = state.TransitionForEvent(event)
+                    transition.Delete()
+                if not state.TransitionForEvent(event):
+                    to_state = states.At(to_state_name)
+                    state.CreateTransition(event, to_state)
+        sc.Commit()
+
+    @staticmethod
+    def layout_state_chart(state_chart_name, co_string):
+        """ Layout state chart with the given name from given coordinate string. """
+        state_chart = acm.FStateChart[state_chart_name]
+        if not state_chart:
+            raise Exception("The state chart %s is not present in ADS." % state_chart_name)
+        else:
+            state_chart.Layout().Text(co_string)
+            state_chart.Layout().Commit()
+
+    @staticmethod
+    def create_state_chart(state_chart_name, definition, old_state_chart_name=''):
+        """Creates a state chart with the given name, if required.
+
+        The definition parameter must completely define the content of the business
+        process state chart, including all states and transitions between them. Its
+        format is a dictionary of states mapped to a dictionary of transitions as
+        event->next_state items, e.g.:
+
+          {'state a':  {'event to go to b': 'state b', 'event to go to c': 'state c'}}
+
+        All defined next_states values must be unique within a state's transitions
+        (i.e. multiple events cannot lead to the same next_state).
+
+        """
+        if old_state_chart_name:
+            sc = acm.FStateChart[old_state_chart_name]
+            if sc:
+                raise Exception("The old state chart <%s> still exists in system." % old_state_chart_name)
+        sc = acm.FStateChart[state_chart_name]
+        if not sc:
+            sc = acm.FStateChart(name=state_chart_name)
+        state_names = StateChartCreator.get_states(definition)
+        StateChartCreator.create_states(sc, state_names)
+        StateChartCreator.create_transitions(sc, definition)
+        return sc
+
+def run_in_separate_thread(function):
+    """ wrapper function """
+    @functools.wraps(function)
+    def wrapper(*args, **kwargs):
+        thread = threading.Thread(target=function, args=args, kwargs=kwargs)
+        thread.start()
+        thread.join()
+    return wrapper
+
+@run_in_separate_thread
+def start_file_in_separate_thread(file_name):
+    """ Function StartFileInSeparateThread
+        Start a file with its associated application (acts like double-
+        clicking on the file). The file is started in its own thread.
+
+        INPUT:  string - the full path to the file
+        OUTPUT: -                                                   """
+    assert file_name, 'No file name given'
+    os.startfile(file_name)
+    
+def start_file(file_name):
+    """ file is started in its own thread """
+    try:
+        import FSwiftOperationsAPI
+        FSwiftOperationsAPI.StartFile(file_name)
+    except Exception:
+        start_file_in_separate_thread(file_name)
+        
+def get_ext_obj_seqnbr(obj):
+    """
+    Returns the Oids of external object list in the format (1,2,3,4)
+    """
+    ret_val = ''
+    for acm_obj in obj:
+        ret_val += str(acm_obj.Oid())
+        ret_val += ','
+
+    ret_val = '(' + ret_val[:-1] + ')'
+    return ret_val        
+
+
+...
+
+  ISDAIndexDefinitionsDataPrep
+"""
+This script will set AdditionalInfo on Indices with its corresponding ISDA definition.
+User should add more entries to the data dictionary below to map ISDA Index definition to all Indices present in the database.
+Data dictionary format:
+Keys in dicionary represents the FrontArena Index Name and the value represents its corresponding ISDA definition.
+Exmaple: 'CHF/LIBOR/1M' is the Index present in database and 'CHF-LIBOR-ISDA' is its corresponding ISDA definition
+"""
+
+import acm
+import ISDAIndexDefinitionsTemplate
+import FIntegrationUtils
+integration_utils_obj = FIntegrationUtils.FIntegrationUtils()
+
+def create_isda_def_additional_info_spec():
+    add_info_spec = {
+                       'FieldName':'ISDAIndexDefinition',
+                       'Description':'ISDA name provided for Indices',
+                       'Default':'',
+                       'TypeGroup':'Standard',
+                       'Type':'String',
+                       'Table':'Instrument'
+                    }
+    try:
+        integration_utils_obj.create_additional_info_spec(add_info_spec)
+    except FIntegrationUtils.AddInfoSpecAlreadyExits as e:
+        print(str(e))
+
+def set_index_definitions(index_def_data):
+    addinfo_spec = acm.FAdditionalInfoSpec['ISDAIndexDefinition']
+    if not addinfo_spec:
+        create_isda_def_additional_info_spec()
+        addinfo_spec = acm.FAdditionalInfoSpec['ISDAIndexDefinition']
+    if addinfo_spec:
+        for index in index_def_data:
+            ins = acm.FInstrument[index]
+            if ins:
+                try:
+                    ins.AddInfoValue(addinfo_spec, index_def_data[index])
+                    ins.Commit()
+                except Exception as e:
+                    print('Exception : %s'%str(e))
+            else:
+                print("Instrument <%s> not found in database"%index)
+    else:
+        print("AdditionalInfoSpec <ISDAIndexDefinition> not present in database")
+
+
+def set_rate_index_isda_definition():
+    set_index_definitions(ISDAIndexDefinitionsTemplate.rate_index)
+
+def set_commodity_isda_definition():
+    set_index_definitions(ISDAIndexDefinitionsTemplate.commodity)
+
+def set_price_index_isda_definition():
+    set_index_definitions(ISDAIndexDefinitionsTemplate.price_index)
+
+
+
+...
+
+  ISDAIndexDefinitionsTemplate
+"""
+This script will be ued for setting AdditionalInfo on Indices with its corresponding ISDA definition.
+User should add more entries to the data dictionary below to map ISDA Index definition to all Indices present in the database.
+Data dictionary format:
+Keys in dicionary represents the FrontArena Index Name and the value represents its corresponding ISDA definition.
+Exmaple: 'CHF/LIBOR/1M' is the Index present in database and 'CHF-LIBOR-ISDA' is its corresponding ISDA definition
+"""
+
+# Rate indices
+rate_index = {
+                'CHF/LIBOR/1M' : 'CHF-LIBOR-ISDA',
+                'CHF/LIBOR/3M' : 'CHF-LIBOR-ISDA',
+                'CHF/LIBOR/6M' : 'CHF-LIBOR-ISDA',
+                'CHF/LIBOR/12M' : 'CHF-LIBOR-ISDA',
+                'DKK/CIBOR/1M' : 'DKK-CIBOR-Reference Banks',
+                'DKK/CIBOR/3M' : 'DKK-CIBOR-Reference Banks',
+                'DKK/CIBOR/6M' : 'DKK-CIBOR-Reference Banks',
+                'DKK/CIBOR/12M' : 'DKK-CIBOR-Reference Banks',
+                'EUR/EURIBOR/1M' : 'EUR-EURIBOR-Reference Banks',
+                'EUR/EURIBOR/3M' : 'EUR-EURIBOR-Reference Banks',
+                'EUR/EURIBOR/6M' : 'EUR-EURIBOR-Reference Banks',
+                'EUR/EURIBOR/12M' : 'EUR-EURIBOR-Reference Banks',
+                'GBP/LIBOR/1M' : 'GBP-LIBOR-ISDA',
+                'GBP/LIBOR/3M' : 'GBP-LIBOR-ISDA',
+                'GBP/LIBOR/6M' : 'GBP-LIBOR-ISDA',
+                'GBP/LIBOR/12M' : 'GBP-LIBOR-ISDA',
+                'JPY/LIBOR/1M' : 'JPY-LIBOR-ISDA',
+                'JPY/LIBOR/3M' : 'JPY-LIBOR-ISDA',
+                'JPY/LIBOR/6M' : 'JPY-LIBOR-ISDA',
+                'JPY/LIBOR/12M' : 'JPY-LIBOR-ISDA',
+                'NOK/NIBOR/1M' : 'NOK-NIBOR-Reference Banks',
+                'NOK/NIBOR/3M' : 'NOK-NIBOR-Reference Banks',
+                'NOK/NIBOR/6M' : 'NOK-NIBOR-Reference Banks',
+                'NOK/NIBOR/12M' : 'NOK-NIBOR-Reference Banks',
+                'SEK/STIBOR/1M' : 'SEK-STIBOR-Reference Banks',
+                'SEK/STIBOR/3M' : 'SEK-STIBOR-Reference Banks',
+                'SEK/STIBOR/6M' : 'SEK-STIBOR-Reference Banks',
+                'SEK/STIBOR/12M' : 'SEK-STIBOR-Reference Banks',
+                'USD/LIBOR/1M' : 'USD-LIBOR-ISDA',
+                'USD/LIBOR/3M' : 'USD-LIBOR-ISDA',
+                'USD/LIBOR/6M' : 'USD-LIBOR-ISDA',
+                'USD/LIBOR/12M' : 'USD-LIBOR-ISDA',
+                'ZAR/JIBAR/1M' : 'ZAR-JIBAR-Reference Banks',
+                'ZAR/JIBAR/3M' : 'ZAR-JIBAR-Reference Banks',
+                'ZAR/JIBAR/6M' : 'ZAR-JIBAR-Reference Banks',
+                'ZAR/JIBAR/12M' : 'ZAR-JIBAR-Reference Banks',
+                }
+
+# Price Indices
+price_index = {
+                'CPI-UKRPI' : 'UK-RPI',
+                'SWCPI' : 'SWF-CPI',
+                }
+
+# Commodities
+commodity = {
+            'Aluminium' : 'ALUMINUM-COMEX',
+            'COPPER' : 'COPPER-COMEX',
+            'Natural Gas' : '',
+            'Gold' : '',
+            }
+
+
+...
+
+
+
+}

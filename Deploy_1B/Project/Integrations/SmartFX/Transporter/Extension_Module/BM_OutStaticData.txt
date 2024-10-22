@@ -1,0 +1,277 @@
+#
+# Front Arena exported extension module.
+# source          ""
+# timestamp (utc) "2023-12-05 06:50:55.8"
+# ***** DO NOT EDIT! *****
+#
+name        "BM_OutStaticData"
+description ""
+
+groups {
+}
+
+decls[FParameters] {
+}
+
+clx FObject [FParameters] {
+  SmartFXStaticDBParam =
+  addinfoName=NPWP,BranchCode,DOB
+  AdditionalInfo=RECADDR,VALNBR,VALUE,ADDINF_SPECNBR
+  Party=PTYNBR,ADDRESS,ADDRESS2,COUNTRY,HOSTID,FULLNAME,FULLNAME2,UPDAT_TIME,TYPE,PTYID2,PTYID
+  partyType={'PARTY_BROKER' : 4,'PARTY_COUNTERPARTY' : 1,'PARTY_CLIENT' : 2}
+  Portfolio=PRFNBR,PRFID,ASSINF,UPDAT_TIME
+  PWD=P@ssw0rdNtcs#
+  User=USRNBR,USERID,NAME,UPDAT_TIME
+
+
+}
+
+decls[FPythonCode] {
+}
+
+clx FObject [FPythonCode] {
+  CaptureStaticDataSmartFX
+
+import pyodbc
+import ast
+
+def get_message_type(m):
+    """
+    This function returns the message type of the AMBA message
+    :param m: mbf_object
+    :return: string
+    """
+    type = m.mbf_find_object('TYPE', 'MBFE_BEGINNING')
+    return type.mbf_get_value() if type else ''
+
+def query_database(connection_string, query, values=None):
+    try:
+        
+        print ('query ',query)
+        # Connect to the database
+        conn = pyodbc.connect(connection_string)
+        cursor = conn.cursor()
+    
+        # Execute the query
+        if values:
+            cursor.execute(query, values)
+        else:
+            cursor.execute(query)
+
+        # Commit the transaction
+        conn.commit()
+
+        print("Query executed successfully.")
+
+    except pyodbc.Error as e:
+        print(f"Error executing query: {e}")
+
+    finally:
+        # Close the cursor and connection
+        cursor.close()
+        conn.close()
+
+def update_table_database(connection, table_name, column_values, condition):
+    set_clause = ', '.join(f"{column} = ?" for column in column_values)
+    update_query = f"UPDATE {table_name} SET {set_clause} WHERE {condition}"
+    values = list(column_values.values())
+    query_database(connection, update_query, values)
+    print("Table updated successfully.")
+
+def insert_table_database(connection, table_name, column_values):
+    columns = ', '.join(column_values)
+    placeholders = ', '.join('?' * len(column_values))
+    insert_query = f"INSERT INTO {table_name} ({columns}) VALUES ({placeholders})"
+    values = list(column_values.values())
+    query_database(connection, insert_query, values)
+    print("Table updated successfully.")
+
+def delete_from_table(connection, table_name, condition):
+    delete_query = f"DELETE FROM {table_name} WHERE {condition}"
+    query_database(connection, delete_query)
+    print("Rows deleted successfully.")
+
+def get_connection_string():
+    import ParametersReader
+    SmartFXStaticDBParam = ParametersReader.get_params('SmartFXStaticDBParam')
+    driver = SmartFXStaticDBParam["DRIVER"]
+    server = SmartFXStaticDBParam["SERVER"]
+    uid = SmartFXStaticDBParam["UID"]
+    pwd = SmartFXStaticDBParam["PWD"]
+    db = SmartFXStaticDBParam["DATABASE"]
+    connection_string = f"DRIVER={driver};SERVER={server};DATABASE={db};UID={uid};PWD={pwd}"
+    return connection_string
+
+def RequestStaticData(message, s):
+    """
+    This function processes the AMBA trade update to reconciliation request.
+    :param message: mbf_object
+    :param s: subject
+    :return: mbf_object and string
+    """
+    
+    try:
+        import FOperationsAMBAMessage
+        import ParametersReader
+
+        
+        SmartFXStaticDBParam  = ParametersReader.get_params('SmartFXStaticDBParam')
+                
+        message_type = get_message_type(message)
+                
+        amba_msg = FOperationsAMBAMessage.AMBAMessage(message)
+        updated_table = amba_msg.GetNameOfUpdatedTable()
+        tables = amba_msg.GetTableAndChildTables()
+                
+        connection_string = get_connection_string()
+        
+        if updated_table == 'PARTY':
+        
+            listParty = SmartFXStaticDBParam["Party"].split(",")
+            partyType = eval(SmartFXStaticDBParam["partyType"])
+    
+            table_lst = amba_msg.GetTablesByName(tables, 'PARTY')
+            #table_addi = amba_msg.GetTablesByName(tables, 'ADDITIONALINFO')
+            _party = table_lst[0]
+            
+            typeChangeParty = _party.GetTypeOfChangeString()
+            
+            
+            dict_party ={}
+            for table_attr, attr_val in _party.GetAttributes().items():
+                if table_attr in listParty:
+                    dict_party[table_attr] = attr_val.GetCurrentValue()
+            
+            
+            if dict_party['TYPE'] in partyType:
+                
+                dict_party['TYPE'] = partyType[dict_party['TYPE']]
+                    
+            else:
+                dict_party['TYPE'] = 99
+                            
+            ptynbr = dict_party['PTYNBR']
+            table_name = 'party'
+            condition = "ptynbr ="+ ptynbr
+            
+
+            
+            if dict_party['TYPE'] != 99:
+                if typeChangeParty == 'Update':
+                    #will update add info
+                    update_table_database(connection_string, table_name, dict_party, condition)
+                
+                elif typeChangeParty == 'Insert':
+                    #will Insert add info
+                    insert_table_database(connection_string, table_name, dict_party)
+                    
+                elif typeChangeParty == 'Delete':
+                    #will Delete add info
+                    delete_from_table(connection_string, table_name, condition)
+                
+                else :
+                    print ("Nothing change")
+            
+            
+                listAdditionalInfo = SmartFXStaticDBParam["AdditionalInfo"].split(",")
+                table_addi = amba_msg.GetTablesByName(tables, 'ADDITIONALINFO')
+                typeChangeAddinfo = []
+                for t in table_addi:
+                    typeChangeAddinfo.append(t.GetTypeOfChangeString())
+                            
+                for i in range (len(table_addi)):
+                    addin = table_addi[i]
+                   
+                    dict_addinf ={}
+                    for table_attr, attr_val in addin.GetAttributes().items():
+                        if table_attr in listAdditionalInfo:
+                            dict_addinf[table_attr] = attr_val.GetCurrentValue()
+                            
+                    table_name = 'additional_info'
+                    condition = "recaddr ="+ ptynbr+" and valnbr = "+ dict_addinf['VALNBR']
+                    if ptynbr == dict_addinf['RECADDR']:
+                        if typeChangeAddinfo[i] == 'Update':
+                            #will update add info
+                            update_table_database(connection_string, table_name, dict_addinf, condition)
+                        
+                        elif typeChangeAddinfo[i] == 'Insert':
+                            #will Insert add info
+                            insert_table_database(connection_string, table_name, dict_addinf)
+                            
+                        elif typeChangeAddinfo[i] == 'Delete':
+                            #will Delete add info
+                            delete_from_table(connection_string, table_name, condition)
+                        
+                        else :
+                            print ("Nothing change")
+                    
+        elif updated_table == 'PORTFOLIO':
+            
+            listPortfolio = SmartFXStaticDBParam["Portfolio"].split(",")
+            table_portfolio = amba_msg.GetTablesByName(tables, 'PORTFOLIO')
+            _portfolio = table_portfolio[0]
+            typeChangePortfolio = _portfolio.GetTypeOfChangeString()
+            
+            dict_portfolio ={}
+            for table_attr, attr_val in _portfolio.GetAttributes().items():
+                if table_attr in listPortfolio:
+                    dict_portfolio[table_attr] = attr_val.GetCurrentValue()
+            
+            table_name = 'portfolio'
+            condition = "prfnbr ="+ dict_portfolio['PRFNBR']
+            
+            if typeChangePortfolio == 'Update':
+                #will update add info
+                update_table_database(connection_string, table_name, dict_portfolio, condition)
+            
+            elif typeChangePortfolio == 'Insert':
+                #will Insert add info
+                insert_table_database(connection_string, table_name, dict_portfolio)
+                
+            elif typeChangePortfolio == 'Delete':
+                #will Delete add info
+                delete_from_table(connection_string, table_name, condition)
+            
+            else :
+                print ("Nothing change")
+            
+        elif updated_table == 'USER':
+            
+            listUser = SmartFXStaticDBParam["User"].split(",")
+            table_user = amba_msg.GetTablesByName(tables, 'USER')
+            _user = table_user[0]
+            typeChangeUser = _user.GetTypeOfChangeString()
+            
+            dict_user ={}
+            for table_attr, attr_val in _user.GetAttributes().items():
+                if table_attr in listUser:
+                    dict_user[table_attr] = attr_val.GetCurrentValue()
+            
+            table_name = 'user_'
+            condition = "usrnbr ="+ dict_user['USRNBR']
+            
+            if typeChangeUser == 'Update':
+                #will update add info
+                update_table_database(connection_string, table_name, dict_user, condition)
+            
+            elif typeChangeUser == 'Insert':
+                #will Insert add info
+                insert_table_database(connection_string, table_name, dict_user)
+                
+            elif typeChangeUser == 'Delete':
+                #will Delete add info
+                delete_from_table(connection_string, table_name, condition)
+            
+            else :
+                print ("Nothing change")
+            
+            
+    except Exception as err:
+        print(traceback.format_exc())
+        print('Error in request_sender {}.'.format(err))
+    return message,s
+
+...
+
+}
+

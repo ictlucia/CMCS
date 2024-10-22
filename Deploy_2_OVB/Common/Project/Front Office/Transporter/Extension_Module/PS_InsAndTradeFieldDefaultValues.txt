@@ -1,0 +1,70 @@
+#
+# Front Arena exported extension module.
+# source          ""
+# timestamp (utc) "2023-12-20 08:50:50.5"
+# ***** DO NOT EDIT! *****
+#
+name        "PS_InsAndTradeFieldDefaultValues"
+description ""
+
+groups {
+}
+
+decls[FCustomInstrumentDefinition] {
+}
+
+clx FObject [FCustomInstrumentDefinition] {
+  Curr Swap DEFAULT =
+  Caption=Curr Swap
+  DealPackageDefinition=
+  DefaultInstrumentName=
+  DefaultInstrumentUpdateHook=PsDefaultInstrumentFieldValues.CurrSwapInstrumentDefaultFieldValues
+  DefaultTradeUpdateHook=
+  DisabledControls=
+  ExoticFixingsHook=
+  ExtendsConfiguration=Curr Swap
+  FavoriteEnabledControls=
+  FilterCriteria=BaseConfigurationType=Curr Swap
+  HelpFileIndex=
+  InstantiatedAs=Concrete
+  InstrumentIcon=
+  LabelOverrides=
+  PanesExotic=
+  PanesInstrument=
+  PanesTrade=
+  ParentMenu=
+  PricingDefaultColumns=
+  PricingManualRefresh=
+  PricingShowRowHeaders=
+  ReplaceApplication=
+  SetUpFunction=
+  ShowPlaceExcluded=
+  ShowPlaceInDetail=
+  ShowPlaceInSlim=
+  SubMenu=
+  UpdateControls=
+  VisiblePanes=
+
+
+}
+
+decls[FPythonCode] {
+}
+
+clx FObject [FPythonCode] {
+  PsDefaultInstrumentFieldValues
+
+import acm
+
+def CurrSwapInstrumentDefaultFieldValues(ins):
+
+    try:
+        ins.DiscountingType('CCS-BASIS')
+
+    except Exception as e:
+        print ('Exception in DefaultTradeValues:', e)
+
+...
+
+}
+

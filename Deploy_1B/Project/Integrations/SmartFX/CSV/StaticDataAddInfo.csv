@@ -1,0 +1,8 @@
+ADDITIONALINFOSPEC,,,,,/ADDITIONALINFOSPEC
+DATA_TYPE.GRP,DESCRIPTION,DATA_TYPE.TYPE,FIELD_NAME,REC_TYPE,
+Standard,Applied Rule Additional Info,Date,AgreementDate,AppliedRule,
+Standard,Applied Rule Additional Info,String,AgreementNumber,AppliedRule,
+Standard,Applied Rule Additional Info,String,ApplicationNumber,AppliedRule,
+Standard,Applied Rule Additional Info,Date,RenewalDate,AppliedRule,
+Standard,Applied Rule Additional Info,String,RenewalNumber,AppliedRule,
+Standard,Compliance Limit Currency Additional Info,String,LimitCurrency,ComplianceRule,

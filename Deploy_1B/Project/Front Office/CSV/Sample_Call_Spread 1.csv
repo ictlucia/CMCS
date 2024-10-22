@@ -1,0 +1,10 @@
+INSTRUMENT,,,,,,,,,,,,,,,,,,,,,,,,,,,/INSTRUMENT
+CATEGORY_CHLNBR.ENTRY,CATEGORY_CHLNBR.LIST,CONTR_SIZE,CURR.INSID,CURR.ISIN,EXERCISE_TYPE,EXP_DAY,EXP_TIME,FREE_TEXT,INSID,INSTYPE,OPTION_TYPE,OTC,PAYTYPE,PAY_DAY_OFFSET,PAY_OFFSET_METHOD,PRODUCT_TYPE_CHLNBR.ENTRY,PRODUCT_TYPE_CHLNBR.LIST,QUOTATION_SEQNBR.NAME,SETTLEMENT,SPOT_BANKING_DAYS_OFFSET,STRIKE_CURR.INSID,STRIKE_PRICE,STRIKE_QUOTATION_SEQNBR.NAME,STRIKE_TYPE,UND_INSADDR.INSID,UND_INSTYPE,
+MCS,Category,1,USD,123,European,2023-03-07,2023-03-07 0:00,,USD/C/IDR/P/230307/14200,Option,Call,Yes,Forward,2,Business Days,SP,Product Type,Pct of Nominal,Cash,2,IDR,14200,Per Unit,Absolute,USD,Curr,
+MCS,Category,1,USD,123,European,2023-03-07,2023-03-07 0:00,,USD/C/IDR/P/230307/14500,Option,Call,Yes,Forward,2,Business Days,SP,Product Type,Pct of Nominal,Cash,2,IDR,14500,Per Unit,Absolute,USD,Curr,
+MCS,Category,1,USD,123,European,2023-12-07,2023-12-07 0:00,,USD/C/IDR/P/231209/15000.00,Option,Call,Yes,Forward,2,Business Days,SP,Product Type,Pct of Nominal,Cash,2,IDR,15000,Per Unit,Absolute,USD,Curr,
+MCS,Category,1,USD,123,European,2023-12-07,2023-12-07 0:00,,USD/C/IDR/P/231209/15500.00,Option,Call,Yes,Forward,2,Business Days,SP,Product Type,Pct of Nominal,Cash,2,IDR,15500,Per Unit,Absolute,USD,Curr,
+MCS,Category,1,USD,123,European,2024-01-08,2024-01-08 0:00,,USD/C/IDR/P/240107/15000.00,Option,Call,Yes,Forward,2,Business Days,SP,Product Type,Pct of Nominal,Cash,2,IDR,15000,Per Unit,Absolute,USD,Curr,
+MCS,Category,1,USD,123,European,2024-01-08,2024-01-08 0:00,,USD/C/IDR/P/240107/15500.00,Option,Call,Yes,Forward,2,Business Days,SP,Product Type,Pct of Nominal,Cash,2,IDR,15500,Per Unit,Absolute,USD,Curr,
+MCS,Category,1,USD,123,European,2024-01-07,2024-01-07 0:00,Hedge Trade,USD/C/IDR/P/240107/15500.00/H,Option,Call,Yes,Forward,3,,SP,Product Type,Pct of Nominal,Cash,2,IDR,15500,Per Unit,Absolute,USD,Curr,
+MCS,Category,1,USD,123,European,2024-01-07,2024-01-07 0:00,Hedge Trade,USD/C/IDR/P/240107/20000/H,Option,Call,Yes,Forward,3,,SP,Product Type,Pct of Nominal,Cash,2,IDR,20000,Per Unit,Absolute,USD,Curr,

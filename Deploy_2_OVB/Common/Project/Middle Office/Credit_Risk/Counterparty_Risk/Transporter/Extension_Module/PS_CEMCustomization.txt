@@ -1,0 +1,171 @@
+#
+# Front Arena exported extension module.
+# source          ""
+# timestamp (utc) "2023-10-17 08:40:09.3"
+# ***** DO NOT EDIT! *****
+#
+name        "PS_CEMCustomization"
+description "$Id$"
+
+groups {
+}
+
+decls[FColumnDefinition] {
+  "CEM Test" ( "sheet columns.portfoliosheet" ) "";
+}
+
+clx FTradingSheet [FColumnDefinition] {
+  CEM Test =
+  BuildForCashRows=True
+  Description=NOP of the instruments
+  ExtensionAttribute=remainingTradePremiums
+  Format=Imprecise
+  GroupLabel=remainingTradePremiums
+  LabelList=remainingTradePremiums
+  Name=remainingTradePremiums
+
+
+}
+
+decls[FExtensionAttribute] {
+}
+
+clx FInstrument [FExtensionAttribute] {
+  cemAddOnGrossValues = select(cemAssetClassDefined, 
+  true->shunt(isCallSpread, 
+    true->denominatedvalue(0, instrument.Currency, , ), 
+    false->shunt(isShortFXOption, 
+      true->denominatedvalue(0, instrument.Currency, , ), 
+      false->shunt(isMMLD, 
+        true->denominatedvalue(0, instrument.Currency, , ), 
+        false->object:cemAddOnPosition [cemHierarchyTree, positionObject, filterUnit, tradesInPosition = tradesInAgreement]))), 
+  false->nil);
+  cemMarkToMarketValues = select(cemAssetClassDefined, 
+  true->switch(isShortFXOption, 
+    true->sumOf(futurePositionPayments), 
+    false->switch(isCallSpread, 
+      true->sumOf(futurePositionPayments), 
+      false->switch(isMMLD, 
+        true->denominatedvalue(py("PsRvm_CemEad_Custom", context).calculateMmldCustomCemEAD(object).First, instrument.Currency, , ), 
+        false->maMarkToMarketValues))), 
+  false->ccrZero);
+  isCallSpread = (object.ProductTypeChlItem.Name == "SP") and (object.CategoryChlItem.Name == "MCS");
+  isMMLD = (object.AdditionalInfo.StructureType == "Market Linked Deposit RAFx") or (object.AdditionalInfo.StructureType == "Market Linked Deposit Deal") or ((object.ProductTypeChlItem.Name == "SP") and (object.CategoryChlItem.Name == "MLDR"));
+  isShortFXOption = (object.InsType == "Option") and (object.UnderlyingType == "Curr") and (riskPositionBase < 0);
+}
+
+clx FInstrumentAndTrades [FExtensionAttribute] {
+  remainingTradePremiums = convertToCurrency(sumOf(futurePositionPayments), profitAndLossEndFXRates, displayCurrency);
+}
+
+decls[FPythonCode] {
+}
+
+clx FObject [FPythonCode] {
+  PsRvm_CemEad_Custom
+
+"""
+Notes:
+    module is split into two parts: Full Premium and CEM EAD calculation
+    the full premium is re-used by the accounting custom columns
+
+Footprint:
+    [2023 08 17] richard.milford@fisglobal.com
+"""
+
+import acm
+from FLogger import FLogger
+
+logger = FLogger(level=2,logToPrime=True)
+log_levl_dict = {'INFO' : 1, 'DEBUG' : 2, 'WARN' : 3, 'ERROR' : 4}
+
+def getMmldNotional(_instrument):
+
+    if _instrument.IsKindOf(acm.FOption): 
+        return _instrument.AdditionalInfo().Sp_LeverageNotional()
+
+    if _instrument.IsKindOf(acm.FSwap):
+        leg1 = _instrument.DealPackageInstrumentLinks()[0].InstrumentPackage().InstrumentLinks()[0].Instrument().Trades()[0]
+        leg2 = _instrument.DealPackageInstrumentLinks()[0].InstrumentPackage().InstrumentLinks()[1].Instrument().Trades()[0]
+    
+        logger.DLOG("%s [leg1.Instrument().Name(),leg2.Instrument().Name()] is %s" %(_instrument.Name(),[leg1.Instrument().Name(),leg2.Instrument().Name()]))
+        if leg1.Instrument().IsKindOf(acm.FDeposit):
+            return leg1.Nominal()
+        elif leg2.Instrument().IsKindOf(acm.FDeposit):
+            return leg2.Nominal()
+    
+    return None
+
+def calculateMmldMaxTotalReturnFullPremium(instrument,trade=None):
+
+    if instrument.IsKindOf(acm.FOption) or instrument.IsKindOf(acm.FSwap):
+        #Full Premium
+        #Notional * Premium % *  (interest period)/365
+        maxYield = instrument.AdditionalInfo().Sp_MLDMaxYield()
+        notional = getMmldNotional(instrument)
+        premium_percentage = instrument.AdditionalInfo().Sp_MLDPremiumOption()
+        premium_percentage = premium_percentage / 100
+        startDate = instrument.StartDate()
+        endDate = instrument.ExpiryDate()
+        interestPeriod = acm.Time().DateDifference(endDate,startDate)
+        basis = instrument.AdditionalInfo().Sp_MLDDayBasis()
+        logger.DLOG("Instrument %s [maxYield,notional,premium_percentage,startDate,endDate,interestPeriod] is %s." %(instrument.Name(),[maxYield,notional,premium_percentage,startDate,endDate,interestPeriod]))
+        
+        maxTotalReturn = notional * (maxYield/float(100)) * interestPeriod / basis
+        fullPremium = -1 * notional * premium_percentage * interestPeriod/basis  
+        #-1*notional => if sell then receive premium, if buy then pay premium
+        if trade.Type() == "Closing": fullPremium = -1 * fullPremium
+
+        return [maxTotalReturn,fullPremium]
+
+    return None
+
+def calculateMmldCustomCemEAD(instrument):
+    """
+    NOTES
+    the deal package is made of two parts: (i) an FX Option (or Swap) and (ii) loan/deposit  
+    credit exposure: Part 1
+    the first part of the credit exposure will be assigned to the FX Option component / Swap component
+    
+    credit exposure: Part 2
+    the second part of the credit exposure relates to the payments on the trade.  at time of writing; these are being assigned to the Loan/Depo
+    however, in-case this changes, the scripting below has been written to look for payments on a trade and return a negative of the finding.  
+    this should cover either case, hence, whether payments come from option or loan/depo
+
+    """
+
+    creditExposurePart1 = 0
+    creditExposurePart2 = 0
+    if instrument.IsKindOf(acm.FOption) or instrument.IsKindOf(acm.FSwap):
+        #1. Calculate the Max Total Return
+        #2. Calculate Full Premium
+        maxTotalReturn = calculateMmldMaxTotalReturnFullPremium(instrument)[0]
+        fullPremium = calculateMmldMaxTotalReturnFullPremium(instrument)[1]
+     
+        #Part 1 = Credit Exposure = (1 - 2)
+        creditExposurePart1 = maxTotalReturn - fullPremium
+        #1. Take calculated value in Part 1, step 1: and reduce it by payments that match "MMLD Payment"
+        
+        creditExposurePart2 = 0
+        #note that MMLD FX has two trades.
+        #need to first find the union of all payments 
+        #thi sis done by getting two lists of payments, one list from each trade in the deal package
+        paymentsFirstTrade = instrument.DealPackageInstrumentLinks()[0].InstrumentPackage().InstrumentLinks ()[0].Instrument().Trades()[0].Payments()
+        paymentsSecondTrade = instrument.DealPackageInstrumentLinks()[0].InstrumentPackage().InstrumentLinks ()[1].Instrument().Trades()[0].Payments()
+        allPayments = paymentsFirstTrade + paymentsSecondTrade
+
+        for payment in allPayments:
+            if payment.Type() == "MMLD Payment":
+                creditExposurePart2 = creditExposurePart2 + payment.Amount()
+
+        #2. Take calculated Value in Part 2, step 2: and reduce it by payments that match "Premium" (take absolute value of premium in the additional payments)
+        for payment in allPayments:
+            if payment.Type() == "Premium":
+                creditExposurePart2 = creditExposurePart2 + abs(payment.Amount())       
+
+    return (creditExposurePart1 - creditExposurePart2,creditExposurePart1,creditExposurePart2)
+
+...
+
+}
+

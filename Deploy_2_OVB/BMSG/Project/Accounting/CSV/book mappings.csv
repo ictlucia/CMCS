@@ -1,0 +1,6 @@
+BOOKMAPPING,,,,,,,/BOOKMAPPING
+BOOK.NAME,ID,QUERY_SEQNBR.NAME,NEXT_ID,QUERY_SEQNBR.TYPE,PREVIOUS_ID,TYPE,
+Treasury_SG_ACU,d1b72467-55cc-4ae8-90db-e09b4a6960c8,A_TD_Treasury_SG_ACU,7591c794-3e9a-41af-afcb-d914e477fe92,FASQL Query,,Trade,
+Treasury_SG_ACU,1b5be0ec-3f11-402a-82e2-d6d1cd38b3d0,A_Sett_Treasury_SG_ACU,2be6b4bf-128b-495c-82a5-2d0ef1feddc7,FASQL Query,,Settlement,
+Treasury_SG_DBU,7591c794-3e9a-41af-afcb-d914e477fe92,A_TD_Treasury_SG_DBU,,FASQL Query,d1b72467-55cc-4ae8-90db-e09b4a6960c8,Trade,
+Treasury_SG_DBU,2be6b4bf-128b-495c-82a5-2d0ef1feddc7,A_Sett_Treasury_SG_DBU,,FASQL Query,1b5be0ec-3f11-402a-82e2-d6d1cd38b3d0,Settlement,

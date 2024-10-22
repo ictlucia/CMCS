@@ -1,0 +1,114 @@
+#
+# Front Arena exported extension module.
+# source          ""
+# timestamp (utc) "2021-03-05 09:52:00.8"
+# ***** DO NOT EDIT! *****
+#
+name        "PS_TestRunner"
+description ""
+
+groups {
+}
+
+decls[FCommandExtension] {
+  "RunProjectTests" ( "active commands" ) "";
+}
+
+clx FSessionManagerFrame [FCommandExtension] {
+  RunProjectTests =
+  icon=Check
+  LargeIcon=No
+  RibbonLabel=Run Tests
+
+
+}
+
+decls[FMenuExtension] {
+}
+
+clx FSessionManagerFrame [FMenuExtension] {
+  RunProjectTests =
+  Function=RunProjectTests.menu_extension_start
+  MenuType=Application
+  ParentMenu=Tools/Testing
+  RibbonPosition=Project/Quality Assurance
+
+
+}
+
+decls[FPythonCode] {
+}
+
+clx FObject [FPythonCode] {
+  RunProjectTests
+import acm
+import unittest
+import importlib
+import inspect
+
+
+ignored_extension_modules = {'PS_FFTPLib', 'FFTPLibrary', 'FSwiftInstaller', 'Transporter'}
+ignored_python_modules    = {}
+
+
+def extension_modules_in_context(ctx):
+    for mod in ctx.Modules():
+        if mod.Name().startswith('+'):
+            yield from extension_modules_in_context(mod)
+        else:
+            yield mod
+
+
+def load_modules_in_context(ctx):
+    succeeded = set()
+    failed    = set()
+
+    for exmod in extension_modules_in_context(ctx):
+        if not exmod.IsBuiltIn() and not exmod.Name() in ignored_extension_modules:
+            pymods = exmod.GetAllExtensions(acm.FPythonCode)
+            
+            for pymod in pymods:
+                modname = pymod.Name().AsString()       
+         
+                if modname not in ignored_python_modules:
+                    try:
+                        mod = importlib.import_module(modname) 
+                        succeeded.add(mod)
+                    except Exception as e:
+                        print (f'Failed to load module {modname}: {e}')
+                        failed.add(mod)
+                        
+    return succeeded, failed
+
+
+def test_suites_in_modules(modules):
+    res = set()
+    
+    for mod in modules:
+        for name, cls in inspect.getmembers(mod, inspect.isclass):
+            if (issubclass(cls, unittest.TestCase)):
+                res.add(cls)
+
+    return res
+
+
+def run_unit_tests(ctx):
+    loaded, failed = load_modules_in_context(ctx)
+    suites = test_suites_in_modules(loaded)
+    
+    for cls in suites:
+        print (f'{cls.__module__}.{cls.__name__}')
+        suite = unittest.TestLoader().loadTestsFromTestCase(cls)
+        unittest.TextTestRunner(verbosity=0).run(suite)
+        print ()
+
+
+def menu_extension_start(eii):
+    ctx = acm.GetDefaultContext()
+    run_unit_tests(ctx)
+
+
+...
+
+}
+

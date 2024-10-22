@@ -1,0 +1,9 @@
+CHOICELIST,,,/CHOICELIST
+LIST,ENTRY,DESCRIPTION,
+MASTER,LBUT_HUB PELAPOR,hubunganDenganBank2 in eMAS,
+LBUT_HUB PELAPOR,Tidak Terkait,N,
+LBUT_HUB PELAPOR,Terkait - Perusahaan Induk,T1,
+LBUT_HUB PELAPOR,Terkait - Perusahaan Anak,T2,
+LBUT_HUB PELAPOR,Terkait - Perusahaan Asosiasi,T3,
+LBUT_HUB PELAPOR,Terkait - Sister Company,T4,
+LBUT_HUB PELAPOR,Terkait - Lainnya,T9,

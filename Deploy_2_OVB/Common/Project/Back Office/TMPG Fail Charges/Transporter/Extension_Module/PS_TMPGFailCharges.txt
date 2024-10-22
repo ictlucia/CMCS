@@ -1,0 +1,291 @@
+#
+# Front Arena exported extension module.
+# source          ""
+# timestamp (utc) "2024-03-12 11:55:57.5"
+# ***** DO NOT EDIT! *****
+#
+name        "PS_TMPGFailCharges"
+description ""
+
+groups {
+}
+
+decls[FPythonCode] {
+}
+
+clx FObject [FPythonCode] {
+  TMPGFailCharges
+import acm
+import csv
+import traceback
+import os
+from FLogger import FLogger
+from FRunScriptGUI import InputFileSelection, DirectorySelection
+import datetime
+import glob
+
+
+logger = FLogger.GetLogger('TMPG Fail Charges')
+log_levels = [ FLogger.INFO, FLogger.ERROR, FLogger.WARNING, FLogger.DEBUG ]
+
+date_today = acm.Time.DateToday()
+
+
+ttLogMode = 'Select log level'
+ttLogPath = 'Log file will be saved in this directory.'
+ttLogFile = 'Name of the logfile.'
+
+
+dir_selection = DirectorySelection()
+
+query = [query.Name() for query in acm.FStoredASQLQuery.Select("subType='FSettlement'")]
+query.sort()
+
+# [VariableName, DisplayName, Type, CandidateValues, Default, Mandatory, Multiple, Description, InputHook, Enabled]
+
+ael_template_variables = [
+['irsCityNetSettlement', 'Settlement Query', 'string', query, None, 1, 0,'Settlements for which TMPG Fail Charge to be Calculate', None, 1],
+['rate', 'Single Rate', 'string', None, None, 1, 0, 'Single Rate to be used in Calculating TMPG Charge'],
+['rate_tmpg', 'Fixed Rate', 'string', None, 3, 1, 0, 'Fixed Rate to be used in Calculating TMPG Charge']
+
+]
+
+ael_log_variables = [
+['logMode', 'Log Mode_Logging', 'string', ['NORMAL', 'DEBUG', 'WARNING', 'ERROR'], 'NORMAL', True, False, ttLogMode],
+['logPath', 'Log Directory_Logging', dir_selection, None, dir_selection, 1, 1, ttLogPath],
+['logFile', 'Log File_Logging', 'string', None, 'TMPG_Charges.log', False, False, ttLogFile],
+]
+
+ael_variables = ael_template_variables + ael_log_variables
+
+
+def LogLevelNameToNumber(level):
+    if level == FLogger.INFO:    return 1
+    if level == FLogger.DEBUG:   return 2
+    if level == FLogger.WARNING: return 3
+    if level == FLogger.ERROR:   return 4   
+    return 1
+    
+
+def create_logger(params, name):
+    #logging parametres
+    log_level     = params['logMode']
+    log_folder    = params['logPath']
+    logfile_name  = params['logFile']
+    
+    logger.Reinitialize(level=LogLevelNameToNumber(log_level))
+    
+    if log_folder:
+        log_folder_string = log_folder.SelectedDirectory().AsString()
+        log_path           = os.path.join(log_folder_string, logfile_name)
+
+        logger.Reinitialize(logToFileAtSpecifiedPath=log_path)    
+    return logger
+    
+    
+
+def calculate_tmpg_charges(sett_obj, actual_settl_date, rate, trade):
+    '''
+            Formula for TMPG change  = (Fail Days / 360) * 0.01 * Settlement Amount * Rate TPMG
+    '''
+    try:
+        value_date = sett_obj.ValueDay()
+        settl_date = actual_settl_date
+        fail_days = acm.Time().DateDifference(settl_date, value_date)
+        settl_amt = abs(sett_obj.Amount())
+        if trade.Direction() == 'Sell':
+            settl_amt *= -1
+        tmpg_charge = 0
+        if fail_days > 0:
+            logger.DLOG('TMPG Charge calculated based on below for Settlement - {}'.format(sett_obj.Oid()))
+            logger.DLOG('Value Day - {}'.format(value_date))
+            logger.DLOG('Fail Days - {}'.format(fail_days))
+            logger.DLOG('Settlement Amount - {}'.format(settl_amt))
+            logger.DLOG('TMPG Rate Entered - {}'.format(rate))
+            rate = float(rate)
+            c1 = fail_days / 360
+            c2 =  0.01 * settl_amt * rate
+            tmpg_charge = c1 * c2
+        else:
+            logger.DLOG('Skipping settlement {} as actual settle date and value day are within acceptable limit.'.format(sett_obj.Oid()))
+        return tmpg_charge
+    except Exception as e:
+        logger.ELOG('Error in calculate_tmpg_charges {}'.format(e))
+        print(traceback.format_exc())        
+    
+    
+def get_last_working_day_of_month(calendar):
+    try:
+        NextMonthDate = acm.Time.DateAddDelta(date_today, 0, +1, 0)
+        firstDayOfNextMonth = acm.Time.FirstDayOfMonth(NextMonthDate)
+        if calendar:
+            lastWorkingDayOfCurrentMonth = calendar.AdjustBankingDays(firstDayOfNextMonth, -1)
+        else:
+            lastWorkingDayOfCurrentMonth = acm.Time.DateAddDelta(firstDayOfNextMonth, 0, 0, -1)
+        return lastWorkingDayOfCurrentMonth    
+    except Exception as e:
+        logger.ELOG('Error in get_last_working_day_of_month {}'.format(e))
+        print(traceback.format_exc())    
+    
+    
+def add_payment(trade, party, tmpg_charge, curr, type, last_working_day_of_month, text, cpty_account, acq_account):
+    try:
+        payment = acm.FPayment()
+        payment.Currency = curr
+        payment.PayDay = last_working_day_of_month
+        payment.Party = party
+        payment.ValidFrom = date_today
+        payment.Amount = tmpg_charge
+        payment.Type = type
+        payment.Text = text
+        payment.Account = cpty_account
+        payment.OurAccount = acq_account
+        trade.Payments().Add(payment)
+        logger.LOG('Adding payment => trdnbr=%s, party=%s, amount=%s, curr=%s, type=%s payday=%s, validfrom=%s' % (trade.Oid(), party.Name(), tmpg_charge, curr.Name(), type, last_working_day_of_month, date_today))
+        return payment
+    except Exception as e:
+        logger.ELOG('Error in add_payment {}'.format(e))
+        print(traceback.format_exc())    
+
+
+def find_payment(sett, trade, party, curr, type):
+    try:
+        payments = acm.FPayment.Select("trade=%d and party='%s' and currency='%s' and type='%s'" % (trade.Oid(), party.Name(), curr.Name(), type))
+        tmpg_charges_present = False
+        for payment in payments:
+            text = payment.Text()
+            if text:
+                text = text.split('_')
+                if len(text) >= 1:
+                    sett_num = text[0]
+                    sett_num = sett_num.replace('S','')
+                    if str(sett.Oid()) == sett_num:
+                        rate = text[1]
+                        rate = rate.replace('R','')
+                        logger.LOG("Skipping Settlement {} as it already has additional payment of type {}  with rate {}".format(sett_num, type, rate))
+                        tmpg_charges_present = True
+                        break
+        return tmpg_charges_present     
+    except Exception as e:
+        logger.ELOG('Error in find_payment {}'.format(e))
+        print(traceback.format_exc())    
+
+    
+def get_trade_from_settlement(sett_obj):   
+    try:
+        trade = None
+        if sett_obj.Children():
+            for sett in sett_obj.Children():
+                trade = sett.Trade()
+        else:
+            trade = sett_obj.Trade()
+        return trade
+    except Exception as e:
+        logger.ELOG('Error in get_trade_from_settlement {}'.format(e))
+        print(traceback.format_exc())    
+        
+def process_charges(sett_obj, rate, actual_settl_date):
+    try:
+        logger.LOG('Processing charges on Settlement - {}'.format(sett_obj.Oid()))
+        trade = get_trade_from_settlement(sett_obj)
+        party = sett_obj.Counterparty()
+        curr = sett_obj.Currency()
+        
+        calendar = curr.Calendar()
+        last_working_day_of_month = get_last_working_day_of_month(calendar)
+        type = 'TMPG Fail Charges'
+        
+        text = 'S{}_R{}'.format(sett_obj.Oid(), rate)
+        tmpg_charges_present = find_payment(sett_obj, trade, party, curr, type)
+        if not tmpg_charges_present:            
+            tmpg_charge = calculate_tmpg_charges(sett_obj, actual_settl_date, rate, trade)
+            if tmpg_charge != 0:
+                tmpg_charge = apply_roundng(curr, tmpg_charge)
+                if tmpg_charge:
+                    logger.DLOG('TMPG Charges - {} Calulated for Settlement - {}'.format(str(tmpg_charge) ,sett_obj.Oid()))
+                    cpty_account = sett_obj.CounterpartyAccountRef()
+                    acq_account = sett_obj.AcquirerAccountRef()
+                    payment = add_payment(trade, party, tmpg_charge, curr, type, last_working_day_of_month, text, cpty_account, acq_account)
+                    payment.RegisterInStorage()
+                    payment.Commit()
+                    logger.LOG('Trade {} Settlement  {} - Additional Payment of type {} added Succefully.'.format(trade.Oid(), sett_obj.Oid(), type))
+                else:
+                    logger.LOG('Skipping charges as TMPG Fail Charges after currency rounding are zero on Settlement - {}'.format(sett_obj.Oid()))  
+            else:
+                logger.LOG('Skipping charges as TMPG Fail Charges are zero on Settlement - {}'.format(sett_obj.Oid()))        
+        else:
+            logger.LOG('TMPG Fail Charges already present on Settlement - {}'.format(sett_obj.Oid()))
+    except Exception as e:
+        logger.ELOG('Error in process_charges {}'.format(e))
+        print(traceback.format_exc())    
+
+
+def ael_main(params):
+    logger = create_logger(params, __name__)
+    logger.LOG('Executing task TMPGFailCharges')
+    
+    sett_tmpg_charge_selet_qry = params['irsCityNetSettlement']
+    sett_tmpg_charge_to_update = acm.FStoredASQLQuery[sett_tmpg_charge_selet_qry]
+    
+    for sett_obj in sett_tmpg_charge_to_update.Query().Select():
+        try:
+            if not sett_obj.Trade() :
+                logger.LOG('Skipping Settlement - {} as it is not having Trade.'.format(sett_obj.Oid()))
+                continue
+            logger.LOG('Processing Settlement - {}'.format(sett_obj.Oid()))
+            if sett_obj.AdditionalInfo().ActualSettleDate():
+                actual_settl_date = sett_obj.AdditionalInfo().ActualSettleDate()
+                rate = params['rate']
+                rate_tmpg = params['rate_tmpg']
+                rate = float(rate_tmpg) - float(rate)
+                process_charges(sett_obj, rate, actual_settl_date)
+                    
+            else:
+                logger.LOG('Skipping Settlement - {} as Addinfo ActualSettleDate is blank'.format(sett_obj.Oid()))
+            
+        except Exception as e:
+            logger.ELOG('Error in processing settlement query {}'.format(e))
+            print(traceback.format_exc())
+            
+    logger.LOG('Finished Task TMPGFailCharges')
+
+
+def get_rounding(currency):
+
+    if type(currency) != type(acm.FCurrency()):
+        logger.ELOG("Parameter 'currency' should be of type FCurrency")
+        return None
+
+    roundingSpec = currency.RoundingSpecification()
+    if roundingSpec is None:
+        logger.ELOG("Rounding specification is not present on currency")
+        return None
+
+    roundings = acm.FRounding.Select("attribute='Premium'")
+    rounding = next((r for r in roundings if
+            r.RoundingSpec().Name() == roundingSpec.Name()), None)
+
+    return rounding
+    
+    
+
+def apply_roundng(curr, tmpg_charge):
+    """
+    Assuming there is Rounding Specification defined on Currency.
+    Rounding for 'Premium' type is considered to get decimal number
+    and round the settlement amount. 
+    """
+    #settlmentCurr = settlement.Currency()
+    rounding = get_rounding(curr)
+    if rounding:
+        try:
+            tmpg_charg_round = round(tmpg_charge, rounding.Decimals())
+        except Exception as e:
+            logger.ELOG('Amount NOT rounded. Error - {}'.format(str(e)))
+    
+    return tmpg_charg_round
+
+...
+
+}
+

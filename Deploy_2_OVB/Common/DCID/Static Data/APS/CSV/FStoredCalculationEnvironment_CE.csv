@@ -1,0 +1,23 @@
+TEXTOBJECT,,,,,/TEXTOBJECT
+SIZE,DATA,NAME,TYPE,USRNBR.USERID,
+599,"<?xml version='1.0' encoding='UTF-8'?>\
+<FrontArenaPrimeSheetExport>\
+<!--PRIME Version: 2022.4.0-->\
+<FDictionary type =""AcmDomain"">\
+  <Element>\
+  <FAssociation type =""AcmDomain"">\
+    <associationKey type =""Property"">\
+      <FSymbol type =""AcmDomain"">\
+        <Text type =""Property"">\
+          <string type =""AcmDomain"">calcUser</string>\
+        </Text>\
+      </FSymbol>\
+    </associationKey>\
+    <associationValue type =""Property"">\
+      <FUndefinedObject type =""AcmDomain"">\
+      </FUndefinedObject>\
+    </associationValue>\
+  </FAssociation>\
+  </Element>\
+</FDictionary>\
+</FrontArenaPrimeSheetExport>",CE,Calculation Environment,ARENASYS,

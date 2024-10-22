@@ -1,0 +1,27 @@
+Windows Registry Editor Version 5.00
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Front\Front Arena\AMBA\FA_INSTANCE_NAME]
+"remove_records"="{price,pricedefinition,pricelinkdefinition,parameter,transhst,serverconnections,serverinfo,serverselects,serverheavyrequest,servermaxtimerequest,serverlastrequest,transhstsubscription,serverclientprocess,serverclientlog,textobject,pricedistributor,userlog,task,limitvalue,activeorder,taskhistory}"
+"add_records"="{trade,instrument,settlement,confirmation,party,operationsdocument,businessevent,businessprocess,businessprocessstep}"
+"create_missing_ref"=""
+"sender_mb_name"="BO_SENDER"
+"receiver_mb_name"=""
+"sender_off"="0"
+"receiver_off"="1"
+"show_seqnbr"="1"
+"show_changes"="1"
+"show_protection"="1"
+"nice_enum_names"="1"
+"log_messages"="1"
+"ael_module_name"=""
+"ael_receiver_modify"=""
+"show_all_fields"="1"
+"show_all_ref"="1"
+"ael_sender_modify"=""
+"username"="AMBA_OPS"
+"password"="intas"
+"sender_source"="BO"
+"zero_unspec_fields"="0"
+"receiver_sources"=""
+
+

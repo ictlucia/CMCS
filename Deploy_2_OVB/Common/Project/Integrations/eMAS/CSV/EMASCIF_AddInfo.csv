@@ -1,0 +1,12 @@
+ADDITIONALINFOSPEC,,,,,/ADDITIONALINFOSPEC
+DATA_TYPE.GRP,DESCRIPTION,DATA_TYPE.TYPE,FIELD_NAME,REC_TYPE,
+RecordRef,EmasProdCode,ChoiceList,ProductCode,Account,
+RecordRef,Location,ChoiceList,Address_Location,Party,
+RecordRef,LBUT_GOL PIHAKLAWAN,ChoiceList,LBUT_GOL PIHAKLAWAN,Party,
+RecordRef,LBUT_HUB PELAPOR,ChoiceList,LBUT_HUB PELAPOR,Party,
+RecordRef,LLD_SANDI PELAKU,ChoiceList,LLD_SANDI PELAKU,Party,
+RecordRef,LBUT_SANDI BANK,ChoiceList,LBUT_SANDI BANK,Party,
+RecordRef,Country of Risk,ChoiceList,UCCODE,Party,
+RecordRef,LBUT_KOLEKTIBILITAS,ChoiceList,LBUT_KOLEKTIBILITAS,Party,
+RecordRef,LLD_RESIDENT,ChoiceList,LLD_RESIDENT,Party,
+RecordRef,LLD_HUBUNGAN,ChoiceList,LLD_HUBUNGAN,Party,

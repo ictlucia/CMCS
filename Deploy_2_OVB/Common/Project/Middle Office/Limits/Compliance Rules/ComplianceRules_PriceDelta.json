@@ -1,0 +1,184 @@
+[
+    {
+        "FTransaction": {
+            "Objects": [
+                {
+                    "FComplianceRule": {
+                        "Definition": {
+                            "ref(RuleDefinition.Exposure)": {
+                                "Column": {
+                                    "ref(FStandardColumnCreator)": {
+                                        "Configuration": {
+                                            "ref(FColumnCreatorConfiguration)": {
+                                                "ref(FDictionary)": {
+                                                    "columnParameters": {
+                                                        "ref(FVariantDictionary)": {
+                                                            "AggCurrChoice": "Fixed Curr",
+                                                            "FixedCurr": {
+                                                                "ref(FCurrency)": "IDR"
+                                                            },
+                                                            "PosCurrChoice": "Fixed Curr"
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        "ContextSym": {
+                                            "ref(FSymbol)": "Standard"
+                                        },
+                                        "OriginalColumnId": {
+                                            "ref(FSymbol)": "Portfolio Delta Cash"
+                                        }
+                                    }
+                                },
+                                "ColumnIndex": 0,
+                                "CompoundQueryLogicalOperator": "AND",
+                                "FilterQuery": null,
+                                "ForEach": "",
+                                "PythonFilterMethodName": "",
+                                "RelativeTo": false,
+                                "RelativeToColumn": null,
+                                "RelativeToColumnIndex": 0,
+                                "StoredTimeBuckets": null
+                            }
+                        },
+                        "DefinitionInfo": "Exposure",
+                        "Description": "",
+                        "Name": "Standard_PriceDelta",
+                        "RuleCategory": {
+                            "ref(FChoiceList)": {
+                                "List": "Compliance Rule Category",
+                                "Name": "Pre-Deal"
+                            }
+                        }
+                    }
+                },
+                {
+                    "FThreshold": {
+                        "ComparisonType": "Greater",
+                        "ComplianceRule": {
+                            "ref(FComplianceRule)": "Standard_PriceDelta"
+                        },
+                        "Coordinates": {
+                            "ref(FStaticArray)": []
+                        },
+                        "Description": "",
+                        "Parent": null,
+                        "Relative": false,
+                        "Type": {
+                            "ref(FChoiceList)": {
+                                "List": "Threshold Type",
+                                "Name": "Violation"
+                            }
+                        },
+                        "Value": 0.0
+                    }
+                },
+                {
+                    "FThreshold": {
+                        "ComparisonType": "Less or Equal",
+                        "ComplianceRule": {
+                            "ref(FComplianceRule)": "Standard_PriceDelta"
+                        },
+                        "Coordinates": {
+                            "ref(FStaticArray)": []
+                        },
+                        "Description": "",
+                        "Parent": null,
+                        "Relative": false,
+                        "Type": {
+                            "ref(FChoiceList)": {
+                                "List": "Threshold Type",
+                                "Name": "Reporting"
+                            }
+                        },
+                        "Value": 0.0
+                    }
+                },
+                {
+                    "FAppliedRule": {
+                        "ComplianceRule": {
+                            "ref(FComplianceRule)": "Standard_PriceDelta"
+                        },
+                        "Data": "!enc!(7II<'@A-#(R(7C:C9$]\"L,P#(7WG$+D`KF`&S\"8S*%#=Q&K(/`?CC/X]B4Q;=W6@8Z2'M_3DSHQR1`,D[YNAA0FA)0#P:67BU7>(KM^[`\"$ICL[3NS=4S!''RBF?,P!Q*1XV><8<YL!((9*=&\"'-_>H`T:TE\"BNIS;5OO./^MMQ1Q8`TRJ=OJ'9Z(S];XQFE-)LF+VB-Q<O5PA5_:G<7S(^`&G=A\\0",
+                        "EndDate": "",
+                        "Inactive": false,
+                        "ReviewDate": "",
+                        "Size": 0,
+                        "StartDate": "",
+                        "Target": {
+                            "ref(FPhysicalPortfolio)": "ALM Bilateral Loans"
+                        },
+                        "Unit": {
+                            "ref(FSymbol)": ""
+                        }
+                    }
+                },
+                {
+                    "FThresholdValue": {
+                        "AppliedRule": {
+                            "ref(FAppliedRule)": {
+                                "ComplianceRule": {
+                                    "ref(FComplianceRule)": "Standard_PriceDelta"
+                                },
+                                "Target": {
+                                    "ref(FPhysicalPortfolio)": "ALM Bilateral Loans"
+                                }
+                            }
+                        },
+                        "Threshold": {
+                            "ref(FThreshold)": {
+                                "ComparisonType": "Greater",
+                                "ComplianceRule": {
+                                    "ref(FComplianceRule)": "Standard_PriceDelta"
+                                },
+                                "Coordinates": {
+                                    "ref(FStaticArray)": []
+                                },
+                                "Type": {
+                                    "ref(FChoiceList)": {
+                                        "List": "Threshold Type",
+                                        "Name": "Violation"
+                                    }
+                                }
+                            }
+                        },
+                        "Value": 0.0
+                    }
+                },
+                {
+                    "FThresholdValue": {
+                        "AppliedRule": {
+                            "ref(FAppliedRule)": {
+                                "ComplianceRule": {
+                                    "ref(FComplianceRule)": "Standard_PriceDelta"
+                                },
+                                "Target": {
+                                    "ref(FPhysicalPortfolio)": "ALM Bilateral Loans"
+                                }
+                            }
+                        },
+                        "Threshold": {
+                            "ref(FThreshold)": {
+                                "ComparisonType": "Less or Equal",
+                                "ComplianceRule": {
+                                    "ref(FComplianceRule)": "Standard_PriceDelta"
+                                },
+                                "Coordinates": {
+                                    "ref(FStaticArray)": []
+                                },
+                                "Type": {
+                                    "ref(FChoiceList)": {
+                                        "List": "Threshold Type",
+                                        "Name": "Reporting"
+                                    }
+                                }
+                            }
+                        },
+                        "Value": 0.0
+                    }
+                }
+            ]
+        }
+    }
+]

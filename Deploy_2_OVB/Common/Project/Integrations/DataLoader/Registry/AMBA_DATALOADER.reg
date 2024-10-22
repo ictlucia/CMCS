@@ -1,0 +1,17 @@
+Windows Registry Editor Version 5.00
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Front\Front Arena\AMBA\FA_INSTANCE_NAME]
+"username"="AMBA_DL"
+"password"="intas"
+"receiver_sources"="{DataLoader}"
+"ael_module_name"="FDLMessageAdaptations"
+"ael_receiver_modify"="receiver_modify"
+"create_missing_ref"="{transhst}"
+"ael_failed_message"="failed_message"
+"receiver_mb_name"="AMBA_DL_RECEIVER"
+"sender_mb_name"="AMBA_DL_SENDER"
+"sender_source"="AMBA_DL_SENDER_SOURCE"
+"sender_off"="1"
+
+
+

@@ -1,0 +1,1282 @@
+TEXTOBJECT,,,,,/TEXTOBJECT
+SIZE,DATA,NAME,TYPE,USRNBR.USERID,
+62133,"<?xml version='1.0' encoding='UTF-8'?>\
+<FrontArenaPrimeSheetExport>\
+<!--PRIME Version: 2022.4.5-->\
+<FDictionary type =""AcmDomain"">\
+  <Element>\
+  <FAssociation type =""AcmDomain"">\
+    <associationKey type =""Property"">\
+      <FSymbol type =""AcmDomain"">\
+        <Text type =""Property"">\
+          <string type =""AcmDomain"">scenario</string>\
+        </Text>\
+      </FSymbol>\
+    </associationKey>\
+    <associationValue type =""Property"">\
+      <FExplicitScenario type =""AcmDomain"">\
+        <name type =""Property"">\
+          <string type =""AcmDomain"">IDR-SWAP 1bp 1Y 5Y 10Y</string>\
+        </name>\
+        <uniqueId type =""Property"">\
+          <FSymbol type =""AcmDomain"">\
+            <Text type =""Property"">\
+              <string type =""AcmDomain"">2a9783fb-52c3-4ab5-a360-7c80e06d0c4d</string>\
+            </Text>\
+          </FSymbol>\
+        </uniqueId>\
+        <defaultSettings type =""Property"">\
+          <FScenarioSettings type =""AcmDomain"">\
+            <showColors type =""Property"">\
+              <bool type =""AcmDomain"">true</bool>\
+            </showColors>\
+            <ShiftDisplayType type =""Property"">\
+              <eShiftDisplayType type =""AcmDomain"">Absolute</eShiftDisplayType>\
+            </ShiftDisplayType>\
+          </FScenarioSettings>\
+        </defaultSettings>\
+        <ExplicitDimensions type =""Property"">\
+          <FArray type =""AcmDomain"">\
+            <Element>\
+            <FScenarioDimension type =""AcmDomain"">\
+              <perimeterCriteriaTopOnly type =""Property"">\
+                <bool type =""AcmDomain"">false</bool>\
+              </perimeterCriteriaTopOnly>\
+              <ShiftVectors type =""Property"">\
+                <FArray type =""AcmDomain"">\
+                  <Element>\
+                  <FDynamicShiftVector type =""AcmDomain"">\
+                    <function type =""Property"">\
+                      <string type =""AcmDomain"">shiftCurveZeroCouponPeriods</string>\
+                    </function>\
+                    <entitiesGroupItem type =""Property"">\
+                      <FSymbol type =""AcmDomain"">\
+                        <Text type =""Property"">\
+                          <string type =""AcmDomain"">yield curve</string>\
+                        </Text>\
+                      </FSymbol>\
+                    </entitiesGroupItem>\
+                    <filter type =""Property"">\
+                      <FASQLQuery type =""AcmDomain"">\
+                        <asqlNodes type =""Property"">\
+                          <FArray type =""AcmDomain"">\
+                            <Element>\
+                            <FASQLOpNode type =""AcmDomain"">\
+                              <asqlNodes type =""Property"">\
+                                <FArray type =""AcmDomain"">\
+                                  <Element>\
+                                  <FASQLAttrNode type =""AcmDomain"">\
+                                    <asqlAttribute type =""Property"">\
+                                      <FASQLAttribute type =""AcmDomain"">\
+                                        <attributeString type =""Property"">\
+                                          <FString type =""AcmDomain"">\
+                                            <Text type =""Property"">\
+                                              <string type =""AcmDomain"">Name</string>\
+                                            </Text>\
+                                          </FString>\
+                                        </attributeString>\
+                                      </FASQLAttribute>\
+                                    </asqlAttribute>\
+                                    <asqlValue type =""Property"">\
+                                      <FString type =""AcmDomain"">\
+                                        <Text type =""Property"">\
+                                          <string type =""AcmDomain"">IDR-SWAP</string>\
+                                        </Text>\
+                                      </FString>\
+                                    </asqlValue>\
+                                    <asqlOperator type =""Property"">\
+                                      <int type =""AcmDomain"">1</int>\
+                                    </asqlOperator>\
+                                    <scaleFactor type =""Property"">\
+                                      <double type =""AcmDomain"">NaN</double>\
+                                    </scaleFactor>\
+                                  </FASQLAttrNode>\
+                                  </Element>\
+                                </FArray>\
+                              </asqlNodes>\
+                              <asqlOperator type =""Property"">\
+                                <int type =""AcmDomain"">1</int>\
+                              </asqlOperator>\
+                              <asqlNodeName type =""Property"">\
+                                <FString type =""AcmDomain"">\
+                                  <Text type =""Property"">\
+                                    <string type =""AcmDomain""></string>\
+                                  </Text>\
+                                </FString>\
+                              </asqlNodeName>\
+                              <not type =""Property"">\
+                                <bool type =""AcmDomain"">false</bool>\
+                              </not>\
+                            </FASQLOpNode>\
+                            </Element>\
+                            <Element>\
+                            <FASQLOpNode type =""AcmDomain"">\
+                              <asqlNodes type =""Property"">\
+                                <FArray type =""AcmDomain"">\
+                                  <Element>\
+                                  <FASQLAttrNode type =""AcmDomain"">\
+                                    <asqlAttribute type =""Property"">\
+                                      <FASQLAttribute type =""AcmDomain"">\
+                                        <attributeString type =""Property"">\
+                                          <FString type =""AcmDomain"">\
+                                            <Text type =""Property"">\
+                                              <string type =""AcmDomain"">Oid</string>\
+                                            </Text>\
+                                          </FString>\
+                                        </attributeString>\
+                                      </FASQLAttribute>\
+                                    </asqlAttribute>\
+                                    <asqlValue type =""Property"">\
+                                      <FUndefinedObject type =""AcmDomain"">\
+                                      </FUndefinedObject>\
+                                    </asqlValue>\
+                                    <asqlOperator type =""Property"">\
+                                      <int type =""AcmDomain"">5</int>\
+                                    </asqlOperator>\
+                                    <scaleFactor type =""Property"">\
+                                      <double type =""AcmDomain"">NaN</double>\
+                                    </scaleFactor>\
+                                  </FASQLAttrNode>\
+                                  </Element>\
+                                  <Element>\
+                                  <FASQLAttrNode type =""AcmDomain"">\
+                                    <asqlAttribute type =""Property"">\
+                                      <FASQLAttribute type =""AcmDomain"">\
+                                        <attributeString type =""Property"">\
+                                          <FString type =""AcmDomain"">\
+                                            <Text type =""Property"">\
+                                              <string type =""AcmDomain"">Oid</string>\
+                                            </Text>\
+                                          </FString>\
+                                        </attributeString>\
+                                      </FASQLAttribute>\
+                                    </asqlAttribute>\
+                                    <asqlValue type =""Property"">\
+                                      <FUndefinedObject type =""AcmDomain"">\
+                                      </FUndefinedObject>\
+                                    </asqlValue>\
+                                    <asqlOperator type =""Property"">\
+                                      <int type =""AcmDomain"">4</int>\
+                                    </asqlOperator>\
+                                    <scaleFactor type =""Property"">\
+                                      <double type =""AcmDomain"">NaN</double>\
+                                    </scaleFactor>\
+                                  </FASQLAttrNode>\
+                                  </Element>\
+                                </FArray>\
+                              </asqlNodes>\
+                              <asqlOperator type =""Property"">\
+                                <int type =""AcmDomain"">0</int>\
+                              </asqlOperator>\
+                              <asqlNodeName type =""Property"">\
+                                <FString type =""AcmDomain"">\
+                                  <Text type =""Property"">\
+                                    <string type =""AcmDomain""></string>\
+                                  </Text>\
+                                </FString>\
+                              </asqlNodeName>\
+                              <not type =""Property"">\
+                                <bool type =""AcmDomain"">false</bool>\
+                              </not>\
+                            </FASQLOpNode>\
+                            </Element>\
+                          </FArray>\
+                        </asqlNodes>\
+                        <asqlOperator type =""Property"">\
+                          <int type =""AcmDomain"">0</int>\
+                        </asqlOperator>\
+                        <asqlNodeName type =""Property"">\
+                          <FString type =""AcmDomain"">\
+                            <Text type =""Property"">\
+                              <string type =""AcmDomain""></string>\
+                            </Text>\
+                          </FString>\
+                        </asqlNodeName>\
+                        <not type =""Property"">\
+                          <bool type =""AcmDomain"">false</bool>\
+                        </not>\
+                        <asqlQueryClass type =""Property"">\
+                          <FDomain type =""AcmDomain"">\
+                            <DomainName type =""Property"">\
+                              <string type =""AcmDomain"">FYieldCurve</string>\
+                            </DomainName>\
+                          </FDomain>\
+                        </asqlQueryClass>\
+                      </FASQLQuery>\
+                    </filter>\
+                    <filterTransform type =""Property"">\
+                      <FDomain type =""AcmDomain"">\
+                        <DomainName type =""Property"">\
+                          <string type =""AcmDomain"">FYieldCurveFilter</string>\
+                        </DomainName>\
+                      </FDomain>\
+                    </filterTransform>\
+                    <usePostFilter type =""Property"">\
+                      <bool type =""AcmDomain"">false</bool>\
+                    </usePostFilter>\
+                    <topOnly type =""Property"">\
+                      <bool type =""AcmDomain"">false</bool>\
+                    </topOnly>\
+                    <shiftFunctionInformation type =""Property"">\
+                      <string type =""AcmDomain""></string>\
+                    </shiftFunctionInformation>\
+                    <proxyShiftFunction type =""Property"">\
+                      <string type =""AcmDomain""></string>\
+                    </proxyShiftFunction>\
+                    <isBuildShiftVector type =""Property"">\
+                      <bool type =""AcmDomain"">false</bool>\
+                    </isBuildShiftVector>\
+                    <useDynamicFiltering2 type =""Property"">\
+                      <FFalse type =""AcmDomain"">\
+                      </FFalse>\
+                    </useDynamicFiltering2>\
+                    <functionWithDynamicParameters type =""Property"">\
+                      <string type =""AcmDomain""></string>\
+                    </functionWithDynamicParameters>\
+                    <parameterInfo type =""Property"">\
+                      <FParameterGUIInfo type =""AcmDomain"">\
+                        <definitionName type =""Property"">\
+                          <FSymbol type =""AcmDomain"">\
+                            <Text type =""Property"">\
+                              <string type =""AcmDomain"">yieldCurveBucketShiftZeroCouponDialog</string>\
+                            </Text>\
+                          </FSymbol>\
+                        </definitionName>\
+                        <parameters type =""Property"">\
+                          <FDictionary type =""AcmDomain"">\
+                            <Element>\
+                            <FAssociation type =""AcmDomain"">\
+                              <associationKey type =""Property"">\
+                                <FSymbol type =""AcmDomain"">\
+                                  <Text type =""Property"">\
+                                    <string type =""AcmDomain"">Criteria</string>\
+                                  </Text>\
+                                </FSymbol>\
+                              </associationKey>\
+                              <associationValue type =""Property"">\
+                                <FASQLQueryFolder type =""AcmDomain"">\
+                                  <name type =""Property"">\
+                                    <FString type =""AcmDomain"">\
+                                      <Text type =""Property"">\
+                                        <string type =""AcmDomain"">IDR-SWAP_only</string>\
+                                      </Text>\
+                                    </FString>\
+                                  </name>\
+                                  <asqlQuery type =""Property"">\
+                                    <FASQLQuery type =""AcmDomain"">\
+                                      <asqlNodes type =""Property"">\
+                                        <FArray type =""AcmDomain"">\
+                                          <Element>\
+                                          <FASQLOpNode type =""AcmDomain"">\
+                                            <asqlNodes type =""Property"">\
+                                              <FArray type =""AcmDomain"">\
+                                                <Element>\
+                                                <FASQLAttrNode type =""AcmDomain"">\
+                                                  <asqlAttribute type =""Property"">\
+                                                    <FASQLAttribute type =""AcmDomain"">\
+                                                      <attributeString type =""Property"">\
+                                                        <FString type =""AcmDomain"">\
+                                                          <Text type =""Property"">\
+                                                            <string type =""AcmDomain"">Name</string>\
+                                                          </Text>\
+                                                        </FString>\
+                                                      </attributeString>\
+                                                    </FASQLAttribute>\
+                                                  </asqlAttribute>\
+                                                  <asqlValue type =""Property"">\
+                                                    <FString type =""AcmDomain"">\
+                                                      <Text type =""Property"">\
+                                                        <string type =""AcmDomain"">IDR-SWAP</string>\
+                                                      </Text>\
+                                                    </FString>\
+                                                  </asqlValue>\
+                                                  <asqlOperator type =""Property"">\
+                                                    <int type =""AcmDomain"">1</int>\
+                                                  </asqlOperator>\
+                                                  <scaleFactor type =""Property"">\
+                                                    <double type =""AcmDomain"">NaN</double>\
+                                                  </scaleFactor>\
+                                                </FASQLAttrNode>\
+                                                </Element>\
+                                              </FArray>\
+                                            </asqlNodes>\
+                                            <asqlOperator type =""Property"">\
+                                              <int type =""AcmDomain"">1</int>\
+                                            </asqlOperator>\
+                                            <asqlNodeName type =""Property"">\
+                                              <FString type =""AcmDomain"">\
+                                                <Text type =""Property"">\
+                                                  <string type =""AcmDomain""></string>\
+                                                </Text>\
+                                              </FString>\
+                                            </asqlNodeName>\
+                                            <not type =""Property"">\
+                                              <bool type =""AcmDomain"">false</bool>\
+                                            </not>\
+                                          </FASQLOpNode>\
+                                          </Element>\
+                                          <Element>\
+                                          <FASQLOpNode type =""AcmDomain"">\
+                                            <asqlNodes type =""Property"">\
+                                              <FArray type =""AcmDomain"">\
+                                                <Element>\
+                                                <FASQLAttrNode type =""AcmDomain"">\
+                                                  <asqlAttribute type =""Property"">\
+                                                    <FASQLAttribute type =""AcmDomain"">\
+                                                      <attributeString type =""Property"">\
+                                                        <FString type =""AcmDomain"">\
+                                                          <Text type =""Property"">\
+                                                            <string type =""AcmDomain"">Oid</string>\
+                                                          </Text>\
+                                                        </FString>\
+                                                      </attributeString>\
+                                                    </FASQLAttribute>\
+                                                  </asqlAttribute>\
+                                                  <asqlValue type =""Property"">\
+                                                    <FUndefinedObject type =""AcmDomain"">\
+                                                    </FUndefinedObject>\
+                                                  </asqlValue>\
+                                                  <asqlOperator type =""Property"">\
+                                                    <int type =""AcmDomain"">5</int>\
+                                                  </asqlOperator>\
+                                                  <scaleFactor type =""Property"">\
+                                                    <double type =""AcmDomain"">NaN</double>\
+                                                  </scaleFactor>\
+                                                </FASQLAttrNode>\
+                                                </Element>\
+                                                <Element>\
+                                                <FASQLAttrNode type =""AcmDomain"">\
+                                                  <asqlAttribute type =""Property"">\
+                                                    <FASQLAttribute type =""AcmDomain"">\
+                                                      <attributeString type =""Property"">\
+                                                        <FString type =""AcmDomain"">\
+                                                          <Text type =""Property"">\
+                                                            <string type =""AcmDomain"">Oid</string>\
+                                                          </Text>\
+                                                        </FString>\
+                                                      </attributeString>\
+                                                    </FASQLAttribute>\
+                                                  </asqlAttribute>\
+                                                  <asqlValue type =""Property"">\
+                                                    <FUndefinedObject type =""AcmDomain"">\
+                                                    </FUndefinedObject>\
+                                                  </asqlValue>\
+                                                  <asqlOperator type =""Property"">\
+                                                    <int type =""AcmDomain"">4</int>\
+                                                  </asqlOperator>\
+                                                  <scaleFactor type =""Property"">\
+                                                    <double type =""AcmDomain"">NaN</double>\
+                                                  </scaleFactor>\
+                                                </FASQLAttrNode>\
+                                                </Element>\
+                                              </FArray>\
+                                            </asqlNodes>\
+                                            <asqlOperator type =""Property"">\
+                                              <int type =""AcmDomain"">0</int>\
+                                            </asqlOperator>\
+                                            <asqlNodeName type =""Property"">\
+                                              <FString type =""AcmDomain"">\
+                                                <Text type =""Property"">\
+                                                  <string type =""AcmDomain""></string>\
+                                                </Text>\
+                                              </FString>\
+                                            </asqlNodeName>\
+                                            <not type =""Property"">\
+                                              <bool type =""AcmDomain"">false</bool>\
+                                            </not>\
+                                          </FASQLOpNode>\
+                                          </Element>\
+                                        </FArray>\
+                                      </asqlNodes>\
+                                      <asqlOperator type =""Property"">\
+                                        <int type =""AcmDomain"">0</int>\
+                                      </asqlOperator>\
+                                      <asqlNodeName type =""Property"">\
+                                        <FString type =""AcmDomain"">\
+                                          <Text type =""Property"">\
+                                            <string type =""AcmDomain""></string>\
+                                          </Text>\
+                                        </FString>\
+                                      </asqlNodeName>\
+                                      <not type =""Property"">\
+                                        <bool type =""AcmDomain"">false</bool>\
+                                      </not>\
+                                      <asqlQueryClass type =""Property"">\
+                                        <FDomain type =""AcmDomain"">\
+                                          <DomainName type =""Property"">\
+                                            <string type =""AcmDomain"">FYieldCurve</string>\
+                                          </DomainName>\
+                                        </FDomain>\
+                                      </asqlQueryClass>\
+                                    </FASQLQuery>\
+                                  </asqlQuery>\
+                                </FASQLQueryFolder>\
+                              </associationValue>\
+                            </FAssociation>\
+                            </Element>\
+                            <Element>\
+                            <FAssociation type =""AcmDomain"">\
+                              <associationKey type =""Property"">\
+                                <FSymbol type =""AcmDomain"">\
+                                  <Text type =""Property"">\
+                                    <string type =""AcmDomain"">DifferenceType</string>\
+                                  </Text>\
+                                </FSymbol>\
+                              </associationKey>\
+                              <associationValue type =""Property"">\
+                                <FString type =""AcmDomain"">\
+                                  <Text type =""Property"">\
+                                    <string type =""AcmDomain"">Absolute</string>\
+                                  </Text>\
+                                </FString>\
+                              </associationValue>\
+                            </FAssociation>\
+                            </Element>\
+                            <Element>\
+                            <FAssociation type =""AcmDomain"">\
+                              <associationKey type =""Property"">\
+                                <FSymbol type =""AcmDomain"">\
+                                  <Text type =""Property"">\
+                                    <string type =""AcmDomain"">Floor</string>\
+                                  </Text>\
+                                </FSymbol>\
+                              </associationKey>\
+                              <associationValue type =""Property"">\
+                                <FUndefinedObject type =""AcmDomain"">\
+                                </FUndefinedObject>\
+                              </associationValue>\
+                            </FAssociation>\
+                            </Element>\
+                            <Element>\
+                            <FAssociation type =""AcmDomain"">\
+                              <associationKey type =""Property"">\
+                                <FSymbol type =""AcmDomain"">\
+                                  <Text type =""Property"">\
+                                    <string type =""AcmDomain"">Shifts</string>\
+                                  </Text>\
+                                </FSymbol>\
+                              </associationKey>\
+                              <associationValue type =""Property"">\
+                                <FDictionary type =""AcmDomain"">\
+                                  <Element>\
+                                  <FAssociation type =""AcmDomain"">\
+                                    <associationKey type =""Property"">\
+                                      <FSymbol type =""AcmDomain"">\
+                                        <Text type =""Property"">\
+                                          <string type =""AcmDomain"">Absolute (bps)</string>\
+                                        </Text>\
+                                      </FSymbol>\
+                                    </associationKey>\
+                                    <associationValue type =""Property"">\
+                                      <FDictionary type =""AcmDomain"">\
+                                        <Element>\
+                                        <FAssociation type =""AcmDomain"">\
+                                          <associationKey type =""Property"">\
+                                            <FSymbol type =""AcmDomain"">\
+                                              <Text type =""Property"">\
+                                                <string type =""AcmDomain"">10Y</string>\
+                                              </Text>\
+                                            </FSymbol>\
+                                          </associationKey>\
+                                          <associationValue type =""Property"">\
+                                            <FReal type =""AcmDomain"">\
+                                              <Number type =""Property"">\
+                                                <double type =""AcmDomain"">1.0</double>\
+                                              </Number>\
+                                            </FReal>\
+                                          </associationValue>\
+                                        </FAssociation>\
+                                        </Element>\
+                                        <Element>\
+                                        <FAssociation type =""AcmDomain"">\
+                                          <associationKey type =""Property"">\
+                                            <FSymbol type =""AcmDomain"">\
+                                              <Text type =""Property"">\
+                                                <string type =""AcmDomain"">1Y</string>\
+                                              </Text>\
+                                            </FSymbol>\
+                                          </associationKey>\
+                                          <associationValue type =""Property"">\
+                                            <FReal type =""AcmDomain"">\
+                                              <Number type =""Property"">\
+                                                <double type =""AcmDomain"">1.0</double>\
+                                              </Number>\
+                                            </FReal>\
+                                          </associationValue>\
+                                        </FAssociation>\
+                                        </Element>\
+                                        <Element>\
+                                        <FAssociation type =""AcmDomain"">\
+                                          <associationKey type =""Property"">\
+                                            <FSymbol type =""AcmDomain"">\
+                                              <Text type =""Property"">\
+                                                <string type =""AcmDomain"">5Y</string>\
+                                              </Text>\
+                                            </FSymbol>\
+                                          </associationKey>\
+                                          <associationValue type =""Property"">\
+                                            <FReal type =""AcmDomain"">\
+                                              <Number type =""Property"">\
+                                                <double type =""AcmDomain"">1.0</double>\
+                                              </Number>\
+                                            </FReal>\
+                                          </associationValue>\
+                                        </FAssociation>\
+                                        </Element>\
+                                      </FDictionary>\
+                                    </associationValue>\
+                                  </FAssociation>\
+                                  </Element>\
+                                </FDictionary>\
+                              </associationValue>\
+                            </FAssociation>\
+                            </Element>\
+                            <Element>\
+                            <FAssociation type =""AcmDomain"">\
+                              <associationKey type =""Property"">\
+                                <FSymbol type =""AcmDomain"">\
+                                  <Text type =""Property"">\
+                                    <string type =""AcmDomain"">ShiftShape</string>\
+                                  </Text>\
+                                </FSymbol>\
+                              </associationKey>\
+                              <associationValue type =""Property"">\
+                                <FString type =""AcmDomain"">\
+                                  <Text type =""Property"">\
+                                    <string type =""AcmDomain"">Rectangle</string>\
+                                  </Text>\
+                                </FString>\
+                              </associationValue>\
+                            </FAssociation>\
+                            </Element>\
+                            <Element>\
+                            <FAssociation type =""AcmDomain"">\
+                              <associationKey type =""Property"">\
+                                <FSymbol type =""AcmDomain"">\
+                                  <Text type =""Property"">\
+                                    <string type =""AcmDomain"">Stored Time Buckets</string>\
+                                  </Text>\
+                                </FSymbol>\
+                              </associationKey>\
+                              <associationValue type =""Property"">\
+                                <FTimeBuckets type =""AcmDomain"">\
+                                  <timeBucketsDefinitionAndConfiguration type =""Property"">\
+                                    <FTimeBucketsDefinitionAndConfiguration type =""AcmDomain"">\
+                                      <timeBucketsDefinition type =""Property"">\
+                                        <FTimeBucketsDefinition type =""AcmDomain"">\
+                                          <startDate type =""Property"">\
+                                            <int type =""AcmDomain"">739064</int>\
+                                          </startDate>\
+                                          <subBuckets type =""Property"">\
+                                            <int type =""AcmDomain"">0</int>\
+                                          </subBuckets>\
+                                          <defaultStartDate type =""Property"">\
+                                            <bool type =""AcmDomain"">true</bool>\
+                                          </defaultStartDate>\
+                                          <dateStartsBucket type =""Property"">\
+                                            <bool type =""AcmDomain"">false</bool>\
+                                          </dateStartsBucket>\
+                                          <generationInfos type =""Property"">\
+                                            <FSortedCollection type =""AcmDomain"">\
+                                            </FSortedCollection>\
+                                          </generationInfos>\
+                                          <bucketDefinitions type =""Property"">\
+                                            <FArray type =""AcmDomain"">\
+                                              <Element>\
+                                              <FDatePeriodTimeBucketDefinition type =""AcmDomain"">\
+                                                <businessDayMethod type =""Property"">\
+                                                  <int type =""AcmDomain"">0</int>\
+                                                </businessDayMethod>\
+                                                <dateAsName type =""Property"">\
+                                                  <bool type =""AcmDomain"">false</bool>\
+                                                </dateAsName>\
+                                                <adjust type =""Property"">\
+                                                  <bool type =""AcmDomain"">true</bool>\
+                                                </adjust>\
+                                                <priority type =""Property"">\
+                                                  <int type =""AcmDomain"">2</int>\
+                                                </priority>\
+                                                <uninterruptedSequence type =""Property"">\
+                                                  <bool type =""AcmDomain"">false</bool>\
+                                                </uninterruptedSequence>\
+                                                <useSubBuckets type =""Property"">\
+                                                  <bool type =""AcmDomain"">false</bool>\
+                                                </useSubBuckets>\
+                                                <subBuckets type =""Property"">\
+                                                  <int type =""AcmDomain"">0</int>\
+                                                </subBuckets>\
+                                                <datePeriodUnit type =""Property"">\
+                                                  <int type =""AcmDomain"">4</int>\
+                                                </datePeriodUnit>\
+                                                <datePeriodCount type =""Property"">\
+                                                  <int type =""AcmDomain"">1</int>\
+                                                </datePeriodCount>\
+                                                <relativeSpot type =""Property"">\
+                                                  <bool type =""AcmDomain"">true</bool>\
+                                                </relativeSpot>\
+                                              </FDatePeriodTimeBucketDefinition>\
+                                              </Element>\
+                                              <Element>\
+                                              <FDatePeriodTimeBucketDefinition type =""AcmDomain"">\
+                                                <businessDayMethod type =""Property"">\
+                                                  <int type =""AcmDomain"">0</int>\
+                                                </businessDayMethod>\
+                                                <dateAsName type =""Property"">\
+                                                  <bool type =""AcmDomain"">false</bool>\
+                                                </dateAsName>\
+                                                <adjust type =""Property"">\
+                                                  <bool type =""AcmDomain"">true</bool>\
+                                                </adjust>\
+                                                <priority type =""Property"">\
+                                                  <int type =""AcmDomain"">2</int>\
+                                                </priority>\
+                                                <uninterruptedSequence type =""Property"">\
+                                                  <bool type =""AcmDomain"">false</bool>\
+                                                </uninterruptedSequence>\
+                                                <useSubBuckets type =""Property"">\
+                                                  <bool type =""AcmDomain"">false</bool>\
+                                                </useSubBuckets>\
+                                                <subBuckets type =""Property"">\
+                                                  <int type =""AcmDomain"">0</int>\
+                                                </subBuckets>\
+                                                <datePeriodUnit type =""Property"">\
+                                                  <int type =""AcmDomain"">4</int>\
+                                                </datePeriodUnit>\
+                                                <datePeriodCount type =""Property"">\
+                                                  <int type =""AcmDomain"">5</int>\
+                                                </datePeriodCount>\
+                                                <relativeSpot type =""Property"">\
+                                                  <bool type =""AcmDomain"">true</bool>\
+                                                </relativeSpot>\
+                                              </FDatePeriodTimeBucketDefinition>\
+                                              </Element>\
+                                              <Element>\
+                                              <FDatePeriodTimeBucketDefinition type =""AcmDomain"">\
+                                                <businessDayMethod type =""Property"">\
+                                                  <int type =""AcmDomain"">0</int>\
+                                                </businessDayMethod>\
+                                                <dateAsName type =""Property"">\
+                                                  <bool type =""AcmDomain"">false</bool>\
+                                                </dateAsName>\
+                                                <adjust type =""Property"">\
+                                                  <bool type =""AcmDomain"">true</bool>\
+                                                </adjust>\
+                                                <priority type =""Property"">\
+                                                  <int type =""AcmDomain"">2</int>\
+                                                </priority>\
+                                                <uninterruptedSequence type =""Property"">\
+                                                  <bool type =""AcmDomain"">false</bool>\
+                                                </uninterruptedSequence>\
+                                                <useSubBuckets type =""Property"">\
+                                                  <bool type =""AcmDomain"">false</bool>\
+                                                </useSubBuckets>\
+                                                <subBuckets type =""Property"">\
+                                                  <int type =""AcmDomain"">0</int>\
+                                                </subBuckets>\
+                                                <datePeriodUnit type =""Property"">\
+                                                  <int type =""AcmDomain"">4</int>\
+                                                </datePeriodUnit>\
+                                                <datePeriodCount type =""Property"">\
+                                                  <int type =""AcmDomain"">10</int>\
+                                                </datePeriodCount>\
+                                                <relativeSpot type =""Property"">\
+                                                  <bool type =""AcmDomain"">true</bool>\
+                                                </relativeSpot>\
+                                              </FDatePeriodTimeBucketDefinition>\
+                                              </Element>\
+                                            </FArray>\
+                                          </bucketDefinitions>\
+                                          <monthPeriodMapping type =""Property"">\
+                                            <int type =""AcmDomain"">0</int>\
+                                          </monthPeriodMapping>\
+                                          <datePeriodPrecedence type =""Property"">\
+                                            <bool type =""AcmDomain"">false</bool>\
+                                          </datePeriodPrecedence>\
+                                        </FTimeBucketsDefinition>\
+                                      </timeBucketsDefinition>\
+                                      <timeBucketsConfiguration type =""Property"">\
+                                        <FTimeBucketsConfiguration type =""AcmDomain"">\
+                                          <ParamDict type =""Property"">\
+                                            <FDictionary type =""AcmDomain"">\
+                                              <Element>\
+                                              <FAssociation type =""AcmDomain"">\
+                                                <associationKey type =""Property"">\
+                                                  <FSymbol type =""AcmDomain"">\
+                                                    <Text type =""Property"">\
+                                                      <string type =""AcmDomain"">buckettype</string>\
+                                                    </Text>\
+                                                  </FSymbol>\
+                                                </associationKey>\
+                                                <associationValue type =""Property"">\
+                                                  <FInteger type =""AcmDomain"">\
+                                                    <Number type =""Property"">\
+                                                      <int64 type =""AcmDomain"">0</int64>\
+                                                    </Number>\
+                                                  </FInteger>\
+                                                </associationValue>\
+                                              </FAssociation>\
+                                              </Element>\
+                                              <Element>\
+                                              <FAssociation type =""AcmDomain"">\
+                                                <associationKey type =""Property"">\
+                                                  <FSymbol type =""AcmDomain"">\
+                                                    <Text type =""Property"">\
+                                                      <string type =""AcmDomain"">spotdays</string>\
+                                                    </Text>\
+                                                  </FSymbol>\
+                                                </associationKey>\
+                                                <associationValue type =""Property"">\
+                                                  <FInteger type =""AcmDomain"">\
+                                                    <Number type =""Property"">\
+                                                      <int64 type =""AcmDomain"">2</int64>\
+                                                    </Number>\
+                                                  </FInteger>\
+                                                </associationValue>\
+                                              </FAssociation>\
+                                              </Element>\
+                                            </FDictionary>\
+                                          </ParamDict>\
+                                        </FTimeBucketsConfiguration>\
+                                      </timeBucketsConfiguration>\
+                                    </FTimeBucketsDefinitionAndConfiguration>\
+                                  </timeBucketsDefinitionAndConfiguration>\
+                                </FTimeBuckets>\
+                              </associationValue>\
+                            </FAssociation>\
+                            </Element>\
+                            <Element>\
+                            <FAssociation type =""AcmDomain"">\
+                              <associationKey type =""Property"">\
+                                <FSymbol type =""AcmDomain"">\
+                                  <Text type =""Property"">\
+                                    <string type =""AcmDomain"">Time Buckets</string>\
+                                  </Text>\
+                                </FSymbol>\
+                              </associationKey>\
+                              <associationValue type =""Property"">\
+                                <FTimeBuckets type =""AcmDomain"">\
+                                  <timeBucketsDefinitionAndConfiguration type =""Property"">\
+                                    <FTimeBucketsDefinitionAndConfiguration type =""AcmDomain"">\
+                                      <timeBucketsDefinition type =""Property"">\
+                                        <FTimeBucketsDefinition type =""AcmDomain"">\
+                                          <startDate type =""Property"">\
+                                            <int type =""AcmDomain"">739064</int>\
+                                          </startDate>\
+                                          <subBuckets type =""Property"">\
+                                            <int type =""AcmDomain"">0</int>\
+                                          </subBuckets>\
+                                          <defaultStartDate type =""Property"">\
+                                            <bool type =""AcmDomain"">true</bool>\
+                                          </defaultStartDate>\
+                                          <dateStartsBucket type =""Property"">\
+                                            <bool type =""AcmDomain"">false</bool>\
+                                          </dateStartsBucket>\
+                                          <generationInfos type =""Property"">\
+                                            <FSortedCollection type =""AcmDomain"">\
+                                            </FSortedCollection>\
+                                          </generationInfos>\
+                                          <bucketDefinitions type =""Property"">\
+                                            <FArray type =""AcmDomain"">\
+                                              <Element>\
+                                              <FDatePeriodTimeBucketDefinition type =""AcmDomain"">\
+                                                <businessDayMethod type =""Property"">\
+                                                  <int type =""AcmDomain"">0</int>\
+                                                </businessDayMethod>\
+                                                <dateAsName type =""Property"">\
+                                                  <bool type =""AcmDomain"">false</bool>\
+                                                </dateAsName>\
+                                                <adjust type =""Property"">\
+                                                  <bool type =""AcmDomain"">true</bool>\
+                                                </adjust>\
+                                                <priority type =""Property"">\
+                                                  <int type =""AcmDomain"">2</int>\
+                                                </priority>\
+                                                <uninterruptedSequence type =""Property"">\
+                                                  <bool type =""AcmDomain"">false</bool>\
+                                                </uninterruptedSequence>\
+                                                <useSubBuckets type =""Property"">\
+                                                  <bool type =""AcmDomain"">false</bool>\
+                                                </useSubBuckets>\
+                                                <subBuckets type =""Property"">\
+                                                  <int type =""AcmDomain"">0</int>\
+                                                </subBuckets>\
+                                                <datePeriodUnit type =""Property"">\
+                                                  <int type =""AcmDomain"">4</int>\
+                                                </datePeriodUnit>\
+                                                <datePeriodCount type =""Property"">\
+                                                  <int type =""AcmDomain"">1</int>\
+                                                </datePeriodCount>\
+                                                <relativeSpot type =""Property"">\
+                                                  <bool type =""AcmDomain"">true</bool>\
+                                                </relativeSpot>\
+                                              </FDatePeriodTimeBucketDefinition>\
+                                              </Element>\
+                                              <Element>\
+                                              <FDatePeriodTimeBucketDefinition type =""AcmDomain"">\
+                                                <businessDayMethod type =""Property"">\
+                                                  <int type =""AcmDomain"">0</int>\
+                                                </businessDayMethod>\
+                                                <dateAsName type =""Property"">\
+                                                  <bool type =""AcmDomain"">false</bool>\
+                                                </dateAsName>\
+                                                <adjust type =""Property"">\
+                                                  <bool type =""AcmDomain"">true</bool>\
+                                                </adjust>\
+                                                <priority type =""Property"">\
+                                                  <int type =""AcmDomain"">2</int>\
+                                                </priority>\
+                                                <uninterruptedSequence type =""Property"">\
+                                                  <bool type =""AcmDomain"">false</bool>\
+                                                </uninterruptedSequence>\
+                                                <useSubBuckets type =""Property"">\
+                                                  <bool type =""AcmDomain"">false</bool>\
+                                                </useSubBuckets>\
+                                                <subBuckets type =""Property"">\
+                                                  <int type =""AcmDomain"">0</int>\
+                                                </subBuckets>\
+                                                <datePeriodUnit type =""Property"">\
+                                                  <int type =""AcmDomain"">4</int>\
+                                                </datePeriodUnit>\
+                                                <datePeriodCount type =""Property"">\
+                                                  <int type =""AcmDomain"">5</int>\
+                                                </datePeriodCount>\
+                                                <relativeSpot type =""Property"">\
+                                                  <bool type =""AcmDomain"">true</bool>\
+                                                </relativeSpot>\
+                                              </FDatePeriodTimeBucketDefinition>\
+                                              </Element>\
+                                              <Element>\
+                                              <FDatePeriodTimeBucketDefinition type =""AcmDomain"">\
+                                                <businessDayMethod type =""Property"">\
+                                                  <int type =""AcmDomain"">0</int>\
+                                                </businessDayMethod>\
+                                                <dateAsName type =""Property"">\
+                                                  <bool type =""AcmDomain"">false</bool>\
+                                                </dateAsName>\
+                                                <adjust type =""Property"">\
+                                                  <bool type =""AcmDomain"">true</bool>\
+                                                </adjust>\
+                                                <priority type =""Property"">\
+                                                  <int type =""AcmDomain"">2</int>\
+                                                </priority>\
+                                                <uninterruptedSequence type =""Property"">\
+                                                  <bool type =""AcmDomain"">false</bool>\
+                                                </uninterruptedSequence>\
+                                                <useSubBuckets type =""Property"">\
+                                                  <bool type =""AcmDomain"">false</bool>\
+                                                </useSubBuckets>\
+                                                <subBuckets type =""Property"">\
+                                                  <int type =""AcmDomain"">0</int>\
+                                                </subBuckets>\
+                                                <datePeriodUnit type =""Property"">\
+                                                  <int type =""AcmDomain"">4</int>\
+                                                </datePeriodUnit>\
+                                                <datePeriodCount type =""Property"">\
+                                                  <int type =""AcmDomain"">10</int>\
+                                                </datePeriodCount>\
+                                                <relativeSpot type =""Property"">\
+                                                  <bool type =""AcmDomain"">true</bool>\
+                                                </relativeSpot>\
+                                              </FDatePeriodTimeBucketDefinition>\
+                                              </Element>\
+                                            </FArray>\
+                                          </bucketDefinitions>\
+                                          <monthPeriodMapping type =""Property"">\
+                                            <int type =""AcmDomain"">0</int>\
+                                          </monthPeriodMapping>\
+                                          <datePeriodPrecedence type =""Property"">\
+                                            <bool type =""AcmDomain"">false</bool>\
+                                          </datePeriodPrecedence>\
+                                        </FTimeBucketsDefinition>\
+                                      </timeBucketsDefinition>\
+                                      <timeBucketsConfiguration type =""Property"">\
+                                        <FTimeBucketsConfiguration type =""AcmDomain"">\
+                                          <ParamDict type =""Property"">\
+                                            <FDictionary type =""AcmDomain"">\
+                                              <Element>\
+                                              <FAssociation type =""AcmDomain"">\
+                                                <associationKey type =""Property"">\
+                                                  <FSymbol type =""AcmDomain"">\
+                                                    <Text type =""Property"">\
+                                                      <string type =""AcmDomain"">buckettype</string>\
+                                                    </Text>\
+                                                  </FSymbol>\
+                                                </associationKey>\
+                                                <associationValue type =""Property"">\
+                                                  <FInteger type =""AcmDomain"">\
+                                                    <Number type =""Property"">\
+                                                      <int64 type =""AcmDomain"">0</int64>\
+                                                    </Number>\
+                                                  </FInteger>\
+                                                </associationValue>\
+                                              </FAssociation>\
+                                              </Element>\
+                                              <Element>\
+                                              <FAssociation type =""AcmDomain"">\
+                                                <associationKey type =""Property"">\
+                                                  <FSymbol type =""AcmDomain"">\
+                                                    <Text type =""Property"">\
+                                                      <string type =""AcmDomain"">spotdays</string>\
+                                                    </Text>\
+                                                  </FSymbol>\
+                                                </associationKey>\
+                                                <associationValue type =""Property"">\
+                                                  <FInteger type =""AcmDomain"">\
+                                                    <Number type =""Property"">\
+                                                      <int64 type =""AcmDomain"">2</int64>\
+                                                    </Number>\
+                                                  </FInteger>\
+                                                </associationValue>\
+                                              </FAssociation>\
+                                              </Element>\
+                                            </FDictionary>\
+                                          </ParamDict>\
+                                        </FTimeBucketsConfiguration>\
+                                      </timeBucketsConfiguration>\
+                                    </FTimeBucketsDefinitionAndConfiguration>\
+                                  </timeBucketsDefinitionAndConfiguration>\
+                                </FTimeBuckets>\
+                              </associationValue>\
+                            </FAssociation>\
+                            </Element>\
+                            <Element>\
+                            <FAssociation type =""AcmDomain"">\
+                              <associationKey type =""Property"">\
+                                <FSymbol type =""AcmDomain"">\
+                                  <Text type =""Property"">\
+                                    <string type =""AcmDomain"">topOnly</string>\
+                                  </Text>\
+                                </FSymbol>\
+                              </associationKey>\
+                              <associationValue type =""Property"">\
+                                <FFalse type =""AcmDomain"">\
+                                </FFalse>\
+                              </associationValue>\
+                            </FAssociation>\
+                            </Element>\
+                          </FDictionary>\
+                        </parameters>\
+                      </FParameterGUIInfo>\
+                    </parameterInfo>\
+                  </FDynamicShiftVector>\
+                  </Element>\
+                </FArray>\
+              </ShiftVectors>\
+            </FScenarioDimension>\
+            </Element>\
+          </FArray>\
+        </ExplicitDimensions>\
+      </FExplicitScenario>\
+    </associationValue>\
+  </FAssociation>\
+  </Element>\
+</FDictionary>\
+</FrontArenaPrimeSheetExport>",IDR-SWAP 1bp 1Y 5Y 10Y,Stored Scenario,ARENASYS,
+15506,"<?xml version='1.0' encoding='UTF-8'?>\
+<FrontArenaPrimeSheetExport>\
+<!--PRIME Version: 2022.4.5-->\
+<FDictionary type =""AcmDomain"">\
+  <Element>\
+  <FAssociation type =""AcmDomain"">\
+    <associationKey type =""Property"">\
+      <FSymbol type =""AcmDomain"">\
+        <Text type =""Property"">\
+          <string type =""AcmDomain"">scenario</string>\
+        </Text>\
+      </FSymbol>\
+    </associationKey>\
+    <associationValue type =""Property"">\
+      <FExplicitScenario type =""AcmDomain"">\
+        <name type =""Property"">\
+          <string type =""AcmDomain"">IDS-SWAP_1bp</string>\
+        </name>\
+        <uniqueId type =""Property"">\
+          <FSymbol type =""AcmDomain"">\
+            <Text type =""Property"">\
+              <string type =""AcmDomain"">b0ff9267-92ce-4f5d-8610-dc81e7405d2c</string>\
+            </Text>\
+          </FSymbol>\
+        </uniqueId>\
+        <defaultSettings type =""Property"">\
+          <FScenarioSettings type =""AcmDomain"">\
+            <showColors type =""Property"">\
+              <bool type =""AcmDomain"">true</bool>\
+            </showColors>\
+            <ShiftDisplayType type =""Property"">\
+              <eShiftDisplayType type =""AcmDomain"">Absolute</eShiftDisplayType>\
+            </ShiftDisplayType>\
+          </FScenarioSettings>\
+        </defaultSettings>\
+        <ExplicitDimensions type =""Property"">\
+          <FArray type =""AcmDomain"">\
+            <Element>\
+            <FScenarioDimension type =""AcmDomain"">\
+              <perimeterCriteriaTopOnly type =""Property"">\
+                <bool type =""AcmDomain"">false</bool>\
+              </perimeterCriteriaTopOnly>\
+              <ShiftVectors type =""Property"">\
+                <FArray type =""AcmDomain"">\
+                  <Element>\
+                  <FShiftVector type =""AcmDomain"">\
+                    <commonParameters type =""Property"">\
+                      <FDictionary type =""AcmDomain"">\
+                        <Element>\
+                        <FAssociation type =""AcmDomain"">\
+                          <associationKey type =""Property"">\
+                            <FSymbol type =""AcmDomain"">\
+                              <Text type =""Property"">\
+                                <string type =""AcmDomain"">floor</string>\
+                              </Text>\
+                            </FSymbol>\
+                          </associationKey>\
+                          <associationValue type =""Property"">\
+                            <FReal type =""AcmDomain"">\
+                              <Number type =""Property"">\
+                                <double type =""AcmDomain"">NaN</double>\
+                              </Number>\
+                            </FReal>\
+                          </associationValue>\
+                        </FAssociation>\
+                        </Element>\
+                      </FDictionary>\
+                    </commonParameters>\
+                    <function type =""Property"">\
+                      <string type =""AcmDomain"">deltabasispointswithfloor</string>\
+                    </function>\
+                    <entitiesGroupItem type =""Property"">\
+                      <FSymbol type =""AcmDomain"">\
+                        <Text type =""Property"">\
+                          <string type =""AcmDomain"">yield curve</string>\
+                        </Text>\
+                      </FSymbol>\
+                    </entitiesGroupItem>\
+                    <filter type =""Property"">\
+                      <FASQLQuery type =""AcmDomain"">\
+                        <asqlNodes type =""Property"">\
+                          <FArray type =""AcmDomain"">\
+                            <Element>\
+                            <FASQLOpNode type =""AcmDomain"">\
+                              <asqlNodes type =""Property"">\
+                                <FArray type =""AcmDomain"">\
+                                  <Element>\
+                                  <FASQLAttrNode type =""AcmDomain"">\
+                                    <asqlAttribute type =""Property"">\
+                                      <FASQLAttribute type =""AcmDomain"">\
+                                        <attributeString type =""Property"">\
+                                          <FString type =""AcmDomain"">\
+                                            <Text type =""Property"">\
+                                              <string type =""AcmDomain"">Name</string>\
+                                            </Text>\
+                                          </FString>\
+                                        </attributeString>\
+                                      </FASQLAttribute>\
+                                    </asqlAttribute>\
+                                    <asqlValue type =""Property"">\
+                                      <FString type =""AcmDomain"">\
+                                        <Text type =""Property"">\
+                                          <string type =""AcmDomain"">IDR-SWAP</string>\
+                                        </Text>\
+                                      </FString>\
+                                    </asqlValue>\
+                                    <asqlOperator type =""Property"">\
+                                      <int type =""AcmDomain"">1</int>\
+                                    </asqlOperator>\
+                                    <scaleFactor type =""Property"">\
+                                      <double type =""AcmDomain"">NaN</double>\
+                                    </scaleFactor>\
+                                  </FASQLAttrNode>\
+                                  </Element>\
+                                </FArray>\
+                              </asqlNodes>\
+                              <asqlOperator type =""Property"">\
+                                <int type =""AcmDomain"">1</int>\
+                              </asqlOperator>\
+                              <asqlNodeName type =""Property"">\
+                                <FString type =""AcmDomain"">\
+                                  <Text type =""Property"">\
+                                    <string type =""AcmDomain""></string>\
+                                  </Text>\
+                                </FString>\
+                              </asqlNodeName>\
+                              <not type =""Property"">\
+                                <bool type =""AcmDomain"">false</bool>\
+                              </not>\
+                            </FASQLOpNode>\
+                            </Element>\
+                            <Element>\
+                            <FASQLOpNode type =""AcmDomain"">\
+                              <asqlNodes type =""Property"">\
+                                <FArray type =""AcmDomain"">\
+                                  <Element>\
+                                  <FASQLAttrNode type =""AcmDomain"">\
+                                    <asqlAttribute type =""Property"">\
+                                      <FASQLAttribute type =""AcmDomain"">\
+                                        <attributeString type =""Property"">\
+                                          <FString type =""AcmDomain"">\
+                                            <Text type =""Property"">\
+                                              <string type =""AcmDomain"">Oid</string>\
+                                            </Text>\
+                                          </FString>\
+                                        </attributeString>\
+                                      </FASQLAttribute>\
+                                    </asqlAttribute>\
+                                    <asqlValue type =""Property"">\
+                                      <FUndefinedObject type =""AcmDomain"">\
+                                      </FUndefinedObject>\
+                                    </asqlValue>\
+                                    <asqlOperator type =""Property"">\
+                                      <int type =""AcmDomain"">5</int>\
+                                    </asqlOperator>\
+                                    <scaleFactor type =""Property"">\
+                                      <double type =""AcmDomain"">NaN</double>\
+                                    </scaleFactor>\
+                                  </FASQLAttrNode>\
+                                  </Element>\
+                                  <Element>\
+                                  <FASQLAttrNode type =""AcmDomain"">\
+                                    <asqlAttribute type =""Property"">\
+                                      <FASQLAttribute type =""AcmDomain"">\
+                                        <attributeString type =""Property"">\
+                                          <FString type =""AcmDomain"">\
+                                            <Text type =""Property"">\
+                                              <string type =""AcmDomain"">Oid</string>\
+                                            </Text>\
+                                          </FString>\
+                                        </attributeString>\
+                                      </FASQLAttribute>\
+                                    </asqlAttribute>\
+                                    <asqlValue type =""Property"">\
+                                      <FUndefinedObject type =""AcmDomain"">\
+                                      </FUndefinedObject>\
+                                    </asqlValue>\
+                                    <asqlOperator type =""Property"">\
+                                      <int type =""AcmDomain"">4</int>\
+                                    </asqlOperator>\
+                                    <scaleFactor type =""Property"">\
+                                      <double type =""AcmDomain"">NaN</double>\
+                                    </scaleFactor>\
+                                  </FASQLAttrNode>\
+                                  </Element>\
+                                </FArray>\
+                              </asqlNodes>\
+                              <asqlOperator type =""Property"">\
+                                <int type =""AcmDomain"">0</int>\
+                              </asqlOperator>\
+                              <asqlNodeName type =""Property"">\
+                                <FString type =""AcmDomain"">\
+                                  <Text type =""Property"">\
+                                    <string type =""AcmDomain""></string>\
+                                  </Text>\
+                                </FString>\
+                              </asqlNodeName>\
+                              <not type =""Property"">\
+                                <bool type =""AcmDomain"">false</bool>\
+                              </not>\
+                            </FASQLOpNode>\
+                            </Element>\
+                          </FArray>\
+                        </asqlNodes>\
+                        <asqlOperator type =""Property"">\
+                          <int type =""AcmDomain"">0</int>\
+                        </asqlOperator>\
+                        <asqlNodeName type =""Property"">\
+                          <FString type =""AcmDomain"">\
+                            <Text type =""Property"">\
+                              <string type =""AcmDomain""></string>\
+                            </Text>\
+                          </FString>\
+                        </asqlNodeName>\
+                        <not type =""Property"">\
+                          <bool type =""AcmDomain"">false</bool>\
+                        </not>\
+                        <asqlQueryClass type =""Property"">\
+                          <FDomain type =""AcmDomain"">\
+                            <DomainName type =""Property"">\
+                              <string type =""AcmDomain"">FYieldCurve</string>\
+                            </DomainName>\
+                          </FDomain>\
+                        </asqlQueryClass>\
+                      </FASQLQuery>\
+                    </filter>\
+                    <filterTransform type =""Property"">\
+                      <FDomain type =""AcmDomain"">\
+                        <DomainName type =""Property"">\
+                          <string type =""AcmDomain"">FYieldCurveFilter</string>\
+                        </DomainName>\
+                      </FDomain>\
+                    </filterTransform>\
+                    <usePostFilter type =""Property"">\
+                      <bool type =""AcmDomain"">false</bool>\
+                    </usePostFilter>\
+                    <topOnly type =""Property"">\
+                      <bool type =""AcmDomain"">false</bool>\
+                    </topOnly>\
+                    <shiftFunctionInformation type =""Property"">\
+                      <string type =""AcmDomain"">deltabasispointswithfloor</string>\
+                    </shiftFunctionInformation>\
+                    <DynamicFilteringDimensionGroup type =""Property"">\
+                      <FSymbol type =""AcmDomain"">\
+                        <Text type =""Property"">\
+                          <string type =""AcmDomain"">yield curve grouping</string>\
+                        </Text>\
+                      </FSymbol>\
+                    </DynamicFilteringDimensionGroup>\
+                    <proxyShiftFunction type =""Property"">\
+                      <string type =""AcmDomain""></string>\
+                    </proxyShiftFunction>\
+                    <isBuildShiftVector type =""Property"">\
+                      <bool type =""AcmDomain"">false</bool>\
+                    </isBuildShiftVector>\
+                    <useDynamicFiltering2 type =""Property"">\
+                      <FTrue type =""AcmDomain"">\
+                      </FTrue>\
+                    </useDynamicFiltering2>\
+                    <functionWithDynamicParameters type =""Property"">\
+                      <string type =""AcmDomain""></string>\
+                    </functionWithDynamicParameters>\
+                    <Element>\
+                    <FShiftVectorItem type =""AcmDomain"">\
+                      <parameters type =""Property"">\
+                        <FDictionary type =""AcmDomain"">\
+                          <Element>\
+                          <FAssociation type =""AcmDomain"">\
+                            <associationKey type =""Property"">\
+                              <FSymbol type =""AcmDomain"">\
+                                <Text type =""Property"">\
+                                  <string type =""AcmDomain"">basispoints</string>\
+                                </Text>\
+                              </FSymbol>\
+                            </associationKey>\
+                            <associationValue type =""Property"">\
+                              <FReal type =""AcmDomain"">\
+                                <Number type =""Property"">\
+                                  <double type =""AcmDomain"">1.0</double>\
+                                </Number>\
+                              </FReal>\
+                            </associationValue>\
+                          </FAssociation>\
+                          </Element>\
+                        </FDictionary>\
+                      </parameters>\
+                      <name type =""Property"">\
+                        <string type =""AcmDomain"">1bp Flat Parallel</string>\
+                      </name>\
+                      <uniqueTag type =""Property"">\
+                        <string type =""AcmDomain""></string>\
+                      </uniqueTag>\
+                    </FShiftVectorItem>\
+                    </Element>\
+                  </FShiftVector>\
+                  </Element>\
+                </FArray>\
+              </ShiftVectors>\
+            </FScenarioDimension>\
+            </Element>\
+          </FArray>\
+        </ExplicitDimensions>\
+      </FExplicitScenario>\
+    </associationValue>\
+  </FAssociation>\
+  </Element>\
+</FDictionary>\
+</FrontArenaPrimeSheetExport>",IDS-SWAP_1bp,Stored Scenario,ARENASYS,

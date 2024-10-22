@@ -1,0 +1,70 @@
+[MESSAGE]
+  TYPE=INSERT_TASK
+  VERSION=1.0
+  TIME=2024-04-05 09:16:22
+  SOURCE=FAMBAMessageGenerator
+  [TASK]
+    CONTEXT=Standard
+    GROUP.NAME=EOD
+    MODULE=FWorksheetReport
+    NAME=GMRA - Email Notification
+    PARAMETER=storedASQLQueriesInstrument=;Secondary file extension=.xls;Secondary output=True;storedASQLQueries=;tradeFilters=;FPortfolioSheet_Discounting Type Override=;File Path=D:\\Report Front Arena\\Email Notifications\\Margin Calculation;multiThread=True;Date format=%d%m%y;Wait for Remote Work=False;FPortfolioSheet_Portfolio Hide Zero Positions Choice=;File date format=%d%m%y;FPortfolioSheet_Portfolio Profit Loss Start Date=;Include header image=False;Compress Output=False;FTradeSheet_overrideSheetSettings=False;AMB XML Message=True;zeroPositions=False;Header image path=;Send XML File to AMB=False;FPortfolioSheet_Valuation Date=;useMacroGUI=False;FTradeSheet_Portfolio Profit Loss End Date=;AMB Sender Name=;expiredPositions=False;Create directory with date=True;updateInterval=60;expandTimebucketChildren=False;File Name=Margin Calculation;instrumentRows=True;Secondary template=BM_BackOfficeReport;Include Full Data=False;FPortfolioSheet_Portfolio Profit Loss Use MtM Today=;FTradeSheet_Portfolio Profit Loss Start Date Custom=;Include Default Data=False;FPortfolioSheet_Portfolio Trade Filter Match Choice=;AMB Subject=;Include Raw Data=True;numberOfReports=5;Utf8 BOM=False;Include Formatted Data=True;HTML to Screen=False;tradeRowsOnly=True;verticalScenario=;FTradeSheet_Aggregate Currency Choice=;FPortfolioSheet_Portfolio Price Source=;clearSheetContent=False;FTradeSheet_Position Currency Choice=;FPortfolioSheet_Credit Delta DayCount=;trades=;FTradeSheet_Portfolio Profit Loss End Date Custom=;Include Color Information=True;function=GMRAEmailTransfer.send_GMRA_to_email;param=michael.david@inticorp.tech, felic.cahyadi@inticorp.tech, Masduki.hafid012@gmail.com, treasury.irt@bankmandiri.co.id\\ Pemberitahuan Exposure Transaksi Repo\\ Dear Sir/Madam,<br>Terlampir kami sampaikan perhitungan exposure atas transaksi repo dengan nomor referensi <trades><br>Terima kasih<br>Treasury Group<br>Bank Mandiri\\ sunoto.bakar@inticorp.tech, muhamad.ashari@bankmandiri.co.id, Sitfo1212@gmail.com;instrumentParts=False;grouping=;infoManQueriesInstrument=;FTradeSheet_Portfolio Profit Loss Use MtM Today=;FPortfolioSheet_Fixed Currency=;infoManQueriesTrades=;FPortfolioSheet_Aggregate Currency Choice=;FPortfolioSheet_Portfolio Profit Loss End Date=;Overwrite if file exists=True;FTradeSheet_Fixed Currency=;FPortfolioSheet_Position Currency Choice=;wbName=Collateral MtM Daily Backwards;FPortfolioSheet_Credit Delta RateType=;FTradeSheet_Portfolio Profit Loss Start Date=;AMB Address=;FPortfolioSheet_Include Simulated Trades=;timeBuckets=;portfolios=;snapshot=True;preProcessXml=GMRAEmailTransfer.pre_process_GMRA;Year with century=False;template=;FPortfolioSheet_Portfolio Profit Loss End Date Custom=;Print style sheet (CSS)=FStandardCSS;FPortfolioSheet_Portfolio Profit Loss Start Date Custom=;FPortfolioSheet_Currency Rate Relative Update Slack=;FPortfolioSheet_Credit Delta Displayed Rate=;HTML to Printer=False;XML to File=False;FPortfolioSheet_overrideSheetSettings=False;HTML to File=False;portfolioRowOnly=False;Performance Strategy=Periodic full GC to save memory;Print template (XSL)=FStandardTemplate;File date beginning=False;FPortfolioSheet_Valuation Parameter Date=;FPortfolioSheet_Portfolio Hide Expired Positions Choice=;macros=;
+    SIZE=3241
+    [TASKSCHEDULE]
+      CALNBR.CALID=Jakarta
+      ENABLED=Yes
+      RIB=Yes
+      SCHEDULE=1:W:1,Mo,Tu,We,Th,Fr:O,1000:20231110
+      SEQNBR=1075
+    [/TASKSCHEDULE]
+    [TASKSCHEDULE]
+      CALNBR.CALID=Jakarta
+      ENABLED=Yes
+      SCHEDULE=1:W:1,Mo,Tu,We,Th,Fr:O,1000:20231204
+      SEQNBR=1078
+    [/TASKSCHEDULE]
+    [TASKSCHEDULE]
+      ENABLED=Yes
+      SCHEDULE=1:D:1:O,0408:20231205
+      SEQNBR=1079
+    [/TASKSCHEDULE]
+  [/TASK]
+[/MESSAGE]
+[MESSAGE]
+  TYPE=INSERT_TASK
+  VERSION=1.0
+  TIME=2024-04-05 09:16:22
+  SOURCE=FAMBAMessageGenerator
+  [TASK]
+    CONTEXT=Standard
+    MODULE=FComplianceCheck
+    NAME=GMRA_INDO
+    PARAMETER=MessageRecipients=;Rules=GMRA_INDO;EmailRecipients=;Auditing=true;RuleQueries=;History=true;TestMode=false;LogLevel=3. Debug;SendMessage=false;SheetTemplate=;DisplayAlerts=true;SendEmail=false;
+    SIZE=193
+    [TASKSCHEDULE]
+      ENABLED=Yes
+      RIB=Yes
+      SCHEDULE=1:W:1,Mo,Tu,We,Th,Fr:O,1010:20231013
+      SEQNBR=168
+    [/TASKSCHEDULE]
+  [/TASK]
+[/MESSAGE]
+[MESSAGE]
+  TYPE=INSERT_TASK
+  VERSION=1.0
+  TIME=2024-04-05 09:16:22
+  SOURCE=FAMBAMessageGenerator
+  [TASK]
+    CONTEXT=Standard
+    MODULE=FComplianceCheck
+    NAME=GMRA_INTERNASIONAL
+    PARAMETER=MessageRecipients=;Rules=GMRA_International;EmailRecipients=;Auditing=true;RuleQueries=;History=true;TestMode=false;LogLevel=3. Debug;SendMessage=false;SheetTemplate=;DisplayAlerts=true;SendEmail=false;
+    SIZE=202
+    [TASKSCHEDULE]
+      ENABLED=Yes
+      RIB=Yes
+      SCHEDULE=1:W:1,Mo,Tu,We,Th,Fr:O,1010:20231013
+      SEQNBR=169
+    [/TASKSCHEDULE]
+  [/TASK]
+[/MESSAGE]

@@ -1,0 +1,534 @@
+#
+# Front Arena exported extension module.
+# source          ""
+# timestamp (utc) "2024-02-16 14:00:35"
+# ***** DO NOT EDIT! *****
+#
+name        "PS_OVB_Trades_to_HO"
+description "$Id$"
+
+groups {
+}
+
+decls[FPythonCode] {
+}
+
+clx FObject [FPythonCode] {
+  ovb_to_ho_logging
+import acm
+from collections import defaultdict
+
+
+def is_fobject(obj):
+    try:
+        return obj.IsKindOf(acm.FObject)
+    except Exception as e:
+        return False
+
+
+def pretty_params(params):
+    lines       = []
+    indentation = ' ' * 7
+    
+    for field, value in params._asdict().items():
+        if is_fobject(value):
+            lines.append(f'{indentation}{field}: {value.StringKey()}')
+        else:
+            lines.append(f'{indentation}{field}: {value}')
+    
+    return '\n'.join(lines)
+
+
+def group_by_class(objects):
+    res = defaultdict(acm.FOrderedSet)
+    
+    for obj in objects:
+        res[obj.Table().Name()].Add(obj)
+
+    return res
+
+
+def nice_obj_desc(obj):
+    table = obj.Table().Name()
+    oid   = obj.Original().Oid() if obj.Original() else obj.Oid()
+
+    return f'{table} {oid}'
+
+
+def nice_commit_list(objects):
+    groups = group_by_class(objects)
+    commaLists = dict()
+
+    for key, group in groups.items():
+        commaLists[key] = ', '.join(nice_obj_desc(obj) for obj in group)
+    
+    return '; '.join(commaLists.values())
+
+
+def on_success(log, obj_list):
+    count = len(obj_list)
+    
+    if count > 0:
+        commit_desc = nice_commit_list(obj_list)
+        log.info(f'Committed: {commit_desc}')
+    else:
+        log.warn('empty commit list')
+
+
+# for AMBA message problems
+def on_error(log, error_msg):
+    log.error(error_msg)
+
+
+# for commit exceptions
+def on_exception(log, exception):
+    log.error(f'Exception: {exception}')
+
+
+# useful for stubbing out error handling, committing etc when testing
+def do_nothing(*rest):
+    pass
+
+
+...
+
+  ovb_to_ho_main
+import acm
+from collections import namedtuple
+from ovb_to_ho_trade_linking import message_to_commit_list
+from ovb_to_ho_logging import on_success, on_error, on_exception, pretty_params
+from ovb_to_ho_message_processing import make_message_processor
+from InterfaceUtils import LogLevelNameToNumber
+from FLogger import FLogger
+from AMBReader import AMBReader
+import FRunScriptGUI
+import os
+
+
+branch_names = ['BMCI', 'BMDL', 'BMHK', 'BMSG', 'BMSH']
+log_levels   = [FLogger.INFO, FLogger.ERROR, FLogger.WARNING, FLogger.DEBUG]
+log          = None
+reader       = None
+
+
+def task_params_class(params):
+    fields = [row[0] for row in params]
+    return namedtuple('TaskParams', fields)
+
+
+def task_params():
+    def on_branch(index, field_values):
+        branch_name = field_values[0]
+        log_filename = f'BMHO_from_{branch_name}'
+        field_values[3] = f'{branch_name}/TRADE' if branch_name else None
+        field_values[4] = f'{branch_name}_TRADES_RECEIVER' if branch_name else None
+        field_values[5] = log_filename if branch_name else None
+        
+        return field_values
+
+    tt_branch     = 'Name of the branch the task should read data from'    
+    tt_server     = 'AMB hostname or IP address'    
+    tt_port       = 'AMB port'
+    tt_subject    = 'AMB subject to subscribe to'
+    tt_channel    = 'AMB channel (queue name) from which to read messages'
+    tt_filename   = "Log file name (computed from selected branch name). Today's date will be appended."
+    tt_log_folder = 'Where to store the log file'
+    
+    folder_picker = FRunScriptGUI.DirectorySelection()
+    
+    variables  = [['branch_name', 'Source Branch', 'string', branch_names, None, 1, 0, tt_branch, on_branch],
+                  ['server', 'AMB Server_Connection', 'string', None, 'localhost', 1, 0, tt_server, None],
+                  ['port', 'AMB Port_Connection', 'string', None, '9100', 1, 0, tt_port, None],
+                  ['subject', 'AMB Subject_Connection', 'string', None, None, 1, 0, tt_subject, None],
+                  ['channel', 'AMB Channel_Connection', 'string', None, None, 1, 0, tt_channel, None, False],
+                  ['log_filename', 'Log File Name_Logging', 'string', None, None, 0, 0, tt_filename, None, False],
+                  ['log_folder', 'Log Folder_Logging', folder_picker, None, folder_picker, 0, 1, tt_log_folder, 0, None],
+                  ['log_level', 'Log Level_Logging', 'string', log_levels, FLogger.INFO, 1, 0]]
+               
+    return variables
+
+
+ael_gui_parameters = {'windowCaption': 'Receive OVB Trades'}
+ael_variables      = task_params()
+TaskParams         = task_params_class(ael_variables)
+
+
+def configure_logger(params):
+    log_name     = f'BMHO_from_{params.branch_name}'
+    logger       = FLogger.GetLogger(log_name)
+    compact_date = acm.Time.DateToday().replace('-', '')
+    log_filename = f'{params.log_filename}_{compact_date}.txt'
+    
+    if params.log_folder:
+        log_folder_name = params.log_folder.SelectedDirectory().AsString()
+        log_path = os.path.join(log_folder_name, log_filename)
+        logger.Reinitialize(level=LogLevelNameToNumber(params.log_level), logToFileAtSpecifiedPath=log_path)
+    else:
+        logger.Reinitialize(level=LogLevelNameToNumber(params.log_level))
+    
+    return logger
+
+
+def amb_reader_params(params):
+    return {
+        'server': params.server, 
+        'port': params.port, 
+        'receiver': params.channel,
+        'subjects': params.subject
+        }
+
+
+def preconditions_satisfied(task_params):
+    trader_name = f'{task_params.branch_name}_TRADER'
+    
+    if not acm.FUser[trader_name]:
+        print(f'Cannot find user definition for: {trader_name}')
+        return False
+    
+    return True
+
+
+def start_ex(params_dict):
+    global log
+    global reader
+    
+    params     = TaskParams(**params_dict)
+    amb_params = amb_reader_params(params)  
+    log        = configure_logger(params)
+    
+    log.info('Starting')
+    log.info('Task parameters:\n' + pretty_params(params))
+    
+    if not preconditions_satisfied(params):
+        return
+    
+    message_processor = make_message_processor(log, params, message_to_commit_list, on_success, on_error, on_exception)
+    reader = AMBReader(amb_params, message_processor)
+    
+    try:
+        reader.Start()
+    except Exception as e:
+        log.ELOG(f'Failed to init AMB channel {params.channel}, got: {e}')
+        return
+
+
+def work():
+    try:
+        if reader:
+            reader.Work()
+    except Exception as e:
+        log.ELOG(f'Exception in AMBReader.Work: {e}')
+
+
+def stop():
+    reader.Stop()
+
+
+...
+
+  ovb_to_ho_message_processing
+import acm
+
+
+def commit_transaction(log, commit_list, on_success, on_exception):
+    try:
+        acm.BeginTransaction()
+        
+        for clone in commit_list.clones:
+            orig = clone.Original()
+            
+            if orig:
+                orig.Apply(clone)
+                orig.Commit()
+            else:
+                clone.Commit()
+
+        acm.CommitTransaction()
+    except Exception as exception:
+        acm.AbortTransaction()
+        on_exception(log, exception)
+    else:
+        acm.PollDbEvents()
+        on_success(log, commit_list.clones)
+
+
+def make_message_processor(log, task_params, message_to_commit_list, on_success, on_error, on_exception):
+    """
+    Adapt function for use with AMBReader.
+    The point of taking function arguments is to separate AMB reading, committing, and message processing from each other
+    so that we can write tests for each concern separately without mocks.
+    """
+    
+    def fun(mbf_obj):
+        msg = mbf_obj.mbf_object_to_string()
+        
+        commit_list = message_to_commit_list(log, task_params.branch_name, msg) 
+        commit_transaction(log, commit_list, on_success, on_exception)
+    
+    return fun
+
+...
+
+  ovb_to_ho_trade_linking
+import acm
+import amb
+from collections import namedtuple, OrderedDict
+
+
+amba_def = acm.FAMBADefinition()
+
+TradeReference = namedtuple('TradeReference', 'target_trdnbr link_type')
+TradeInfo      = namedtuple('TradeInfo', 'trdnbr clone references')
+CommitList     = namedtuple('CommitList', 'clones trade_infos bus_event_infos')
+
+BusinessEventLinks = namedtuple('BusinessEventLinks', 'trdnbr business_event_clone')
+
+def split_message(parent_message):
+    """
+    Split out the individual messages from a message containing multiple records.
+    This is necessary because CreateCloneListFromMessage is not guaranteed to
+    preserve the message order in our version of Prime, so we need to clone them
+    one by one to be able to tell which message corresponds to which clone.
+    We cannot call CreateCloneFromMessage directly on the child messages either
+    because it expects whole messages, not submessages for individual records.
+    """
+    res = []
+    
+    for msg in parent_message.Messages():
+        child = acm.FAMBAMessage()
+        
+        for field in parent_message.Keys():
+            value = parent_message.At(field)
+            child.AtPut(field, value) 
+        
+        if child.At('TYPE') != msg.Type():
+            child.AtPut('TYPE', msg.Type())
+        
+        child.AddMessage(msg)        
+        res.append(child)
+    
+    return res
+
+
+def ovb_trdnbr_to_ho_trdnbr(ovb_trdnbr, branch_name):
+    alias = acm.FTradeAlias.Select01(f'name="{ovb_trdnbr}" and type="{branch_name}"', None)
+    return alias.Trade().Oid() if alias else None
+
+
+def trade_msg_to_clone(ovb_trdnbr, branch_name, trade_msg):
+    alias = acm.FTradeAlias.Select01(f'name="{ovb_trdnbr}" and type="{branch_name}"', None)
+    clone = acm.AMBAMessage.CreateCloneFromMessage(trade_msg.AsString(), amba_def)
+    
+    if not alias:
+        alias = acm.FTradeAlias()
+        alias.Name(ovb_trdnbr)
+        alias.Type(branch_name)
+        alias.Trade(clone)
+        alias.RegisterInStorage()
+        
+    return clone
+
+
+def rewrite_trade_ref(msg, branch_name, field):
+    ovb_trdnbr = msg.At(field)
+
+    if ovb_trdnbr:
+        ho_trdnbr = ovb_trdnbr_to_ho_trdnbr(ovb_trdnbr, branch_name)
+        
+        if ho_trdnbr is not None:
+            msg.AtPutStrings(field, ho_trdnbr)
+        else:
+            msg.RemoveKeyString(field)
+
+
+def message_to_commit_list(log, branch_name, message_text):
+    parent_message = acm.FAMBAMessageGenerator().ParseAMBAMessage(message_text)
+    trade_infos = []
+    clones = []
+    bus_event_infos = []
+    
+    log.debug(f'received message:\n{message_text}')
+    
+    if parent_message:
+        for message in split_message(parent_message):
+            if message.At('TYPE') == acm.FSymbol('TRADE'):
+                trade_msg = message.FindMessages('TRADE').First()
+                trdnbr = trade_msg.AtString('TRDNBR')
+                connected_trdnbr = trade_msg.AtString('CONNECTED_TRDNBR')
+                contract_trdnbr = trade_msg.AtString('CONTRACT_TRDNBR')
+                
+                rewrite_trade_ref(trade_msg, branch_name, 'CONNECTED_TRDNBR')
+                rewrite_trade_ref(trade_msg, branch_name, 'CONTRACT_TRDNBR')
+                rewrite_trade_ref(trade_msg, branch_name, 'GROUP_TRDNBR')
+                rewrite_trade_ref(trade_msg, branch_name, 'BO_TRDNBR')
+                rewrite_trade_ref(trade_msg, branch_name, 'CORRECTION_TRDNBR')
+                rewrite_trade_ref(trade_msg, branch_name, 'MIRROR_TRDNBR')
+                rewrite_trade_ref(trade_msg, branch_name, 'OPENING_BO_TRDNBR')
+                rewrite_trade_ref(trade_msg, branch_name, 'TRX_TRDNBR')
+                rewrite_trade_ref(trade_msg, branch_name, 'TRDNBR')
+                
+                trade_msg.AtPutStrings('TRADER_USRNBR.USERID', f'{branch_name}_TRADER')
+                
+                log.debug(f'rewritten message:\n{message}')
+                
+                clone = trade_msg_to_clone(trdnbr, branch_name, message) if trdnbr else None
+                refs = []
+                
+                if connected_trdnbr:
+                    refs.append(TradeReference(int(connected_trdnbr.AsString()), 'CONNECTED_TRDNBR'))
+                
+                if contract_trdnbr:
+                    refs.append(TradeReference(int(contract_trdnbr.AsString()), 'CONTRACT_TRDNBR'))
+                
+                trade_infos.append(TradeInfo(int(trdnbr.AsString()) if trdnbr else None, clone, refs))
+                clones.append(clone)
+            elif message.At('TYPE') == acm.FSymbol('BUSINESSEVENT'):
+                business_event_msg = message.FindMessages('BUSINESSEVENT').First()
+                clone = acm.AMBAMessage.CreateCloneFromMessage(message.AsString(), amba_def)
+                
+                bus_event_trade_link_msgs = business_event_msg.FindMessages('BUSINESSEVENTTRDLINK')
+                for bus_event_trade_link_msg in bus_event_trade_link_msgs:
+                    linked_trdnbr = bus_event_trade_link_msg.AtString('TRDNBR')
+                    bus_event_infos.append(BusinessEventLinks(int(linked_trdnbr.AsString()), clone))
+                    
+                clones.append(clone)
+            elif message.At('TYPE') == acm.FSymbol('TASK'): #Receiving signal that transfer has ended
+                log.info(f'Received signal for end of transfer. Starting export of trades for {branch_name}')
+                task_msg = message.FindMessages('TASK').First()
+                task_name = task_msg.At('NAME').AsString()
+                export_task = acm.FAelTask[task_name]
+                if export_task:
+                    export_task.Execute()
+                else:
+                    log.ELOG(f'Could not find task {task_name}')
+            else:
+                clone = acm.AMBAMessage.CreateCloneFromMessage(message.AsString(), amba_def)
+                clones.append(clone)
+    
+    pre_commit_linking(trade_infos)
+    
+    if bus_event_infos:
+        trade_link_clones = business_event_linking(trade_infos, bus_event_infos)
+        for clone in trade_link_clones:
+            clones.append(clone)
+    
+    return CommitList(clones, trade_infos, bus_event_infos)
+
+
+def pre_commit_linking(trade_infos):
+    """
+    Set links that must be set before the trade is first created in order to pass validation.
+    """    
+    trdnbr_mapping = {info.trdnbr: info.clone for info in trade_infos}
+    
+    for info in trade_infos:
+        for ref in info.references:
+            if ref.link_type == 'CONNECTED_TRDNBR':
+                target = trdnbr_mapping[ref.target_trdnbr]
+                
+                info.clone.ConnectedTrade(target)
+
+
+def business_event_linking(trade_infos, bus_event_infos):
+    trade_links = []
+    trade_clone_mapping = {info.trdnbr: info.clone for info in trade_infos}
+    
+    bus_event_mapping = {bus_event_info.trdnbr: bus_event_info.business_event_clone for bus_event_info in bus_event_infos}
+    for trdnbr, bus_event_clone in bus_event_mapping.items():
+        trd_clone = trade_clone_mapping[trdnbr]
+                
+        trade_link_clone = acm.FBusinessEventTradeLink()
+        trade_link_clone.BusinessEvent(bus_event_clone)
+        trade_link_clone.Trade(trd_clone)
+        trade_link_clone.TradeEventType("None")
+        trade_links.append(trade_link_clone)
+        
+    return trade_links
+
+...
+
+  ovb_to_ho_unit_tests
+import acm
+import unittest
+from ovb_to_ho_trade_linking import message_to_commit_list
+from ovb_to_ho_logging import do_nothing
+
+
+fx_swap = '''
+[MESSAGE]
+  TYPE=TRADE
+  VERSION=1.0
+  TIME=2024-01-23 05:04:06
+  SOURCE=FAMBAMessageGenerator
+  [TRADE]
+    TYPE=Normal
+    TIME=2024-01-22 02:47:43 UTC
+    ACQUIRE_DAY=2024-01-24
+    BASE_COST_DIRTY=1000000
+    CONNECTED_TRDNBR=60
+    CONTRACT_TRDNBR=60
+    CURR.INSID=SGD
+    INSADDR.INSID=USD
+    PREMIUM=0
+    PRICE=0
+    QUANTITY=1000000
+    STATUS=Simulated
+    TRADE_PROCESS=16384
+    TRADER_USRNBR.USERID=ARENASYS
+    TRDNBR=60
+    VALUE_DAY=2024-01-24
+  [/TRADE]
+  [TRADE]
+    TYPE=Normal
+    TIME=2024-01-22 02:47:43 UTC
+    ACQUIRE_DAY=2024-02-26
+    BASE_COST_DIRTY=1000000
+    CONNECTED_TRDNBR=60
+    CONTRACT_TRDNBR=61
+    CURR.INSID=SGD
+    INSADDR.INSID=USD
+    INTEREST_RATE_AT_TRADE_TIME=0.0429214001853
+    PREMIUM=0
+    PRICE=0
+    QUANTITY=-1000000
+    STATUS=Simulated
+    TRADE_PROCESS=32768
+    TRADER_USRNBR.USERID=ARENASYS
+    TRDNBR=61
+    VALUE_DAY=2024-02-26
+  [/TRADE]
+[/MESSAGE]
+'''.strip()
+
+
+class TradeRefTests(unittest.TestCase):
+    def test_fx_swap(self):
+        commit_list = message_to_commit_list(fx_swap)
+        
+        self.assertTrue(len(commit_list.clones) == 2)
+        
+        near = commit_list.clones[0]
+        far = commit_list.clones[1]
+        
+        self.assertTrue(near.IsFxSwapNearLeg())
+        self.assertTrue(far.IsFxSwapFarLeg())
+        self.assertTrue(far.ConnectedTrade() == near)
+        
+        for trade_info in commit_list.trade_infos:
+            for ref in trade_info.references:
+                if ref.link_type == 'CONTRACT_TRDNBR':
+                    if trade_info.clone == near:
+                        self.assertEqual(ref.target_trdnbr, 60)
+                    
+                    if trade_info.clone == far:
+                        self.assertEqual(ref.target_trdnbr, 61)
+
+
+def run_tests():    
+    suite = unittest.TestLoader().loadTestsFromTestCase(TradeRefTests)
+    unittest.TextTestRunner(verbosity=2).run(suite)
+
+...
+
+}
+

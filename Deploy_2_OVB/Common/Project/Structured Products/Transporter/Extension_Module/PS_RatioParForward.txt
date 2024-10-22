@@ -1,0 +1,950 @@
+#
+# Front Arena exported extension module.
+# source          ""
+# timestamp (utc) "2024-07-30 02:28:00.9"
+# ***** DO NOT EDIT! *****
+#
+name        "PS_RatioParForward"
+description ""
+
+groups {
+}
+
+decls[FColumnDefinition] {
+  "Current Forward Points" ( "sheet columns.dealpackagesheet" ) "";
+  "Current Forward Rate" ( "sheet columns.dealpackagesheet" ) "";
+  "NPV Price" ( "sheet columns.dealpackagesheet" "sheet columns.portfoliosheet" ) "";
+  "Trade Forward Days" ( "sheet columns.dealpackagesheet" ) "";
+  "Trade Points" ( "sheet columns.dealpackagesheet" ) "";
+  "Trade Quantity Wide" ( "sheet columns.dealpackagesheet" ) "";
+  "WA Price" ( "sheet columns.dealpackagesheet" ) "";
+}
+
+clx FTradingSheet [FColumnDefinition] {
+  Current Forward Points =
+  Access=ReadOnly
+  Description=The current forward points at the trades valueday
+  ExtensionAttribute=tradeFxForwardPoints
+  Format=FXPoints
+  GroupLabel=Pricing
+  LabelList=Points;TheorPoints
+  Name=Forward Points
+
+
+  Current Forward Rate =
+  Access=ReadOnly
+  Description=The current forward rate at the trades valueday
+  ExtensionAttribute=tradeFxForwardRate
+  Format=InstrumentDefinitionFxPrice
+  GroupLabel=Pricing
+  LabelList=TheorRate
+  Name=Forward Rate
+
+
+  Current Spot Rate =
+  Access=ReadOnly
+  Description=The current spot rate for ratio par forward
+  ExtensionAttribute=tradeFxSpotRate
+  Format=InstrumentDefinitionFxPrice
+  GroupLabel=Pricing
+  LabelList=SpotRate
+  Name=Spot Rate
+
+
+  NPV Points =
+  Access=ReadOnly
+  Description=The current NPV Points for the par forward
+  ExtensionAttribute=npvParForwardPoints
+  Format=FXPoints
+  GroupLabel=Ratio Par Forward
+  LabelList=NPV Points
+  Name=NPV Points
+
+
+  NPV Price =
+  Access=ReadOnly
+  Description=The current NPV Price for the par forward
+  ExtensionAttribute=npvParForwardPrice
+  Format=InstrumentDefinitionFxPrice
+  GroupLabel=Ratio Par Forward
+  LabelList=NPV Px
+  Name=NPV Price
+
+
+  Trade Forward Days =
+  Access=ReadWrite
+  Class=Trade
+  Description=The number of days between trade time and delivery
+  GroupLabel=Trade
+  LabelList=Days
+  Method=TradeForwardDays
+  Name=Forward Days
+
+
+  Trade Points =
+  Access=ReadWrite
+  Class=Trade
+  Description=The points at which the trade was executed.
+  GroupLabel=Trade
+  LabelList=Points;Trade Points
+  Method=TradePoints
+  Name=Forward Points
+
+
+  Trade Quantity Wide =
+  InheritsFrom=Trade Quantity
+  InitialWidth=100
+  Name=Trade Quantity Wide
+
+
+  WA Points =
+  Access=ReadOnly
+  Description=The current WA Points for the par forward
+  ExtensionAttribute=waParForwardPoints
+  Format=FXPoints
+  GroupLabel=Ratio Par Forward
+  LabelList=WA Points
+  Name=WA Points
+
+
+  WA Price =
+  Access=ReadOnly
+  Description=The current weighted average Price for the par forward
+  ExtensionAttribute=waParForwardPrice
+  Format=InstrumentDefinitionFxPrice
+  GroupLabel=Ratio Par Forward
+  LabelList=WA Px
+  Name=WA Price
+
+
+}
+
+decls[FCustomApplicationDefinition] {
+}
+
+clx FObject [FCustomApplicationDefinition] {
+  Fx Ratio Par Forward =
+  CreationFunction=
+  HostApplication=
+  HostObjectType=
+  HostPath=
+  Name=FxRatioParForward
+  ObjectTypes=FDealPackage
+  ProfileComponent=FxRatioParForward
+
+
+}
+
+decls[FCustomMethod] {
+}
+
+clx FTrade [FCustomMethod] {
+  Get_TradeForwardDays =
+  Definition=TradeForwardDays: int read
+  Function=FXRatioParForwardUtils.GetTradeForwardDays
+
+
+  Set_TradeForwardDays =
+  Definition=TradeForwardDays(int days) write
+  Function=FXRatioParForwardUtils.SetTradeForwardDays
+
+
+}
+
+clx FTradeLogicDecorator [FCustomMethod] {
+  Get_TradePoints =
+  Definition=TradePoints: double read
+  Function=FXRatioParForwardUtils.GetTradePoints
+
+
+  Set_TradePoints =
+  Definition=TradePoints(double points) write
+  Function=FXRatioParForwardUtils.SetTradePoints
+
+
+}
+
+decls[FDealPackageDefinition] {
+}
+
+clx FObject [FDealPackageDefinition] {
+  FXRatioParForward =
+  CustomApplication=Deal Package
+  DefinitionClass=FXRatioParForward.FXRatioParForwardDefinition
+  Description=
+  DisplayName=FX Ratio Par Forward
+  Type=Normal
+
+
+}
+
+decls[FExtensionAttribute] {
+}
+
+clx FDealPackageInstrumentAndTrades [FExtensionAttribute] {
+  theoreticalCashInventoryValuesDiscountedValues = sumOf(instruments :* "collapse(theoreticalCashInventoryValuesDiscountedValues)" [priceSource, isSplitAllGrouped, valuesOnSpotOverride, positionObject, includeInceptionCash, tradeCategoryInclusionMaskDefault, tradeStatusInclusionMaskDefault]);
+  theoreticalValues = sumOf(openInstruments :* "collapse(theoreticalValues)" [priceSource, isSplitAllGrouped, valuesOnSpotOverride, positionObject, filterUnit, groupingSpotDiscountDate, valueAtCostAdjustment, tradeStatusInclusionMaskDefault]);
+  tradeStatusInclusionMaskDefault = tradeStatusInclusionMaskAll;
+}
+
+clx FFxRate [FExtensionAttribute] {
+  theoreticalCashInventoryValuesDiscountedValues = theoreticalInstrumentPositionValues + theoreticalInstrumentPositionValues .* denominatedvalue(float(1 / simplisticFXSpotRate), unit(simplisticFXSpotRate), , date(theoreticalInstrumentPositionValues));
+  tradeFxForwardPoints = select(currencyPair, 
+  nil->nil, 
+  default->(double(tradeFxForwardRate) - double(simplisticFXSpotRate)) / currencyPair.PointValue);
+  tradeFxForwardRate = object :* "fxForwardRate" [fxForwardDate = trade.ValueDay];
+  tradeFxSpotRate = object :* "fxSpotRate";
+}
+
+clx FInstrument [FExtensionAttribute] {
+  tradeFxForwardPoints = nil;
+  tradeFxForwardRate = nil;
+  tradeFxSpotRate = nil;
+}
+
+clx FInstrumentAndTrades [FExtensionAttribute] {
+  npvParForwardPoints = select(parForwardCurrencyPair, 
+  nil->nil, 
+  default->(double(npvParForwardPrice) - double(parForwardReferencePrice)) / parForwardCurrencyPair.PointValue);
+  npvParForwardPrice = switch(parForwardCurrencyPair, 
+  nil->nil, 
+  default->abs(parForwardDiscountedPVCurrency1) / abs(parForwardDiscountedPVCurrency2));
+  parForwardCurrencies = [parForwardCurrencyPair.Currency1, parForwardCurrencyPair.Currency2];
+  parForwardCurrencyPair = object.Trades.AsArray.First.CurrencyPair;
+  parForwardDiscountedPVCurrency1 = parForwardDiscountedPVPerCurrency[0];
+  parForwardDiscountedPVCurrency2 = parForwardDiscountedPVPerCurrency[1];
+  parForwardDiscountedPVPerCurrency = convertToCurrency(object:theoreticalCashInventoryValuesDiscounted [currenciesForVectorColumn = parForwardCurrencies, useFxBaseCurrency, includeInceptionCash, tradeCategoryInclusionMaskDefault := tradeCategoryInclusionMaskParamCollateral, tradeStatusInclusionMaskDefault := tradeStatusInclusionMaskAll, profitAndLossSeparateHistorical, collateralFeesOnly := false, profitAndLossTradeCategoryInclusionMask := tradeCategoryInclusionMaskDefault], displayCurrencyFXRatesForProjectedCashInventory, parForwardCurrencies :* "currencyOrFxBaseCurrency" [useFxBaseCurrency], parForwardCurrencies);
+  parForwardFxRate = select(parForwardCurrencyPair, 
+  nil->nil, 
+  default->CreateFxRate(parForwardCurrencies[0], parForwardCurrencies[1]));
+  parForwardReferencePrice = parForwardFxRate :* "simplisticFXSpotRate";
+  theoreticalCashInventoryValuesDiscounted = scenarioaxis(stripDateTimePart(discount(valuesInUnit(theoreticalCashInventoryValuesDiscountedValues, theoreticalValueDiscountingUnits, false), theoreticalValueDiscountCurves, displayDate)), projectedCashPerimeterNames, <"refPriceBase", , "fixedvariant", "Theoretical">);
+  theoreticalCashInventoryValuesDiscountedValues = sumOf(instruments :* "collapse(theoreticalCashInventoryValuesDiscountedValues)" [priceSource, isSplitAllGrouped, valuesOnSpotOverride, positionObject, includeInceptionCash, tradeCategoryInclusionMaskDefault, tradeStatusInclusionMaskDefault]);
+  tradeFxSpotRate = select(parForwardFxRate, 
+  nil->nil, 
+  default->parForwardFxRate :* "tradeFxSpotRate");
+  waParForwardPoints = select(parForwardCurrencyPair, 
+  nil->nil, 
+  default->(double(waParForwardPrice) - double(parForwardReferencePrice)) / parForwardCurrencyPair.PointValue);
+  waParForwardPrice = select(parForwardFxRate, 
+  nil->nil, 
+  default->abs(sumOf(stripDateTimePart(abs(arrayAny(parForwardFxRate:tradeFxForwardRate [trade = lot(object.Trades)])) .* ((object.Trades) :* "object.Quantity"))) / abs(sumOf((object.Trades) :* "object.Quantity"))));
+}
+
+clx FTradeRow [FExtensionAttribute] {
+  tradeFxForwardPoints = instrument:tradeFxForwardPoints [trade];
+  tradeFxForwardRate = instrument:tradeFxForwardRate [trade];
+  tradeFxSpotRate = instrument:tradeFxSpotRate [trade];
+}
+
+decls[FExtensionValue] {
+}
+
+clx FObject [FExtensionValue] {
+  _CustomPanes_FxRatioParForward
+CustomLayout_FxRatioParForward,General;CustomLayout_FxRatioParForward_AdditionalInfo,Add Info;CustomLayout_SP_Operations,Operations
+...
+
+  CustomLayout_FxRatioParForward
+vbox(;
+        ipName;
+        hbox{;
+          vbox[Currency Pair;
+            hbox{;
+                    currency1;
+                    currency2;
+            };
+            currentSpot;
+          ];
+        };
+        
+        hbox{;
+            vbox{;
+                portfolio;
+                counterparty;
+                acquirer;
+                status;
+                vbox[;
+                    b2bEnabled;
+                    hbox{;
+                        vbox(;
+                            b2bPrice;
+                            b2bMargin;
+                            );
+                        vbox(;
+                            b2bPrf;
+                            b2bAcq;
+                            );
+                        );
+                    ];
+                hbox(;
+                    fill;
+                    addTrade;
+                    );
+                };
+            vbox{;
+                trades_AddInfo_DealerCode;
+                trades_AddInfo_DocumentType;
+                trades_AddInfo_TransactionPurpose;
+                trade_optKey1;
+                trade_optKey2;
+                trade_optKey3;
+                trade_optKey4;
+                };
+            vbox{;
+                vbox[Weighted average;
+                    hbox(;
+                        waPoints;
+                        waPrice;
+                        );
+                    hbox(;
+                        fill;
+                        useWaPrice;
+                        );
+                    ];
+                referencePrice;
+                hbox(;
+                    points;
+                    price;
+                    );
+                tradeTime;
+                trader;
+                hbox(;
+                    removeTrade;
+                    payments;
+                    );
+                };
+            };
+
+);
+...
+
+  CustomLayout_FxRatioParForward_AdditionalInfo
+vbox[Trade;
+tradeAddInfo;
+];
+...
+
+  CustomPanes_FxRatioParForward
+CustomLayout_FxRatioParForward,General;CustomLayout_FxRatioParForward_AdditionalInfo,Add Info
+...
+
+}
+
+decls[FMenuExtension] {
+}
+
+clx FFrame [FMenuExtension] {
+  SP_FxRatioParForward =
+  DisplayName=FX Ratio Par Forward
+  Function=FXRatioParForward.StartFXRatioParForward
+  MenuType=Application
+  ParentMenu=Trading/Structured Products
+  ProfileComponent=FxRatioParForward
+  Standard=Yes
+
+
+}
+
+decls[FNumFormatter] {
+}
+
+clx FObject [FNumFormatter] {
+  FXPoints =
+  DenominatedValueDateTimeFormatter=
+  DigitGrouping=
+  DigitGroupingSymbol=
+  Epsilon=1e-06
+  Expression=x
+  Format=
+  Fractions=
+  InputScaleFactor=
+  InputScaleFactorLimit=
+  Inverse=
+  MaximumSignificantDigits=15
+  MinimumSignificantDigits=
+  Mnemonic=
+  NumDecimals=
+  ScaleFactor=1.0
+  ShowInf=false
+  Tick=
+  TruncateTrailingZeros=true
+  USTreasuryInput=
+
+
+}
+
+decls[FPythonCode] {
+}
+
+clx FObject [FPythonCode] {
+  FXRatioParForward
+
+import acm
+from DealPackageDevKit import Object, CalcVal, Action, Settings, TradeActions, CloseCommand, MirrorCommand, TradeStatusChoices, CounterpartyChoices, AcquirerChoices, \
+                              DealPackageChoiceListSource, ReturnDomainDecorator, PortfolioChoices
+from DealPackageUtil import SetNew, UnDecorate
+
+from CompositeAttributes import BuySell, PaymentsDialog
+from CompositeTradeDefinition import TradeDefinition
+from FXRatioParForwardUtils import FxDecimals
+from ParForwardTradeComponents import B2BParForward
+
+try:
+    from StructuredProductsCommonAddInfo import SP_CommonAddInfoDealPackageDefinitionWithPreDeal
+except ImportError:
+    try:
+        from StructureProductsPreDealUtils import SP_CommonAddInfoDealPackageDefinitionWithPreDeal
+    except ImportError:
+        from DealPackageDevKit import DealPackageDefinition as SP_CommonAddInfoDealPackageDefinitionWithPreDeal
+
+try:
+    from StructuredProductsCommonAddInfo import CommonTradeDefinition
+except ImportError:
+    from CompositeAttributesLib import TradeDefinition as CommonTradeDefinition
+
+try:
+    from StructuredProductsCommonAddInfo import CommonAddInfoDefition
+except ImportError:
+    from CompositeAddInfoDefinition import AddInfoDefinition as CommonAddInfoDefition
+
+class ReducedCommonTradeDefinition(CommonTradeDefinition):
+    def CommonAttributes(self):
+        return ['counterparty', 'yourRef', 'trader', 'settleCategoryChlItem', 'status', 'tradeTime', 'optKey1', 'optKey2', 'optKey3', 'optKey4']
+
+DEFAULT_CURR2_DICT = {'USD': 'JPY', 'EUR': 'USD', 'GBP': 'USD', 'AUD': 'USD'}
+
+@TradeActions(mirror = MirrorCommand(statusAttr='status', newStatus='Simulated'), close = CloseCommand(statusAttr='trades_status', nominal='lead_tradePremium'))
+@Settings(GraphApplicable=False, SheetDefaultColumns=['Trade Forward Days','Trade Value Day','Trade Quantity Wide','Trade Instrument','Current Forward Points', 'Current Forward Rate', 'Trade Price', 'Portfolio Present Value','Net NOP'])
+class FXRatioParForwardDefinition(SP_CommonAddInfoDealPackageDefinitionWithPreDeal):
+    updateNext = True
+    '''******************************************************************************************
+    * Attribute Declarations
+    ******************************************************************************************'''   
+    ''' Strip Dates '''
+    
+    ipName   =          Object(     label='Name',
+                                    objMapping='InstrumentPackage.Name') 
+    
+    currency1 =         Object(     label='',
+                                    choiceListSource = "@ChoicesCurrency1",
+                                    onChanged = "@UpdateCurrencyChoices",
+                                    objMapping='Currency1') 
+    
+    price     =         Object(     label = '',
+                                    formatter='InstrumentDefinitionFxPrice',
+                                    objMapping='Trades.Price')
+     
+    points     =         Object(     label = 'Points/Price',
+                                    formatter='FXPoints',
+                                    objMapping='Trades.TradePoints')
+                               
+    
+    npvPrice  =         CalcVal( label = '', calcMapping = 'DealPackageAsPortfolio:FPortfolioSheet:NPV Price') 
+    
+    waPrice  =          CalcVal( label = '', calcMapping = 'DealPackageAsPortfolio:FPortfolioSheet:WA Price') 
+    
+    npvPoints  =         CalcVal( label = 'Points/Rate', calcMapping = 'DealPackageAsPortfolio:FPortfolioSheet:NPV Points', valuationDetails=False) 
+    
+    waPoints  =          CalcVal( label = 'Points/Rate', calcMapping = 'DealPackageAsPortfolio:FPortfolioSheet:WA Points', valuationDetails=False) 
+    
+    currentSpot  =      CalcVal( label = 'Current Spot', calcMapping = 'DealPackage:FDealPackageSheet:Current Spot Rate', valuationDetails=False)
+    
+    useNpvPrice =        Action(  label='Use',
+                                   action='@UseNPV',
+                                   toolTip='Use current NPV Price')
+    
+    useWaPrice =        Action(  label='Use',
+                                   action='@UseWA',
+                                   toolTip='Use current WA Price')
+    
+    currency2 =         Object(     label='',
+                                    choiceListSource = "@ChoicesCurrency2",
+                                    onChanged = "@UpdateCurrencyChoices",
+                                    objMapping='Trades.Currency')  
+ 
+    # Trade attributes for all
+    counterparty =      Object(     objMapping="Trades.Counterparty",
+                                    label="Counterparty",
+                                    choiceListSource=CounterpartyChoices())
+
+    portfolio =         Object(     objMapping="Trades.Portfolio",
+                                    label="Portfolio")
+
+    acquirer =          Object(     objMapping="Trades.Acquirer",
+                                    label="Acquirer",
+                                    choiceListSource=AcquirerChoices())
+
+    tradeTime =         Object(     objMapping="Trades.TradeTime",
+                                    label="Trade Time",
+                                    transform="@TransformPeriodToDate",
+                                    formatter="DateTime")
+
+    trader =            Object(     objMapping="Trades.Trader",
+                                    label="Trader")
+                                    
+    referencePrice =    Object(     objMapping="Trades.ReferencePrice",
+                                    formatter='InstrumentDefinitionFxPrice',
+                                    label="Spot Price")
+
+    status =            Object(     objMapping="Trades.Status",
+                                    defaultValue="Simulated",
+                                    label="Status",
+                                    choiceListSource=TradeStatusChoices())
+    
+    #b2b =               B2BParForward (b2bName = 'ParForwardB2BParams')
+
+    b2bEnabled =        Object( defaultValue=False,
+                                    label='B2B Cover',
+                                    objMapping='ParForwardB2BParams.SalesCoverEnabled')
+                                                   
+    b2bMargin =         Object( label='Margin',
+                                    defaultValue=0.0,
+                                    objMapping = 'TraderMargin', 
+                                    formatter='FXPoints',
+                                    visible='@IsB2BEnabled')
+    
+    b2bPrice =          Object(     label='Trader Price',
+                                    objMapping='TraderPrice',
+                                    formatter='FullPrecision',
+                                    visible='@IsB2BEnabled')
+                            
+    b2bPrf =            Object( label='Trader Portfolio',
+                                    objMapping='TraderPortfolio',
+                                    choiceListSource=PortfolioChoices(),
+                                    visible='@IsB2BEnabled')
+             
+    b2bAcq =            Object( label='Trader Acquirer',
+                                    objMapping='TraderAcquirer',
+                                    choiceListSource=AcquirerChoices(),
+                                    visible='@IsB2BEnabled')
+
+    trades = ReducedCommonTradeDefinition(trade = 'FXTrade')
+
+    lead_tradePremium = Object(objMapping = 'LeadTradePremium',
+                                    visible = False)
+
+    addTrade =          Action(  label='Add',
+                                   action='@AddTrade',
+                                   toolTip='Add a new trade to the package')
+
+    removeTrade =          Action(  label='Remove',
+                                   action='@RemoveTrade',
+                                   toolTip='Remove the latest trade')
+
+    payments =          PaymentsDialog( trade = 'LeadTrade' )
+                    
+    tradeAddInfo        = CommonAddInfoDefition(obj='LeadTrade')
+
+    trade_optKey1           = Object(objMapping = "Trades.OptKey1",
+                                    label = "Branch" )
+
+    trade_optKey2           = Object(objMapping = "Trades.OptKey2",
+                                    label = "Interface" )
+
+    trade_optKey3           = Object(objMapping = "Trades.OptKey3",
+                                    label = "Product Type" )
+
+    trade_optKey4           = Object(objMapping = "Trades.OptKey4",
+                                    label = "Trade Category" )
+
+    #operations          = OperationsPanel()
+    
+    '''******************************************************************************************
+    * Attribute based Changed/Default/Transform/Validate Callbacks 
+    ******************************************************************************************'''  
+
+    def AttributeOverrides(self, overrideAccumulator):
+
+        overrideAccumulator({
+            'trade_optKey3': dict(defaultValue='SP'),
+            'trade_optKey4': dict(defaultValue='MPF'),
+            'b2bPrice': dict(defaultValue=self.LeadTrade().Price()),
+        })
+    
+    def UseNPV(self, *args):
+        self.price = acm.GetFunction("round", 2)(self.npvPrice.Value(), FxDecimals(self.LeadTrade().CurrencyPair()))
+        self.referencePrice = acm.GetFunction("round", 2)(self.currentSpot.Value(), FxDecimals(self.LeadTrade().CurrencyPair()))
+ 
+    def UseWA(self, *args):
+        self.price = acm.GetFunction("round", 2)(self.waPrice.Value(), FxDecimals(self.LeadTrade().CurrencyPair()))
+        self.referencePrice = acm.GetFunction("round", 2)(self.currentSpot.Value(), FxDecimals(self.LeadTrade().CurrencyPair()))
+ 
+    def CurrencyChoiceEnabled(self, *args):
+        return all([trade.DecoratedObject().Originator().IsInfant() for trade in self.Trades()])
+    
+    def ChoicesCurrency1(self, *args):
+        self.UpdateCurrencyChoices()
+        return self._currency1Choices.Source()
+        
+    def DealPackageAsPortfolio(self):
+        return self.DealPackage().AsPortfolio()
+        
+    def ChoicesCurrency2(self, *args):
+        self.UpdateCurrencyChoices()
+        return self._currency2Choices.Source()
+        
+    def UpdateCurrencyChoices(self, *args):
+        self._currency1Choices.Clear()
+        self._currency2Choices.Clear()
+        ccy1List = sorted(list({p.Currency1() for p in acm.FCurrencyPair.Select(None)}))
+
+        ccy2List = sorted(list({p.Currency2() for p in acm.FCurrencyPair.Select('currency1 = {0}'.format(self.currency1.Name()))}))
+        self._currency1Choices.AddAll(ccy1List)
+        self._currency2Choices.AddAll(ccy2List)
+    
+    # Decorators
+    @ReturnDomainDecorator('FCurrency')
+    def Currency1(self, value = '*Reading*'):
+        if value == '*Reading*':
+            return self.Instruments().First()
+        if value:
+            if value.CurrencyPair(self.currency2, False):
+                pass
+            elif value.Name() in DEFAULT_CURR2_DICT:
+                self.currency2 = DEFAULT_CURR2_DICT[value.Name()]
+            else:
+                self.currency2 = acm.FCurrencyPair.Select('currency1 = {0}'.format(value.Name())).First().Currency2()
+            self.DealPackage().ReplaceInstrumentAt('FXTrade', value)
+            for t in self.Trades():
+                t.Instrument(value)
+
+    def LeadTradePremium(self, value = '*Reading*'):
+        if value == '*Reading*':
+            return self.LeadTrade().Premium()
+
+    def AssemblePackage(self):
+        trade = acm.DealCapturing.CreateNewTrade('EUR')
+        wrap = acm.FBusinessLogicDecorator.WrapObject(trade)
+        wrap.Quantity(1000000)
+        wrap.Currency('USD')
+        wrap.TradeProcess(8192)
+        if wrap.CurrencyPair():
+            wrap.Price(wrap.CurrencyPair().SpotPrice(wrap.ValueDay(), False))
+            self.DealPackage().AddTrade(wrap.DecoratedObject(), 'FXTrade')
+
+    def LastValueDay(self):
+        return self.Trades().SortByProperty('ValueDay').Last().ValueDay()
+
+    def AddTrade(self, *args):
+        lead_trade = self.LeadTrade()
+        trade = acm.DealCapturing.CreateNewTrade(lead_trade.Instrument())
+        deco = acm.FBusinessLogicDecorator.WrapObject(trade)
+        for attr in ['Currency', 'Portfolio', 'Trader', 'Status', 'Acquirer', 'Counterparty', 'ReferencePrice', 'Quantity' , 'TradeTime', 
+                     'OptKey1', 'OptKey2', 'OptKey3', 'OptKey4']:
+            setattr(deco, attr, getattr(lead_trade, attr)())
+        add_infos = lead_trade.AddInfos()
+        for add_info in add_infos:
+            attr = add_info.AddInf().Name()
+            setattr(deco.AdditionalInfo(), attr, getattr(lead_trade.AdditionalInfo(), attr)())
+        deco.ValueDay(acm.Time.DateAddDelta(self.LastValueDay(),0,1,0))
+        deco.Price(self.price)
+        trade = deco.DecoratedObject()
+        trade.SetFxForwardBit()
+        self.DealPackage().AddTrade(trade, deco.ValueDay())
+
+    def RemoveTrade(self, *args):
+        if self.DealPackage().Trades().Size() > 1:
+            trade = self.DealPackage().Trades().Last().DecoratedObject()
+            trade.Unsimulate()    
+            self.DealPackage().RemoveTrade(trade)
+
+    def OnInit(self):
+        super(FXRatioParForwardDefinition, self).OnInit()
+        self.RegisterCallbackOnAttributeChanged(self.UpdateSpotReference, ('currency1', 'currency2'))
+        self._currency1Choices = DealPackageChoiceListSource()
+        self._currency2Choices = DealPackageChoiceListSource()
+
+    def OnNew(self):
+        super(FXRatioParForwardDefinition, self).OnNew()
+        self.UpdateSpotReference()
+
+    def OnSave(self, saveConfig):
+        super(FXRatioParForwardDefinition, self).OnSave(saveConfig)
+        self.tradeTime = self.LeadTrade().TradeTime()
+        for trade in self.DealPackage().Trades():
+            if trade.Oid() == self.LeadTrade().Oid():
+                continue
+            trade.TradeTime(self.tradeTime)
+        B2BParams = self.ParForwardB2BParams()
+        if B2BParams.SalesCoverEnabled():
+            mult = 1
+            lead_trade = self.LeadTrade()
+            if lead_trade.DecoratedObject().Quantity() > 0:
+                mult *= -1
+            for key in self.DealPackage().TradeKeys():
+                b2b = self.FxConstellationParamsAt(key)
+                excTrade = self.TradeAt(key).DecoratedObject()
+                b2b.SalesCoverEnabled(B2BParams.SalesCoverEnabled())
+                b2b.TradersPortfolio(B2BParams.TraderPortfolio())
+                b2b.TradersAcquirer(B2BParams.TraderAcquirer())
+                b2b.SalesCoverPrice(B2BParams.TraderPrice())
+                b2b.NearPriceMargin(B2BParams.SalesMargin())
+                b2b.PointsPriceMargin(B2BParams.SalesMargin())
+ 
+    def OnOpen(self):
+        super(FXRatioParForwardDefinition, self).OnOpen()
+        excTrade = self.LeadTrade().DecoratedObject()
+        point_value = excTrade.CurrencyPair().PointValue() if excTrade.CurrencyPair() else 0.0001
+        param = acm.FFxTradeConstellationParameters(excTrade)
+        mult = 1
+        if excTrade.Quantity() > 0:
+            mult *= -1
+        self.SetAttribute('b2bMargin', param.PointsPriceMargin() * mult / point_value)
+    
+    def UpdateSpotReference(self, *args):
+        if self.currency1 and self.currency2:
+            ccyPair = self.currency1.CurrencyPair(self.currency2)
+            if ccyPair:
+                isInvert = self.currency1 == ccyPair.Currency1()
+                self.referencePrice = ccyPair.SpotPrice(ccyPair.SpotDate(self.tradeTime), isInvert)
+                self.price = self.referencePrice
+
+    def CustomPanes(self):
+        return self.GetCustomPanesFromExtValue("CustomPanes_FxRatioParForward")
+
+    def IsB2BEnabled(self, *args):
+        return self.b2bEnabled
+
+    def TraderMargin(self, value = '*READING*'):
+        trade_dec = self.LeadTrade()
+        point_value = trade_dec.CurrencyPair().PointValue() if trade_dec.CurrencyPair() else 0.0001
+        trade = trade_dec.DecoratedObject()
+        mult = 1
+        if value == '*READING*':
+            if trade.Quantity() > 0:
+                mult *= -1
+            return self.ParForwardB2BParams().SalesMargin() * mult / point_value
+        try:
+            value = float(value)
+        except TypeError:
+            print('Cannot convert %s to float' % value)
+            return
+        margin = value * point_value
+        if trade.Quantity() > 0:
+            mult *= -1
+        self.ParForwardB2BParams().SalesMargin(margin * mult)
+        if self.updateNext is True:
+            price = self.price
+            trader_price = price - (margin * mult)
+            self.updateNext = False
+            self.TraderPrice(trader_price)
+            self.updateNext = True
+
+    def TraderPrice(self, value = '*READING*'):
+        if value == '*READING*':
+            return self.ParForwardB2BParams().TraderPrice()
+        try:
+            value = float(value)
+        except TypeError:
+            print('Cannot convert %s to float' % value)
+            return
+        self.ParForwardB2BParams().TraderPrice(value)
+        if self.updateNext is True:
+            trade_dec = self.LeadTrade()
+            trade = trade_dec.DecoratedObject()
+            mult = 1
+            if trade.Quantity() > 0:
+                mult *= -1
+            point_value = trade_dec.CurrencyPair().PointValue() if trade_dec.CurrencyPair() else 0.0001
+            price = self.price
+            margin = (price - value) * mult / point_value
+            self.updateNext = False
+            self.TraderMargin(margin)
+            self.updateNext = True
+
+    def TraderPortfolio(self, value = '*READING*'):
+        if value == '*READING*':
+            val = self.ParForwardB2BParams().TraderPortfolio()
+            return val.Name() if val else ''
+        self.ParForwardB2BParams().TraderPortfolio(value)
+
+    def TraderAcquirer(self, value = '*READING*'):
+        if value == '*READING*':
+            val = self.ParForwardB2BParams().TraderAcquirer()
+            return val.Name() if val else ''
+        self.ParForwardB2BParams().TraderAcquirer(value)
+
+    def TransformPeriodToDate(self, attributeName, dateOrPeriod):
+        date = dateOrPeriod
+        if acm.Time().PeriodSymbolToDate(dateOrPeriod):
+            date = self.Instruments().First().ExpiryDateFromPeriod(dateOrPeriod)
+        return date
+    
+    def LeadTrade(self):
+        return self.TradeAt('FXTrade')
+
+    def FXTrade(self, *args):
+        return self.TradeAt('FXTrade')
+    
+    def ParForwardB2BParams(self):
+        return self.B2BTradeParamsAt('FXTrade')
+
+
+def StartFXRatioParForward(eii):
+    acm.UX().SessionManager().StartApplication('Deal Package', 'FXRatioParForward') 
+
+
+    
+
+...
+
+  FXRatioParForwardUtils
+import acm
+import math
+
+def GetTradePoints(deco):
+    if (deco.Instrument().InsType() == 'Curr') and deco.CurrencyPair():
+        return (deco.Price() - deco.ReferencePrice()) / deco.CurrencyPair().PointValue()
+    
+def SetTradePoints(deco, points):
+    if (deco.Instrument().InsType() == 'Curr') and deco.CurrencyPair():
+        deco.Price = deco.ReferencePrice() + points * deco.CurrencyPair().PointValue()
+
+def GetTradeForwardDays(trade):
+    if trade.Instrument().InsType() == 'Curr':
+        return acm.Time.DateDifference(trade.ValueDay(), trade.TradeTime())
+    
+def SetTradeForwardDays(trade, days):
+    if trade.Instrument().InsType() == 'Curr':
+        if trade.Currency():
+            if days>=0:
+                deco = acm.FBusinessLogicDecorator.WrapObject(trade)
+                newDate = acm.Time.DateAddDelta(deco.TradeTime(), 0, 0, days)
+                deco.ValueDay = newDate  
+                isInvert = trade.Instrument() == ccyPair.Currency1()
+                px = trade.CurrencyPair().SpotPrice(deco.ValueDay(), isInvert)
+                deco.Price = acm.GetFunction("round", 2)(px, FxDecimals(trade.CurrencyPair()))
+
+def FxDecimals(currPair):
+    if currPair:
+        pointValue = currPair.PointValue()
+    else:
+        pointValue = 0.0001
+    return 2+int(-math.log10(pointValue))
+
+...
+
+  ParForwardTradeComponents
+
+from builtins import object
+import acm
+from DealPackageDevKit import CompositeAttributeDefinition, Action, Object, Str, CounterpartyChoices, PortfolioChoices, AcquirerChoices, Float, Delegate
+from DealPackageUtil import IsIterable
+
+
+def ValueNotSet(object):
+    return None
+
+class B2BParForward(CompositeAttributeDefinition):
+    def OnInit(self, b2bName):
+        self._b2bName = b2bName
+
+    def B2BAttributes(self):
+        return {
+
+                'b2bEnabled' :          Object( defaultValue=False,
+                                                label='B2B Cover',
+                                                objMapping=self.B2B() + '.SalesCoverEnabled'),
+                                                               
+                'b2bMargin' :           Object( label='Margin',
+                                                defaultValue=0.0,
+                                                objMapping = 'TraderMargin', 
+                                                formatter='FXPoints',
+                                                onChanged=self.UniqueCallback("@UpdatePricesTrdPrice"),
+                                                visible=self.UniqueCallback('@IsB2BEnabled')),
+                
+                'b2bPrice' :            Object(  defaultValue=0.0,
+                                                label='Trader Price',
+                                                objMapping='TraderPrice',
+                                                formatter='FullPrecision',
+                                                onChanged=self.UniqueCallback("@UpdatePricesMargin"),
+                                                visible=self.UniqueCallback('@IsB2BEnabled')),
+                                        
+                'b2bPrf' :              Object( label='Trader Portfolio',
+                                                objMapping=self.B2B() + '.TraderPortfolio',
+                                                choiceListSource=PortfolioChoices(),
+                                                visible=self.UniqueCallback('@IsB2BEnabled')),
+                         
+                'b2bAcq' :              Object( label='Trader Acquirer',
+                                                objMapping=self.B2B() + '.TraderAcquirer',
+                                                choiceListSource=AcquirerChoices(),
+                                                visible=self.UniqueCallback('@IsB2BEnabled')),
+                
+               }    
+     
+    '''*******************************************************
+    * Override method
+    *******************************************************'''                                
+    def Attributes(self):
+        return dict(self.B2BAttributes())
+     
+    '''*******************************************************
+    * B2B get methods
+    *******************************************************'''                                
+    def B2B(self):
+        return self._b2bName
+    
+    def IsB2BEnabled(self, attributeName):
+        return self.b2bEnabled
+    
+    '''*******************************************************
+    * B2B object mapping methods
+    *******************************************************'''                                
+    def GetB2BObjAsIterable(self):
+        b2bObj = self.GetMethod(self.B2B())()
+        if not IsIterable(b2bObj):
+            b2bObj = [b2bObj]
+        return b2bObj
+
+    def UpdatePricesTrdPrice(self, *rest):
+        try:
+            price  = self.Owner().price
+            trade_dec = self.Owner().LeadTrade()
+            point_value = trade_dec.CurrencyPair().PointValue() if trade_dec.CurrencyPair() else 0.0001
+            mult = 1
+            trade = trade_dec.DecoratedObject()
+            margin = self.b2bMargin * point_value
+            self.b2bPrice = acm.Math.RoundTo(price + (margin * mult), 2)
+        except Exception as e:
+            print(f"Error : {e}")
+    
+    def UpdatePricesMargin(self, *rest):
+        try:
+            price  = self.Owner().price
+            trade = self.Owner().LeadTrade()   
+            trdPrice = self.b2bPrice
+            margin =  trdPrice - price
+            point_value = trade.CurrencyPair().PointValue() if trade.CurrencyPair() else 10000
+            margin = margin * point_value
+            #print(f"margin to Set :  {margin}")
+            self.b2bMargin = margin 
+        except Exception as e:
+            print(f"Error : {e}")
+
+        
+    '''*******************************************************
+    * Layout
+    *******************************************************'''                                    
+    def GetLayout(self):
+        return self.UniqueLayout( """
+                                        vbox[;
+                                            b2bEnabled;
+                                            hbox{;
+                                                vbox(;
+                                                    b2bPrice;
+                                                    b2bMargin;
+                                                    );
+                                                vbox(;
+                                                    b2bPrf;
+                                                    b2bAcq;
+                                                    );
+                                                );
+                                            ];
+                                        """)
+    
+
+...
+
+}
+

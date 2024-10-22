@@ -1,0 +1,425 @@
+#
+# Front Arena exported extension module.
+# source          ""
+# timestamp (utc) "2024-02-12 12:27:38.5"
+# ***** DO NOT EDIT! *****
+#
+name        "PS_FFTPLib"
+description ""
+
+groups {
+}
+
+decls[FParameters] {
+}
+
+clx FObject [FParameters] {
+  FFTPModeSettings =
+  MODE=AMB-FTP, FTP-AMB# AMB-DIR, AMB-FTP, AMB-SFTP, AMB-AMB, DIR-DIR, DIR-AMB, DIR-FTP, DIR-SFTP, FTP-FTP, FTP-AMB, FTP-DIR, FTP-SFTP, SFTP-SFTP, SFTP-AMB, SFTP-FTP, SFTP-DIR
+
+
+  FFTPModeSettings_AMB-FTP =
+  MB_MESSAGE_BODY_ONLY=//MESSAGE/SWIFT_MESSAGE/SWIFT
+  READ_MESSAGE_BROKER=PNQ1-LPB2C7GY3:9100/mb
+  READ_SOURCE=SWIFT_WRITER_SUBJECT
+  WRITE_FTPTLS=1
+  WRITE_HOST=10.243.229.85
+  WRITE_PASSWORD=
+  WRITE_PORT=122
+  WRITE_SOURCE=.
+  WRITE_USER=FTPSNTCSOUT
+
+
+  FFTPModeSettings_FTP-AMB =
+  MESSAGE_PROPERTIES={'SWIFT_MESSAGE':{'TYPE': 'SWIFT_MESSAGE', 'VERSION': '1.0', 'SOURCE':'SWIFT_NETWORK', 'MESSAGE_TAG':'SWIFT_MESSAGE', 'FILE_DATA_TAG':'SWIFT' },'ACKNOWLEDGEMENT':{'TYPE': 'SWIFT_MESSAGE', 'VERSION': '1.0', 'SOURCE':'SWIFT_NETWORK', 'MESSAGE_TAG':'SWIFT_MESSAGE', 'FILE_DATA_TAG':'SWIFT' }}
+  READ_FTPTLS=1
+  READ_HOST=10.243.229.85
+  READ_PASSWORD=
+  READ_PORT=124
+  READ_SOURCE=./INCOMING/*.*, ./ACK/*.*
+  READ_USER=FTPSNTCSIN
+  WRITE_MESSAGE_BROKER=PNQ1-LPB2C7GY3:9100/mb
+  WRITE_SOURCE=SWIFT_MESSAGE, ACKNOWLEDGEMENT
+
+
+  FFTPModeSettings_FTP-DIR =
+  READ_PASSWORD=
+
+
+  FFTPModeSettings_SFTP-DIR =
+
+
+  FFTPSettings =
+  FTP_TRANSACTION_LOG_PATH=c:\fftplib\transaction
+  POLL_RETRY=5
+
+
+}
+
+decls[FPythonCode] {
+}
+
+clx FObject [FPythonCode] {
+  FFTPLibHooks
+"""--------------------------------------------------------------------
+MODULE
+    FFTPLibHooks -  FFTPLibrary custom hook
+
+DESCRIPTION
+    This script defines extension point to extend the FFTPLibrary functionality.
+    User should 
+
+VERSION: 2.0.6
+
+--------------------------------------------------------------------"""
+
+import FFTPConfig
+import FFTPNotification
+logger = FFTPNotification.FFTPLogger('FFTPLibrary')
+
+
+# --------------------------- Customization -----------------------------------
+
+import os
+import acm
+import FSwiftMLUtils
+
+def get_tag_value(tagValueList, tag):
+
+    currValue = ''
+    for currTag in tagValueList:
+        if currTag[0] == tag:
+            currValue = currTag[1]
+            break
+    return currValue
+
+
+def get_object_from_message(swift_data, tags = ['20', '20C']):
+    
+    acm_obj = None
+    identifier = ''
+    
+    tagValueList = FSwiftMLUtils.swift_message_to_list(swift_data)
+    
+    for tag in tags:
+        tag_value = get_tag_value(tagValueList, tag)
+        if tag_value:
+            identifier = tag_value
+            break
+
+    if identifier.startswith('FAC') or identifier.startswith(':SEME//FAC'):
+        identifier = identifier.replace(':SEME//', '')
+        acm_obj = acm.FConfirmation[identifier[3:-2]]
+    elif identifier.startswith(':SEME//FAS'):
+        identifier = identifier.replace(':SEME//', '')    
+        acm_obj = acm.FSettlement[identifier[3:-2]]
+    elif identifier.startswith('FAS'):
+        acm_obj = acm.FSettlement[identifier[3:-1]]
+    
+
+    return acm_obj, identifier            
+            
+
+def get_network_name(acm_obj):
+    
+    network = 'SWIFT'
+
+    if not acm_obj:
+        network = ''
+
+    return network
+
+
+def get_output_file_name(acm_obj, identifier):
+
+    out_file_parts = []
+
+    network = get_network_name(acm_obj)
+    if network:
+        out_file_parts.append(network)
+    
+    out_file_parts.append(identifier)
+
+    '''
+    trade = acm_obj.Trade()
+    if trade:
+        out_file_parts.append(trade.ClassName().AsString().replace('F', '') + str(trade.Oid()))
+    '''
+
+    return '_'.join(out_file_parts) + '.txt'
+
+
+# --------------------------- Customization -----------------------------------
+
+def amb_message_file_name(file_name, mb_message_str, org_mb_message_obj, file_path=''):
+    """ Extension point to customize the name of file to export mb messages
+    file_name = file_name as used by FFTPLibrary
+    file_path = destination file path to export the amb message
+    mb_message_str = message as string to export
+    org_mb_message_obj = Original amb message object
+
+    return
+    file_path : customized file path
+    file_name : customized file name
+    """
+    """
+    #Example: For AMB-FTP mode , get the destination directory of FTP server from Fparameter: WRITE_SOURCE 
+    #and add subdirectory to the path and return from the function
+    import os
+    ftp_mode_settings = FFTPConfig.Parameters('FFTPModeSettings_AMB-FTP')
+    write_source = getattr(ftp_mode_settings, 'WRITE_SOURCE', None)
+    file_path = os.path.join(write_source, 'SUB DIRECTORY')
+    """
+
+    # --------------------------- Customization -----------------------------------
+    try:
+        acm_obj, identifier = get_object_from_message(mb_message_str)
+        file_name = get_output_file_name(acm_obj, identifier)
+    except Exception as e:
+        print ('Error in amb_message_file_name ',str(e))
+    # --------------------------- Customization -----------------------------------
+    
+    return file_path, file_name
+
+
+def amb_message_content(file_name, mb_message_str, org_mb_message_obj):
+    """ Extension point to customize the name of file to export mb messages
+    Input: file_name = file_name as used by FFTPLibrary
+    mb_message_str = message as string to export
+    org_mb_message_obj = Original amb message object
+
+    """
+    return mb_message_str
+
+
+def fftplibrary_import_entry(from_mode, to_mode,  content_ref, content_handler=None, **kwargs):
+    """
+    Import entry hook to import data to modes : DIR, AMB, FTP, SFTP, before processing that data.
+    :param from_mode: The mode from which the data is importing, value can be either of FTP, SFTP, AMB, DIR
+    :param to_mode: The mode to which the data is importing,values can be either of FTP, SFTP, AMB, DIR
+    :param content_ref: This is the data reference like amb message, FTP/SFTP file or dir file with path
+    :param content_handler: This is object of the content reference like file handler, amb message obj.
+    :return: Customized value of content_ref or content_handler
+    """
+    return content_handler if content_handler else content_ref
+
+def fftplibrary_import_exit(from_mode, to_mode,  content_ref, content_handler=None, **kwargs):
+    """
+    Import exit hook to import data to modes : DIR, AMB, FTP, SFTP, after processing that data.
+    :param from_mode: The mode from which the data is importing, value can be either of FTP, SFTP, AMB, DIR
+    :param to_mode: The mode to which the data is importing, values can be either of FTP, SFTP, AMB, DIR
+    :param content_ref: This is the data reference like amb message, FTP/SFTP file or dir file with path
+    :param content_handler: This is object of the content reference like file handler, amb message obj.
+    :return: Customized value of content_ref or content_handler
+    """
+    return content_handler if content_handler else content_ref
+
+
+def fftplibrary_export_entry(from_mode, to_mode, content_ref, content_handler=None, **kwargs):
+    """
+    Export entry hook to export data from modes : DIR, AMB, FTP, SFTP, before processing that data.
+    :param from_mode: The mode from which the data is exporting, value can be either of FTP, SFTP, AMB, DIR
+    :param to_mode: The mode to which the data is exporting, values can be either of FTP, SFTP, AMB, DIR
+    :param content_ref: This is the data reference like amb message, FTP/SFTP file or dir file with path
+    :param content_handler: This is object of the content reference like file handler, amb message obj.
+    :return: Customized value of content_ref or content_handler and
+            destination path to which data need to export like FTP/SFTP dir path, local dir path and amb subject
+    kwargs :  if from_mode == 'AMB' then {'msg_subject': <amb message subject>}
+    """
+    destination_path = ''
+    """
+    Example to change the destination path 
+    if from_mode == 'FTP':
+        if to_mode == 'DIR':
+            destination_path = "C:\Projects\Destination_FTP\Temp"
+    """
+
+    """
+    Example to stop reading file from FTP
+    if from_mode == 'FTP':
+        file_name = content_ref 
+        if file_name == 'Provider_Data_Bloomberg.txt':
+            content_ref = None
+    """
+    return content_handler if content_handler else content_ref, destination_path
+
+
+def fftplibrary_export_exit(from_mode, to_mode, content_ref, content_handler=None, **kwargs):
+    """
+    Import entry hook to import data to modes : DIR, AMB, FTP, SFTP, after processing that data.
+    :param from_mode: The mode from which the data is importing, value can be either of FTP, SFTP, AMB, DIR
+    :param to_mode: The mode to which the data is importing,values can be either of FTP, SFTP, AMB, DIR
+    :param content_ref: This is the data reference like amb message, FTP/SFTP file or dir file with path
+    :param content_handler: This is object of the content reference like file handler, amb message obj.
+    :return: Customized value of content_ref or content_handler and
+            destination path to which data need to export like FTP/SFTP dir path, local dir path and amb subject
+    kwargs :  if from_mode == 'AMB' then {'msg_subject': <amb message subject>}
+    """
+    destination_path = ''
+    return content_handler if content_handler else content_ref, destination_path
+
+
+def fftplibrary_get_external_password(application_name, user_name, host_name, certificate_file_path=None):
+    """
+    Using this hook we can set password for 2 or more users
+    :param application_name: application name
+    :param user_name: user name which we use in connection
+    :param host_name: host name which we use in connection
+    :param certificate_file_path: FTP TLS server certificate file name with path.
+    :return: server password
+    """
+    """
+    Example to get password
+    if certificate_file_path:
+        import os
+        file_name = os.path.split(certificate_file_path)[-1]
+
+    if application_name == 'FFTPLib-FTP' and user_name == 'FTP' and host_name == '127.0.0.1' and file_name == 'ServerCertificate.p12':
+        pwd = 'Mp7ATqF1' # (example)
+    elif application_name == 'FFTPLib-FTP' and user_name == 'FTP' and host_name == '127.0.0.1':
+        pwd = 'Mp7ATqF1' # (example)
+    elif application_name == 'FFTPLib-SFTP' and user_name == 'SFTP' and host_name == 'dlsftp.bbg.com':
+        pwd = 'Mp7ATqF1' # (example)
+    """
+    
+    """
+    Example to get password using FPassword      
+    new_application_name = application_name + "-" + user_name + "-" + host_name
+    if certificate_file_path:
+        import os
+        file_name = os.path.split(certificate_file_path)[-1]
+        new_application_name += "-" + file_name
+    try:
+        import FPassword
+        pwd = FPassword.get_external_password(new_application_name)
+        logger.DEBUG("imported FPassword module for application %s" % new_application_name)
+    except:
+        logger.INFO("Could not import FPassword module")
+    """
+    try:
+        import EncoderUtils
+        pwd = None
+        if user_name == 'AdminJITU':
+            import BIS4Common
+            pwd = EncoderUtils.get_decrypted_password('0x4wpvChMOIw4XCrWnCqcKX', BIS4Common.BIS4_FTP_KEY)
+        elif user_name == 'MBOX':
+            import MBOXRecord_Handler
+            pwd = EncoderUtils.get_decrypted_password('0x4wpfClsOAw4XCqWPCo8Kb', MBOXRecord_Handler.MBOX_FTP_KEY)
+        elif user_name == 'BMAN5':
+            import SInvest_FTPUtils
+            pwd = EncoderUtils.get_decrypted_password('0x4wpzCtcKpwrbCkmVla8KDcn19aw==', SInvest_FTPUtils.SINVEST_FTP_KEY)
+        elif user_name == 'FTPSNTCSOUT':
+            import FMTHooks
+            pwd = EncoderUtils.get_decrypted_password('0x4wqnChsK8wrvCqmPCosKY', FMTHooks.SWIFT_FTP_KEY)
+        elif user_name == 'FTPSNTCSIN':
+            import FMTHooks
+            pwd = EncoderUtils.get_decrypted_password('0x4wqnChsK8wrvCqmPCosKY', FMTHooks.SWIFT_FTP_KEY)        
+    except Exception as err:
+        pwd = None
+        logger.INFO("Error in fftplibrary_get_external_password. {}".format(err))
+        
+        
+        
+    return pwd
+
+...
+
+  PS_FTPUtils
+"""--------------------------------------------------------------------
+MODULE
+    PS_FTPUtils -  Utility functiona added by PS to get workaround with FTP data transferFFTPLibrary custom hook
+
+DESCRIPTION
+    This script defines extension point to extend the FFTPLibrary functionality.
+    User should 
+
+VERSION: 2.0.6
+
+--------------------------------------------------------------------"""
+from FFTPDIROperations import DIROperations
+from FFTPOperations import split_connection_str
+import FFTPConfig
+import FFTPNotification
+import os
+from ftplib import FTP
+logger = FFTPNotification.FFTPLogger('FFTPLibrary')
+
+''' 
+Method add to support ASCII ftp transfer mode - 
+It was not possible to extend from product as product is using Chikat(licensed lib)
+Implemetned as workaround using python ftp lib
+'''
+
+def write_to_ftp_ASCII_mode(file_path, connstr, ftp_dir='',
+                 timeout=0, interval=0, retry=0, app_name= ''):
+    """ Writes an file to FTP server at specified directory 
+    Input:
+    file_path: File path  
+    connstr: Connection string Format localhost:port:username:password
+    ftp_dir: FTP server directory
+    timeout: Time in seconds to time-out the polling operation for files on the Provider FTP server
+    interval: Interval between two successive polls on the FTP server.
+    retry:The ATS resends the request to the FTP server
+    app_name: Apllication name
+    Output:
+    result : 1 on success, 0 on failure
+    """
+    try:
+        print("inside function write")
+        result = 0
+        file_path_lst = FFTPConfig.string_as_list(file_path)
+        ftp_dir_lst = FFTPConfig.string_as_list(ftp_dir)
+        source_dict = {}
+        destination = ftp_dir_lst[0]
+        dir_obj = DIROperations()
+        temp_file_str = ''
+        
+        if len(ftp_dir_lst) > 1 and len(ftp_dir_lst) == len(file_path_lst):
+            source_dict = dict(list(zip(file_path_lst, ftp_dir_lst)))
+        elif len(ftp_dir_lst) > 1:
+            logger.ERROR("Invalid file_path / ftp_dir provided as input to API")
+            return result
+
+        if connstr:
+            host, port, user, pwd = split_connection_str(connstr)
+            if host:
+                ftp = FTP(host)
+                try:
+                    print("inside try")
+                   
+                    ftp.login(user, pwd)
+                    ftp.cwd(destination)
+                    #send the transfer mode to ASCII
+                    ftp.sendcmd("Type A")
+                    
+                    for local_file_path in file_path_lst:
+                        #open local file in binary mode for reading
+                        with open(local_file_path, 'rb') as file:
+                            #Upload the file to the FTP server
+                            ftp.storlines(f"STOR {os.path.basename(local_file_path)}", file)
+                        
+                        result = 1
+                        print(f"File '{os.path.basename(local_file_path)}' uploaded successfully to '{destination}' on {host}")
+                except Exception as e:
+                    logger.ERROR(f'FTP Permission Error : {e}')
+                    result = 0
+                except Exception as e:
+                    logger.ERROR(f'Error : {e}')
+                    result = 0
+                finally:
+                    ftp.quit()
+            else:
+                logger.ERROR("FTP host name not provided by user")
+        else:
+            logger.ERROR("Please give host, port, username, password (optional) in format HOST:PORT:USERNAME:PASSWORD to run api write_to_ftp_ASCII_mode")
+                   
+    except Exception as e:
+        logger.ERROR("Error in write_to_ftp_ASCII_mode %s "%(e))
+        result = 0
+            
+    return result
+
+...
+
+}
+

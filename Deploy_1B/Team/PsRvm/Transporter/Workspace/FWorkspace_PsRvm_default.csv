@@ -1,0 +1,341 @@
+TEXTOBJECT,,,,,/TEXTOBJECT
+DATA,NAME,SIZE,TYPE,USRNBR.USERID,
+"<?xml version='1.0' encoding='UTF-8'?>\
+<FrontArenaPrimeSheetExport>\
+<!--PRIME Version: 2022.4.13-->\
+<FDictionary type =""AcmDomain"">\
+  <Element>\
+  <FAssociation type =""AcmDomain"">\
+    <associationKey type =""Property"">\
+      <FSymbol type =""AcmDomain"">\
+        <Text type =""Property"">\
+          <string type =""AcmDomain"">algosrvs</string>\
+        </Text>\
+      </FSymbol>\
+    </associationKey>\
+    <associationValue type =""Property"">\
+      <FArray type =""AcmDomain"">\
+      </FArray>\
+    </associationValue>\
+  </FAssociation>\
+  </Element>\
+  <Element>\
+  <FAssociation type =""AcmDomain"">\
+    <associationKey type =""Property"">\
+      <FSymbol type =""AcmDomain"">\
+        <Text type =""Property"">\
+          <string type =""AcmDomain"">colorScheme</string>\
+        </Text>\
+      </FSymbol>\
+    </associationKey>\
+    <associationValue type =""Property"">\
+      <FSymbol type =""AcmDomain"">\
+        <Text type =""Property"">\
+          <string type =""AcmDomain"">Black</string>\
+        </Text>\
+      </FSymbol>\
+    </associationValue>\
+  </FAssociation>\
+  </Element>\
+  <Element>\
+  <FAssociation type =""AcmDomain"">\
+    <associationKey type =""Property"">\
+      <FSymbol type =""AcmDomain"">\
+        <Text type =""Property"">\
+          <string type =""AcmDomain"">dict</string>\
+        </Text>\
+      </FSymbol>\
+    </associationKey>\
+    <associationValue type =""Property"">\
+      <FDictionary type =""AcmDomain"">\
+        <Element>\
+        <FAssociation type =""AcmDomain"">\
+          <associationKey type =""Property"">\
+            <FString type =""AcmDomain"">\
+              <Text type =""Property"">\
+                <string type =""AcmDomain"">WorkspaceManager</string>\
+              </Text>\
+            </FString>\
+          </associationKey>\
+          <associationValue type =""Property"">\
+            <FDictionary type =""AcmDomain"">\
+              <Element>\
+              <FAssociation type =""AcmDomain"">\
+                <associationKey type =""Property"">\
+                  <FSymbol type =""AcmDomain"">\
+                    <Text type =""Property"">\
+                      <string type =""AcmDomain"">alwaysOnTop</string>\
+                    </Text>\
+                  </FSymbol>\
+                </associationKey>\
+                <associationValue type =""Property"">\
+                  <FFalse type =""AcmDomain"">\
+                  </FFalse>\
+                </associationValue>\
+              </FAssociation>\
+              </Element>\
+              <Element>\
+              <FAssociation type =""AcmDomain"">\
+                <associationKey type =""Property"">\
+                  <FSymbol type =""AcmDomain"">\
+                    <Text type =""Property"">\
+                      <string type =""AcmDomain"">AppName</string>\
+                    </Text>\
+                  </FSymbol>\
+                </associationKey>\
+                <associationValue type =""Property"">\
+                  <FString type =""AcmDomain"">\
+                    <Text type =""Property"">\
+                      <string type =""AcmDomain"">Prime.Main</string>\
+                    </Text>\
+                  </FString>\
+                </associationValue>\
+              </FAssociation>\
+              </Element>\
+              <Element>\
+              <FAssociation type =""AcmDomain"">\
+                <associationKey type =""Property"">\
+                  <FString type =""AcmDomain"">\
+                    <Text type =""Property"">\
+                      <string type =""AcmDomain"">WindowPlacement</string>\
+                    </Text>\
+                  </FString>\
+                </associationKey>\
+                <associationValue type =""Property"">\
+                  <FString type =""AcmDomain"">\
+                    <Text type =""Property"">\
+                      <string type =""AcmDomain"">44 0 1 -1 -1 -1 -1 178 112 1125 290</string>\
+                    </Text>\
+                  </FString>\
+                </associationValue>\
+              </FAssociation>\
+              </Element>\
+            </FDictionary>\
+          </associationValue>\
+        </FAssociation>\
+        </Element>\
+      </FDictionary>\
+    </associationValue>\
+  </FAssociation>\
+  </Element>\
+  <Element>\
+  <FAssociation type =""AcmDomain"">\
+    <associationKey type =""Property"">\
+      <FSymbol type =""AcmDomain"">\
+        <Text type =""Property"">\
+          <string type =""AcmDomain"">logSettings</string>\
+        </Text>\
+      </FSymbol>\
+    </associationKey>\
+    <associationValue type =""Property"">\
+      <FDictionary type =""AcmDomain"">\
+        <Element>\
+        <FAssociation type =""AcmDomain"">\
+          <associationKey type =""Property"">\
+            <FSymbol type =""AcmDomain"">\
+              <Text type =""Property"">\
+                <string type =""AcmDomain"">mdiChildPositions</string>\
+              </Text>\
+            </FSymbol>\
+          </associationKey>\
+          <associationValue type =""Property"">\
+            <FDictionary type =""AcmDomain"">\
+              <Element>\
+              <FAssociation type =""AcmDomain"">\
+                <associationKey type =""Property"">\
+                  <FInteger type =""AcmDomain"">\
+                    <Number type =""Property"">\
+                      <int64 type =""AcmDomain"">0</int64>\
+                    </Number>\
+                  </FInteger>\
+                </associationKey>\
+                <associationValue type =""Property"">\
+                  <FString type =""AcmDomain"">\
+                    <Text type =""Property"">\
+                      <string type =""AcmDomain"">44 0 1 -1 -1 -8 -31 0 0 1212 478</string>\
+                    </Text>\
+                  </FString>\
+                </associationValue>\
+              </FAssociation>\
+              </Element>\
+              <Element>\
+              <FAssociation type =""AcmDomain"">\
+                <associationKey type =""Property"">\
+                  <FInteger type =""AcmDomain"">\
+                    <Number type =""Property"">\
+                      <int64 type =""AcmDomain"">1</int64>\
+                    </Number>\
+                  </FInteger>\
+                </associationKey>\
+                <associationValue type =""Property"">\
+                  <FString type =""AcmDomain"">\
+                    <Text type =""Property"">\
+                      <string type =""AcmDomain"">44 2 3 -1 -1 -8 -31 26 26 1238 504</string>\
+                    </Text>\
+                  </FString>\
+                </associationValue>\
+              </FAssociation>\
+              </Element>\
+            </FDictionary>\
+          </associationValue>\
+        </FAssociation>\
+        </Element>\
+        <Element>\
+        <FAssociation type =""AcmDomain"">\
+          <associationKey type =""Property"">\
+            <FString type =""AcmDomain"">\
+              <Text type =""Property"">\
+                <string type =""AcmDomain"">WindowPlacement</string>\
+              </Text>\
+            </FString>\
+          </associationKey>\
+          <associationValue type =""Property"">\
+            <FString type =""AcmDomain"">\
+              <Text type =""Property"">\
+                <string type =""AcmDomain"">44 0 1 -1 -1 -1 -1 158 830 908 1005</string>\
+              </Text>\
+            </FString>\
+          </associationValue>\
+        </FAssociation>\
+        </Element>\
+      </FDictionary>\
+    </associationValue>\
+  </FAssociation>\
+  </Element>\
+  <Element>\
+  <FAssociation type =""AcmDomain"">\
+    <associationKey type =""Property"">\
+      <FSymbol type =""AcmDomain"">\
+        <Text type =""Property"">\
+          <string type =""AcmDomain"">mps</string>\
+        </Text>\
+      </FSymbol>\
+    </associationKey>\
+    <associationValue type =""Property"">\
+      <FArray type =""AcmDomain"">\
+      </FArray>\
+    </associationValue>\
+  </FAssociation>\
+  </Element>\
+  <Element>\
+  <FAssociation type =""AcmDomain"">\
+    <associationKey type =""Property"">\
+      <FSymbol type =""AcmDomain"">\
+        <Text type =""Property"">\
+          <string type =""AcmDomain"">sessionBkgColor</string>\
+        </Text>\
+      </FSymbol>\
+    </associationKey>\
+    <associationValue type =""Property"">\
+      <FInteger type =""AcmDomain"">\
+        <Number type =""Property"">\
+          <int64 type =""AcmDomain"">-1</int64>\
+        </Number>\
+      </FInteger>\
+    </associationValue>\
+  </FAssociation>\
+  </Element>\
+  <Element>\
+  <FAssociation type =""AcmDomain"">\
+    <associationKey type =""Property"">\
+      <FSymbol type =""AcmDomain"">\
+        <Text type =""Property"">\
+          <string type =""AcmDomain"">sessionManagerState</string>\
+        </Text>\
+      </FSymbol>\
+    </associationKey>\
+    <associationValue type =""Property"">\
+      <FDictionary type =""AcmDomain"">\
+        <Element>\
+        <FAssociation type =""AcmDomain"">\
+          <associationKey type =""Property"">\
+            <FSymbol type =""AcmDomain"">\
+              <Text type =""Property"">\
+                <string type =""AcmDomain"">ApplicationListStyle</string>\
+              </Text>\
+            </FSymbol>\
+          </associationKey>\
+          <associationValue type =""Property"">\
+            <FSymbol type =""AcmDomain"">\
+              <Text type =""Property"">\
+                <string type =""AcmDomain"">Report</string>\
+              </Text>\
+            </FSymbol>\
+          </associationValue>\
+        </FAssociation>\
+        </Element>\
+        <Element>\
+        <FAssociation type =""AcmDomain"">\
+          <associationKey type =""Property"">\
+            <FSymbol type =""AcmDomain"">\
+              <Text type =""Property"">\
+                <string type =""AcmDomain"">ColumnWidths</string>\
+              </Text>\
+            </FSymbol>\
+          </associationKey>\
+          <associationValue type =""Property"">\
+            <FArray type =""AcmDomain"">\
+              <Element>\
+              <FInteger type =""AcmDomain"">\
+                <Number type =""Property"">\
+                  <int64 type =""AcmDomain"">350</int64>\
+                </Number>\
+              </FInteger>\
+              </Element>\
+              <Element>\
+              <FInteger type =""AcmDomain"">\
+                <Number type =""Property"">\
+                  <int64 type =""AcmDomain"">150</int64>\
+                </Number>\
+              </FInteger>\
+              </Element>\
+              <Element>\
+              <FInteger type =""AcmDomain"">\
+                <Number type =""Property"">\
+                  <int64 type =""AcmDomain"">120</int64>\
+                </Number>\
+              </FInteger>\
+              </Element>\
+            </FArray>\
+          </associationValue>\
+        </FAssociation>\
+        </Element>\
+        <Element>\
+        <FAssociation type =""AcmDomain"">\
+          <associationKey type =""Property"">\
+            <FSymbol type =""AcmDomain"">\
+              <Text type =""Property"">\
+                <string type =""AcmDomain"">ShowApplicationList</string>\
+              </Text>\
+            </FSymbol>\
+          </associationKey>\
+          <associationValue type =""Property"">\
+            <FFalse type =""AcmDomain"">\
+            </FFalse>\
+          </associationValue>\
+        </FAssociation>\
+        </Element>\
+      </FDictionary>\
+    </associationValue>\
+  </FAssociation>\
+  </Element>\
+  <Element>\
+  <FAssociation type =""AcmDomain"">\
+    <associationKey type =""Property"">\
+      <FSymbol type =""AcmDomain"">\
+        <Text type =""Property"">\
+          <string type =""AcmDomain"">useRealTimePrices</string>\
+        </Text>\
+      </FSymbol>\
+    </associationKey>\
+    <associationValue type =""Property"">\
+      <FInteger type =""AcmDomain"">\
+        <Number type =""Property"">\
+          <int64 type =""AcmDomain"">1</int64>\
+        </Number>\
+      </FInteger>\
+    </associationValue>\
+  </FAssociation>\
+  </Element>\
+</FDictionary>\
+</FrontArenaPrimeSheetExport>",PsRvm_default,11355,Workspace,ARENASYS,

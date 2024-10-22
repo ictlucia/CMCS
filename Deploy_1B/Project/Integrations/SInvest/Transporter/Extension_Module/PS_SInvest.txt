@@ -1,0 +1,1895 @@
+#
+# Front Arena exported extension module.
+# source          ""
+# timestamp (utc) "2024-06-12 08:35:43.2"
+# ***** DO NOT EDIT! *****
+#
+name        "PS_SInvest"
+description "$Id$"
+
+groups {
+}
+
+decls[FParameters] {
+}
+
+clx FObject [FParameters] {
+  SInvestOutFTPParams =
+  destination_dir=/upload
+  host=10.112.6.68
+  password=0x4wpzCtcKpwrbCkmVla8KDcn19aw==
+  port=2222
+  user=BMAN5
+
+
+  SInvestParams =
+  ACQ_INFO_PAYMENT="WHT"
+  BRCODE=BMAN5
+  CUSTOMER_TYPE=M
+  DOWNLOAD_LOG_FILE_NAME=SINVEST_DOWNLOAD_{}.txt
+  IGNORE_UPDATES_USER_GROUP=INTERFACES
+  LAST_EXEC_DATE_SINVEST=2024-06-11
+  LOG_FILE_NAME=SINVEST_TD_UPLOAD_{}.txt
+  LOG_FOLDER=c:\Temp
+  OUTPUT_FOLDER=C:\Temp\SINVEST
+  TC_REQUEST_COUNT=0
+  TC_REQUEST_UPLOAD_PREFIX=FI-TC-UP-
+  TC_RESP_DOWNLOAD_PREFIX=FI-TC-TR-DW-
+  TD_REQUEST_COUNT=0
+  TD_REQUEST_UPLOAD_PREFIX=FI-TD-UP-
+  TD_RESP_DOWNLOAD_PREFIX=FI-TD-TR-DW-
+  TD_RESPONSE_CODE="Response Code"
+  TRADE_STATUS=['BO Confirmed', 'BO Rejected', 'Void']
+  UPLOAD_LOG_FILE_NAME=SINVEST_UPLOAD_{}.txt
+
+
+}
+
+decls[FPythonCode] {
+}
+
+clx FObject [FPythonCode] {
+  SInvest_DownloadProcess
+
+import acm
+import FLogger 
+import ParametersReader
+import os
+import shutil
+
+
+logger = FLogger.FLogger('SInvestDownloader')
+sinvetstParams  = ParametersReader.get_params('SInvestParams')
+
+TD_RESPONSE_CODE        = sinvetstParams['TD_RESPONSE_CODE']
+TD_RESP_DOWNLOAD_PREFIX = sinvetstParams['TD_RESP_DOWNLOAD_PREFIX']
+TC_RESP_DOWNLOAD_PREFIX = sinvetstParams['TC_RESP_DOWNLOAD_PREFIX']
+TC_REQUEST_UPLOAD_PREFIX = sinvetstParams['TC_REQUEST_UPLOAD_PREFIX']
+TD_REQUEST_UPLOAD_PREFIX = sinvetstParams['TD_REQUEST_UPLOAD_PREFIX']
+
+
+class FileHandler(object):
+    def __init__(self, params):
+        self.Params     = params
+        self.processed_files = []
+    
+    def read_files(self, file_path):
+        pass
+        
+    def move_file(self, file_name, target_path):
+        pass
+
+    def list_All_FilesInPath(self, basepath, file_prefix):
+        # List all files in a directory using os.listdir
+        fileList = []
+
+        for entry in os.listdir(basepath):
+            if entry.startswith(file_prefix):
+                if os.path.isfile(os.path.join(basepath, entry)):
+                                
+                    #--divider--
+                    #Check is there .fns file along with the txt file
+                    #If exists, it will add to the list file that will be process 
+                    if entry.endswith(".txt") and entry[:-4] + ".fns" in os.listdir(basepath):
+                    #--divider--
+                        #print("fns files exist for files : ", entry)
+                        fileList.append(os.path.join(basepath, entry))
+        
+        #print("File List:",fileList)
+          
+        return fileList
+
+    def archive(self, files=[]):
+        try:
+            target_path = self.Params['archiveFolder'].SelectedDirectory().AsString()
+            if not files:
+                files = self.processed_files
+            
+            logger.DLOG(f"archive called for : {files}")
+            for file_path in files:
+                try:
+                    shutil.move(file_path, target_path)
+                    fns_file = file_path.replace('.txt', '.fns')
+                    shutil.move(fns_file, target_path)
+                except Exception as e:
+                    logger.ELOG('Failed to move the file - {}'.format(file_path))  
+                    logger.ELOG(f'Error : {str(e)}')
+            self.processed_files = []
+            
+        except Exception as e:
+            raise Exception("Archive Failed!")
+
+    
+    #---DIVIDER
+    def delete_first_response_code(self,columns,values,prefix):
+        flagResponseCodeColumn = 0
+        buySell = None
+        #print("COLUMNS BEFORE:",columns)
+        try:
+            valuelength = len(values)
+            for i in range(len(columns)):
+                column =columns[i].strip()
+                value = ''
+                if i < valuelength:
+                    value = values[i]
+                if 'Buy/Sell' in column:
+                    buySell = value
+                    break
+            #print("VALUES LENGTH:",valuelength)
+                    
+            if(buySell is not None) and (buySell == '2') and (columns[12]=="Response Code"):
+                try:
+                    del columns[12]
+                    #print("COLUMNS AFTER:",columns)
+                except Exception as e:
+                    logger.ELOG(f'failed procesing delete field: {str(e)}')
+                    
+            #BM changed for jira -> TCSTCSPBDT-424257
+            #print("PREFIX:",prefix)
+            if(buySell == '1') and (columns[valuelength-1]!="Response Code") and ("UP" in prefix):
+                columns[valuelength-1]= columns[-1]
+                #print("processing upload file")
+                
+            elif(buySell == '1') and (columns[valuelength-1]!="Check Status") and ("DW" in prefix):
+                columns[valuelength-1]= columns[-1] 
+                #print("processing download file")
+                
+            #print("COLUMNS AFTER:",columns)
+            
+        except Exception as e:
+            logger.ELOG(f'fields procesing failed : {str(e)}')
+        return columns
+    #---DIVIDER
+    
+    def get_field_dict(self, columns, values, prefix):
+        fields ={}
+        buySell = None
+        #------DIVIDER - Changed by BM for TCSTCSPBDT-331518 and TCSTCSPBDT-330541
+        #print("COLUMNS",columns)
+        checkNewColumns = self.delete_first_response_code(columns,values, prefix)
+        #print("AFTER CHECK NEW COLUMN:",checkNewColumns)
+        #print("NEW COLUMNS AFTER CHECK",columns)
+        
+        flagResponseCodeColumn = 0
+        #------End DIVIDER
+        try:
+            valuelength = len(values)
+            for i in range(len(columns)):
+                column =columns[i].strip()
+                value = ''
+                if i < valuelength:
+                    value = values[i]
+                    
+                if 'Buy/Sell' in column:
+                    buySell = value
+                    
+                if column not in fields.keys():
+                    fields[column]=value
+                else:
+                    if(buySell is not None) and (buySell == '2'):
+                        logger.DLOG(f"Using second Reponse Code value:{value} as BuySell=={buySell}")
+                        fields[column]=value
+        except Exception as e:
+            logger.ELOG(f'fields procesing failed : {str(e)}')
+        return fields
+    
+    def process_files(self, input_files,prefix):
+        data_dict_list = []
+        for input_file in input_files:
+            try:
+                lines = []
+                with open(input_file, 'r') as fp:
+                    lines = fp.readlines()
+                
+                len_file = len(lines)
+                if (len_file == 0):
+                    continue
+                    
+                columns     = lines[0].split('|')
+                try:
+                    columns[-1] = columns[-1].rstrip('\n')
+                except Exception as e:
+                    logger.ELOG(f'column procesing failed {str(e)}')
+                
+                for row_number in range(1, len_file):
+                    values      = lines[row_number].split('|')
+                    values[-1] = values[-1].rstrip('\n')
+                    #JIRA TCSTCSPBDT-316397 : Changes to read 1st Response Code if buy else read 2nd if sell
+                    download_dict = self.get_field_dict(columns, values,prefix)
+                    logger.DLOG(f'field dic : {download_dict}')
+                    data_dict_list.append(download_dict)
+                self.processed_files.append(input_file)
+            except Exception as e:
+                logger.ELOG('Failed to read response file - {}'.format(input_file))
+        return data_dict_list
+
+    def tc_response_download_data(self):
+        global TC_RESP_DOWNLOAD_PREFIX
+        global TC_REQUEST_UPLOAD_PREFIX
+        input_path      = self.Params['inputFolder'].SelectedDirectory().AsString()
+        data_dict_list = self.handle_procesing(input_path, TC_REQUEST_UPLOAD_PREFIX)
+        data_dict_list.extend(self.handle_procesing(input_path, TC_RESP_DOWNLOAD_PREFIX))
+        return data_dict_list
+    
+    def td_response_download_data(self):
+        global TD_REQUEST_UPLOAD_PREFIX
+        global TD_RESP_DOWNLOAD_PREFIX
+        input_path      = self.Params['inputFolder'].SelectedDirectory().AsString()
+        data_dict_list = self.handle_procesing(input_path, TD_REQUEST_UPLOAD_PREFIX)
+        data_dict_list.extend(self.handle_procesing(input_path, TD_RESP_DOWNLOAD_PREFIX))
+        return data_dict_list
+        
+    def handle_procesing(self, input_path, prefix):
+        logger.DLOG(f'handle_procesing')
+        logger.DLOG(f'input_path {input_path}')
+        logger.DLOG(f'prefix {prefix}')
+        input_files     = self.list_All_FilesInPath(input_path, prefix)
+        #logger.DLOG(f'Processing files : {input_files}')
+        logger.DLOG(f'input_files : {input_files}')
+        data_dict_list  = self.process_files(input_files,prefix)
+        return data_dict_list
+        
+
+class DownloadHandler(object):
+    def __init__(self, params):
+        self.FileHandler= FileHandler(params)
+    
+    
+    def td_response_download_data(self):
+        data_dict_list  = self.FileHandler.td_response_download_data()
+        return data_dict_list
+    
+    def tc_response_download_data(self):
+        data_dict_list  = self.FileHandler.tc_response_download_data()
+        return data_dict_list
+        
+        
+    def td_response_status(self):
+        pass
+    
+    def td_get_reponse_file(self):
+        pass
+        
+    def td_get_download_file(self):
+        pass
+    
+    def td_download_status(self):
+        pass
+
+
+    def tc_response_status(self):
+        pass
+    
+    def tc_get_reponse_file(self):
+        pass
+        
+    def tc_get_download_file(self):
+        pass
+    
+    def tc_download_status(self):
+        pass
+    
+    def archive(self, files=[]):
+        self.FileHandler.archive()
+        pass
+
+...
+
+  SInvest_FTPUtils
+import FSFTPOperations, EncoderUtils
+SINVEST_FTP_KEY = 'QBDM3359'
+
+def upload_files_to_server(destination_dir, host, port, username, password, source_dir):
+    """ This function uploads the file to FTP"""
+    try:
+        password = EncoderUtils.get_decrypted_password(password, SINVEST_FTP_KEY)
+        connstr = '{}:{}:{}:{}'.format(host, port, username, password)
+        return FSFTPOperations.write_to_sftp('SINVEST', source_dir, connstr, destination_dir)
+    except Exception as e:
+        return 0
+    
+
+...
+
+  SInvest_ReportGenerator
+import acm
+import datetime
+from FLogger import FLogger
+import FRunScriptGUI
+import traceback
+import sys, os
+from pprint import pprint
+import traceback
+import ParametersReader
+import SInvest_FTPUtils
+from InterfaceUtils import LogLevelNameToNumber
+from FParameterUtils import UpdateFParameters
+from ContextUtils import LastImplementingModule
+
+import SInvest_TradeInformation
+
+trade_info              = SInvest_TradeInformation.TDInformation()
+trade_conf_info         = SInvest_TradeInformation.TCInformation()
+
+sinvetstParams          = ParametersReader.get_params('SInvestParams')
+
+td_request_upload_prefix =sinvetstParams['TD_REQUEST_UPLOAD_PREFIX']
+tc_request_upload_prefix =sinvetstParams['TC_REQUEST_UPLOAD_PREFIX']
+output_folder_path      = sinvetstParams['OUTPUT_FOLDER']
+
+# Initializing logging
+
+logger = FLogger.GetLogger('SInvest_ReportGenerator')
+def InitializeLogging(logFolder, logLevel=1, logToConsole=True):
+    try:
+
+        if logFolder == '':
+            logger.Reinitialize(level=LogLevelNameToNumber(logLevel), logToConsole=logToConsole)
+        else:
+            #logfolderString = logFolder.SelectedDirectory().AsString()
+            logPath = os.path.join(logFolder, log_file_name)
+            logger.Reinitialize(level=LogLevelNameToNumber(logLevel), logToConsole=logToConsole, logToFileAtSpecifiedPath=logPath)
+            
+    except Exception as e:
+        print(f'Error in initializing logger {e}')
+        print(traceback.format_exc())
+    return logger 
+            
+                    
+# Write records in output file
+def write_to_file(outputFolder, file_rows, outputFile):
+    result = 0
+    try:
+        if file_rows:
+            with open(os.path.join(outputFolder, outputFile), 'w') as txtfile:
+                for row in file_rows:
+                    txtfile.write(row + '\n')
+            logger.LOG(f'Output file generated - {outputFile}')
+            
+             #----divider----
+            #split the extension
+            baseFileName, extension = os.path.splitext(outputFile)
+            newOutputFile = baseFileName + ".fns"
+            
+            #generate fns file
+            with open(os.path.join(outputFolder, newOutputFile), 'w') as fnsfile:
+                pass
+            
+            logger.LOG(f'Output file fns generated - {newOutputFile}')            
+
+            
+    except Exception as e:
+        logger.ELOG(f'Failed to write records in file - {outputFile} with error : {e}')
+        result = 0
+    return result
+        
+        
+# Get Trade details and generate output records    
+def get_trades(params):
+    query_name = params['queryName']
+    try:
+        storedQuery = acm.FStoredASQLQuery.Select('name="%s"' % query_name)[0]
+        return storedQuery.Query().Select().Sort()
+    except:
+        raise Exception("Exception when retrieving trades from stored query " + queryName)
+    return None
+
+def is_TD_or_TC(trade):
+    td_status = trade.AdditionalInfo().TD_DownloadStatus()
+    if td_status == '2':
+        return 'TC'
+    return 'TD'
+
+def get_current_time(format="%Y%m%d%H%M%S"):
+    """
+    This function returns current time
+    :param format: Format
+    :return: string
+    """
+    time_now = datetime.datetime.now()
+    return datetime.datetime.strftime(time_now, format)
+
+
+
+def get_next_count(number):
+    next_number = 0 if number>=9999 else number+1
+    return next_number
+
+def get_output_filename(trade, isTDTC=None):
+    global td_current_count
+    global tc_current_count
+    
+    direction   =  trade.Direction()
+    filename    = ''
+    td_tc = isTDTC
+    if td_tc is None :
+        td_tc = is_TD_or_TC(trade)
+
+    trdStr = 'T'
+    trdStr = trdStr+ (str(trade.Oid()))
+    if td_tc == 'TD':
+        filename = f"{td_request_upload_prefix}_{trdStr}_{get_current_time()}.txt"
+    elif td_tc == 'TC':
+        filename = f"{tc_request_upload_prefix}_{trdStr}_{get_current_time()}.txt"
+    return filename
+    
+
+def generate_TC(trade, output_folder=output_folder_path):
+    global tc_current_count
+    result = 0
+    try:
+        logger.LOG(f"Processing trade {trade.Oid()} for TC file generation")
+        #Initialize_file_naming_params()
+        trade_conf_info.set_trade_TCinfo(trade)
+        file_rows = trade_conf_info.populate_TC_info()
+        file_name = get_output_filename(trade, 'TC')
+        result = write_to_file(output_folder_path, file_rows, file_name)
+        if result == 1:
+            #save_current_statistics(tc_current_count)
+            tc_current_count = get_next_count(tc_current_count)
+            #set_parameter_values('TC_REQUEST_COUNT', tc_current_count )
+    except Exception as e:
+        logger.ELOG('Exception while performing TC upload - %s'%str(e))
+        exc_type, exc_value, exc_tb = sys.exc_info()
+        pprint(traceback.format_exception(exc_type, exc_value, exc_tb))
+    return result
+
+
+def generate_TD(trade, output_folder=output_folder_path):
+    global td_current_count
+    result = 0
+    try:
+        logger.LOG(f"Processing trade {trade.Oid()} for TD file generation")
+        #Initialize_file_naming_params()
+        trade_info.set_trade_TDinfo(trade)
+        file_rows = trade_info.populate_TD_info()
+        file_name = get_output_filename(trade, 'TD')
+        result = write_to_file(output_folder, file_rows, file_name)
+    except Exception as e:
+        logger.ELOG('Exception while performing TD upload - %s'%str(e))
+        exc_type, exc_value, exc_tb = sys.exc_info()
+        pprint(traceback.format_exception(exc_type, exc_value, exc_tb))
+    return result
+
+
+# Get all applicable trades
+def perform(params):
+    try:
+        #validate_variables(params)
+        
+        trades = get_trades(params)
+        if trades.Size() == 0:
+            logger.LOG('Zero(0) trades selected for processing')
+            logger.LOG('Verify the Query Folder to capture required set of trades.')
+            return
+        else:
+            logger.LOG(f'{trades.Size()} trades selected for processing')
+        
+        output_folder = params['outputFolder'].SelectedDirectory().AsString()
+        is_generateTD = params['generateTDFile']
+        is_generateTC = params['generateTCFile']
+
+        if is_generateTD or is_generateTC:
+            for trade in trades:
+                try:
+                    if is_generateTD: 
+                        generate_TD(trade, output_folder)
+                    if is_generateTC:
+                        generate_TC(trade, output_folder)
+                except Exception as e:
+                    logger.ELOG('Failed to get records for trade - {}, Error - {}'.format(trade.Name(), str(e)))
+        else:
+            logger.LOG('Files not generated. Please select - TC or TD report generation as per requirement')
+        
+        logger.LOG('Report generation complete')
+    except Exception as e:
+        logger.ELOG('Exception while performing TD upload - %s'%str(e))
+        exc_type, exc_value, exc_tb = sys.exc_info()
+        pprint(traceback.format_exception(exc_type, exc_value, exc_tb))
+
+
+# Create RunScriptGUI - QueryFolder, Output path, Logging
+class ReportGUI(FRunScriptGUI.AelVariablesHandler):
+    def __init__(self):
+        allQueries      = acm.FStoredASQLQuery.Select('')
+        queries         = []
+        
+        for q in allQueries:
+            try:
+                if q.QueryClass() == acm.FTrade:
+                    queries.append(q.Name())
+            except:
+                pass
+        
+        queries.sort()
+        directorySelection=FRunScriptGUI.DirectorySelection()
+        
+        vars =[
+               ['queryName', 'Query Name', 'string', queries, None, 1, 0, 'Name of a stored query', None, 1],
+               ['outputFolder', 'Output Folder_Output settings', directorySelection, None, directorySelection, 1, 1, 'Output Folder path', None, 1],
+               ['generateTDFile', 'Generate TD_Output settings', 'bool',[0,1],1,1,0, 'Generate Trade Details file', None, 1],
+               ['generateTCFile', 'Generate TC_Output settings', 'bool',[0,1],1,1,0, 'Generate Trade Confirmation file', None, 1],
+               ['logFolder', 'Log Folder_Logging', directorySelection, None, directorySelection, 0, 1, 'Select where to store the log file', 0, None],
+              ]
+        
+        FRunScriptGUI.AelVariablesHandler.__init__(self, vars)
+
+def ael_main(params):
+   
+    outputFolder = params['outputFolder']
+    global output_folder_path
+    output_folder_path = outputFolder.SelectedDirectory().AsString()
+    
+    logFolder = params['logFolder']
+    if logFolder == '':
+        logFolder_path = ''
+    else:
+        logFolder_path = logFolder.SelectedDirectory().AsString()
+        
+    InitializeLogging(logFolder_path)
+    logger.LOG("Execution started")
+    perform(params)
+    logger.LOG("Execution complete")
+    
+
+ael_gui_parameters = {'windowCaption':'S-Invest Report Generator'}
+ael_variables = ReportGUI()
+
+
+...
+
+  SInvest_TradeDetailsDownload
+
+import acm
+from FLogger import FLogger
+import FRunScriptGUI
+import traceback
+import sys, os
+import shutil
+from pprint import pprint
+import traceback
+import ParametersReader
+import SInvest_DownloadProcess
+from InterfaceUtils import LogLevelNameToNumber
+
+
+sinvetstParams  = ParametersReader.get_params('SInvestParams')
+logLevels       = [ FLogger.INFO, FLogger.ERROR, FLogger.WARNING, FLogger.DEBUG ]
+logFileName   = sinvetstParams['DOWNLOAD_LOG_FILE_NAME'].format(acm.Time.DateToday().replace('-', ''))
+logger          = FLogger.GetLogger('SInvestDownloader')
+
+
+TD_REFERENCE_ID = 'TD Reference ID'
+TD_REFERENCE_NO = 'TD Reference No.'
+CHECK_STATUS    = 'Check Status'
+
+TC_REFERENCE_ID = 'TC Reference ID'
+TC_REFERENCE_NO = 'TC Reference No.'
+MATCH_STATUS    = 'Match Status'
+
+
+    
+
+def list_All_FilesInPath(basepath):
+    # List all files in a directory using os.listdir
+    fileList = []
+
+    for entry in os.listdir(basepath):
+        if os.path.isfile(os.path.join(basepath, entry)):
+            fileList.append(os.path.join(basepath, entry))
+                
+    return fileList
+
+def archive(file_path, target_path):
+    try:
+        shutil.move(file_path, target_path)
+    except Exception as e:
+        logger.ELOG('Failed to move the file to - {}'.format(target_path))
+        raise Exception("Archive Failed!")
+
+# Initializing logging
+def InitializeLogging(params):
+    try:
+        logLevel  = params['log_level']
+        logFolder = params['logFolder']
+        logToConsole = params['logToConsole']
+
+        if logFolder == '':
+            logFolder = None
+        
+        if logFolder:
+            logfolderString = logFolder.SelectedDirectory().AsString()
+            logPath = os.path.join(logfolderString, logFileName)
+            logger.Reinitialize(level=LogLevelNameToNumber(logLevel), logToConsole=logToConsole, logToFileAtSpecifiedPath=logPath)
+        else:
+            logger.Reinitialize(level=LogLevelNameToNumber(logLevel), logToConsole=logToConsole)
+        
+    except Exception as e:
+        print('Error in initializing logger {}'.format(e))
+        print(traceback.format_exc())
+    return logger 
+
+
+def perform_TD_reponse_download(data_dict_list):
+    for data_dict in data_dict_list:
+        response_code = data_dict.get('Response Code', '')
+        logger.DLOG(f'reponse code received :{response_code}')
+        if response_code:
+            try:
+                trade_num       = data_dict.get(TD_REFERENCE_NO, '')
+                logger.DLOG(f'Trade number received :{trade_num}')
+                trade           = acm.FTrade[trade_num]
+                if not trade:
+                    logger.LOG('Trade - {}, NOT available to TD update Response Status.'.format(trade_num))
+                    continue
+                
+                td_response_code = trade.AdditionalInfo().TD_ResponseStatus() 
+                if response_code and (td_response_code != response_code):
+                    trade_clone = trade.Clone()
+                    trade_clone.AdditionalInfo().TD_ResponseStatus(response_code)
+                    trade.Apply(trade_clone)
+                    trade.Commit()
+                    
+            except Exception as e:
+                logger.ELOG('Failed to update TD Response information in Additional Info for trade - {}'.format(trade.Name()))
+        else:
+            trade_num   = data_dict.get(TD_REFERENCE_NO, '')
+            reference_id = data_dict.get(TD_REFERENCE_ID, '')
+            status      = data_dict.get(CHECK_STATUS, None)
+            logger.DLOG(f'Checking trade : {trade_num}')
+            trade = acm.FTrade[trade_num]
+            if not trade:
+                logger.LOG('Trade - {}, NOT available to TD update Download status.'.format(trade_num))
+                continue
+            try:
+                td_status = trade.AdditionalInfo().TD_DownloadStatus() 
+                td_ref_Id = trade.AdditionalInfo().TDReferenceID()
+                status_changed = False
+                ref_Id_Changed = False
+                if status and (td_status != status):
+                    status_changed =  True
+                if reference_id and (td_ref_Id != reference_id):
+                    ref_Id_Changed = True
+                if status_changed or ref_Id_Changed:
+                    trade_clone = trade.Clone()
+                    if ref_Id_Changed:
+                        trade_clone.AdditionalInfo().TDReferenceID(reference_id)
+                    if status_changed:
+                        trade_clone.AdditionalInfo().TD_DownloadStatus(status)
+                    trade.Apply(trade_clone)
+                    trade.Commit()
+                
+            except Exception as e:
+                logger.ELOG('Failed to TD update Download information in Additional Info for trade - {}'.format(trade.Name()))
+                logger.ELOG(f'error : {e}')
+    
+def perform_TC_reponse_download(data_dict_list):
+    for data_dict in data_dict_list:
+        response_code = data_dict.get('Response Code', '')
+        if response_code:
+            try:
+                trade_num       = data_dict.get(TC_REFERENCE_NO, '')
+                trade           = acm.FTrade[trade_num]
+                if not trade:
+                    logger.LOG('Trade - {}, NOT available to TC update Response Status.'.format(trade_num))
+                    continue
+                
+                tc_response_code = trade.AdditionalInfo().TC_ResponseStatus() 
+                if response_code and (tc_response_code != response_code):
+                    trade_clone = trade.Clone()
+                    trade_clone.AdditionalInfo().TC_ResponseStatus(response_code)
+                    trade.Apply(trade_clone)
+                    trade.Commit()
+            except Exception as e:
+                logger.ELOG('Failed to update TC Response information in Additional Info for trade - {}'.format(trade.Name()))
+        else:
+            trade_num   = data_dict.get(TC_REFERENCE_NO, '')
+            reference_id = data_dict.get(TC_REFERENCE_ID, '')
+            status      = data_dict.get(MATCH_STATUS, None)
+            
+            trade = acm.FTrade[trade_num]
+            if not trade:
+                logger.LOG('Trade - {}, NOT available to TC update Download status.'.format(trade_num))
+                continue
+            try:
+                tc_status = trade.AdditionalInfo().TC_DownloadStatus() 
+                tc_ref_Id = trade.AdditionalInfo().TCReferenceID()
+                status_changed = False
+                ref_Id_Changed = False
+                if status and (tc_status != status):
+                    status_changed =  True
+                if reference_id and (tc_ref_Id != reference_id):
+                    ref_Id_Changed = True
+                if status_changed or ref_Id_Changed:
+                    trade_clone = trade.Clone()
+                    if ref_Id_Changed:
+                        trade_clone.AdditionalInfo().TCReferenceID(reference_id)
+                    if status_changed:
+                        trade_clone.AdditionalInfo().TC_DownloadStatus(status)
+                    trade.Apply(trade_clone)
+                    trade.Commit()
+            except Exception as e:
+                logger.ELOG('Failed to update TC Download information in Additional Info for trade - {}'.format(trade.Name()))
+
+
+def perform(params):
+
+    download_handler = SInvest_DownloadProcess.DownloadHandler(params)
+    
+    try:
+        logger.DLOG(f'Processing TD Files')
+        data_dict_list = download_handler.td_response_download_data()
+        perform_TD_reponse_download(data_dict_list)
+        #download_handler.archive()
+    except Exception as e:
+        logger.ELOG(f'Failed to download and process TD Response. {str(e)}')
+        
+    
+    try:
+        logger.DLOG(f'Processing TC Files')
+        data_dict_list = download_handler.tc_response_download_data()
+        perform_TC_reponse_download(data_dict_list)
+        #download_handler.archive()
+    except Exception as e:
+        logger.ELOG(f'Failed to process TD Response and Download files. {str(e)}')
+        
+    try:
+        download_handler.archive()
+    except Exception as e:
+        logger.ELOG(f'Failed to archive the Download files. {str(e)}')
+    
+    
+    
+
+# Create RunScriptGUI - QueryFolder, Output path, Logging
+class ReportGUI(FRunScriptGUI.AelVariablesHandler):
+    def __init__(self):
+    
+        directorySelection=FRunScriptGUI.DirectorySelection()
+        
+        vars =[
+               ['inputFolder', 'Input Folder_Input settings', directorySelection, None, directorySelection, 1, 1, 'Input Folder path', None, 1],
+               ['archiveFolder', 'Archive Folder_Input settings', directorySelection, None, directorySelection, 1, 1, 'Archive Folder path', None, 1],
+               ['errorFolder', 'Error Folder_Input settings', directorySelection, None, directorySelection, 1, 1, 'Error Folder path', None, 1],
+               ['logToConsole', 'Log to console_Logging', 'int', [1, 0], 1, 1, 0, 'Whether logging should be done in the Log Console or not.'],
+               ['logFolder', 'Log Folder_Logging', directorySelection, None, directorySelection, 0, 1, 'Select where to store the log file', 0, None],
+               ['log_level', 'Log Level_Logging', 'string', logLevels, FLogger.INFO, 1, 0],
+              ]
+        
+        FRunScriptGUI.AelVariablesHandler.__init__(self, vars)
+
+def ael_main(params):        
+    InitializeLogging(params)
+    logger.LOG("Execution started")
+    perform(params)
+    logger.LOG("Execution complete")
+    
+
+
+
+ael_gui_parameters = {'windowCaption':'S-Invest Trade Details'}
+ael_variables = ReportGUI()
+
+...
+
+  SInvest_TradeDetailsMain
+
+import acm
+import datetime
+from FLogger import FLogger
+import FRunScriptGUI
+import traceback
+import sys, os
+from pprint import pprint
+import traceback
+import ParametersReader
+import SInvest_FTPUtils
+from InterfaceUtils import LogLevelNameToNumber
+from FParameterUtils import UpdateFParameters
+from ContextUtils import LastImplementingModule
+
+
+import SInvest_TradeInformation
+reload(SInvest_TradeInformation)
+
+trade_info              = SInvest_TradeInformation.TDInformation()
+trade_conf_info         = SInvest_TradeInformation.TCInformation()
+
+sinvetstParams          = ParametersReader.get_params('SInvestParams')
+sinvetstFtpParams       = ParametersReader.get_params('SInvestOutFTPParams')
+log_file_name           = sinvetstParams['LOG_FILE_NAME'].format(acm.Time.DateToday().replace('-', ''))
+log_folder              = sinvetstParams['LOG_FOLDER']
+output_folder_path      = sinvetstParams['OUTPUT_FOLDER']
+
+destination_dir = sinvetstFtpParams['destination_dir']
+host = sinvetstFtpParams['host']
+port = sinvetstFtpParams['port']
+user = sinvetstFtpParams['user']
+password = sinvetstFtpParams['password']
+
+td_request_upload_prefix =sinvetstParams['TD_REQUEST_UPLOAD_PREFIX']
+tc_request_upload_prefix =sinvetstParams['TC_REQUEST_UPLOAD_PREFIX']
+td_current_count=None
+tc_current_count=None
+# Initializing logging
+
+logger = FLogger.GetLogger('SInvestUploader')
+def InitializeLogging(logFolder, logLevel=1, logToConsole=True):
+    try:
+
+        if logFolder == '':
+            logger.Reinitialize(level=LogLevelNameToNumber(logLevel), logToConsole=logToConsole)
+        else:
+            #logfolderString = logFolder.SelectedDirectory().AsString()
+            logPath = os.path.join(logFolder, log_file_name)
+            logger.Reinitialize(level=LogLevelNameToNumber(logLevel), logToConsole=logToConsole, logToFileAtSpecifiedPath=logPath)
+            
+    except Exception as e:
+        print('Error in initializing logger {}'.format(e))
+        print(traceback.format_exc())
+    return logger 
+            
+                    
+# Write records in output file
+def write_to_file(outputFolder, file_rows, outputFile):
+    result = 0
+    try:
+        if file_rows:
+            with open(os.path.join(outputFolder, outputFile), 'w') as txtfile:
+                for row in file_rows:
+                    txtfile.write(row + '\n')
+            logger.LOG(f'Output file generated - {outputFile}')
+            
+             #----divider----
+            #split the extension
+            baseFileName, extension = os.path.splitext(outputFile)
+            newOutputFile = baseFileName + ".fns"
+            
+            #generate fns file
+            with open(os.path.join(outputFolder, newOutputFile), 'w') as fnsfile:
+                pass
+            
+            logger.LOG(f'Output file fns generated - {newOutputFile}')            
+            #----divider----
+            
+            source_file = os.path.join(outputFolder, outputFile)
+            logger.LOG(f'Uploading file to FTP server {host}')
+            result = SInvest_FTPUtils.upload_files_to_server(destination_dir, host, port, user, password, source_file)
+            
+            #----divider----
+            #Upload .fns if .txt succesfully upload on sftp server
+            if result != 0:
+                source_file_fns = os.path.join(outputFolder, newOutputFile)
+                logger.LOG(f'Uploading file fns to FTP server {host}')
+                result = SInvest_FTPUtils.upload_files_to_server(destination_dir, host, port, user, password, source_file_fns)             
+            else:
+                logger.LOG(f'Upload txt to server failed, so the fns also failed')
+            #---divider----
+            
+    except Exception as e:
+        logger.ELOG(f'Failed to write records in file - {outputFile} with error : {e}')
+        result = 0
+    return result
+        
+        
+# Get Trade details and generate output records    
+
+def validate_variables(params):
+    if params['queryName'] == '':
+        logger.ELOG('Query name must be specified in Task.')
+        raise Exception("Query name must be specified")
+
+def get_trades(params):
+    query_name = params['queryName']
+    try:
+        storedQuery = acm.FStoredASQLQuery.Select('name="%s"' % query_name)[0]
+        return storedQuery.Query().Select().Sort()
+    except:
+        raise Exception("Exception when retrieving trades from stored query " + queryName)
+    return None
+
+def is_TD_or_TC(trade):
+    td_status = trade.AdditionalInfo().TD_DownloadStatus()
+    if td_status == '2':
+        return 'TC'
+    return 'TD'
+
+def get_current_time(format="%Y%m%d%H%M%S"):
+    """
+    This function returns current time
+    :param format: Format
+    :return: string
+    """
+    time_now = datetime.datetime.now()
+    return datetime.datetime.strftime(time_now, format)
+
+
+
+def get_next_count(number):
+    next_number = 0 if number>=9999 else number+1
+    return next_number
+
+
+def set_parameter_values(param_name, param_value):
+    """
+    This function save the FParameters
+    """
+    ctx = acm.GetDefaultContext()
+    mod = acm.FExtensionModule['PS_SInvest']
+    if mod :
+        setting = { param_name : param_value }
+        if setting:
+            UpdateFParameters(ctx, 'PS_SInvest', 'SInvestParams', **setting)
+            mod.Commit()
+        logger.LOG(f'Updated parameter {param_name} with value {param_value}')
+    else:
+        logger.LOG(f"Not updating parameter {param_name} as value is same")
+
+
+def Initialize_file_naming_params():
+    global td_current_count
+    global tc_current_count
+    today_date = str(datetime.date.today()).strip()
+    if(tc_current_count is None) and (td_current_count is None):
+        try:
+            logger.LOG("Initialzing file naming parameters")
+            last_exec_date = sinvetstParams['LAST_EXEC_DATE_SINVEST'].strip()
+            logger.LOG(f"Last execution date:{last_exec_date}")
+            if last_exec_date and (last_exec_date == today_date):
+                #read parameters and initilize the count
+                logger.LOG(f"last execution was today")
+                td_request_count =sinvetstParams['TD_REQUEST_COUNT']
+                tc_request_count =sinvetstParams['TC_REQUEST_COUNT']
+                if td_request_count and (len(td_request_count.strip()) > 0):
+                    td_current_count = int(td_request_count)
+                else:   
+                    td_current_count = 0
+                logger.LOG(f"Initialized td_current_count:{td_current_count}")
+                if tc_request_count and (len(tc_request_count.strip()) > 0):
+                    tc_current_count = int(tc_request_count)
+                else:
+                    tc_current_count = 0
+                logger.LOG(f"Initialized tc_current_count:{tc_current_count}")
+            else:
+                td_current_count = 0
+                set_parameter_values('TD_REQUEST_COUNT', td_current_count )
+                tc_current_count = 0
+                set_parameter_values('TC_REQUEST_COUNT', tc_current_count )
+        except Exception as e:
+            logger.WLOG(f"error : {e}")
+            td_current_count = 0
+            set_parameter_values('TD_REQUEST_COUNT', td_current_count )
+            tc_current_count = 0
+            set_parameter_values('TC_REQUEST_COUNT', tc_current_count )
+
+    set_parameter_values('LAST_EXEC_DATE_SINVEST', today_date)
+    
+
+def get_output_filename(trade, isTDTC=None):
+    global td_current_count
+    global tc_current_count
+    
+    direction   =  trade.Direction()
+    filename    = ''
+    td_tc = isTDTC
+    if td_tc is None :
+        td_tc = is_TD_or_TC(trade)
+        
+    if td_tc == 'TD':
+        count_str = str(td_current_count).zfill(4)
+        filename = f"{td_request_upload_prefix}{get_current_time()}-{count_str}.txt"
+    elif td_tc == 'TC':
+        count_str = str(tc_current_count).zfill(4)
+        filename = f"{tc_request_upload_prefix}{get_current_time()}-{count_str}.txt"
+    return filename
+    
+
+def upload_TC(trade, output_folder=output_folder_path):
+    global tc_current_count
+    result = 0
+    try:
+        logger.LOG(f"Processing trade {trade.Oid()} for TC generation")
+        Initialize_file_naming_params()
+        trade_conf_info.set_trade_TCinfo(trade)
+        file_rows = trade_conf_info.populate_TC_info()
+        file_name = get_output_filename(trade, 'TC')
+        result = write_to_file(output_folder_path, file_rows, file_name)
+        if result == 1:
+            #save_current_statistics(tc_current_count)
+            tc_current_count = get_next_count(tc_current_count)
+            set_parameter_values('TC_REQUEST_COUNT', tc_current_count )
+    except Exception as e:
+        logger.ELOG('Exception while performing TC upload - %s'%str(e))
+        exc_type, exc_value, exc_tb = sys.exc_info()
+        pprint(traceback.format_exception(exc_type, exc_value, exc_tb))
+    return result
+
+
+def upload_TD(trade, output_folder=output_folder_path):
+    global td_current_count
+    result = 0
+    try:
+        logger.LOG(f"Processing trade {trade.Oid()} for TD generation")
+        Initialize_file_naming_params()
+        trade_info.set_trade_TDinfo(trade)
+        file_rows = trade_info.populate_TD_info()
+        file_name = get_output_filename(trade, 'TD')
+        result = write_to_file(output_folder, file_rows, file_name)
+        if result == 1:
+            td_current_count = get_next_count(td_current_count)
+            set_parameter_values('TD_REQUEST_COUNT', td_current_count )
+    except Exception as e:
+        logger.ELOG('Exception while performing TD upload - %s'%str(e))
+        exc_type, exc_value, exc_tb = sys.exc_info()
+        pprint(traceback.format_exception(exc_type, exc_value, exc_tb))
+    return result
+
+
+# Get all applicable trades
+def perform(params):
+    try:
+        validate_variables(params)
+        
+        trades = get_trades(params)
+        if trades.Size() == 0:
+            logger.LOG('----------------- TRADES ARE NOT AVAILABLE TO SEND TO S-INVEST.-------------------------')
+            logger.LOG('Verify the Query Folder to capture required set of trades.')
+            return
+        
+        output_folder = params['outputFolder'].SelectedDirectory().AsString()
+
+        
+        for trade in trades:
+            try:
+                upload_TD(trade, output_folder)
+            except Exception as e:
+                logger.ELOG('Failed to get records for trade - {}, Error - {}'.format(trade.Name(), str(e)))
+        
+        logger.LOG('Done. Trade Details written in output file.')
+    except Exception as e:
+        logger.ELOG('Exception while performing TD upload - %s'%str(e))
+        exc_type, exc_value, exc_tb = sys.exc_info()
+        pprint(traceback.format_exception(exc_type, exc_value, exc_tb))
+
+
+# Create RunScriptGUI - QueryFolder, Output path, Logging
+class ReportGUI(FRunScriptGUI.AelVariablesHandler):
+    def __init__(self):
+        self.queryOld   =''
+        allQueries      = acm.FStoredASQLQuery.Select('')
+        queries         = []
+        
+        for q in allQueries:
+            try:
+                if q.QueryClass() == acm.FTrade:
+                    queries.append(q.Name())
+            except:
+                pass
+        
+        queries.sort()
+        directorySelection=FRunScriptGUI.DirectorySelection()
+        
+        vars =[
+               ['queryName', 'Query Name', 'string', queries, None, 1, 0, 'Name of a stored query', None, 1],
+               ['outputFolder', 'Output Folder_Output settings', directorySelection, None, directorySelection, 1, 1, 'Output Folder path', None, 1],
+               ['logFolder', 'Log Folder_Logging', directorySelection, None, directorySelection, 0, 1, 'Select where to store the log file', 0, None],
+              ]
+        
+        FRunScriptGUI.AelVariablesHandler.__init__(self, vars)
+
+def ael_main(params):
+   
+    outputFolder = params['outputFolder']
+    global output_folder_path
+    output_folder_path = outputFolder.SelectedDirectory().AsString()
+    
+    logFolder = params['logFolder']
+    if logFolder == '':
+        logFolder_path = ''
+    else:
+        logFolder_path = logFolder.SelectedDirectory().AsString()
+        
+    InitializeLogging(logFolder_path)
+    logger.LOG("Execution started")
+    perform(params)
+    logger.LOG("Execution complete")
+    
+
+ael_gui_parameters = {'windowCaption':'S-Invest Trade Details'}
+ael_variables = ReportGUI()
+
+
+...
+
+  SInvest_TradeDetailsUpload
+import acm
+from FLogger import FLogger
+import FRunScriptGUI
+from pprint import pprint
+import traceback
+import os, sys
+import ParametersReader
+import SInvest_TradeDetailsMain
+from InterfaceUtils import LogLevelNameToNumber
+from SInvestProcessing import process_trade
+
+
+sinvetstParams  = ParametersReader.get_params('SInvestParams')
+log_file_name   = sinvetstParams['UPLOAD_LOG_FILE_NAME'].format(acm.Time.DateToday().replace('-', ''))
+logger = None
+
+
+
+def perform(params):
+    trades = params['trades']
+    for trade in trades:
+        try:
+            process_trade(trade)
+            
+        except Exception as e:
+            logger.ELOG('Failed to delete additional info of trade - {}, {}'.format(trade.Name(), str(e)))
+
+
+# Create RunScriptGUI - QueryFolder, Output path, Logging
+class ReportGUI(FRunScriptGUI.AelVariablesHandler):
+    def __init__(self):
+    
+        directorySelection=FRunScriptGUI.DirectorySelection()
+        trades = acm.FTrade.Select('')
+        
+        vars =[
+               ['trades', 'Trades', 'FTrade', None, 33, 0, 1, 'Choose trades', None, 1],
+               ['logFolder', 'Log Folder_Logging', directorySelection, None, directorySelection, 0, 1, 'Select where to store the log file', 0, None],
+              ]
+        
+        FRunScriptGUI.AelVariablesHandler.__init__(self, vars)
+
+def ael_main(params): 
+    logFolder = params['logFolder']
+    if logFolder == '':
+        logFolder_path = ''
+    else:
+        logFolder_path = logFolder.SelectedDirectory().AsString()
+    logger = SInvest_TradeDetailsMain.InitializeLogging(logFolder_path)
+    logger.LOG("Execution started")
+    perform(params)
+    logger.LOG("Execution Complete")
+    
+
+
+ael_gui_parameters = {'windowCaption':'S-Invest Upload Trade Details'}
+ael_variables = ReportGUI()
+
+...
+
+  SInvest_TradeInformation
+
+import acm
+from InterfaceUtils import date_from_datetime
+import FLogger
+import ParametersReader
+from collections import OrderedDict
+import math
+
+NEWM    = ['BO Confirmed']
+CANC    = ['BO Rejected', 'Void']
+
+params  = ParametersReader.get_params("SInvestParams")
+BR_CODE = params['BRCODE']
+ACQ_INFO_ADD_PAYMENT= params['ACQ_INFO_PAYMENT']
+
+TD_BUY_COLUMNS  = 'Transaction Status|Data Type|TD Reference ID|Trade Date|Settlement Date|BR Code|IM code|Security Code|Buy/Sell|Price|Face Value|TD Reference No.'
+TD_SELL_COLUMNS = 'Transaction Status|Data Type|TD Reference ID|Trade Date|Settlement Date|BR Code|IM code|Security Code|Buy/Sell|Price|Face Value|TD Reference No.|Data Type|TD Reference No.|Face Value|Acquisition Date|Acquisition Price(%)|Acquisition Amount'
+
+TC_COLUMNS      = "Transaction Status|TC Reference ID|Data Type|TC Reference No.|Trade Date|Settlement Date|BR Code|IM Code|Counterparty Code|Fund Code|Security Code|Buy/Sell|Price|Face Value|Proceeds|Last Coupon Date|Next Coupon Date|Accrued Days|Accrued Interest Amount|Other Fee|Capital Gain Tax|Interest Income Tax|Withholding Tax|Net Proceeds|Seller's Tax ID|Purpose of Transaction|Securities Account No.|Additional Information (If Any)|Authorized Person Name|Authorized Person Position|Place of Trade Type|Repo Tri-Party Agent|Calculation Agent|Repo Rate|Purchase/Lending-Borrowing Date|Re-purchase/Return Date|Data Type|TC Reference No.|Face Value|Acquisition Date|Acquisition Price(%)|Acquisition Amount|Capital Gain|Days of Holding Interest|Holding Interest Amount|Total Taxable Income|Tax Rate in %|Tax Amount"
+
+logger          = FLogger.FLogger('SInvestUploader')
+
+calcSpace       = acm.Calculations().CreateCalculationSpace(acm.GetDefaultContext(), 'FDealSheet' )
+
+
+class TradeInformation(object):
+    def __init__(self):
+        self.Trade                  = None
+        self.Trans_Status           = ''
+        self.Data_Type1             = ''
+        self.TD_Reference_ID1       = ''
+        self.Trade_Date             = ''
+        self.Settlement_Date        = ''
+        self.BR_Code                = ''
+        self.IM_code                = ''
+        self.Security_Code          = ''
+        self.Buy_Sell               = ''
+        self.Price                  = '0'
+        self.Face_Value             = '0'
+        self.TD_Reference_No1       = ''
+        self.Data_Type2             = ''
+        self.TD_Reference_No2       = ''
+        self.Face_Value             = '0'
+        self.Acquisition_Date       = ''
+        self.Acquisition_Price_pct  = ''
+        self.Acquisition_Amount     = ''
+        
+        self.PaymentTAX                = None
+    
+    def set_trade(self, trade):
+        self.Trade      = trade
+        self.get_PaymentTAX(trade)
+        
+    
+    def get_PaymentTAX(self, trade):
+        self.PaymentTAX    = acm.FPayment.Select01('trade={} and type=WHT'.format(trade.Oid()), None)
+        
+    def trans_status(self):
+        if self.Trade.Status() in NEWM:
+            self.Trans_Status = 'NEWM'
+        elif self.Trade.Status() in CANC:
+            self.Trans_Status = 'CANC'
+        return self.Trans_Status
+        
+    def data_type1(self):
+        #BM JIRA TCSTCSPBDT-323703 : As per inputs 'Data Type should be 1 for TD or TC as well as buy/sell transaction'
+        self.Data_Type1 = '1'
+        return self.Data_Type1
+        
+    def td_reference_id(self):
+        td_ref_id = self.Trade.AdditionalInfo().TDReferenceID()
+        if td_ref_id is not None:
+            self.TD_Reference_ID1 = td_ref_id
+        if self.Trade.Status() in CANC:
+            return self.TD_Reference_ID1
+        else:
+            return ''
+        
+    def trade_date(self):
+        self.Trade_Date = date_from_datetime(self.Trade.TradeTime(), format_str='%Y%m%d')
+        return self.Trade_Date
+        
+    def settlement_date(self):
+        self.Settlement_Date = date_from_datetime(self.Trade.ValueDay(), format_str='%Y%m%d')
+        return self.Settlement_Date
+        
+    def br_code(self):
+        self.BR_Code = BR_CODE
+        return self.BR_Code
+        
+    def im_code(self):
+        try:
+            self.IM_Code = self.Trade.Counterparty().AdditionalInfo().Data_IM()
+            self.IM_Code = self.IM_Code if self.IM_Code else ''
+        except Exception as e:
+            logger.ELOG(f'Error in im_code : {e}')
+            logger.ELOG('Failed to get IM Code for trade - {}'.format(self.Trade.Name()))
+        return self.IM_Code
+        
+        
+    def security_code(self):
+        self.Security_Code = self.Trade.Instrument().Name()
+        return self.Security_Code
+        
+    def buy_sell(self):
+        if self.Trade.Direction() == 'Buy':
+            self.Buy_Sell = '1'
+        elif self.Trade.Direction() == 'Sell':
+            self.Buy_Sell = '2'
+        return self.Buy_Sell
+        
+    def price(self):
+        self.Price = self.Trade.Price()
+        return str(round(self.Price, 6))
+        
+    def face_value(self):
+        self.Face_Value = abs(self.Trade.FaceValue())
+        return str(round(self.Face_Value,2))
+        
+    def td_reference_no1(self):
+        #JIRA TCSTCSPBDT-324497- Inputs received "Both Trade Reference No fields will be set to trade number regardless of the transaction status NEWM or CANC'
+        return str(self.Trade.Oid())
+        
+    def data_type2(self):
+        if self.Trade.Direction() == 'Sell':
+            self.Data_Type2 = '2'
+        return self.Data_Type2
+        
+    def td_reference_no2(self):
+         #JIRA TCSTCSPBDT-324497- Inputs received "Both Trade Reference No fields will be set to trade number regardless of the transaction status NEWM or CANC'
+        return str(self.Trade.Oid())
+        
+    #def face_value(self):
+    #    pass
+        
+    def acquisition_date(self):
+        
+        #acq_day         = self.PaymentTAX.PayDay() if self.PaymentTAX else ''
+        #self.Acquisition_Date = date_from_datetime(acq_day, format_str='%Y%m%d')
+        #test to take acquisition date from additional info
+        #JIRA : TCSTCSPBDT-424543, changed mapping tax from wht to addinfo
+        acq_date = self.Trade.AdditionalInfo().AcquisitionDate()
+        try:
+            self.Acquisition_Date = date_from_datetime(acq_date,format_str='%Y%m%d')
+        except Exception as e:
+            logger.ELOG(f'Error in acquisition_date : {e}')
+            self.Acquisition_Date = ""
+        
+        return self.Acquisition_Date
+        
+        
+    def acquisition_price_pct(self):
+        #acq_price_pct = self.PaymentTAX.Text() if self.PaymentTAX else ''
+        #try:
+        #    self.Acquisition_Price_pct = acq_price_pct
+        #except Exception as e:
+        #    self.Acquisition_Price_pct = '1'
+        #JIRA : TCSTCSPBDT-424543, changed mapping tax from wht to addinfo
+        acq_price_pct = self.Trade.AdditionalInfo().AcquisitionPrice()
+        try:
+            if acq_price_pct is not None:
+                self.Acquisition_Price_pct = round(acq_price_pct,6)
+            else:
+                self.Acquisition_Price_pct = 0
+        except Exception as e:
+            logger.ELOG(f'Error in acquisition_price_pct : {e}')
+            self.Acquisition_Price_pct = 0
+        return str(self.Acquisition_Price_pct)
+        
+    def acquisition_amount(self):
+        #self.Acquisition_Amount = abs(self.PaymentTAX.Amount()) if self.PaymentTAX else ''
+        #JIRA : TCSTCSPBDT-424543, changed mapping tax from wht to addinfo
+        acq_amount = 0
+        try:
+            acq_amount = (self.Acquisition_Price_pct)*(self.Face_Value)/100
+        except:
+            acq_amount = 0
+        self.Acquisition_Amount = abs(acq_amount)
+        return str(self.Acquisition_Amount)
+    
+
+class TDInformation(TradeInformation):
+    def __init__(self):
+        super(TDInformation, self).__init__()
+    
+    def set_trade_TDinfo(self, trade):
+        self.set_trade(trade)
+    
+    
+    def common_information(self):
+        common_dict = OrderedDict()
+        common_dict['Transaction Status'] = self.trans_status()
+        common_dict['Data Type']          = self.data_type1()
+        common_dict['TD Reference ID']    = self.td_reference_id()
+        common_dict['Trade Date']         = self.trade_date()
+        common_dict['Settlement Date']    = self.settlement_date()
+        common_dict['BR Code']            = self.br_code()
+        common_dict['IM code']            = self.im_code()
+        common_dict['Security Code']      = self.security_code()
+        common_dict['Buy/Sell']           = self.buy_sell()
+        common_dict['Price']              = self.price()
+        common_dict['Face Value']         = self.face_value()
+        common_dict['TD Reference No.']   = self.td_reference_no1()
+        return common_dict
+    
+    def buy_information(self):        
+        buyt_dict       = self.common_information()
+        
+        values          = list(buyt_dict.values())
+        values_str      = '|'.join(values)
+        logger.DLOG(f'values in buy : {values_str}')
+        
+        records         = []
+        records.append(TD_BUY_COLUMNS)
+        records.append(values_str)
+        return records
+
+    def sell_information(self):
+        sellt_dict1 = self.common_information()
+        
+        
+        sellt_dict2 = OrderedDict()
+        sellt_dict2['Data Type']         = self.data_type2()
+        sellt_dict2['TD Reference No.']  = self.td_reference_no2()
+        sellt_dict2['Face Value']        = self.face_value()
+        sellt_dict2['Acquisition Date']  = self.acquisition_date()
+        sellt_dict2['Acquisition Price(%)']= self.acquisition_price_pct()
+        sellt_dict2['Acquisition Amount']= self.acquisition_amount()
+        
+        
+        values1         = list(sellt_dict1.values())
+        values_str1     = '|'.join(values1) +'|'
+        
+        values2         = list(sellt_dict2.values())
+        values_str2     = '|'.join(values2)
+        logger.DLOG(f'values in sell : {values_str2}')
+        
+        records         = []
+        values_str      = values_str1 + values_str2
+        records.append(TD_SELL_COLUMNS)
+        records.append(values_str)
+        return records
+
+    
+    def populate_TD_info(self):
+        records = []
+        if self.buy_sell() == '1':
+            records    = self.buy_information()
+        elif self.buy_sell() == '2':
+            records = self.sell_information()
+        
+        return records
+
+
+class TCInformation(TradeInformation):  
+    def __init__(self):
+        super(TCInformation, self).__init__()
+        self.PaymentACQ = None
+    
+    def set_trade_TCinfo(self, trade):
+        self.set_trade(trade)
+    
+    
+    def fund_code(self):
+        try:
+            fund_code = self.Trade.Counterparty().AdditionalInfo().Data_Fund()
+            fund_code = fund_code if fund_code else '' 
+            return fund_code
+        except Exception as e:
+            logger.ELOG(f'Error in fund_code : {e}')
+            return ''
+    
+    def proceeds(self):
+        try:
+            face_value  = self.Trade.FaceValue()
+            price       = self.Trade.Price()
+            proceeds_val    = abs((face_value * price)/100)
+            return proceeds_val
+        except Exception as e:
+            logger.ELOG(f"error in proceeds() : {e}")
+            return '0'
+    
+    def last_coupon_date(self):
+        moneyFlows = []
+
+        moneyFlows = self.Trade.MoneyFlows().SortByProperty('PayDate')
+            
+        lastCouponDate = None
+        for flow in moneyFlows:
+            if flow.Type() == 'Coupon':
+                couponDate = acm.Time.AsDate(flow.PayDate())
+                if couponDate < acm.Time.DateToday():
+                    lastCouponDate = str(couponDate)
+
+                if couponDate >= acm.Time.DateToday():
+                    break
+            
+        if (not lastCouponDate) and self.Trade:
+            lastCouponDate = self.Trade.Instrument().StartDate()
+
+        return date_from_datetime(lastCouponDate, format_str='%Y%m%d')
+        
+    
+    def next_coupon_date(self):
+        moneyFlows = []
+        moneyFlows = self.Trade.MoneyFlows().SortByProperty('PayDate')
+        
+        couponDate = None
+        for flow in moneyFlows:
+            if flow.Type() in ['Coupon']:
+                couponDate = acm.Time.AsDate(flow.PayDate())
+                if str(couponDate) >= acm.Time.DateToday():
+                    return date_from_datetime(couponDate, format_str='%Y%m%d')
+        if (not couponDate) and self.Trade:
+            couponDate = self.Trade.Instrument().EndDate()
+        return date_from_datetime(couponDate, format_str='%Y%m%d')
+    
+    def accrued_days(self):
+        return self.Trade.AccruedDays()
+
+    def accrued_interest(self):
+        try:
+            accr_interest = 0
+            accr_interestDV = calcSpace.CalculateValue(self.Trade, 'Accounting Traded Interest')
+            if accr_interestDV and (not math.isnan(accr_interestDV)):
+               amount =  round(accr_interestDV.Number(), 2)
+               accr_interest = str(round(abs(amount), 2))
+            return accr_interest
+        except Exception as e:
+            logger.ELOG(f'Error in accrued_interest : {e}')
+            return 0
+    
+    def withholding_tax(self):
+        paymentWHT    = acm.FPayment.Select01('trade={} and type=WHT'.format(self.Trade.Oid()), None)
+        wht_amt         = paymentWHT.Amount() if paymentWHT else 0
+        return round(wht_amt,2)
+    
+    def net_proceeds(self):
+        wht_amt = self.withholding_tax()
+        if (wht_amt is None) or (math.isnan(wht_amt)):
+            wht_amt = 0
+        return round(abs(self.Trade.Premium()) - wht_amt, 2)
+        
+    def seller_tax_id(self):
+        tax_id = ''
+        try:
+            if self.Trade.Direction() == 'Sell':
+                tax_id = self.Trade.Acquirer().AdditionalInfo().Tax_ID()
+                tax_id = tax_id if tax_id else ''
+        except Exception as e:
+            logger.ELOG(f'Error in seller_tax_id : {e}')
+            tax_id = ''
+        return tax_id
+    
+    def auth_person(self):
+        return self.Trade.Portfolio().Name()
+        
+    def tc_data_type(self):
+        data_type = ''
+        if self.Trade.Direction() == 'Sell':
+            data_type = 2
+        return data_type
+    
+    def tc_reference_no(self):
+        return self.Trade.Oid()
+    
+    def acquisition_date(self):
+        """
+        if not self.PaymentACQ:
+            self.PaymentACQ    = acm.FPayment.Select01('trade={} and type={}'.format(self.Trade.Oid(), ACQ_INFO_ADD_PAYMENT), None)
+        acq_date = self.PaymentACQ.PayDay() if self.PaymentACQ else ''
+        
+        """
+        #JIRA : TCSTCSPBDT-424543, changed mapping tax from wht to addinfo
+        acq_date_ori = self.Trade.AdditionalInfo().AcquisitionDate()
+        try:
+            acq_date = date_from_datetime(acq_date_ori,format_str='%Y%m%d')
+        except Exception as e:
+            logger.ELOG(f'Error in acquisition_date : {e}')
+            acq_date = ""
+        return acq_date
+        
+    def acquisition_price(self):
+        """
+        if not self.PaymentACQ:
+            self.PaymentACQ    = acm.FPayment.Select01('trade={} and type={}'.format(self.Trade.Oid(), ACQ_INFO_ADD_PAYMENT), None)
+        acq_price = self.PaymentACQ.Text() if self.PaymentACQ else ''
+        """
+        #JIRA : TCSTCSPBDT-424543, changed mapping tax from wht to addinfo
+        acq_price_pct = self.Trade.AdditionalInfo().AcquisitionPrice()
+        try:
+            if (acq_price_pct is not None):
+                acq_price = round(acq_price_pct, 6)
+            else:
+                acq_price = "0"
+        except Exception as e:
+            logger.ELOG(f'Error in acquisition_price : {e}')
+            acq_price = "0"  
+        return str(acq_price)
+
+    def acquisition_amount(self):
+        face_value      = self.face_value()
+        face_value      = float(face_value) if face_value else 0.0
+        try:
+            acq_price       = self.acquisition_price()
+            if acq_price is None:
+                acq_price = 0.0
+        except Exception as e:
+            logger.ELOG(f'Error in acquisition_amount : {e}')
+            acq_price = 0.0
+        acq_price       = float(acq_price) if acq_price else 0.0
+        try:
+            amount      = (face_value * acq_price) / 100
+        except Exception as e:
+            logger.ELOG(f'Error in acquisition_amount : {e}')
+            amount = 0.0
+        return abs(round(amount,2))
+        
+    def capital_gain(self):
+        cap_gain    = 0.0
+        face_value      = self.face_value()
+        face_value      = float(face_value) if face_value else 0.0
+        trade_price     = self.Trade.Price()
+        try:
+            cap_gain    = (face_value * trade_price/100) - self.acquisition_amount()
+        except Exception as e:
+            logger.ELOG(f'Error in capital_gain : {e}')
+            cap_gain    = 0.0
+        return round(cap_gain,2)
+        
+    def tc_reference_id(self):
+        tc_ref_id = self.Trade.AdditionalInfo().TCReferenceID()
+        if tc_ref_id is None :
+            tc_ref_id = ''
+        if self.Trade.Status() in CANC:
+            return tc_ref_id
+        else:
+            return ''
+    
+    def tc_common_information(self):
+        tc_dict_common = OrderedDict()
+        
+        tc_dict_common['Transaction Status']           = self.trans_status()
+        tc_dict_common['TC Reference ID']              = self.tc_reference_id()
+        tc_dict_common['Data Type']                    = self.data_type1()
+        tc_dict_common['TC Reference No.']             = self.td_reference_no1()
+        tc_dict_common['Trade Date']                   = self.trade_date()
+        tc_dict_common['Settlement Date']              = self.settlement_date()
+        tc_dict_common['BR Code']                      = self.br_code()
+        tc_dict_common['IM Code']                      = self.im_code()
+        tc_dict_common['Counterparty Code']            = ''
+        tc_dict_common['Fund Code']                    = self.fund_code()
+        tc_dict_common['Security Code']                = self.security_code()
+        tc_dict_common['Buy/Sell']                     = self.buy_sell()
+        tc_dict_common['Price']                        = self.price()
+        tc_dict_common['Face Value']                   = self.face_value()
+        
+        return tc_dict_common
+        
+        
+    def populate_TC_info(self):
+        tc_dict  = OrderedDict()
+        
+        tc_dict['Proceeds']                             = self.proceeds()
+        tc_dict['Last Coupon Date']                     = self.last_coupon_date()
+        tc_dict['Next Coupon Date']                     = self.next_coupon_date()
+        tc_dict['Accrued Days']                         = self.accrued_days()
+        tc_dict['Accrued Interest Amount']              = self.accrued_interest()
+        tc_dict['Other Fee']                            = ''
+        tc_dict['Capital Gain Tax']                     = '' 
+        tc_dict['Interest Income Tax']                  = ''
+        tc_dict['Withholding Tax']                      = self.withholding_tax()
+        tc_dict['Net Proceeds']                         = self.net_proceeds()
+        tc_dict["Seller's Tax ID"]                      = self.seller_tax_id()
+        tc_dict['Purpose of Transaction']               = ''
+        tc_dict['Securities Account No.']               = 'BI CUSTODY'
+        tc_dict['Additional Information (If Any)']      = ''
+        tc_dict['Authorized Person Name']               = self.auth_person()
+        tc_dict['Authorized Person Position']           = 'Dealer'
+        tc_dict['Place of Trade Type']                  = 2
+        tc_dict['Repo Tri-Party Agent']                 = ''
+        tc_dict['Calculation Agent']                    = ''
+        tc_dict['Repo Rate']                            = ''
+        tc_dict['Purchase/Lending-Borrowing Date']      = ''
+        tc_dict['Re-purchase/Return Date']              = ''
+        if self.buy_sell() == '2': # populate the fields only for sell trade
+            tc_dict['Data Type']                            = self.tc_data_type()
+            tc_dict['TC Reference No.']                     = self.tc_reference_no()
+            tc_dict['Face Value']                           = self.face_value()
+            tc_dict['Acquisition Date']                     = self.acquisition_date()
+            tc_dict['Acquisition Price(%)']                 = self.acquisition_price()
+            tc_dict['Acquisition Amount']                   = self.acquisition_amount()
+            tc_dict['Capital Gain']                         = self.capital_gain()
+            tc_dict['Days of Holding Interest']             = 0
+            tc_dict['Holding Interest Amount']              = 0
+            tc_dict['Total Taxable Income']                 = 0
+            tc_dict['Tax Rate in %']                        = 0
+            tc_dict['Tax Amount']                           = 0
+        
+        
+        tc_dict_common  = self.tc_common_information()
+        
+        values1         = list(str(i) for i in tc_dict_common.values())
+        values_str1     = '|'.join(values1) +'|'
+        
+        values2         = list(str(i) for i in tc_dict.values())
+        values_str2     = '|'.join(values2)
+        
+        records         = []
+        values_str      = values_str1 + values_str2
+        records.append(TC_COLUMNS)
+        records.append(values_str)
+        return records
+        
+        
+
+...
+
+  SInvestMessageAdaptations
+
+import acm
+import SInvest_TradeDetailsMain
+import ParametersReader
+from SInvestProcessing import process_trade
+
+
+sinvetstParams          = ParametersReader.get_params('SInvestParams')
+trade_status            = sinvetstParams['TRADE_STATUS']
+default_cust_type       = sinvetstParams['CUSTOMER_TYPE']
+log_folder              = sinvetstParams['LOG_FOLDER']
+user_group              = sinvetstParams['IGNORE_UPDATES_USER_GROUP']
+BONDS                   = ['Bond', 'Bill', 'FRN']
+logger = SInvest_TradeDetailsMain.InitializeLogging(log_folder)
+
+
+def get_trade_from_msg(m_obj):
+    mt          = m_obj.mbf_find_object('TRADE', 'MBFE_BEGINNING')
+    mt_trade    = mt.mbf_find_object('TRDNBR', 'MBFE_BEGINNING') if mt else None
+    trade_id    = mt_trade.mbf_get_value() if mt_trade else None
+    trade       = acm.FTrade[trade_id] if trade_id else None
+    return trade
+
+
+def sender_modify(m, s):
+    trade = get_trade_from_msg(m)
+    return process_trade(trade)
+    
+
+...
+
+  SInvestProcessing
+
+import acm
+import SInvest_TradeDetailsMain
+import ParametersReader
+
+
+sinvetstParams          = ParametersReader.get_params('SInvestParams')
+trade_status            = sinvetstParams['TRADE_STATUS']
+default_cust_type       = sinvetstParams['CUSTOMER_TYPE']
+log_folder              = sinvetstParams['LOG_FOLDER']
+user_group              = sinvetstParams['IGNORE_UPDATES_USER_GROUP']
+BONDS                   = ['Bond', 'Bill', 'FRN']
+logger = SInvest_TradeDetailsMain.InitializeLogging(log_folder)
+
+
+def is_eligible_upload(trade):
+    if trade.Status() in eval(trade_status) and trade.Instrument().InsType() in BONDS:
+        try:
+            customer_type = trade.Counterparty().AdditionalInfo().CustomerType()
+        except Exception as e:
+            customer_type = ''
+        if customer_type == default_cust_type:
+            return True
+    return False
+
+def valid_TDresponse(response_status):
+    if response_status:
+        if (response_status.strip().casefold() == 'Ok'.casefold() ):
+            return True
+        else:
+            logger.LOG(f"Ignored trade update for {trade.Oid()} - SInvest TD Response Status : {response_status}. Manual handling required.")
+            return False
+    else:
+        return True
+
+def valid_TCresponse(response_status):
+    if response_status:
+        if (response_status.strip().casefold() == 'Ok'.casefold() ):
+            return True
+        else:
+            logger.LOG(f"Ignored trade update for {trade.Oid()} - SInvest TC Response Status : {response_status}. Manual handling required.")
+            return False
+    else :
+        return True
+    
+def is_update_from_interface(trade):
+    update_user = trade.UpdateUser()
+    groupName = update_user.UserGroup().Name()
+    if user_group.casefold() == groupName.casefold():
+        return True
+    return False
+
+def is_td_download_status_checked(td_download_status):
+    if td_download_status and (td_download_status == '2'):
+        return True
+    return False
+
+
+def clearAddInfo(fieldName, trade):
+    ais = acm.FAdditionalInfoSpec[fieldName]
+    addInfo = ais.AddInfo(trade)
+    if addInfo:
+        if addInfo.IsClone() :
+            addInfo.Unsimulate()
+        else:
+            addInfo.Delete()
+
+
+def handle_Trade_Rejection(trade):
+    tc_ref_ID = trade.AdditionalInfo().TCReferenceID()
+    td_ref_ID = trade.AdditionalInfo().TDReferenceID() 
+    td_download_status = trade.AdditionalInfo().TD_DownloadStatus()
+    tc_download_status = trade.AdditionalInfo().TC_DownloadStatus()
+    td_response_status = trade.AdditionalInfo().TD_ResponseStatus()
+    tc_response_status = trade.AdditionalInfo().TC_ResponseStatus()
+    clear_TD_Fields = None
+    clear_TC_Fields = None
+    
+    if td_download_status and td_ref_ID and len(td_ref_ID.strip())>0:
+        clear_TD_Fields = SInvest_TradeDetailsMain.upload_TD(trade)
+    
+    if tc_download_status and tc_ref_ID and len(tc_ref_ID.strip())>0:
+        clear_TC_Fields = SInvest_TradeDetailsMain.upload_TC(trade)
+
+    if clear_TD_Fields:
+        # clear additional info and print cleared values
+        logger.LOG(f"trade {trade.Oid()} : CANC TD upload sucessful. \nClearing additional info for trade {trade.Oid()} - TD_DownloadStatus : {td_download_status},  TD_ResponseStatus -{td_response_status}")
+        clearAddInfo('TD_ResponseStatus', trade)
+        clearAddInfo('TD_DownloadStatus', trade)
+    elif clear_TD_Fields is not None:
+        logger.WLOG(f"trade {trade.Oid()} : TD Upload to S-Invest failed. Manual handling required")
+    else:
+        if( td_response_status and len(td_response_status.strip())>0 ):
+            logger.LOG(f"trade {trade.Oid()} : Moved to BO Rejected. Clearing additional info TD_ResponseStatus -{td_response_status}")
+            clearAddInfo('TD_ResponseStatus', trade)
+        logger.LOG(f"trade {trade.Oid()} : For TD - No update required as additional TDReferenceID not set")
+    
+    if clear_TC_Fields:
+        # clear additional info and print cleared values
+        logger.LOG(f"trade {trade.Oid()} : CANC TC upload sucessful. \nClearing additional info for trade {trade.Oid()} - TC_DownloadStatus : {tc_download_status},  TC_ResponseStatus -{tc_response_status}")
+        clearAddInfo('TC_ResponseStatus', trade)
+        clearAddInfo('TC_DownloadStatus', trade)
+    elif  clear_TC_Fields is not None:
+        logger.LOG(f"trade {trade.Oid()} : TC Upload to S-Invest failed. Manual handling required")
+    else:
+        if( tc_response_status and len(tc_response_status.strip())>0 ):
+            logger.LOG(f"trade {trade.Oid()} : Moved to BO Rejected. Clearing additional info TC_ResponseStatus -{tc_response_status}")
+            clearAddInfo('TC_ResponseStatus', trade)
+        logger.LOG(f"trade {trade.Oid()} : For TC - No update required as additional TCReferenceID not set") 
+
+
+def process_trade(trade):
+    
+    if not trade:
+        return
+    
+    try:
+        if is_eligible_upload(trade) :
+            logger.LOG(f'Trade - {trade.Oid()}, is eligible to send to S-Invest')
+            td_download_status = trade.AdditionalInfo().TD_DownloadStatus()
+            td_response_status = trade.AdditionalInfo().TD_ResponseStatus()
+            tc_download_status = trade.AdditionalInfo().TC_DownloadStatus()
+            tc_response_status = trade.AdditionalInfo().TC_ResponseStatus()
+            
+            if is_update_from_interface(trade) :
+                if(td_response_status and valid_TDresponse(td_response_status) )and (is_td_download_status_checked(td_download_status)):
+                    pass
+                else:
+                    logger.LOG(f"Ignored trade update from interface user for - {trade.Oid()} \nTD Response Status : {td_response_status}, TD download Status : {td_download_status}, TC Response Status : {tc_response_status}, TC download Status : {tc_download_status}")
+                    return
+
+            if trade.Status() in ['BO Rejected', 'Void'] :
+                handle_Trade_Rejection(trade)
+            else:
+                if (is_td_download_status_checked(td_download_status)) :
+                    logger.LOG("Calling Upload TC function")
+                    if not tc_response_status:
+                        SInvest_TradeDetailsMain.upload_TC(trade)
+                    else:
+                        logger.LOG(f"Ignored trade update for - {trade.Oid()} \ntc_response_status : {tc_response_status} ")
+                    logger.LOG("Return from Upload TC function")
+                    
+                if not td_response_status:
+                    logger.LOG("Calling Upload TD function")
+                    SInvest_TradeDetailsMain.upload_TD(trade)
+                    logger.LOG("Return from Upload TD function")
+                else:
+                    logger.LOG(f"Ignored trade update for - {trade.Oid()} \ntd_response_status : {td_response_status} ")
+        else:
+            logger.LOG(f'Trade - {trade.Oid()}, is NOT eligible to send to S-Invest')
+    except Exception as e:
+        logger.ELOG(f'Failed to Process Trade for SInvest. Error - {str(e)}')
+    
+    return 
+
+...
+
+}
+

@@ -1,0 +1,1350 @@
+#
+# Front Arena exported extension module.
+# source          ""
+# timestamp (utc) "2024-03-01 06:45:20.4"
+# ***** DO NOT EDIT! *****
+#
+name        "PS_eMASHoldAmountInquiry"
+description ""
+
+groups {
+}
+
+decls[FParameters] {
+}
+
+clx FObject [FParameters] {
+  eMASCommonParams =
+  BlockedTellerId=[]
+  InterfaceToTellerId={}
+  MaxTellerId=9925699
+  MinTellerId=9925501
+  SeqUpdateDate=
+
+
+  eMASHoldAmountInquiryParams =
+  ApiKey=638f2361-cd12-4fad-bfc9-d0c14aabf2f9
+  BranchNumber=10
+  ChannelId=11
+  DefaultTellerId=9925502
+  LogFilename=eMAS_HoldAmountInquiry_LOG_{}.txt
+  MessageSender=NTCS
+  Timeout=30
+  TradeFilter=eMASHoldAmountInquiry
+  Url=/gateway/CoreBankHoldInquiry/1.0/holdInquiry
+
+
+}
+
+decls[FPythonCode] {
+}
+
+clx FObject [FPythonCode] {
+  eMAS_CommonUtils
+"""----------------------------------------------------------------------------------------------------
+MODULE:
+    eMAS_CommonUtils
+
+DESCRIPTION:
+    Common utils functions
+
+-------------------------------------------------------------------------------------------------------"""
+import acm, datetime, socket, json
+import ParametersReader, requests
+
+eMASSystemParams = ParametersReader.get_params('eMASSysytemParams')
+
+ADD_INFO_REQ_MOD_SPEC = acm.FAdditionalInfoSpec['EMASRequestModule']
+ADD_INFO_SPEC_INQ_SETTLEMENT = acm.FAdditionalInfoSpec['EMASInquirSetlment']
+ADD_INFO_SPEC_INQ_SETTLEMENT_SEQ_NUM = acm.FAdditionalInfoSpec['EMASSetlSeqNum']
+ADD_INFO_SPEC_INQ_SETTLEMENT_TELLER_ID = acm.FAdditionalInfoSpec['EMASSetlTellerId']
+
+NEW_TELLER_ID_OFFSET = 15
+ADD_INFO_REQ_MOD_HOLD_REL = 'HoldAmountRelease'
+ADD_INFO_REQ_MOD_HOLD_INQ = 'HoldAmountInquiry'
+ADD_INFO_REQ_MOD_HOLD = 'HoldAmount'
+
+
+ACNT_NETWORK_TYPE = 'EMAS'
+EXCEPTION_CODE_TELLER_ID_IN_USE = '273'
+RESPONSE_CODE_SUCCESS = '1'
+COMMON_PARAMETER_MODULE = 'PS_eMASHoldAmountInquiry'
+
+MAX_SEQ_NUM = 9999999
+HTTP_CODE_SUCCESS = 200
+HTTP_CODE_TIMEOUT = 408
+REQUEST_TIMEOUT_EXCEPTION = requests.exceptions.Timeout
+
+class GeneralResponseBody(object):
+    def __init__(self, json_obj):
+        """Initialize member variables"""
+        self._json_object = json_obj
+
+        # soaHeader
+        self._messageVersion = ""
+        self._messageType = ""
+        self._messageSubType = ""
+        self._messageSender = ""
+        self._senderDomain = ""
+        self._messageTimeStamp = ""
+        self._initiatedTimeStamp = ""
+        self._trackingID = ""
+        self._captureSystem = ""
+        self._exceptionCode = ""
+        self._exceptionDescription = ""
+
+        # messageHeader
+        self._tellerId = ""
+        self._journalSequence = ""
+        self._transactionCode = ""
+        self._timeoutMilis = ""
+
+        # payload
+        self._responseCode = ""
+        self._responseMessage = ""
+        self._responseTimestamp = ""
+
+        self.is_valid_object = False
+
+    def get_attribute_value(self, attrib_name):
+        """
+        Get the attribute based on its name
+        """
+        member_name = "_{}".format(attrib_name)
+        return getattr(self, member_name)
+
+    def _extract_soaHeader(self, soaHeader):
+        """
+        Extract the soaHeader from the object
+        """
+        if soaHeader:
+            self._messageVersion = soaHeader.get("messageVersion")
+            self._messageType = soaHeader.get("messageType")
+            self._messageSubType = soaHeader.get("messageSubType")
+            self._messageSender = soaHeader.get("messageSender")
+            self._senderDomain = soaHeader.get("senderDomain")
+            self._messageTimeStamp = soaHeader.get("messageTimeStamp")
+            self._initiatedTimeStamp = soaHeader.get("initiatedTimeStamp")
+            self._trackingID = soaHeader.get("trackingID")
+            self._captureSystem = soaHeader.get("captureSystem")
+            self._exceptionCode = soaHeader.get("exceptionCode")
+            self._exceptionDescription = soaHeader.get("exceptionDescription")
+
+    def _extract_messageHeader(self, messageHeader):
+        """
+        Extract the messageHeader from the object
+        +---------------+----------+---------------+------------------------------------+
+        | messageHeader |          |               |                                    |
+        +---------------+----------+---------------+------------------------------------+
+        |               | property |               |                                    |
+        +---------------+----------+---------------+------------------------------------+
+        |               |          | propertyKey   | tellerId                           |
+        +---------------+----------+---------------+------------------------------------+
+        |               |          | propertyValue | value of tellerId                  |
+        +---------------+----------+---------------+------------------------------------+
+        |               |          | propertyKey   | journalSequence                    |
+        +---------------+----------+---------------+------------------------------------+
+        |               |          | propertyValue | value of journalSequence           |
+        +---------------+----------+---------------+------------------------------------+
+        |               |          | propertyKey   | transactionCode                    |
+        +---------------+----------+---------------+------------------------------------+
+        |               |          | propertyValue | value of transactionCode           |
+        +---------------+----------+---------------+------------------------------------+
+        |               |          | propertyKey   | controlUnitIdentification          |
+        +---------------+----------+---------------+------------------------------------+
+        |               |          | propertyValue | value of controlUnitIdentification |
+        +---------------+----------+---------------+------------------------------------+
+        |               |          | propertyKey   | clientIp                           |
+        +---------------+----------+---------------+------------------------------------+
+        |               |          | propertyValue | value of clientIp                  |
+        +---------------+----------+---------------+------------------------------------+
+        |               |          | propertyKey   | supervisorOverrideFlag             |
+        +---------------+----------+---------------+------------------------------------+
+        |               |          | propertyValue | value of supervisorOverrideFlag    |
+        +---------------+----------+---------------+------------------------------------+
+        |               |          | propertyKey   | tellerOverrideFlag                 |
+        +---------------+----------+---------------+------------------------------------+
+        |               |          | propertyValue | value of tellerOverrideFlag        |
+        +---------------+----------+---------------+------------------------------------+
+        """
+        if messageHeader:
+            property_list = messageHeader.get("property")
+            if property_list:
+                for prop_item in property_list:
+                    key_name = prop_item.get("propertyKey")
+                    key_value = prop_item.get("propertyValue")
+                    setattr(self, '_{}'.format(key_name), key_value)
+
+    def _extract_payload(self, payLoad):
+        """
+        Extract the payLoad from the object
+        +----+---------+
+        | F4 |         |
+        +----+---------+
+        |    | TLXMNE  |
+        +----+---------+
+        |    | RSSNAM  |
+        +----+---------+
+        |    | MSD1    |
+        +----+---------+
+        |    | HEX11   |
+        +----+---------+
+        |    | MSID2   |
+        +----+---------+
+        |    | MSD2    |
+        +----+---------+
+        |    | MSID3   |
+        +----+---------+
+        |    | MSD3    |
+        +----+---------+
+        |    | ACC#    |
+        +----+---------+
+        |    | PBSRN#  |
+        +----+---------+
+        |    | CRBBAL  |
+        +----+---------+
+        |    | AVLBBAL |
+        +----+---------+
+        """
+
+        if payLoad:
+            self._responseCode = payLoad.get("responseCode")
+            self._responseMessage = payLoad.get("responseMessage")
+            self._responseTimestamp = payLoad.get("responseTimestamp")
+            _F4 = payLoad.get("F4")
+            if _F4:
+                for tag_key, tag_value in _F4.items():
+                    setattr(self, '_{}'.format(tag_key), tag_value)
+
+    def populate_object(self):
+        """
+        Populate the object
+        """
+        self._base_object = self._json_object.get('generalPostingResponse')
+        if self._base_object:
+            self._extract_soaHeader(self._base_object.get('soaHeader'))
+            self._extract_messageHeader(self._base_object.get('messageHeader'))
+            self._extract_payload(self._base_object.get("payload"))
+            self.is_valid_object = True
+
+
+def is_hold_amount_release(trd):
+    """
+    This function returns true if the trade is to be processed for hold amount release
+    :param trd: FTrade
+    :return: boolean
+    """
+    eMASParams = ParametersReader.get_params('eMASHoldAmountReleaseParams')
+    trade_filter_name = eMASParams['TradeFilter']
+    ret_val = False
+    collateral_trades = acm.FStoredASQLQuery[trade_filter_name]
+    if trd and collateral_trades.Query().IsSatisfiedBy(trd):
+        ret_val = True
+
+    return ret_val
+
+
+def is_hold_amount_inquiry(trd):
+    """
+    This function returns true if the trade is to be processed for hold amount inquiry
+    :param trd: FTrade
+    :return: boolean
+    """
+    eMASParams = ParametersReader.get_params('eMASHoldAmountInquiryParams')
+    trade_filter_name = eMASParams['TradeFilter']
+    ret_val = False
+    collateral_trades = acm.FStoredASQLQuery[trade_filter_name]
+    if trd and collateral_trades.Query().IsSatisfiedBy(trd) and trd.AddInfoValue(ADD_INFO_REQ_MOD_SPEC) == ADD_INFO_REQ_MOD_HOLD_INQ:
+        ret_val = True
+
+    return ret_val
+
+
+def is_hold_amount(trd):
+    """
+    This function returns true if the trade is to be processed for hold amount
+    :param trd: FTrade
+    :return: boolean
+    """
+    eMASAccInqParams = ParametersReader.get_params('eMASHoldAmountParams')
+    trade_filter_name = eMASAccInqParams['TradeFilter']
+    ret_val = False
+    collateral_trades = acm.FStoredASQLQuery[trade_filter_name]
+    if trd and collateral_trades.Query().IsSatisfiedBy(trd):
+        ret_val = True
+
+    return ret_val
+
+def is_settlement_export(settlement):
+    """
+    This function returns true if the settlement is to be processed for accounting export
+    :param trd: FSettlement
+    :return: boolean
+    """
+    eMASSetlExportParams = ParametersReader.get_params('eMASAccountingSettlementExportParams')
+    settlement_filter_name = eMASSetlExportParams['TradeFilter']
+    ret_val = False
+    settlement_query = acm.FStoredASQLQuery[settlement_filter_name]
+    if settlement_query and settlement_query.Query().IsSatisfiedBy(settlement):
+        ret_val = True   
+
+    return ret_val
+    
+def is_settlement_inquiry(settlement):
+    """
+    This function returns true if the settlement is to be processed for settlement inquiry
+    :param trd: FSettlement
+    :return: boolean
+    """
+    ret_val = False
+    if settlement.AddInfoValue(ADD_INFO_SPEC_INQ_SETTLEMENT):
+        ret_val = True
+
+    return ret_val
+
+
+
+def get_message_type(m):
+    """
+    This function returns the message type of the AMBA message
+    :param m: mbf_object
+    :return: string
+    """
+    type = m.mbf_find_object('TYPE', 'MBFE_BEGINNING')
+    return type.mbf_get_value() if type else ''
+
+
+def delete_add_info(obj, add_info_spec):
+    """
+    This function deletes add info
+    :param obj: FObject
+    :param add_info_spec: FAdditionalInfoSpec
+    :return: None
+    """
+    for add_info in obj.AddInfos():
+        if add_info.AddInf() == add_info_spec:
+            add_info.Delete()
+            break
+
+
+def get_current_time(format):
+    """
+    This function returns current time
+    :param format: Format
+    :return: string
+    """
+    time_now = datetime.datetime.utcnow()
+    return datetime.datetime.strftime(time_now, format)
+
+
+def get_unique_ref_number(journalSeqNo):
+    """
+    This function returns a unique number based on time
+    :param journalSeqNo: seq number
+    :return: string
+    """
+    time_now = int(datetime.datetime.now().timestamp())
+    return '{}{}'.format(time_now, journalSeqNo)
+
+
+def new_day_check(eMASCommonParams):
+    """
+    This function updates the parameters based on new day
+    :param eMASCommonParams: dictionary
+    :return: boolean
+    """
+    ret_val = False
+    if eMASCommonParams['SeqUpdateDate'] != acm.Time.DateNow():  # It's a new day
+        eMASCommonParams['SeqUpdateDate'] = acm.Time.DateNow()
+        eMASCommonParams['BlockedTellerId'] = str(list())
+        eMASCommonParams['InterfaceToTellerId'] = str(dict())
+        ret_val = True
+    return ret_val
+
+
+def SaveParameterValues(name, parameters, ignore=None):
+    """
+    This function save the FParameters
+    :param name: Name
+    :param parameters: Parameters
+    :param ignore:
+    :return: None
+    """
+    # name = "TrialBalanceParameters"
+    context = acm.GetDefaultContext()
+    updateString = None
+    for key, val in parameters.items():
+        if not ignore or (key not in ignore):
+            if type(val) == type([]) or type(val) == type(()):
+                val = ",".join(val)
+            if not updateString:
+                updateString = "FObject:%s =\n" % (name)
+            updateString += "%s=%s\n" % (key.replace(' ', '_'), val)
+    if updateString:
+        context.EditImport('FParameters', updateString, False, COMMON_PARAMETER_MODULE)
+        module = acm.FExtensionModule[COMMON_PARAMETER_MODULE]
+        module.Commit()
+
+
+def get_general_posting_response(response_json):
+    """
+    This function returns the obejct of GeneralResponseBody
+    :param response_json: JSON
+    :return: object
+    """
+    ret_val = None
+    response_obj = GeneralResponseBody(response_json)
+    response_obj.populate_object()
+    if response_obj.is_valid_object:
+        ret_val = response_obj
+    return ret_val
+
+
+class ConnectionObject(object):
+    def __init__(self, api_key, url, timeout):
+        """
+        Initialize member variables
+        :return: None
+        """
+        self._url = url
+        self._timeout = float(timeout)
+        self._header = {"Content-Type": "application/json", "apiKey": api_key}
+
+    def post_request(self, json_data):
+        """
+        Send the post request
+        """
+        return requests.post(self._url, headers=self._header, json=json.loads(json_data), timeout=self._timeout, verify=False)
+
+def get_emas_time_stamp():
+    """This function return the current time UTC format"""
+    time_ref = get_current_time('%Y-%m-%dT%H:%M:%S.%f')
+    time_part1, time_part2 = time_ref.split('.')
+    time_ref = "{}.{}Z".format(time_part1, time_part2[:3])  # yyyy-MM-dd HH:mm:ss.SSS
+    return time_ref
+
+def get_emas_common_time_stamp():
+    """This function return the current time UTC format"""
+    time_ref = get_current_time('%Y-%m-%d %H:%M:%S.%f')
+    time_part1, time_part2 = time_ref.split('.')
+    time_ref = "{}.{}".format(time_part1, time_part2[:3])  # yyyy-MM-dd HH:mm:ss.SSS
+    return time_ref
+
+def get_account_number(trd):
+    """
+    This function returns FAccount object
+    :param trd:
+    :return:
+    """
+    accnt_obj = None
+    for mf in trd.MoneyFlows():
+        cp_act = mf.CounterpartyAccount()
+        if cp_act and cp_act.NetworkAliasType().Name() == ACNT_NETWORK_TYPE:
+            accnt_obj = cp_act
+
+    return accnt_obj
+    
+def save_settlement_status(settlement, settlement_status, settlement_diary_text):
+    """
+    This function saves the settlement status and diary text
+    :param settlement: FSettlement
+    :param settlement_status: Status text
+    :param settlement_diary_text: diary text
+    :return: None
+    """
+    if settlement_status:
+        try:
+            acm.BeginTransaction()
+            if settlement_diary_text:
+                diary_obj = settlement.Diary()
+                if not diary_obj:
+                    diary_obj = acm.FSettlementDiary()
+                diary_obj.AddNote("eMAS : {}".format(settlement_diary_text))
+                diary_obj.Commit()
+                settlement.Diary(diary_obj)
+
+            settlement.Status(settlement_status)
+            settlement.Commit()
+            acm.CommitTransaction()
+        except Exception as err:
+            acm.AbortTransaction()
+            print('Error in _save_settlement_status. {}'.format(err))
+            # Always change the status in case of exception
+            settlement.Status(settlement_status)
+            settlement.Commit()
+            
+
+def get_local_ip():
+    """ This function returns local IP"""
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    s.settimeout(0)
+    ip = ''
+    try:
+        # doesn't even have to be reachable
+        s.connect(('10.254.254.254', 1))
+        ip = s.getsockname()[0]
+    except Exception:
+        ip = '127.0.0.1'
+    finally:
+        s.close()
+    return ip
+
+    
+def get_emas_system_channel_id(emas_system_type):
+    """ This function returns channel id based on eMAS system type"""
+    channel_id = ''
+    dbu_channel_id = eMASSystemParams['DBUChannelId']
+    acu_channel_id = eMASSystemParams['ACUChannelId']
+    
+    if emas_system_type == 'DBU':
+        channel_id = dbu_channel_id
+    elif emas_system_type == 'ACU':
+        channel_id = acu_channel_id
+    
+    return channel_id   
+    
+    
+    
+
+...
+
+  eMAS_HoldAmountInquiry
+"""----------------------------------------------------------------------------------------------------
+MODULE:
+    eMAS_HoldAmountInquiry
+
+DESCRIPTION:
+    Entry point to invoke the eMAS HoldAmount Inquiry run task gui.
+
+-------------------------------------------------------------------------------------------------------"""
+import acm, ael, traceback, os
+import FLogger, FRunScriptGUI
+import ParametersReader, InterfaceUtils
+import eMAS_CommonUtils
+
+# get value from FParameter
+eMASAccInqParams = ParametersReader.get_params('eMASHoldAmountInquiryParams')
+log_file_name = eMASAccInqParams['LogFilename'].format(acm.Time.DateToday().replace('-', ''))
+
+class HoldAmountInquiry(FRunScriptGUI.AelVariablesHandler):
+    def __init__(self):
+        """
+        Initialize member variables
+        """
+        # NAME = 0  # internal name
+        # TEXT = 1  # GUI Text
+        # TYPE = 2  # object type
+        # VALUES = 3  # valid values
+        # DEFAULT = 4  # default
+        # MANDATORY = 5  # mandatory
+        # MULTI = 6  # multiple selection
+        # TIP = 7  # floating tip
+        # CB = 8  # callback
+        # ENABLED = 9  # enabled
+
+        logLevels = [FLogger.FLogger.INFO, FLogger.FLogger.ERROR, FLogger.FLogger.WARNING, FLogger.FLogger.DEBUG]
+
+        query = [query.Name() for query in acm.FStoredASQLQuery.Select("subType='FTrade'")]
+        query.sort()
+
+        folderPicker = FRunScriptGUI.DirectorySelection()
+
+        gui_vars = [
+            ['col_trade_query', 'Collateral Trades_Input', 'string', query, 'eMASHoldAmountInquiry', 1, 0,
+             'Collateral Trades', None, 1],
+            ['logToConsole', 'Log to console_Logging', 'int', [1, 0], 1, 1, 0,
+             'Whether logging should be done in the Log Console or not.'],
+            ['log_folder', 'Log folder_Logging', folderPicker, None, folderPicker, 0, 1,
+             'Select where to store the log file',
+             0, None],
+            ['log_level', 'Log level_Logging', 'string', logLevels, FLogger.FLogger.DEBUG, 1, 0]
+        ]
+
+        self._logger = None
+        FRunScriptGUI.AelVariablesHandler.__init__(self, gui_vars)
+
+    def set_logger(self, logger):
+        """
+        This function sets the logger
+        :param logger: FLogger
+        :return: None
+        """
+        self._logger = logger
+
+    def send_hold_amount_inquiry(self, params):
+        """
+        This function generates recap data
+        :param params: parameters
+        :return:None
+        """
+        self._logger.LOG('Start send_hold_amount_inquiry')
+        collateral_trades_query = params['col_trade_query']
+        collateral_trades = acm.FStoredASQLQuery[collateral_trades_query]
+        if collateral_trades:
+            collateral_trades = collateral_trades.Query().Select().Sort()
+            for counter, trade in enumerate(collateral_trades):
+                try:
+                    if trade.ClosingTrades():
+                        #If there are closed trades, it means the collateral has been released before reacquire day
+                        self._logger.LOG('Ignoring trade {} as closing action has already been taken.'.format(trade.Oid()))
+                    else:
+                        trade.AddInfoValue(eMAS_CommonUtils.ADD_INFO_REQ_MOD_SPEC, eMAS_CommonUtils.ADD_INFO_REQ_MOD_HOLD_INQ)
+                        trade.Touch()
+                        trade.Commit()
+                        self._logger.DLOG('Updated add info on trade {}'.format(trade.Oid()))
+                except Exception as err:
+                    self._logger.LOG('Error while updating trade {}. Error {}'.format(trade.Oid(), err))
+
+        self._logger.LOG('Finish generateRecapData')
+
+
+ael_gui_parameters = {'windowCaption': "eMAS Hold Amount Inquiry"}
+
+ael_variables = HoldAmountInquiry()
+ael_variables.LoadDefaultValues(__name__)
+app_name = 'eMAS Hold Amount Inquiry'
+
+
+def initialize_logging(params, logfile_name, app_name):
+    """
+    Initialize logger
+    :param params: parameters
+    :return: FLogger object
+    """
+    logger = None
+    try:
+        logFolder = params['log_folder']
+        logfolderString = logFolder.SelectedDirectory().AsString()
+        logfile = os.path.join(logfolderString, logfile_name)
+        if logfile == '':
+            logfile = None
+
+        logLevel = params['log_level']
+        level = InterfaceUtils.LogLevelNameToNumber(logLevel)
+        logger = FLogger.FLogger(level=level,
+                                 name=app_name,
+                                 logToPrime=True,
+                                 logToFileAtSpecifiedPath=logfile,
+                                 logToConsole=False)
+    except Exception as err:
+        print('Error in initializing logger {}'.format(err))
+        print(traceback.format_exc())
+    return logger
+
+
+def ael_main(params):
+    """
+    AEL main function
+    :param params: GUI parameters
+    :return: None
+    """
+    eMAS_loger = None
+    try:
+        eMAS_loger = initialize_logging(params, log_file_name, app_name)
+        if eMAS_loger:
+            eMAS_loger.LOG('Execution started.')
+            ael_variables.set_logger(eMAS_loger)
+            ael_variables.send_hold_amount_inquiry(params)
+
+    except Exception as err:
+        if eMAS_loger is not None:
+            eMAS_loger.ELOG(str(err))
+        print(traceback.format_exc())
+        print('Error in ael main. {}'.format(err))
+
+
+...
+
+  eMAS_HoldAmountInquiryAPI
+"""----------------------------------------------------------------------------------------------------
+MODULE:
+    eMAS_HoldAmountInquiryAPI
+
+DESCRIPTION:
+    API to be used to invoke the eMAS Hold Amount Inquiry.
+
+-------------------------------------------------------------------------------------------------------"""
+import requests, acm
+import datetime
+import eMAS_HoldAmountInquiryRequest
+import eMAS_CommonUtils
+
+def create_hold_amount_inquiry_request(account_object, channel_id, teller_id, journal_sequence,
+                                       inquiry_sequence_number, message_sender, tracking_id_counter):
+    """
+    Create the inquiry request and send it to web address.
+    """
+    request_object = eMAS_HoldAmountInquiryRequest.HoldAmountInquiryObjectBase()
+    current_time = eMAS_CommonUtils.get_emas_common_time_stamp()
+    tracking_id = "{}{:03}{:08}".format(datetime.datetime.now().strftime("%Y%m%d"), int(channel_id), tracking_id_counter)
+    request_object.set_soaHeader(messageSender=message_sender, messageTimeStamp=current_time, initiatedTimeStamp=current_time, trackingID=tracking_id)
+
+    eMAS_account_type = account_object.AdditionalInfo().EMASAccountType() if account_object.AdditionalInfo().EMASAccountType() else ""
+    request_object.set_property_list(tellerId=teller_id,
+                                     journalSequence=journal_sequence)
+
+    request_object.set_payLoad(channelId=channel_id,
+                               accountNumber=account_object.Account(),
+                               accountType=eMAS_account_type,
+                               sequence=inquiry_sequence_number)
+
+    json_obj = request_object.get_base_json_object()
+
+    return json_obj
+
+
+def capture_hold_amount_inquiry_response(json_obj):
+    """ Capture the response from the eMAS server"""
+    response_obj = eMAS_HoldAmountInquiryRequest.ResponseBody(json_obj)
+    response_obj.populate_object()
+    return response_obj
+
+
+
+...
+
+  eMAS_HoldAmountInquiryProcessor
+"""----------------------------------------------------------------------------------------------------
+MODULE:
+    eMAS_HoldAmountInquiryProcessor
+
+DESCRIPTION:
+    Module to process the hold amount inquiry flow.
+
+-------------------------------------------------------------------------------------------------------"""
+import acm, ast, traceback
+import ParametersReader
+import eMAS_HoldAmountInquiryAPI, eMAS_CommonUtils, eMAS_ProcessorBase
+
+eMASAccInqParams = ParametersReader.get_params('eMASHoldAmountInquiryParams')
+ADD_INFO_HOLD_AMT_SPEC = acm.FAdditionalInfoSpec['EMASHoldAmount']
+ADD_INFO_HOLD_AMT_VAL = 'Released'
+MODULE_NAME = "HoldAmountInquiry"
+
+
+class HoldAmountInquiryProcessor(eMAS_ProcessorBase.eMASProcessorBase):
+    def __init__(self):
+        """
+        Initializes the member variables
+        """
+        eMAS_api_key = eMASAccInqParams['ApiKey']
+        eMAS_url = eMASAccInqParams['Url']
+        timeout = eMASAccInqParams['Timeout']
+        default_tellerd_id = eMASAccInqParams['DefaultTellerId']
+
+        super(HoldAmountInquiryProcessor, self).__init__(default_tellerd_id, MODULE_NAME, eMAS_api_key, eMAS_url,
+                                                         timeout=timeout)
+
+        self._channel_id = eMASAccInqParams['ChannelId']
+        self._messageSender = eMASAccInqParams['MessageSender']
+        self._add_info_spec_hold_amount = acm.FAdditionalInfoSpec['EMASHoldAmountSeqNo']
+
+    def process(self, trade):
+        """
+        This function processes the hold amount inquiry flow
+        :param trade: FTrade
+        :return: None
+        """
+        log_string = 'Trade - {}. eMASHoldAmountInquiry with tellerId {} and journalSequence {} .'.format(trade.Oid(),
+                                                                                                          self._tellerId,
+                                                                                                          self._journalSeqNo)
+        try:
+            if trade.ClosingTrades():
+                # If there are closed trades, it means the collateral has been released before reacquire day
+                log_string += 'Ignoring trade as closing action has already been taken.'
+            else:
+                account_obj = eMAS_CommonUtils.get_account_number(trade)
+                if account_obj:
+                    ovb_channel_id=self._channel_id
+                    eMAS_system = getattr(account_obj.AdditionalInfo(),'EMASSystem', None)
+                    if eMAS_system:
+                        ovb_channel_id = eMAS_CommonUtils.get_emas_system_channel_id(eMAS_system())
+                        if not ovb_channel_id:
+                            log_string += " Error - No channel id found for {}.".format(eMAS_system())
+                            
+                    hold_amount_seq_number = trade.AddInfoValue(self._add_info_spec_hold_amount)
+                    try:
+                        json_obj = eMAS_HoldAmountInquiryAPI.create_hold_amount_inquiry_request(
+                            account_object=account_obj,
+                            channel_id=ovb_channel_id,
+                            journal_sequence=self._journalSeqNo,
+                            teller_id=self._tellerId,
+                            inquiry_sequence_number=hold_amount_seq_number,
+                            message_sender=self._messageSender,
+                            tracking_id_counter = self._tracking_id_counter)
+                            
+                        log_string += "\nHold Amount Inquiry Request JSON - {}\n".format(json_obj)
+                        
+                        response_object = self._connection_object.post_request(json_obj)
+                        log_string += "\nHold Amount Inquiry Response- {}\n".format(response_object)
+                        
+                        if response_object and response_object.status_code == eMAS_CommonUtils.HTTP_CODE_SUCCESS:
+                            response_json = response_object.json()
+                            log_string += "\nHold Amount Inquiry Response JSON - {}\n".format(response_json)
+                            if response_json:
+                                general_posting_response_obj = eMAS_CommonUtils.get_general_posting_response(
+                                    response_json)
+                                if general_posting_response_obj:
+                                    exception_code = general_posting_response_obj.get_attribute_value("exceptionCode")
+                                    error_description = general_posting_response_obj.get_attribute_value(
+                                        "exceptionDescription")
+                                    if error_description:
+                                        log_string += " Error - {}".format(error_description)
+                                    if exception_code == eMAS_CommonUtils.EXCEPTION_CODE_TELLER_ID_IN_USE:
+                                        self.assign_new_tellerId()
+                                else:
+                                    response_obj = eMAS_HoldAmountInquiryAPI.capture_hold_amount_inquiry_response(
+                                        response_json)
+                                    if response_obj.get_attribute_value(
+                                            "responseCode") == eMAS_CommonUtils.RESPONSE_CODE_SUCCESS:
+                                        trade.AddInfoValue(ADD_INFO_HOLD_AMT_SPEC, ADD_INFO_HOLD_AMT_VAL)
+                                        trade.Commit()
+                                        log_string += " Successful."
+                                    else:
+                                        exception_code = response_obj.get_attribute_value("exceptionCode")
+
+                                        if exception_code:
+                                            error_description = response_obj.get_attribute_value("exceptionDescription")
+                                            if not error_description:
+                                                error_description = response_obj.get_attribute_value("responseMessage")
+                                            log_string += " Error - {} {}".format(exception_code, error_description)
+                                        else:
+                                            exception_val = response_obj.get_attribute_value("Exception")
+                                            log_string += " Error - {}".format(exception_val)
+                            else:
+                                log_string += ' Failed to get a response for trade id {}'.format(trade.Oid())
+                        else:
+                            log_string += 'Server return code {}. {} '.format(response_object.status_code,
+                                                                              response_object.reason)
+                    except Exception as err:
+                        log_string += 'Internal exception handler' + str(err)
+
+                    self.save_counters()
+                else:
+                    log_string += ' Account with EMAS network not found for trade {}'.format(trade.Oid())
+        except Exception as err:
+            log_string += 'Outer exception handler' + str(err)
+            print(traceback.format_exc())
+
+        print(log_string)
+
+
+
+...
+
+  eMAS_HoldAmountInquiryRequest
+"""--------------------------------------------------------------------------------------------------
+MODULE:
+    eMAS_HoldAmountInquiryRequest : Module handling the classes for hold amount inquiry.
+
+DESCRIPTION: This module contains classes for wrapping the JSON request and response.
+-------------------------------------------------------------------------------------------------------"""
+import json
+
+
+class HoldAmountInquiryObjectBase(object):
+    def __init__(self):
+        """Initialize member variables"""
+        self._messageVersion = "1.0"
+        self._messageType = "JSON"
+        self._messageSubType = "holdInquiry"
+        self._messageSender = ""
+        self._senderDomain = "OMNI"
+        self._messageTimeStamp = ""
+        self._initiatedTimeStamp = ""
+        self._trackingID = ""
+        self._captureSystem = "SOA"
+
+        self._tellerId = ""
+        self._journalSequence = ""
+        self._transactionCode = "2604"
+        self._timestamp = ""
+
+        self._channelId = ""
+        self._accountNumber = ""
+        self._accountType = ""
+        self._sequence = ""
+
+    def _set_object(self):
+        """Set the member variables in the object"""
+        self._soaHeader = {
+            "messageVersion": self._messageVersion,
+            "messageType": self._messageType,
+            "messageSubType": self._messageSubType,
+            "messageSender": self._messageSender,
+            "senderDomain": self._senderDomain,
+            "messageTimeStamp": self._messageTimeStamp,
+            "initiatedTimeStamp": self._initiatedTimeStamp,
+            "trackingID": self._trackingID,
+            "captureSystem": self._captureSystem,
+        }
+
+        self.property_list = [
+            {"propertyKey": "tellerId", "propertyValue": self._tellerId},
+            {"propertyKey": "journalSequence", "propertyValue": self._journalSequence},
+            {"propertyKey": "transactionCode", "propertyValue": self._transactionCode},
+        ]
+        self._messageHeader = {"property": self.property_list}
+
+        self._payload = {
+            "channelId": self._channelId,
+            "accountNumber": self._accountNumber,
+            "accountType": self._accountType,
+            "sequence": self._sequence,
+        }
+
+        self._base_object = {
+            "holdInquiryRequest":
+                {
+                    "soaHeader": self._soaHeader,
+                    "messageHeader": self._messageHeader,
+                    "payload": self._payload
+                }
+        }
+
+    def set_property_list(self, tellerId, journalSequence):
+        """
+        Set the property list in the object
+        """
+        self._tellerId = tellerId
+        self._journalSequence = journalSequence        
+
+    def set_soaHeader(self, messageSender, messageTimeStamp,
+                      initiatedTimeStamp, trackingID):
+        """
+        Set the soaHeader in the object
+        """
+        self._messageSender = messageSender
+        self._messageTimeStamp = messageTimeStamp
+        self._initiatedTimeStamp = initiatedTimeStamp
+        self._trackingID = trackingID
+        
+
+    def set_payLoad(self, channelId, accountNumber, accountType, sequence):
+        """
+        Set the payload in the object
+        """
+        self._channelId = channelId
+        self._accountNumber = accountNumber
+        self._accountType = accountType
+        self._sequence = sequence
+
+    def get_base_json_object(self):
+        """
+        Returns the main json object.
+        """
+        self._set_object()
+        return json.dumps(self._base_object)
+
+
+class ResponseBody(object):
+    def __init__(self, json_obj):
+        """Initialize member variables"""
+        self._json_object = json_obj
+
+        self._messageVersion = ""
+
+        # soaHeader
+        self._messageType = ""
+        self._messageSubType = ""
+        self._messageSender = ""
+        self._senderDomain = ""
+        self._messageTimeStamp = ""
+        self._initiatedTimeStamp = ""
+        self._trackingID = ""
+        self._captureSystem = ""
+        self._exceptionCode = ""
+        self._exceptionDescription = ""
+
+        # messageHeader
+        self._tellerId = ""
+        self._journalSequence = ""
+        self._transactionCode = ""
+        self._branchNumber = ""
+        self._timestamp = ""
+        self._internalId = ""
+        self._retrievalReferenceNumber = ""
+        self._acquirerReferenceNumber = ""
+
+        # payload
+        self._responseCode = ""
+        self._responseMessage = ""
+        self._responseTimestamp = ""
+
+        # Exception
+        self._Exception = ""
+
+    def get_attribute_value(self, attrib_name):
+        """
+        Get the attribute based on its name
+        """
+        member_name = "_{}".format(attrib_name)
+        return getattr(self, member_name)
+
+    def _extract_soaHeader(self, soaHeader):
+        """
+        Extract the soaHeader from the object
+        """
+        if soaHeader and isinstance(soaHeader, dict):
+            for soa_item, soa_val in soaHeader.items():
+                setattr(self, '_{}'.format(soa_item), soa_val)
+                
+        
+
+    def _extract_messageHeader(self, messageHeader):
+        """
+        Extract the messageHeader from the object
+        +---------------+----------+---------------+------------------------------------+
+        | messageHeader |          |               |                                    |
+        +---------------+----------+---------------+------------------------------------+
+        |               | property |               |                                    |
+        +---------------+----------+---------------+------------------------------------+
+        |               |          | propertyKey   | tellerId                           |
+        +---------------+----------+---------------+------------------------------------+
+        |               |          | propertyValue | value of tellerId                  |
+        +---------------+----------+---------------+------------------------------------+
+        |               |          | propertyKey   | journalSequence                    |
+        +---------------+----------+---------------+------------------------------------+
+        |               |          | propertyValue | value of journalSequence           |
+        +---------------+----------+---------------+------------------------------------+
+        |               |          | propertyKey   | transactionCode                    |
+        +---------------+----------+---------------+------------------------------------+
+        |               |          | propertyValue | value of transactionCode           |
+        +---------------+----------+---------------+------------------------------------+
+        |               |          | propertyKey   | internalId                         |
+        +---------------+----------+---------------+------------------------------------+
+        |               |          | propertyValue | value of internalId                |
+        +---------------+----------+---------------+------------------------------------+
+        |               |          | propertyKey   | retrievalReferenceNumber           |
+        +---------------+----------+---------------+------------------------------------+
+        |               |          | propertyValue | value of retrievalReferenceNumber  |
+        +---------------+----------+---------------+------------------------------------+
+        |               |          | propertyKey   | acquirerReferenceNumber            |
+        +---------------+----------+---------------+------------------------------------+
+        |               |          | propertyValue | value of acquirerReferenceNumber   |
+        +---------------+----------+---------------+------------------------------------+
+        """
+        if messageHeader and isinstance(messageHeader, dict):
+            property_list = messageHeader.get("Property")
+            if property_list:
+                for prop_item in property_list:
+                    key_name = prop_item.get("propertyKey")
+                    key_value = prop_item.get("propertyValue")
+                    setattr(self, '_{}'.format(key_name), key_value)
+
+    def _extract_holdInquiryDetails(self, hold_inquiry_details):
+        """
+        Extract the accountDetails from the object
+
+        +--------------------+---------------------+
+        | holdInquiryDetails |                     |
+        +--------------------+---------------------+
+        |                    | sequence            |
+        +--------------------+---------------------+
+        |                    | recordId            |
+        +--------------------+---------------------+
+        |                    | typeOfEntry         |
+        +--------------------+---------------------+
+        |                    | checkAmount         |
+        +--------------------+---------------------+
+        |                    | lowCheckNumber      |
+        +--------------------+---------------------+
+        |                    | highCheckNumber     |
+        +--------------------+---------------------+
+        |                    | stopCharge          |
+        +--------------------+---------------------+
+        |                    | payeeName           |
+        +--------------------+---------------------+
+        |                    | stopHoldRemark      |
+        +--------------------+---------------------+
+        |                    | checkRTNumber       |
+        +--------------------+---------------------+
+        |                    | userId              |
+        +--------------------+---------------------+
+        |                    | workstationId       |
+        +--------------------+---------------------+
+        |                    | timeChangeMade      |
+        +--------------------+---------------------+
+        |                    | expirationDate      |
+        +--------------------+---------------------+
+        |                    | checkDate           |
+        +--------------------+---------------------+
+        |                    | dateLastMaintenance |
+        +--------------------+---------------------+
+        |                    | datePlaced          |
+        +--------------------+---------------------+
+        |                    | holdByBranch        |
+        +--------------------+---------------------+
+        """
+        if hold_inquiry_details and isinstance(hold_inquiry_details, dict):
+            for tag_key, tag_value in hold_inquiry_details.items():
+                setattr(self, '_{}'.format(tag_key), tag_value)
+
+
+    def _extract_payload(self, payLoad):
+        """
+        Extract the payLoad from the object
+        """
+        if payLoad and isinstance(payLoad, dict):
+            self._responseCode = payLoad.get("responseCode")
+            self._responseMessage = payLoad.get("responseMessage")
+            self._responseTimestamp = payLoad.get("responseTimestamp")
+            hold_inquiry_details = payLoad.get("holdInquiryDetails")
+
+            self._extract_holdInquiryDetails(hold_inquiry_details)
+            
+
+    def populate_object(self):
+        """
+        Populate the object
+        """
+        self._base_object = self._json_object.get('holdInquiryResponse')
+        if self._base_object:
+            self._extract_soaHeader(self._base_object.get('soaHeader'))
+            self._extract_messageHeader(self._base_object.get('messageHeader'))
+            self._extract_payload(self._base_object.get("payload"))
+        self._Exception = self._json_object.get("Exception")
+
+...
+
+  eMAS_ProcessorBase
+"""----------------------------------------------------------------------------------------------------
+MODULE:
+    eMAS_ProcessorBase
+
+DESCRIPTION:
+    Module to process the base class for processing requests.
+
+-------------------------------------------------------------------------------------------------------"""
+import ParametersReader, eMAS_CommonUtils, ast
+
+soaParams = ParametersReader.get_params('SoaParams')
+MAX_TRACKING_SEQ_NUM = 99999999
+
+class eMASProcessorBase(object):
+    def __init__(self, tellerId, moduleName, eMAS_api_key, eMAS_url, timeout):
+        """
+            Initializes the member variables
+        """
+        eMASCommonParams = ParametersReader.get_params('eMASCommonParams')  # Read it every time
+        eMAS_CommonUtils.new_day_check(eMASCommonParams)
+        self._default_tellerId = tellerId
+        self._blockedTellerId = ast.literal_eval(eMASCommonParams['BlockedTellerId'])
+        self.interfaceToTellerId = ast.literal_eval(eMASCommonParams['InterfaceToTellerId'])
+        self._seqUpdateDate = eMASCommonParams['SeqUpdateDate']
+        self._MaxTellerId = int(eMASCommonParams['MaxTellerId'])
+        self._MinTellerId = int(eMASCommonParams['MinTellerId'])
+        self._eMAS_api_key = eMAS_api_key
+        self._eMAS_url = eMAS_url
+        self._timeout = timeout
+
+        self.tellerIdSeqNoList = self.interfaceToTellerId.get(moduleName)
+        if not self.tellerIdSeqNoList:
+            self.tellerIdSeqNoList = list()
+            self.tellerIdSeqNoList.append(self._default_tellerId)
+            self.tellerIdSeqNoList.append(1)
+            self.tellerIdSeqNoList.append(1)
+            self.interfaceToTellerId.update({moduleName: self.tellerIdSeqNoList})
+
+        self._tellerId = self.tellerIdSeqNoList[0]
+        self._journalSeqNo = int(self.tellerIdSeqNoList[1])
+        self._tracking_id_counter = int(self.tellerIdSeqNoList[2])
+
+        combined_eMAS_url = soaParams['API_BASE_URL'] + eMAS_url
+
+        self._connection_object = eMAS_CommonUtils.ConnectionObject(url=combined_eMAS_url, api_key=self._eMAS_api_key, timeout=timeout)
+
+    def _get_tellerId_in_use(self):
+        """
+        This function returns the teller ids in use
+        :return: list
+        """
+        teller_id_in_use = list()
+        for interface_name, interface_list in self.interfaceToTellerId.items():
+            if len(interface_list) > 1:
+                teller_id_in_use.append(interface_list[0])
+
+        return teller_id_in_use
+
+    def assign_new_tellerId(self):
+        """
+         This function finds out the next free teller id
+         :return: None
+         """
+        try:
+            self._blockedTellerId.append(str(self._tellerId))
+
+            teller_id_in_use = self._get_tellerId_in_use()
+
+            for tellerid in range(self._MinTellerId + eMAS_CommonUtils.NEW_TELLER_ID_OFFSET, self._MaxTellerId, 1):
+                if str(tellerid) not in self._blockedTellerId and str(tellerid) not in teller_id_in_use:
+                    self._tellerId = str(tellerid)
+                    self._journalSeqNo = 0
+                    break
+        except Exception as err:
+            print('Error in assign_new_tellerId {}'.format(err))
+
+    def save_counters(self):
+        """
+        This function saves the counters in the FParameters
+        :return:
+        """
+        self._journalSeqNo += 1
+        self._tracking_id_counter += 1
+        
+        if self._journalSeqNo >= eMAS_CommonUtils.MAX_SEQ_NUM:
+            self._journalSeqNo = 1
+            
+        if self._tracking_id_counter >= MAX_TRACKING_SEQ_NUM:
+            self._tracking_id_counter = 1
+
+        self.tellerIdSeqNoList[0] = self._tellerId
+        self.tellerIdSeqNoList[1] = self._journalSeqNo
+        self.tellerIdSeqNoList[2] = self._tracking_id_counter
+
+        commonParameterDict = {'InterfaceToTellerId': str(self.interfaceToTellerId),
+                               'BlockedTellerId': str(self._blockedTellerId),
+                               'MaxTellerId': self._MaxTellerId,
+                               'MinTellerId': self._MinTellerId,
+                               'SeqUpdateDate': self._seqUpdateDate}
+
+        eMAS_CommonUtils.SaveParameterValues('eMASCommonParams', commonParameterDict)
+
+
+...
+
+  eMAS_RequestManager
+"""--------------------------------------------------------------------------------------------------
+MODULE:
+    eMAS_RequestManager : Module handling the classes for hold amount inquiry.
+
+DESCRIPTION: This module provides the function that needs to be called from AMBA.
+-------------------------------------------------------------------------------------------------------"""
+import traceback, acm
+import eMAS_CommonUtils
+import eMAS_HoldAmountInquiryProcessor, eMAS_HoldAmountProcessor, eMAS_HoldAmountReleaseProcessor, eMAS_AccountingSettlementExportProcessor
+is_tps_present = True
+try:
+    import TPSOutSettlementsUtils, TPSOutSettlementProcessor # We are using same TellerID for TPS
+except ModuleNotFoundError:
+    is_tps_present = False
+
+print('is_tps_present',is_tps_present)
+
+def handle_settlement_update(message, message_type):
+    """
+    This function handles settlement updates
+    :param message: MBFT message
+    :param message_type: amb message type
+    :return: None
+    """
+    mbf_settlement_obj = message.mbf_find_object('SETTLEMENT', 'MBFE_BEGINNING')
+    if not mbf_settlement_obj:
+        if message_type == 'UPDATE_SETTLEMENT':
+            mbf_settlement_obj = message.mbf_find_object('!SETTLEMENT', 'MBFE_BEGINNING')
+        else:
+            mbf_settlement_obj = message.mbf_find_object('+SETTLEMENT', 'MBFE_BEGINNING')
+    
+    while mbf_settlement_obj:  
+        try:
+            mbf_settlement_number = mbf_settlement_obj.mbf_find_object('SEQNBR', 'MBFE_BEGINNING')
+            if mbf_settlement_number:
+                settlement = acm.FSettlement[mbf_settlement_number.mbf_get_value()]
+                if not settlement:
+                    print("Settlement {} not found in FA.".format(mbf_settlement_number.mbf_get_value()))
+                elif eMAS_CommonUtils.is_settlement_export(settlement):
+                    eMAS_AccountingSettlementExportProcessor.AccountingSettlementExportProcessor().process(settlement)  
+                elif eMAS_CommonUtils.is_settlement_inquiry(settlement):
+                    inquiry_obj = eMAS_AccountingSettlementExportProcessor.TransactionStatusInquiryProcessor()
+                    settlement_status, settlement_diary_text = inquiry_obj.process(settlement)
+                    eMAS_CommonUtils.save_settlement_status(settlement, settlement_status, settlement_diary_text)
+                elif is_tps_present and TPSOutSettlementsUtils.is_tps_out_settlement(settlement):
+                    TPSOutSettlementProcessor.TPSOutSettlementProcessor().process(settlement)                
+        except Exception as err:
+            print(traceback.format_exc())
+            print('Error occurred in handle_settlement_update {}.'.format(err))
+        if settlement:
+            eMAS_CommonUtils.delete_add_info(settlement, eMAS_CommonUtils.ADD_INFO_SPEC_INQ_SETTLEMENT)
+        mbf_settlement_obj = message.mbf_next_object()
+
+
+def handle_trade_update(message, message_type):
+    """
+    This function handles trade updates
+    :param message: MBFT message
+    :param message_type: amb message type
+    :return: None
+    """
+    mbf_trd_obj = message.mbf_find_object('TRADE', 'MBFE_BEGINNING')
+    if not mbf_trd_obj:
+        if message_type == 'UPDATE_TRADE':
+            mbf_trd_obj = message.mbf_find_object('!TRADE', 'MBFE_BEGINNING')
+        else:
+            mbf_trd_obj = message.mbf_find_object('+TRADE', 'MBFE_BEGINNING')
+
+    while mbf_trd_obj:
+        try:
+            mbf_trade_number = mbf_trd_obj.mbf_find_object('TRDNBR', 'MBFE_BEGINNING')
+            if mbf_trade_number:
+                trd = acm.FTrade[mbf_trade_number.mbf_get_value()]            
+                if not trd:
+                    print("Trade {} not found in FA.".format(mbf_trade_number.mbf_get_value()))
+                else:                    
+                    if eMAS_CommonUtils.is_hold_amount_inquiry(trd):
+                        hold_amount_inq_processor_obj = eMAS_HoldAmountInquiryProcessor.HoldAmountInquiryProcessor()
+                        hold_amount_inq_processor_obj.process(trd)
+                    elif eMAS_CommonUtils.is_hold_amount(trd):
+                        hold_amount_processor_obj = eMAS_HoldAmountProcessor.HoldAmountProcessor()
+                        hold_amount_processor_obj.process(trd)
+                    elif eMAS_CommonUtils.is_hold_amount_release(trd):
+                        hold_amount_processor_obj = eMAS_HoldAmountReleaseProcessor.HoldAmountReleaseProcessor()
+                        hold_amount_processor_obj.process(trd)
+        except Exception as err:
+            print(traceback.format_exc())
+            print('Error occurred in handle_trade_update {}.'.format(err))
+        if trd:            
+            eMAS_CommonUtils.delete_add_info(trd, eMAS_CommonUtils.ADD_INFO_REQ_MOD_SPEC)
+        mbf_trd_obj = message.mbf_next_object()
+
+
+def process_acm_update(message):
+    """
+    This function extracts the trade from the AMBA message and sends the reconciliation.
+    :param message: mbf_object
+    :return: None
+    """
+    try:
+        message_type = eMAS_CommonUtils.get_message_type(message)
+        if message_type in ['UPDATE_SETTLEMENT', 'INSERT_SETTLEMENT']:
+            handle_settlement_update(message, message_type)
+        elif message_type in ['UPDATE_TRADE', 'INSERT_TRADE']:
+            handle_trade_update(message, message_type)
+
+    except Exception as err:
+        print(traceback.format_exc())
+        print('Error occurred in process_acm_update {}.'.format(err))
+
+
+def request_sender(message, s):
+    """
+    This function processes the AMBA trade update to reconciliation request.
+    :param message: mbf_object
+    :param s: subject
+    :return: mbf_object and string
+    """
+    try:
+        
+        process_acm_update(message)
+    except Exception as err:
+        print(traceback.format_exc())
+        print('Error in request_sender {}.'.format(err))
+    return None
+
+
+    
+
+
+...
+
+}
+

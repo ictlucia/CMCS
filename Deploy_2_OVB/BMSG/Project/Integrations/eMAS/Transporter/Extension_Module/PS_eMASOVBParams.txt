@@ -1,0 +1,23 @@
+#
+# Front Arena exported extension module.
+# source          ""
+# timestamp (utc) "2024-01-11 09:23:56.0"
+# ***** DO NOT EDIT! *****
+#
+name        "PS_eMASOVBParams"
+description ""
+
+groups {
+}
+
+decls[FParameters] {
+}
+
+clx FObject [FParameters] {
+  eMASSysytemParams =
+  ACUChannelId=188
+  DBUChannelId=189
+
+
+}
+

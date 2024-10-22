@@ -1,0 +1,1039 @@
+#
+# Front Arena exported extension module.
+# source          ""
+# timestamp (utc) "2024-07-04 03:58:04.9"
+# ***** DO NOT EDIT! *****
+#
+name        "AdvancedCalculationDebug"
+description ""
+
+groups {
+}
+
+decls[FCommandExtension] {
+}
+
+clx FSessionManagerFrame [FCommandExtension] {
+  FrtbCalculationDebug =
+  icon=EmptySheet+ShowDetailsOverlay
+  LargeIcon=Yes
+  RibbonLabel=FRTB SA Calculation Debug
+  ToolTip=FRTB SA Calculation Debug
+
+
+  FrtbLegacyCalculationDebug =
+  icon=EmptySheet+ShowDetailsOverlay
+  LargeIcon=Yes
+  RibbonLabel=FRTB SA Calculation Debug (Legacy)
+  ToolTip=FRTB SA Calculation Debug
+
+
+}
+
+decls[FMenuExtension] {
+}
+
+clx FSessionManagerFrame [FMenuExtension] {
+  FrtbCalculationDebug =
+  CreateFunction=FrtbCalculationDebug.CreateDialog
+  DisplayName=FRTB SA Calculation Debug
+  MenuType=Application
+  ParentMenu=Tools/Debug
+  RibbonPosition=Tools/Debug
+
+
+  FrtbLegacyCalculationDebug =
+  CreateFunction=FrtbLegacyCalculationDebug.CreateDialog
+  DisplayName=FRTB SA Calculation Debug (Legacy)
+  MenuType=Application
+  ParentMenu=Tools/Debug
+  RibbonPosition=Tools/Debug
+
+
+}
+
+clx FStoredCalcColumnSpecificationCollection [FMenuExtension] {
+  PositionCalculationDebug =
+  DisplayName=Debug Calculations
+  Function=PositionCalculationDebug.StartDialog
+  MenuType=Object
+  ParentMenu=Tools
+  Standard=Yes
+
+
+}
+
+decls[FPythonCode] {
+}
+
+clx FObject [FPythonCode] {
+  CalculationInspect
+
+import acm
+import FUxCore
+
+import FExportCalculatedValuesCalculator
+
+class Providers( object ):
+
+    class RowProvider( object ):
+        
+        def __init__( self ):
+            self.__observers = []
+
+        def AddObserver( self, observer ):
+            self.__observers.append( observer )
+
+        def Observers( self ):
+            return self.__observers
+            
+        def HandleDestroy( self ):
+            self.__observers.clear()
+            
+        def Row( self ):
+            raise NotImplementedError
+            
+    class CalculationSpecificationProvider( object ):
+        
+        def __init__( self ):
+            self.__observers = []
+            
+        def AddObserver( self, observer ):
+            self.__observers.append( observer )
+
+        def Observers( self ):
+            return self.__observers
+
+        def HandleDestroy( self ):
+            self.__observers.clear()
+    
+        def CalculationSpecification( self ):
+            raise NotImplementedError
+
+class ExportScriptRowProvider( Providers.RowProvider ):
+
+    def __init__( self, calcSpace ):
+        Providers.RowProvider.__init__( self )
+        self.__calcSpace = calcSpace
+            
+    #-> FObject
+    def Row( self ):
+        return self.__positionCtrl.GetData()
+
+    def OnRowChanged( self, ud, cd ):
+        for observer in self.Observers():
+            observer.OnRowChanged()
+
+    def OnPositionSpecChanged( self, ud, cd ):
+        self.UpdatePositions()
+            
+    def OnTradeQueryChanged( self, ud, cd ):
+        self.UpdatePositions()
+            
+    def _CreateGrouper( self ):
+        groupingAttributes = []
+        if self.__positionSpecCtrl.GetData():
+            for attributeDefinition in self.__positionSpecCtrl.GetData().AttributeDefinitions():
+                methodChain = attributeDefinition.Definition()
+                displayName = acm.Sheet.Column().MethodDisplayName(
+                    acm.FTrade,
+                    methodChain,
+                    acm.ExtensionTools().GetDefaultContext()
+                )
+                groupingAttributes.append([displayName, methodChain, True])
+        grouper = acm.Risk().CreateChainedGrouperDefinition(acm.FTrade, 'Portfolio', True, 'Instrument', True, groupingAttributes)
+        return grouper.AsPortfolioSheetGrouper()
+            
+    def UpdatePositions( self ):
+        if self.__positionSpecCtrl.GetData() and self.__tradeQueryCtrl.GetData():
+            
+            tree = self.__calcSpace.InsertItem( self.__tradeQueryCtrl.GetData() )
+            tree.ApplyGrouper( self._CreateGrouper() )
+            
+            self.__calcSpace.Refresh()
+        
+            it = tree.Iterator()
+
+            positions = []
+            while it.NextUsingDepthFirst():
+                positions.append( it.Tree() )
+            
+            self.__positionCtrl.Populate( positions )
+            
+    def CreateLayout( self, builder ):
+        builder.BeginVertBox( 'EtchedIn' )
+        builder.  AddOption( 'positionSpec', 'Position Specification', -1, 25 )
+        builder.  AddOption( 'tradeQuery', 'Trade Query', -1, 25 )
+        builder.  AddOption( 'position', 'Position', -1, 25 )
+        builder.EndBox()
+            
+    def HandleCreate( self, layout ):
+        self.__positionSpecCtrl = layout.GetControl( 'positionSpec' )
+        self.__positionSpecCtrl.Populate( acm.FPositionSpecification.Select("") )
+        self.__positionSpecCtrl.AddCallback( 'Changed', self.OnPositionSpecChanged, None )
+
+        self.__tradeQueryCtrl = layout.GetControl( 'tradeQuery' )
+        self.__tradeQueryCtrl.Populate( acm.FStoredASQLQuery.Select( 'user=0 and subType="FTrade"' ) )
+        self.__tradeQueryCtrl.AddCallback( 'Changed', self.OnTradeQueryChanged, None )
+
+        self.__positionCtrl = layout.GetControl( 'position' )
+        self.__positionCtrl.AddCallback( 'Changed', self.OnRowChanged, None )
+
+class InsDefAciSingleRowProvider( Providers.RowProvider ):
+    
+    def __init__( self, sourceObject, calcSpace ):
+        Providers.RowProvider.__init__( self )
+        self.__sourceObject = sourceObject
+        self.__calcSpace = calcSpace
+        
+        tree = self.__calcSpace.InsertItem( self.__sourceObject )
+        self.__calcSpace.Refresh()
+        
+        it = tree.Iterator()
+        while it.NextUsingDepthFirst():
+            self.__row = it.Tree()
+            break
+            
+    def CreateLayout( self, builder ):
+        pass
+        
+    def HandleCreate( self, layout ):
+        pass
+
+    def Row( self ):
+        return self.__row
+
+class CalculationProvider( object ):
+        
+    def __init__( self, calcSpecProvider, rowProvider, calcSpace ):
+        self.__calcSpecProvider = calcSpecProvider
+        self.__calcSpecProvider.AddObserver( self )
+        self.__rowProvider = rowProvider
+        self.__rowProvider.AddObserver( self )
+        self.__calcSpace = calcSpace
+        self.__observers = []
+        
+    def AddObserver( self, observer ):
+        self.__observers.append( observer )
+        
+    def OnCalculationSpecificationChanged( self ):
+        for observer in self.__observers:
+            observer.OnCalculationChanged()
+
+    def OnRowChanged( self ):
+        for observer in self.__observers:
+            observer.OnCalculationChanged()
+
+    def Calculation( self ):    
+        if self.__rowProvider.Row() and self.__calcSpecProvider.CalculationSpecification():
+            return self.__calcSpace.CreateCalculation(
+                self.__rowProvider.Row(),
+                self.__calcSpecProvider.CalculationSpecification().ColumnName(),
+                self.__calcSpecProvider.CalculationSpecification().Configuration()
+            )
+        return None
+    
+    def HandleDestroy( self ):
+        self.__observers.clear()
+        self.__calcSpace.Clear()        
+        
+class CalculationSource( object ):
+
+    def __init__( self, calcSpec, calculation ):
+        self.__calcSpec = calcSpec
+        self.__calculation = calculation
+        
+    def Calculation( self ):
+        return self.__calculation
+        
+    def DynamicDimensions( self ):
+        vConfig = self.__calcSpec.VectorConfiguration()
+        if vConfig:
+            return vConfig.DimensionIds()
+        return []
+        
+    def StaticDimensions( self ):
+        scenario = self.__calcSpec.Scenario()
+        if scenario:
+            return [ scenario.Name() + "." + str(idx) for idx, _ in enumerate( scenario.ShiftDimensions() ) ]
+        return []
+    
+    def CalculationSpecification( self ):
+        return self.__calcSpec
+        
+    def Rows( self ):
+        coordinatesCache = acm.FDictionary()
+
+        return FExportCalculatedValuesCalculator._customProject(
+            self.Calculation().Value(),
+            None,
+            self.CalculationSpecification(),
+            True,
+            coordinatesCache,
+            None
+        )
+        
+class Grid( object ):
+
+    def __init__( self ):
+        self.m_gridCtrl = None
+        self.m_adjusted = False
+        
+    def ClearColumns( self ):
+        columnIterator = self.m_gridCtrl.GridColumnIterator()
+        gridColumns = []
+        while columnIterator.Next():
+            gridColumns.append( columnIterator.GridColumn() )
+            
+        for gridColumn in gridColumns:
+            self.m_gridCtrl.RemoveColumn( gridColumn )
+
+    def HandleCreate( self, layout ):
+        self.m_gridCtrl = layout.GetControl( 'grid' )
+        self.m_gridCtrl.RowStripes( True )
+        self.m_gridCtrl.ShowRowHeaders( False )
+
+    def HandleDestroy( self ):
+        self.ClearColumns()
+        self.m_gridCtrl.RemoveAllItems()
+        
+    def CreateLayout( self, builder ):
+        builder.BeginVertBox()
+        builder.  AddGrid( 'grid', 400, 250 )
+        builder.EndBox()
+        
+    def SetColumnsAutoWidth(self):
+        columnIterator = self.m_gridCtrl.GridColumnIterator()
+        while columnIterator.Next():
+            columnIterator.GridColumn().Width( -1 )
+
+    def CreateColumns( self, calculationSource ):
+        for dimension in calculationSource.DynamicDimensions():
+            gridColumn = self.m_gridCtrl.AddColumn( dimension, 50 )
+
+        for dimension in calculationSource.StaticDimensions():
+            gridColumn = self.m_gridCtrl.AddColumn( dimension, 50 )
+        
+        gridColumn = self.m_gridCtrl.AddColumn( 'Value', 50 )
+
+    def SetValues( self, calculationSource ):
+        root = self.m_gridCtrl.GetRootItem()
+        for row in calculationSource.Rows():
+            newRow = root.AddChild()
+            columnIterator = self.m_gridCtrl.GridColumnIterator()
+            idx = 0
+            while columnIterator.Next(): 
+                cell = newRow.GetCell( columnIterator.GridColumn() )
+                if idx < len(row.projectionCoordinates):
+                    cell.SetData( row.projectionCoordinates[idx] )
+                else:
+                    cell.SetData( row.values )
+                idx += 1
+        self.m_adjusted = False
+        
+    def Refresh( self, calculationSource ):
+        self.ClearColumns()
+        self.CreateColumns( calculationSource )
+        
+        self.m_gridCtrl.RemoveAllItems()
+        
+        self.SetValues( calculationSource )
+
+    def OnTimer( self ):
+        if not self.m_adjusted:
+            self.SetColumnsAutoWidth()
+            self.m_adjusted = True
+            
+class CalculationInspectDialog( FUxCore.LayoutDialog ):
+
+    def __init__( self, caption, calculationSpecificationProvider, rowProvider, calcSpace ):
+        self.__caption = caption
+        self.__calculationSpecificationProvider = calculationSpecificationProvider
+        self.__rowProvider = rowProvider
+        self.__calculationProvider = CalculationProvider( calculationSpecificationProvider, rowProvider, calcSpace )
+        self.__calculationProvider.AddObserver( self )
+        self.__grid = Grid()
+        self.__fdlg = None
+
+    def OnValuationViewer( self, ud, cd ):
+        acm.StartApplication( 'Valuation Viewer', self.__calculationProvider.Calculation() )
+
+    def OnTimer( self, ud ):
+        self.__grid.OnTimer()
+        
+    def HandleDestroy( self ):
+        self.__calculationSpecificationProvider.HandleDestroy()
+        self.__rowProvider.HandleDestroy()
+        self.__calculationProvider.HandleDestroy()
+        self.__grid.HandleDestroy()
+        
+    def HandleCreate(self, dlg, layout):
+        self.__fdlg = dlg
+
+        self.__rowProvider.HandleCreate( layout )
+        self.__calculationSpecificationProvider.HandleCreate( layout )
+
+        self.__grid.HandleCreate( layout )
+
+        self.__valViewerBtn = layout.GetControl( 'valViewer' )
+        self.__valViewerBtn.AddCallback( 'Activate', self.OnValuationViewer, None )
+
+        self.__fdlg.Caption( self.__caption )
+        self.__fdlg.RegisterTimer(self.OnTimer, 100)
+        
+    def CreateLayout( self ):
+        builder = acm.FUxLayoutBuilder()
+        builder.BeginHorzBox()
+        builder.  BeginVertBox()
+        self.__rowProvider.CreateLayout( builder )
+        self.__calculationSpecificationProvider.CreateLayout( builder )
+        builder.  EndBox()
+        builder.  BeginVertBox()
+        self.__grid.CreateLayout( builder )
+        builder.    BeginHorzBox()
+        builder.      AddFill()
+        builder.      AddButton( 'valViewer', 'Valuation Viewer' )
+        builder.    EndBox()
+        builder.  EndBox()
+        builder.EndBox()
+        return builder 
+
+    def OnCalculationChanged( self ):
+        if self.__calculationProvider.Calculation():
+            self.__grid.Refresh(
+                CalculationSource(
+                    self.__calculationSpecificationProvider.CalculationSpecification(),
+                    self.__calculationProvider.Calculation()
+                )
+            )
+
+
+
+...
+
+  CompactCalculations
+import acm
+
+def StringKey(obj):
+    try:
+        return obj.StringKey()
+    except:
+        return str(obj)
+        
+def CustomCalculationInstrument(trade):
+    ins = trade.Instrument()
+    if ins and ins.IsInstrumentPairInstrument():
+        curr = trade.Currency()
+        if ins.InsType() == 'Curr':
+            if curr != ins:
+                ins = acm.FX.CreateFxRate(ins, curr)
+        else:
+            ins = acm.FX.CreatePreciousMetalRate(ins, curr)
+    return ins 
+        
+def CalculationInstrument(trade, useFxForward):
+    if useFxForward:
+        ins = trade.CalculationInstrument()
+    else:
+        ins = CustomCalculationInstrument(trade)
+    return ins 
+
+class CompactPositionBuilder:
+    def __init__(self, posSpec, portfolio, useFxForward=False):
+        self.m_posSpec = posSpec
+        self.m_methodChains = None
+        self.m_portfolio = portfolio
+        self.m_tradesPerKey = {}
+        self.m_positions = None
+        self.m_useFxForward = useFxForward
+        
+    def CalculationInstrument(self, trade):
+        return CalculationInstrument(trade, self.m_useFxForward)
+        
+    def MethodChains(self):
+        if not self.m_methodChains:
+            if self.m_posSpec:
+                attributes = self.m_posSpec.AttributeDefinitions()
+                self.m_methodChains = [acm.FMethodChain(acm.FSymbol(x.Definition())) for x in attributes]
+            else:
+                self.m_methodChains = []
+        return self.m_methodChains
+            
+    def PositionKey(self, trade):
+        t = acm.FArray()
+        t.Add(trade)
+        calcInstrument = self.CalculationInstrument(trade)
+        values = [calcInstrument]
+        strKeys = [StringKey(calcInstrument)]
+        for mc in self.MethodChains():
+            val = mc.Call(t)
+            values.append(val)
+            if val:
+                strKeys.append(StringKey(val))
+            else:
+                strKeys.append('No Trade: ' + acm.Sheet().Column().MethodDisplayName(acm.FTrade, str(mc), acm.GetDefaultContext().Name()))
+        strKey = '|'.join(strKeys)
+        return values, calcInstrument, strKey 
+
+    def Positions(self):
+        if self.m_positions:
+            return self.m_positions
+        self.m_positions = []
+        if self.m_posSpec:
+            hasUniquePortfolioAttribute = acm.PositionStorage.HasUniquePortfolioAttribute(self.m_posSpec)
+        else:
+            hasUniquePortfolioAttribute = False
+        for t in self.m_portfolio.Trades():
+            key, calcInstrument, strKey = self.PositionKey(t)
+            keyAndTrades = self.m_tradesPerKey.setdefault(strKey, (key, [], calcInstrument))
+            keyAndTrades[1].append(t)
+        
+        for strKey, keyAndTrades in self.m_tradesPerKey.items():
+            trades = keyAndTrades[1]
+            portfolio = trades[0].Portfolio() if hasUniquePortfolioAttribute else None
+            self.m_positions.append((strKey, acm.Test.CreateCompactPosition(keyAndTrades[0], keyAndTrades[2], trades, portfolio)))
+            
+        return self.m_positions
+            
+
+class CompactCalculationSpace:
+
+    def __init__(self):
+        self.m_space = acm.Calculations().CreateCalculationSpace(acm.GetDefaultContext(), 'FInstrumentSheet')
+        
+    def _ModifyConfiguration(self, config, compactPosition):
+        params = acm.FDictionary()
+        params.AtPut('PositionCompactPosition', compactPosition)
+        return acm.Sheet().Column().ConfigurationFromColumnParameterDefinitionNamesAndValues(params, config)
+
+    def CalculateValue(self, compactPosition, columnId, configuration, cacheValue = True):
+        config = self._ModifyConfiguration(configuration, compactPosition)
+        try:
+            val = self.m_space.CalculateValue(compactPosition.Instrument(), columnId, config, cacheValue)
+        except Exception as e:
+            print('Failed to calculate compact {0} for instrument {1}'.format(columnId, compactPosition.Instrument().Name())) 
+            val = None
+        return val
+        
+    def CreateCalculation(self, compactPosition, columnId, config):
+        config = self._ModifyConfiguration(config, compactPosition)
+        try:
+            val = self.m_space.CreateCalculation(compactPosition.Instrument(), columnId, config)
+        except Exception as e:
+            print('Failed to calculate compact {0} for instrument {1}'.format(columnId, compactPosition.Instrument().Name())) 
+            val = None
+        return val
+
+    def Clear( self ):
+        self.m_space.Clear()
+
+...
+
+  FrtbCalculationDebug
+
+import acm
+import FUxCore
+
+import CalculationInspect
+
+try:
+    import FRTBSAMeasureSpecificationComponents
+    import FRTBCalculationParameters
+except:
+    pass
+
+
+class FrtbSpecificationProvider( CalculationInspect.Providers.CalculationSpecificationProvider ):
+    
+    def __init__( self ):
+        CalculationInspect.Providers.CalculationSpecificationProvider.__init__( self )
+
+    def CreateLayout( self, builder ):
+        builder.BeginVertBox( 'EtchedIn' )
+        builder.  AddOption( 'hierarchy', 'Hierarchy' )
+        builder.  AddOption( 'measure', 'Measure' )
+        builder.EndBox()
+        
+    def OnHierarchyChanged( self, ud, cd ):
+        if self.__hierarchyCtrl.GetData():
+            context = acm.ExtensionTools().GetDefaultContext()
+            
+            params = acm.FDictionary()
+            params[ "hierarchyName" ] = self.__hierarchyCtrl.GetData().Name()
+            params[ "hierarchy" ] = self.__hierarchyCtrl.GetData()
+            params[ "RiskClasses" ] = [ "Commodity", "CSR (NS)", "CSR (S-C)", "CSR (S-NC)", "Equity", "FX", "GIRR" ]
+            params[ "JTD Unscaled" ] = True
+            params[ "JTD Scaling Factor" ] = True
+            params[ "JTD Scaled" ] = True
+            params[ "CalcRemainingMaturity" ] = True
+            params[ "CalcBEqN" ] = True
+            params[ "CalcBEqMV" ] = True
+            params[ "CalcRRAO" ] = True
+            params[ "CalcTrancheThickness" ] = True
+            params[ "SensitivityBaseCalculation" ] = FRTBCalculationParameters.SensitivityBaseCalculation( context )
+            params[ "CurvatureForNonOptions" ] = FRTBCalculationParameters.CurvatureForNonOptions( context )
+            params[ "FXReferenceCurrency" ] = FRTBCalculationParameters.FXReferenceCurrency( context )
+            params[ "GIRRRiskFactorType" ] = FRTBCalculationParameters.GIRRRiskFactorType( context )
+            
+            measures = []
+            for ( columnId, name, displayName, columnParameters, vectorConfig ) in FRTBSAMeasureSpecificationComponents.GenerateMeasureSpecificationComponents( params ):
+                config = acm.Sheet().Column().ConfigurationFromVectorConfiguration( vectorConfig, None )
+                config = acm.Sheet().Column().ConfigurationFromColumnParameterDefinitionNamesAndValues( columnParameters, config )
+                measures.append(
+                    acm.Risk().CreateMeasureSpecification(
+                        name,
+                        displayName,
+                        columnId,
+                        context,
+                        None,
+                        config
+                    )
+                )
+
+            self.__measureCtrl.Populate( measures )
+
+    def OnMeasureChanged( self, ud, cd ):
+        for observer in self.Observers():
+            observer.OnCalculationSpecificationChanged()
+        
+    def HandleCreate( self, layout ):
+        self.__hierarchyCtrl = layout.GetControl( 'hierarchy' )
+        hierarchyTypeName = acm.GetDefaultContext().GetExtension('FExtensionValue', 'FObject', 'FRTBSAHierarchyType').Value()
+        hierarchyType = acm.FHierarchyType[hierarchyTypeName]
+        if not hierarchyType:
+            raise Exception('No Hierarchy Type called "' + hierarchyTypeName + '" found')
+        hierarchies = hierarchyType.Hierarchies()
+
+        self.__hierarchyCtrl.Populate( hierarchies )
+        self.__hierarchyCtrl.AddCallback( 'Changed', self.OnHierarchyChanged, None )
+        
+        self.__measureCtrl = layout.GetControl( 'measure' )
+        self.__measureCtrl.AddCallback( 'Changed', self.OnMeasureChanged, None )
+        
+    def CalculationSpecification( self ):
+        measureSpec = self.__measureCtrl.GetData()
+        if measureSpec:            
+            config = measureSpec.ConfigurationExceptScenarios()
+            return acm.Sheet().Column().CreateCalculationSpecification( config, measureSpec.ColumnId(), acm.ExtensionTools().GetDefaultContext() )
+        return None
+
+def StartDialog( shell, extObj ):
+    calcSpace = acm.Calculations().CreateCalculationSpace( acm.ExtensionTools().GetDefaultContext(), acm.FPortfolioSheet )
+    specProvider = FrtbSpecificationProvider()
+    rowProvider = CalculationInspect.ExportScriptRowProvider( calcSpace )
+    
+    dlg = CalculationInspect.CalculationInspectDialog(
+        "FRTBA SA Calculation Debug",
+        specProvider,
+        rowProvider,
+        calcSpace
+    )
+    
+    acm.UX().Dialogs().ShowCustomDialog( 
+        shell, 
+        dlg.CreateLayout(),
+        dlg
+    )
+
+
+class MenuItem( FUxCore.MenuItem ):
+    def __init__( self, extObj ):
+        self.m_extObj = extObj
+        self.m_isApplicable = self.FindModule( 
+            acm.ExtensionTools().GetDefaultContext(),
+            ["FRTB SA Calculations"]
+        )
+
+    def FindModule( self, contextOrModule, names ):
+        if contextOrModule.IsKindOf( acm.FExtensionContext ):    
+            for module in contextOrModule.Modules():
+                if self.FindModule( module, names ):
+                    return True
+            return False
+        else:
+            return contextOrModule.Name() in names
+        
+    def IsMenuEnabled( self, extObj ):
+        return True
+        
+    def Invoke( self, eii ):
+        extObj = eii.ExtensionObject()
+        if self.IsMenuEnabled( extObj ):
+            StartDialog( extObj.Shell(), extObj )
+        else:
+            pass
+        
+    def Enabled( self ):
+        return True
+        
+    def Applicable( self ):
+        return self.m_isApplicable
+            
+def CreateDialog( extObj ):
+    return MenuItem( extObj )
+    
+
+...
+
+  FrtbLegacyCalculationDebug
+
+import acm
+
+import FUxCore
+import CalculationInspect
+
+import FRTBValidBaseValueColumns
+
+class CalcSpecProvider( CalculationInspect.Providers.CalculationSpecificationProvider ):
+
+    def __init__( self ):
+        CalculationInspect.Providers.CalculationSpecificationProvider.__init__( self )
+
+    def CreateLayout( self, builder ):
+        builder.BeginVertBox( 'EtchedIn' )
+        builder.  AddOption( 'riskFactorSetup', 'Risk Factor Setup', -1, 25 )
+        builder.  AddOption( 'hierarchy', 'Hierarchy', -1, 25 )
+        builder.  AddOption( 'baseCalculation', 'Base Calculation', -1, 25 )
+        builder.  AddOption( 'measure', 'Measure', -1, 25 )
+        builder.EndBox()
+        
+    def UpdateMeasureChoices( self ):
+        if self.__riskFactorSetupCtrl.GetData() and self.__hierarchyCtrl.GetData() and self.__baseCalculationCtrl.GetData():
+            measures = []
+            context = acm.ExtensionTools().GetDefaultContext()
+            for riskClass in [ "Commodity", "CSR (NS)", "Equity", "FX", "GIRR" ]:
+                for measureType in [ "Delta", "Vega", "Curvature Up", "Curvature Down" ]:
+                    
+                    params = acm.FDictionary()
+                    params[ acm.FSymbol("rfsetup") ] = self.__riskFactorSetupCtrl.GetData().Name()
+                    params[ acm.FSymbol("hierarchy") ] = self.__hierarchyCtrl.GetData().Name()
+                    params[ acm.FSymbol("riskClass") ] = riskClass
+                    params[ acm.FSymbol("measureType") ] = measureType
+                    params[ acm.FSymbol("baseCalculation") ] = self.__baseCalculationCtrl.GetData()
+                    
+                    vectorConfig = acm.Risk().CreateDynamicVectorConfiguration( context, 'FRTB Dynamic Dimensions', params )
+                    
+                    config = acm.Sheet().Column().ConfigurationFromVectorConfiguration( vectorConfig, None )
+                    
+                    measures.append(
+                        acm.Risk().CreateMeasureSpecification(
+                            riskClass + "|" + measureType,
+                            riskClass + "|" + measureType,
+                            'FRTB Measure',
+                            context,
+                            None,
+                            config
+                        )
+                    )
+            
+            params = acm.FDictionary()
+            params[acm.FSymbol('hierarchy')] = self.__hierarchyCtrl.GetData().Name()
+            vConfig = acm.Risk().CreateDynamicVectorConfiguration(
+                acm.ExtensionTools().GetDefaultContext().Name(),
+                'FRTB DRC Dimensions',
+                params
+            )
+            calcConfig = acm.Sheet().Column().ConfigurationFromVectorConfiguration( vConfig, None )
+            measures.append(
+                acm.Risk().CreateMeasureSpecification(
+                    "Gross JTD",
+                    "Gross JTD",
+                    "FRTB DRC Gross Jump To Default",
+                    context,
+                    None,
+                    calcConfig
+                )
+            )
+            measures.append(
+                acm.Risk().CreateMeasureSpecification(
+                    "BondEQ MV",
+                    "BondEQ MV",
+                    "FRTB DRC Bond Equivalent Market Value",
+                    context,
+                    None,
+                    calcConfig
+                )
+            )
+            measures.append(
+                acm.Risk().CreateMeasureSpecification(
+                    "BondEQ Notional",
+                    "BondEQ Notional",
+                    "FRTB DRC Bond Equivalent Notional",
+                    context,
+                    None,
+                    calcConfig
+                )
+            )
+            measures.append(
+                acm.Risk().CreateMeasureSpecification(
+                    "Remaining Maturity",
+                    "Remaining Maturity",
+                    "FRTB DRC Remaining Maturity",
+                    context,
+                    None,
+                    None
+                )
+            )
+            measures.append(
+                acm.Risk().CreateMeasureSpecification(
+                    "Is Long Exposure",
+                    "Is Long Exposure",
+                    "FRTB DRC Is Long Exposure",
+                    context,
+                    None,
+                    None
+                )
+            )
+            measures.append(
+                acm.Risk().CreateMeasureSpecification(
+                    "JTD Scaling",
+                    "JTD Scaling",
+                    "FRTB DRC JTD Scaling",
+                    context,
+                    None,
+                    None
+                )
+            )            
+            measures.append(
+                acm.Risk().CreateMeasureSpecification(
+                    "RRAO Notional",
+                    "RRAO Notional",
+                    "FRTB Residual Risk Notional",
+                    context,
+                    None,
+                    None
+                )
+            )
+            measures.append(
+                acm.Risk().CreateMeasureSpecification(
+                    "RRAO Type",
+                    "RRAO Type",
+                    "FRTB Residual Risk Type",
+                    context,
+                    None,
+                    None
+                )
+            )
+            
+            self.__measureCtrl.Populate( measures )
+
+
+    def OnRFSetupChanged( self, ud, cd ):
+        self.UpdateMeasureChoices()
+        
+    def OnHierarchyChanged( self, ud, cd ):
+        self.UpdateMeasureChoices()
+
+    def OnBaseCalcChanged( self, ud, cd ):
+        self.UpdateMeasureChoices()
+        
+    def OnMeasureChanged( self, ud, cd ):
+        for observer in self.Observers():
+            observer.OnCalculationSpecificationChanged()
+        
+    def HandleCreate( self, layout ):
+        self.__riskFactorSetupCtrl = layout.GetControl( 'riskFactorSetup' )
+        self.__riskFactorSetupCtrl.Populate( acm.FRiskFactorSetup.Select("") )
+        self.__riskFactorSetupCtrl.AddCallback( 'Changed', self.OnRFSetupChanged, None )
+        
+        self.__hierarchyCtrl = layout.GetControl( 'hierarchy' )
+        
+        hierarchyTypeName = acm.GetDefaultContext().GetExtension('FExtensionValue', 'FObject', 'FRTBSAHierarchyType').Value()
+        hierarchyType = acm.FHierarchyType[hierarchyTypeName]
+        if not hierarchyType:
+            raise Exception('No Hierarchy Type called "' + hierarchyTypeName + '" found')
+        hierarchies = hierarchyType.Hierarchies()
+
+        self.__hierarchyCtrl.Populate( hierarchies )
+        self.__hierarchyCtrl.AddCallback( 'Changed', self.OnHierarchyChanged, None )
+        
+        self.__baseCalculationCtrl = layout.GetControl( 'baseCalculation' )
+        self.__baseCalculationCtrl.Populate( FRTBValidBaseValueColumns.ValidBaseColumns( acm.ExtensionTools().GetDefaultContext() ) )
+        self.__baseCalculationCtrl.AddCallback( 'Changed', self.OnBaseCalcChanged, None )
+        
+        self.__measureCtrl = layout.GetControl( 'measure' )
+        self.__measureCtrl.AddCallback( 'Changed', self.OnMeasureChanged, None )
+        
+    def CalculationSpecification( self ):
+        measureSpec = self.__measureCtrl.GetData()
+        if measureSpec:            
+            config = measureSpec.ConfigurationExceptScenarios()
+            return acm.Sheet().Column().CreateCalculationSpecification( config, measureSpec.ColumnId(), acm.ExtensionTools().GetDefaultContext() )
+        return None
+
+def StartDialog( shell, extObj ):
+    calcSpace = acm.Calculations().CreateCalculationSpace( acm.ExtensionTools().GetDefaultContext(), acm.FPortfolioSheet )
+    specProvider = CalcSpecProvider()
+    rowProvider = CalculationInspect.ExportScriptRowProvider(calcSpace)
+    
+    
+    dlg = CalculationInspect.CalculationInspectDialog(
+        "FRTBA SA Calculation Debug",
+        specProvider,
+        rowProvider,
+        calcSpace
+    )
+    
+    acm.UX().Dialogs().ShowCustomDialog( 
+        shell, 
+        dlg.CreateLayout(),
+        dlg
+    )
+
+class MenuItem( FUxCore.MenuItem ):
+    def __init__( self, extObj ):
+        self.m_extObj = extObj
+        self.m_isApplicable = self.FindModule( 
+            acm.ExtensionTools().GetDefaultContext(),
+            ["FRTBComponents", "FRTB SA Calculations Legacy"]
+        )
+        
+    def FindModule( self, contextOrModule, names ):
+        if contextOrModule.IsKindOf( acm.FExtensionContext ):    
+            for module in contextOrModule.Modules():
+                if self.FindModule( module, names ):
+                    return True
+            return False
+        else:
+            return contextOrModule.Name() in names
+        
+    def IsMenuEnabled( self, extObj ):
+        return True
+        
+    def Invoke( self, eii ):
+        extObj = eii.ExtensionObject()
+        if self.IsMenuEnabled( extObj ):
+            StartDialog( extObj.Shell(), extObj )
+        else:
+            pass
+        
+    def Enabled( self ):
+        return True
+        
+    def Applicable( self ):
+        return self.m_isApplicable
+            
+def CreateDialog( extObj ):
+    return MenuItem( extObj )
+
+
+...
+
+  PositionCalculationDebug
+
+import acm
+
+import CompactCalculations
+
+import CalculationInspect
+
+class PositionRowProvider( CalculationInspect.Providers.RowProvider ):
+    
+    def __init__( self ):
+        CalculationInspect.Providers.RowProvider.__init__( self )
+        pass
+        
+    #-> FObject
+    def Row( self ):
+        return self.__positionCtrl.GetData()
+
+    def OnRowChanged( self, ud, cd ):
+        for observer in self.Observers():
+            observer.OnRowChanged()
+
+    def OnPositionSpecChanged( self, ud, cd ):
+        self.UpdatePositions()
+        
+    def OnTradeQueryChanged( self, ud, cd ):
+        self.UpdatePositions()
+        
+    def UpdatePositions( self ):
+        if self.__positionSpecCtrl.GetData() and self.__tradeQueryCtrl.GetData():
+            builder = CompactCalculations.CompactPositionBuilder(
+                self.__positionSpecCtrl.GetData(),
+                acm.FASQLPortfolio( self.__tradeQueryCtrl.GetData() ),
+                True
+            )
+            self.__positionCtrl.Populate( [p[1] for p in builder.Positions()] )
+        
+    def CreateLayout( self, builder ):
+        builder.BeginVertBox( 'EtchedIn' )
+        builder.  AddOption( 'positionSpec', 'Position Specification', -1, 25 )
+        builder.  AddOption( 'tradeQuery', 'Trade Query', -1, 25 )
+        builder.  AddOption( 'position', 'Position', -1, 25 )
+        builder.EndBox()
+        
+    def HandleCreate( self, layout ):
+        self.__positionSpecCtrl = layout.GetControl( 'positionSpec' )
+        self.__positionSpecCtrl.Populate( acm.FPositionSpecification.Select("") )
+        self.__positionSpecCtrl.AddCallback( 'Changed', self.OnPositionSpecChanged, None )
+
+        self.__tradeQueryCtrl = layout.GetControl( 'tradeQuery' )
+        self.__tradeQueryCtrl.Populate( acm.FStoredASQLQuery.Select( 'user=0 and subType="FTrade"' ) )
+        self.__tradeQueryCtrl.AddCallback( 'Changed', self.OnTradeQueryChanged, None )
+        
+        self.__positionCtrl = layout.GetControl( 'position' )
+        self.__positionCtrl.AddCallback( 'Changed', self.OnRowChanged, None )
+
+class MeasureCalculationSpecificationProvider( CalculationInspect.Providers.CalculationSpecificationProvider ):
+        
+    def __init__( self, calcColumnCollection ):
+        CalculationInspect.Providers.CalculationSpecificationProvider.__init__( self )
+        self.__calcColumnCollection = calcColumnCollection
+        self.__calculationChoices = self.__calcColumnCollection.CalculationColumnSpecifications( acm.FSet() )
+        
+    def OnMeasureChanged( self, ud, cd ):
+        for observer in self.Observers():
+            observer.OnCalculationSpecificationChanged()
+
+    def CreateLayout( self, builder ):
+        builder.AddOption( 'calcChoice', 'Calculation', -1, 25 )
+        
+    def HandleCreate( self, layout ):
+        self.__calcChoiceCtrl = layout.GetControl( 'calcChoice' )
+        self.__calcChoiceCtrl.Populate( self.__calculationChoices )
+        self.__calcChoiceCtrl.AddCallback( 'Changed', self.OnMeasureChanged, None )
+
+    def CalculationSpecification( self ):
+        if self.__calcChoiceCtrl.GetData():
+            measureSpec = self.__calcChoiceCtrl.GetData()
+            config = measureSpec.ConfigurationExceptScenarios()
+            
+            sheet_def = acm.Sheet.GetSheetDefinition(acm.FPortfolioSheet)
+            gridBuilder = sheet_def.CreateGridBuilder(False)
+            gridBuilder.RegisterScenarios( measureSpec.Scenarios() )
+            scenario = gridBuilder.ScenarioManager().FromListOfScenario( measureSpec.Scenarios() )
+            
+            config = acm.Sheet().Column().ConfigurationFromScenario( scenario, config )
+            
+            return acm.Sheet().Column().CreateCalculationSpecification( config, measureSpec.ColumnId(), acm.ExtensionTools().GetDefaultContext() )
+        return None
+        
+def StartDialog( extObj ):
+    storedCalcColumn = extObj.ExtensionObject()[0]
+    
+    specProvider = MeasureCalculationSpecificationProvider(
+        storedCalcColumn.CalculationColumnSpecificationCollection()
+    )
+    
+    rowProvider = PositionRowProvider()
+    
+    dlg = CalculationInspect.CalculationInspectDialog(
+        "Position Calculation Preview",
+        specProvider,
+        rowProvider,
+        CompactCalculations.CompactCalculationSpace()
+    )
+    
+    acm.UX().Dialogs().ShowCustomDialog( 
+        acm.UX.SessionManager().Shell(), 
+        dlg.CreateLayout(),
+        dlg
+    )
+    
+
+
+...
+
+}
+

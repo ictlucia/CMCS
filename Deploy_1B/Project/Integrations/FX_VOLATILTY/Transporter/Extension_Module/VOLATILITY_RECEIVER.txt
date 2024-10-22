@@ -1,0 +1,108 @@
+#
+# Front Arena exported extension module.
+# source          ""
+# timestamp (utc) "2024-07-16 04:08:37.9"
+# ***** DO NOT EDIT! *****
+#
+name        "VOLATILITY_RECEIVER"
+description "$Id$"
+
+groups {
+}
+
+decls[FPythonCode] {
+}
+
+clx FObject [FPythonCode] {
+  FX_VOLATILITY
+# (c) Copyright 2020-2022 FIS Global Markets. All rights reserved.
+import acm
+import FRunScriptGUI
+import CSVUploadImportRunscript
+from FLogger import FLogger
+from InterfaceUtils import PickFolder, LogLevelNameToNumber
+import os
+import glob
+from CSVUploadImportRunscript import FolderChanged
+from CSVUploadImportRunscript import filenames
+from CSVUploadImportRunscript import defaults
+from FRunScriptGUI import InputFileSelection
+import shutil
+folderPicker = FRunScriptGUI.DirectorySelection()
+logFileName = 'FX_VOLATILITY_RECEIVER_%s.txt' % acm.Time.DateToday().replace('-', '')
+logger        = FLogger.GetLogger('FX_VOLATILITY_RECEIVER')
+logLevels   = [ FLogger.INFO, FLogger.ERROR, FLogger.WARNING, FLogger.DEBUG ]
+
+
+
+def archive(file, filePath):
+    logger.DLOG(f'Moving file - {file} to {filePath} ')
+    try:
+        shutil.move(file, filePath)
+    except Exception as e:
+        print (str(e))
+        logger.ELOG(f'Failed to move - {file} to {filePath} ')
+
+def initializeLogging(params):
+ 
+    logLevel     = params['log_level']
+    logFolder    = params['log_folder']
+    logToConsole = params['logToConsole']
+    
+    if logFolder:
+        logfolderString = logFolder.SelectedDirectory().AsString()
+        logPath = os.path.join(logfolderString, logFileName)
+        logger.Reinitialize(level=LogLevelNameToNumber(logLevel), logToConsole=logToConsole, logToFileAtSpecifiedPath=logPath)
+    else:
+        logger.Reinitialize(level=LogLevelNameToNumber(logLevel), logToConsole=logToConsole)
+fileSelection = InputFileSelection("CSV Files (*.csv)|*.csv")
+ael_variables = [
+    ['folder', 'Input folder_Main', folderPicker, None, folderPicker, 1, 1, 'Folder from which CSV files should be imported', FolderChanged, 1],
+    ['archiveFilePath', 'Archive File Path', PickFolder(), None, PickFolder(), 1, 1, 'The file path where processed files will be archived.', None, 1],
+    ['errorFolderPath', 'Error File Path', PickFolder(), None, PickFolder(), 1, 1, 'The file path where error files will be stored.', None, 1],
+    ['successFolderPath', 'Success File Path', PickFolder(), None, PickFolder(), 1, 1, 'The file path where success files will be stored.', None, 1],
+    ['include', 'Include_Main', 'string', filenames, None, 0, 1, 'Load the selected files only', None, 1],
+    ['exclude', 'Exclude_Main', 'string', filenames, None, 0, 1, 'Load all files in the folder except the selected files', None, 1],
+    ['encoding', 'Encoding_Main', 'string', [ 'default', 'latin1', 'utf-8'], defaults.At('encoding'), 0, 0, 'File encoding', None, 1],
+    ['transactions', 'Use transactions_Main', 'bool', [0, 1], None, 0, 0, 'Commit all records coming from the same file in a transaction', None, 1],
+    ['logToConsole', 'Log to console_Logging', 'int', [1, 0], 1, 1, 0, 'Whether logging should be done in the Log Console or not.'],
+    ['log_folder', 'Log folder_Logging', PickFolder(), None, PickFolder(), 0, 1, 'Select where to store the log file', 0, None],
+    ['log_level', 'Log level_Logging', 'string', logLevels, FLogger.INFO, 1, 0],
+    ['printAMBA', 'Print final AMBA message_Debug', 'bool', [0, 1], None, 0, 0, 'Print the final AMBA message after all transformations have been made', None, 1],
+]
+
+
+def ael_main(params):
+    initializeLogging(params)
+    logger.LOG("Execution started")
+    params['usefileorder'] = False
+    params['archiveFolderName'] = params['archiveFilePath']
+    params['errorFolderName'] = params['errorFolderPath']
+    params['successFolderName'] = params['successFolderPath']
+    CSVUploadImportRunscript.ael_main(params)
+    archiveFilePath = str(params['archiveFilePath'])
+    errorFolderPath = str(params['errorFolderPath'])
+    successFolderPath = str(params['successFolderPath'])
+    inputFile = params['include']
+    filePathDict = {}
+    location= str(params['folder'])
+    filePathDict['archive']  = archiveFilePath
+    filePathDict['error']  = errorFolderPath
+    filePathDict['error']  = successFolderPath
+    allfiles = glob.glob(os.path.join(location, '*.csv'), recursive=True)
+	
+    for file in allfiles:
+        filename = os.path.join(location, file)
+       
+        archive(filename, archiveFilePath)
+        archive(filename, errorFolderPath)
+        archive(filename, successFolderPath)
+        
+    
+    #archive(filename,archiveFilePath)
+    #logger.LOG(f'Archive file path: {archiveFilePath}')
+    logger.LOG("Execution complete")
+
+...
+
+}

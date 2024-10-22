@@ -1,0 +1,6 @@
+CHOICELIST,,,,/CHOICELIST
+DESCRIPTION,LIST,SORT_ORDER,ENTRY,
+RepoType,MASTER,,RepoType,
+Normal Repo,RepoType,,Normal Repo,
+Repo to Maturity,RepoType,1,Repo to Maturity,
+Reverse Repo,RepoType,2,Reverse Repo,

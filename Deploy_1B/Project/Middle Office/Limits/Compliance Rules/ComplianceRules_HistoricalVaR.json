@@ -1,0 +1,143 @@
+[
+    {
+        "FTransaction": {
+            "Objects": [
+                {
+                    "FComplianceRule": {
+                        "Definition": {
+                            "ref(RuleDefinition.Exposure)": {
+                                "Column": {
+                                    "ref(FStandardColumnCreator)": {
+                                        "Configuration": {
+                                            "ref(FColumnCreatorConfiguration)": {
+                                                "ref(FDictionary)": {
+                                                    "columnParameters": {
+                                                        "ref(FVariantDictionary)": {
+                                                            "AggCurrChoice": "Fixed Curr",
+                                                            "FixedCurr": {
+                                                                "ref(FCurrency)": "USD"
+                                                            },
+                                                            "PortfolioStoredScenario": null,
+                                                            "PortfolioValueAtRiskBaseColumn": "Theoretical Value",
+                                                            "PortfolioValueAtRiskConfidenceInterval": 95.0,
+                                                            "PortfolioValueAtRiskDecayFactor": 5.0,
+                                                            "PortfolioValueAtRiskDisplayChoiceColumn": "Absolute",
+                                                            "PosCurrChoice": "Fixed Curr"
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        "ContextSym": {
+                                            "ref(FSymbol)": "Standard"
+                                        },
+                                        "OriginalColumnId": {
+                                            "ref(FSymbol)": "Portfolio Value at Risk From Scenario"
+                                        }
+                                    }
+                                },
+                                "ColumnIndex": 0,
+                                "CompoundQueryLogicalOperator": "AND",
+                                "FilterQuery": null,
+                                "ForEach": "",
+                                "PythonFilterMethodName": "",
+                                "RelativeTo": false,
+                                "RelativeToColumn": null,
+                                "RelativeToColumnIndex": 0,
+                                "StoredTimeBuckets": null
+                            }
+                        },
+                        "DefinitionInfo": "Exposure",
+                        "Description": "\t\t\t",
+                        "Name": "Standard_Historical_VaR",
+                        "RuleCategory": {
+                            "ref(FChoiceList)": {
+                                "List": "Compliance Rule Category",
+                                "Name": "Periodic"
+                            }
+                        }
+                    }
+                },
+                {
+                    "FThreshold": {
+                        "ComparisonType": "Greater",
+                        "ComplianceRule": {
+                            "ref(FComplianceRule)": "Standard_Historical_VaR"
+                        },
+                        "Coordinates": {
+                            "ref(FStaticArray)": []
+                        },
+                        "Description": "",
+                        "Parent": null,
+                        "Relative": false,
+                        "Type": {
+                            "ref(FChoiceList)": {
+                                "List": "Threshold Type",
+                                "Name": "Violation"
+                            }
+                        },
+                        "Value": 100.0
+                    }
+                },
+                {
+                    "FThreshold": {
+                        "ComparisonType": "Greater",
+                        "ComplianceRule": {
+                            "ref(FComplianceRule)": "Standard_Historical_VaR"
+                        },
+                        "Coordinates": {
+                            "ref(FStaticArray)": []
+                        },
+                        "Description": "",
+                        "Parent": {
+                            "ref(FThreshold)": {
+                                "ComparisonType": "Greater",
+                                "ComplianceRule": {
+                                    "ref(FComplianceRule)": "Standard_Historical_VaR"
+                                },
+                                "Coordinates": {
+                                    "ref(FStaticArray)": []
+                                },
+                                "Type": {
+                                    "ref(FChoiceList)": {
+                                        "List": "Threshold Type",
+                                        "Name": "Violation"
+                                    }
+                                }
+                            }
+                        },
+                        "Relative": false,
+                        "Type": {
+                            "ref(FChoiceList)": {
+                                "List": "Threshold Type",
+                                "Name": "Warning"
+                            }
+                        },
+                        "Value": 80.0
+                    }
+                },
+                {
+                    "FThreshold": {
+                        "ComparisonType": "Less or Equal",
+                        "ComplianceRule": {
+                            "ref(FComplianceRule)": "Standard_Historical_VaR"
+                        },
+                        "Coordinates": {
+                            "ref(FStaticArray)": []
+                        },
+                        "Description": "",
+                        "Parent": null,
+                        "Relative": false,
+                        "Type": {
+                            "ref(FChoiceList)": {
+                                "List": "Threshold Type",
+                                "Name": "Reporting"
+                            }
+                        },
+                        "Value": 80.0
+                    }
+                }
+            ]
+        }
+    }
+]

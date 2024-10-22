@@ -1,0 +1,107 @@
+#
+# Front Arena exported extension module.
+# source          ""
+# timestamp (utc) "2024-08-06 08:48:25"
+# ***** DO NOT EDIT! *****
+#
+name        "BM_CreateUser"
+description "$Id$"
+
+groups {
+}
+
+decls[FMenuExtension] {
+}
+
+clx FSessionManagerFrame [FMenuExtension] {
+  Run Create User =
+  Function=RunCreateUserUtil.StartApplication
+  MenuType=Application
+  ModuleName=Create User Menu Helper
+  ParentMenu=Tools
+  RibbonPosition=Tools
+
+
+}
+
+decls[FParameters] {
+}
+
+clx FObject [FParameters] {
+  ProfileParam =
+  DATABASE=ADM_MANDIRI_1B_SIT_MERGE
+  DRIVER=ODBC Driver 17 for SQL Server
+  PROFILE=Run Create User
+  PWD=P@ssw0rdNtcs#
+  SERVER=10.243.212.173
+  UID=AdminNTCS
+
+
+}
+
+decls[FPythonCode] {
+}
+
+clx FObject [FPythonCode] {
+  RunCreateUser_MenuHelper
+
+import acm
+import ParametersReader
+import CaptureStaticDataSmartFX
+import pyodbc
+
+
+
+ael_variables = [ ]
+
+def get_connection_string():
+    PofileDBParam = ParametersReader.get_params('ProfileParam')
+    driver = PofileDBParam["DRIVER"]
+    server = PofileDBParam["SERVER"]
+    uid = PofileDBParam["UID"]
+    pwd = PofileDBParam["PWD"]
+    db = PofileDBParam["DATABASE"]
+    connection_string = f"DRIVER={driver};SERVER={server};DATABASE={db};UID={uid};PWD={pwd}"
+    return connection_string
+        
+def ael_main(params): 
+    try:
+        conn_str = get_connection_string()
+        
+        # Establish the database connection
+        conn = pyodbc.connect(conn_str)
+
+        # Create a cursor
+        cursor = conn.cursor()
+
+        # Execute an SQL query to fetch data from the database
+        query = "intas_revusers_intraday 'Complex55Password'"
+        cursor.execute(query)
+        conn.commit()
+        
+        # Close the cursor and the database connection
+        cursor.close()
+        conn.close()
+        print ("Run Query Successfull")
+    except Exception as e:
+        print("An error occurred:", str(e))
+
+...
+
+  RunCreateUserUtil
+import acm
+import UserProfileUtils as up
+import ParametersReader
+
+def StartApplication(eii):
+    Profile_param = ParametersReader.get_params("ProfileParam")
+    shell = acm.UX.SessionManager().Shell()
+    isallow = up.is_component_in_user_profile(Profile_param['PROFILE'])
+    if isallow == 1:
+        acm.RunModuleWithParameters("RunCreateUser_MenuHelper", acm.GetDefaultContext())
+    else:
+        acm.UX().Dialogs().MessageBoxInformation(shell, "User doesn't have access right for this menu")
+
+...
+
+}

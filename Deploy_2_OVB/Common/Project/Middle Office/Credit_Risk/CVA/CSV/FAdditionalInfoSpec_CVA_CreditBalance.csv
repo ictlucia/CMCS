@@ -1,0 +1,3 @@
+ADDITIONALINFOSPEC,,,,,/ADDITIONALINFOSPEC
+DATA_TYPE.GRP,DATA_TYPE.TYPE,DESCRIPTION,FIELD_NAME,REC_TYPE,
+RecordRef,Instrument,Mapped Credit Balance instrument for CVA,CVA_CreditBalance,Party,

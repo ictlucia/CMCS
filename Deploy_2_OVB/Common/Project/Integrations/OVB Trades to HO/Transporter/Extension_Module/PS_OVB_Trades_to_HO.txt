@@ -1,0 +1,467 @@
+#
+# Front Arena exported extension module.
+# source          ""
+# timestamp (utc) "2024-02-17 11:37:10"
+# ***** DO NOT EDIT! *****
+#
+name        "PS_OVB_Trades_to_HO"
+description "$Id$"
+
+groups {
+}
+
+decls[FAMBADefinition] {
+}
+
+clx FCommonObject [FAMBADefinition] {
+  OVB Trades to HO =
+  date_format=ISO
+  daytime_format=ISO %H:%M:%S
+  nice_enum_names=1
+  time_format=%H:%M:%S
+  use_regional_settings=0
+  utc_timestamps=1
+
+
+}
+
+clx FInstrument [FAMBADefinition] {
+  OVB Trades to HO =
+  remove_fields={{leg,legnbr},{reset,RESNBR},{cashflow,CFWNBR},{instrument,insaddr}}
+
+
+}
+
+clx FParty [FAMBADefinition] {
+  OVB Trades to HO =
+  remove_child_records={{party,account},{party,contact},{party,partyalias},{party,confinstruction},{party,settleinstruction},{party,partymasteragrmtlink}}
+  remove_fields={{NETTINGRULELINK,seqnbr}}
+
+
+}
+
+clx FTrade [FAMBADefinition] {
+  OVB Trades to HO =
+  remove_fields={{portfolio,assinf}, {trade,bo_trdnbr}}
+
+
+}
+
+decls[FPythonCode] {
+}
+
+clx FObject [FPythonCode] {
+  ovb_trades_main
+import acm
+import FRunScriptGUI
+from FLogger import FLogger
+from ovb_trades_messages import all_messages_sorted, obj_to_message
+from ovb_trades_transfer import connect, send
+from InterfaceUtils import LogLevelNameToNumber
+import InterfaceSettingUtils
+from collections import namedtuple
+import os
+
+
+log = FLogger('OVB_TRADES')
+
+ael_gui_parameters = {
+    'runButtonLabel': '&&Run',
+    'hideExtraControls': False,
+    'windowCaption': 'OVB Trades to HO Interface'
+}
+
+log_levels = [FLogger.INFO, FLogger.ERROR, FLogger.WARNING, FLogger.DEBUG]
+
+
+class OVBTradeInterfaceRunscript(FRunScriptGUI.AelVariablesHandler):
+    def __init__(self):
+        FRunScriptGUI.AelVariablesHandler.__init__(self, self.GetVariableDefinitions())
+        
+    def GetVariableDefinitions(self):
+        folder_picker = FRunScriptGUI.DirectorySelection()
+        branch_name   = InterfaceSettingUtils.get_env_name()
+        compact_date  = acm.Time.DateToday().replace('-', '')
+        log_filename  = f'BM{branch_name}_to_BMHO'
+        channel       = f'BM{branch_name}_TRADES_SENDER'
+        
+        tt_tradeQueries = 'This Insert Items query controls which trades to transfer.'
+        tt_insFilters = 'Only instruments matching this query will be sent.'
+        tt_ptyFilters = 'Only parties matching this query will be sent.'
+        tt_level = 'Control how verbose the logging output should be.'
+        tt_log_filename = 'Log file name if run today'
+        tt_log_folder = 'Where to store the log file'
+        tt_server = 'AMB hostname or IP address'
+        tt_port = 'AMB network port'
+        tt_subject = 'AMB subject to subscribe to'
+        tt_channel = 'AMB channel'
+        tt_export_task = 'FWorksheetReport task to be triggered at the end of the transer'
+        
+        vars = (('trade_query', 'Trade Query_General', 'FStoredASQLQuery', GetTradeQueries(), None, 1, 0, tt_tradeQueries, None, True),
+                ('instrument_filter', 'Instrument Filter_General', 'FStoredASQLQuery', GetInstrumentFilters(), None, 0, 0, tt_insFilters, None, True),        
+                ('party_filter', 'Party Filter_General', 'FStoredASQLQuery', GetPartyFilters(), None, 0, 0, tt_ptyFilters, None, True),
+                ('export_task', 'Export task_General', 'FAelTask', None, None, 1, 0, tt_export_task, None, True),
+                ('server', 'Server_Connection', 'string', None, None, 1, 0, tt_server),
+                ('port', 'Port_Connection', 'string', None, '9100', 1, 0, tt_port),
+                ('subject', 'AMB Subject_Connection', 'string', None, f'BM{branch_name}/TRADE', 1, 0, tt_subject, None),
+                ('channel', 'Channel_Connection', 'string', None, channel, 1, 0, tt_channel, None, False),
+                ('log_filename', 'Log File Name_Logging', 'string', None, log_filename, 0, 0, tt_log_filename, None, True),
+                ('log_folder', 'Log Folder_Logging', folder_picker, None, folder_picker, 0, 1, tt_log_folder, 0, None),
+                ('log_level', 'Log Level_Logging', 'string', log_levels, FLogger.INFO, 0, 0, tt_level))
+        
+        return vars
+
+
+def GetLoggingLevel(logLevel):
+    return LOG_LEVELS.get(logLevel, 1)
+
+
+def GetParameters(params):
+    paramClass = namedtuple('TaskParams', list(params.keys()))
+    return paramClass(**params)
+
+
+def GetTradeQueries():
+    return sorted(acm.FStoredASQLQuery.Select('subType=FTrade'))
+
+
+def GetInstrumentFilters():
+    return sorted(acm.FStoredASQLQuery.Select('subType=FInstrument'))
+
+
+def GetPartyFilters():
+    return sorted(acm.FStoredASQLQuery.Select('subType=FParty'))
+
+
+def configure_logger(params):
+    branch_name  = InterfaceSettingUtils.get_env_name()
+    log_name     = f'BM{branch_name}_to_BMHO'
+    logger       = FLogger.GetLogger(log_name)
+    compact_date = acm.Time.DateToday().replace('-', '')
+    log_filename = f'{params.log_filename}_{compact_date}.txt'
+    
+    if params.log_folder:
+        log_folder_name = params.log_folder.SelectedDirectory().AsString()
+        log_path = os.path.join(log_folder_name, log_filename)
+        logger.Reinitialize(level=LogLevelNameToNumber(params.log_level), logToFileAtSpecifiedPath=log_path)
+    else:
+        logger.Reinitialize(level=LogLevelNameToNumber(params.log_level))
+    
+    return logger
+
+
+def amb_writer_params(params):
+    return {
+        'Server': params.server, 
+        'Port': params.port, 
+        'Sender': params.channel,
+        'Subject': params.subject
+        }
+
+
+def is_fobject(obj):
+    try:
+        return obj.IsKindOf(acm.FObject)
+    except Exception as e:
+        return False
+
+
+def pretty_params(params):
+    lines       = []
+    indentation = ' ' * 7
+    
+    for field, value in params._asdict().items():
+        if is_fobject(value):
+            lines.append(f'{indentation}{field}: {value.StringKey()}')
+        else:
+            lines.append(f'{indentation}{field}: {value}')
+    
+    return '\n'.join(lines)
+
+
+ael_variables = OVBTradeInterfaceRunscript()
+
+
+def ael_main(params_dict):
+    params = GetParameters(params_dict)    
+    log = configure_logger(params)
+    
+    log.info('Starting')
+    log.info('Task parameters:\n' + pretty_params(params))
+    
+    query = params.trade_query.Query()
+    
+    if query:
+        trades = query.Select()
+        
+        log.info(f'Trades matching query: {len(trades)}')
+        
+        if len(trades):        
+            try:
+                messages = all_messages_sorted(params, trades)
+            except Exception as e:
+                log.error(f'Exception in all_messages_sorted: {e}')
+                return
+                        
+            log.info(f'Messages to be sent: {len(messages)}')
+            
+            writer = connect(amb_writer_params(params), log)
+            
+            if writer:
+                send(writer, messages, log)    
+    
+    else:
+        log.error(f'No query data in query folder: {params.trade_query.Name()}')
+    
+    export_task = params.export_task
+    if export_task:
+        log.info('End of trade transfer. Triggering export at Head Office')
+        task_msg = obj_to_message(export_task)
+        task_msg_wrapper = []
+        task_msg_wrapper.append(task_msg)
+        
+        writer = connect(amb_writer_params(params), log)
+            
+        if writer:
+            send(writer, task_msg_wrapper, log)
+
+
+...
+
+  ovb_trades_messages
+import acm
+import functools
+import InterfaceSettingUtils
+
+
+'''
+- Objective
+  Calculate the set of messages to send to HO.
+
+- Overview
+1. Get initial data set by running query
+2. Expand the data set with the records' dependencies
+3. Filter out unwanted records, e.g records for which the branch is not the golden source
+4. Sort the data set in dependency order: 
+    1. parties
+    2. underlying instruments
+    3. other instruments
+    4. trades.
+    
+5. Generate AMBA messages
+    1. group trades that must be committed together into the same message, such as FX swaps.
+    2. remove sequence numbers such as legnbr, but not trdnbr
+'''
+
+@functools.cache
+def get_msg_gen(cls, name):
+    par = acm.GetDefaultContext().GetExtension('FAMBADefinition', cls, name).Value()
+    res = acm.FAMBAMessageGenerator(par)
+    
+    res.Parameters(par)
+    
+    return res
+
+
+sym_trade = acm.FSymbol('TRADE')
+
+def expanded_data_set(trades):
+    res = set()
+    
+    for trade in trades:
+        res.add(trade)
+        res.add(trade.Instrument())
+        res.add(trade.Instrument().Underlying())
+        res.add(trade.Counterparty())
+        res.add(trade.Acquirer())    
+    res.discard(None)
+    
+    return res
+
+
+def sorted_data_set(data_set):
+    """
+    Sort the data in dependency order.
+    This may need more complex logic for B2B and other trade constellations.
+    """
+    assert isinstance(data_set, set), f'Expected set, got {type(data_set)}'
+    
+    underlyings = set()
+    instruments = set()
+    parties     = set()
+    trades      = set()
+    
+    for obj in data_set:
+        if obj.IsKindOf(acm.FTrade):
+            trades.add(obj)
+        elif obj.IsKindOf(acm.FInstrument):
+            instruments.add(obj)
+            
+            if obj.Underlying() in data_set:
+                underlyings.add(obj.Underlying())
+        elif obj.IsKindOf(acm.FParty):
+            parties.add(obj)
+    
+    instruments.difference_update(underlyings)
+    
+    for pty in parties:
+        yield pty
+    
+    for und in underlyings:
+        yield und
+    
+    for ins in instruments:
+        yield ins
+    
+    for trd in trades:
+        yield trd
+
+
+def trade_alias_message(alias_type_name, value):
+    res = acm.FAMBAMessage()
+    
+    res.Type('TRADEALIAS')
+    res.AtPut('TYPE.ALIAS_TYPE_NAME', alias_type_name)
+    res.AtPut('ALIAS', value)
+    
+    return res
+
+
+def adapt_message_for_head_office(parent_message, branch_prefix, instrument_qf, party_qf):
+    """
+    If instruments are sent from the branch, they will be saved with a branch prefix in the name.
+    This ensures that the branch doesn't overwrite any instruments at the head office and that they are going to be unique.
+    """
+    for msg in parent_message.Messages():
+        if msg.Type() == acm.FSymbol('TRADE'):
+            ins = acm.FInstrument[msg.At('INSADDR.INSID').AsString()]
+            if instrument_qf.IsSatisfiedBy(ins):
+                branch_insid = msg.At('INSADDR.INSID')
+                msg.AtPutStrings('INSADDR.INSID', f'{branch_prefix}_{branch_insid}')
+        elif msg.Type() == acm.FSymbol('INSTRUMENT'):
+            branch_insid = msg.At('INSID')
+            msg.AtPutStrings('INSID', f'{branch_prefix}_{branch_insid}')
+    return parent_message
+
+
+def bundle_objects(objects):
+    """
+    Bundle multiple objects in one message.
+    """
+    
+    if not objects:
+        return []
+    
+    messages = []
+    
+    for obj in objects:
+        msg_gen  = get_msg_gen(obj.Class(), 'OVB Trades to HO')
+        msg = msg_gen.Generate(obj)
+        messages.append(msg)
+    
+    res = messages[0].Clone()
+    
+    for msg in messages[1:]:
+        for child in msg.Messages():
+            res.AddMessage(child)
+    
+    return res
+
+def get_account_transfer_payment(trade):
+    res = None
+    for pmt in trade.Payments():
+        if pmt.Type() == 'Account Transfer':
+            res = pmt
+            break
+    return res
+
+def obj_to_message(obj):
+    msg_gen = get_msg_gen(obj.Class(), 'OVB Trades to HO')
+    
+    if obj.IsKindOf(acm.FTrade):
+        if obj.IsFxSwapNearLeg():
+            legs = [obj, obj.FxSwapFarLeg()]
+            return bundle_objects(legs)
+        elif obj.IsFxSwapFarLeg():
+            return None
+        elif obj.Instrument().InsType() == 'Curr':
+            transf_pmt = get_account_transfer_payment(obj)
+            if transf_pmt:
+                if transf_pmt.Amount() < 0.0: #Choose one of the two account transfer trades
+                    for link in obj.BusinessEventTradeLinks():
+                        bus_event = link.BusinessEvent()
+                        if bus_event.EventType() == 'Cash Transfer':
+                            all_links = acm.FBusinessEventTradeLink.Select('businessEvent = {}'.format(bus_event.Oid()))
+                            parts = [bus_event]
+                            for lnk in all_links:
+                                parts.append(lnk.Trade())
+                    return bundle_objects(parts)
+                else:
+                    return None
+                
+    
+    return msg_gen.Generate(obj)
+
+
+def queries_to_predicate(ins_query, pty_query):
+    def predicate(obj):
+        if ins_query and obj.IsKindOf(acm.FInstrument):
+            return ins_query.IsSatisfiedBy(obj)
+            
+        if pty_query and obj.IsKindOf(acm.FParty):
+            return pty_query.IsSatisfiedBy(obj)
+        
+        return True
+
+    return predicate
+
+
+def all_messages_sorted(params, trades):
+    branch_name  = InterfaceSettingUtils.get_env_name()
+    branch_prefix = f'BM{branch_name}'
+    
+    pred     = queries_to_predicate(params.instrument_filter, params.party_filter)
+    expanded = expanded_data_set(trades)
+    data_set = set(filter(pred, expanded))
+    res      = []
+    
+    for obj in sorted_data_set(data_set):
+        msg = obj_to_message(obj)
+        
+        if msg:
+            res.append(adapt_message_for_head_office(msg, branch_prefix, params.instrument_filter, params.party_filter))
+    return res
+
+...
+
+  ovb_trades_transfer
+import acm
+from AMBWriter import AMBWriter
+
+
+def connect(params, log):
+    if not params:
+        log.ELOG('No connections settings provided')
+        return None
+    
+    writer = AMBWriter(params)
+    writer.ConnectToAMB()
+    
+    return writer
+
+
+def send(writer, messages, log):
+    text = ''
+    
+    for msg in messages: 
+        msgText = msg.AsString()
+        writer.Write(msgText)
+        text += msgText
+    
+    log.DLOG(f'Sent messages\n{text}')
+
+
+...
+
+}
+

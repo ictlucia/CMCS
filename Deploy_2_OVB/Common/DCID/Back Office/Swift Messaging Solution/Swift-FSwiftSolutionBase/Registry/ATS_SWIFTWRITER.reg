@@ -1,0 +1,12 @@
+Windows Registry Editor Version 5.00
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Front\Front Arena\ATS\FA_INSTANCE_NAME]
+"log_to_server" ="0"
+"proc_frequency"=""
+"module_name"="FSwiftWriterMain"
+"username"="ATS_SWIFTWRITE"
+"password"="intas"
+"sender_mb_name"="{SWIFT_WRITER_SENDER,SWIFT_ACKNOWLEDGEMENT,CASH_SETTLEMENT_OUT_MSG_READER,FXMM_OUT_MSG_READER,SEC_SETT_CONF_OUT_MSG_READER,SWIFT_WRITER}"
+"receiver_mb_name"="{}"
+
+

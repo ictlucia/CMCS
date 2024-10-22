@@ -1,0 +1,4 @@
+CHOICELIST,,,/CHOICELIST
+LIST,ENTRY,DESCRIPTION,
+Payment_Method_MM,Thru CCASS,Thru CCASS,
+Payment_Method_MM,Optimizer Payment,Optimizer Payment,

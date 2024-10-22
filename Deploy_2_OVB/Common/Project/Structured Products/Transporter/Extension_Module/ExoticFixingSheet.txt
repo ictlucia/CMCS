@@ -1,0 +1,409 @@
+#
+# Front Arena exported extension module.
+# source          ""
+# timestamp (utc) "2022-10-18 06:24:50.8"
+# ***** DO NOT EDIT! *****
+#
+name        "ExoticFixingSheet"
+description "$Id$"
+
+groups {
+  "sheet columns.exoticeventsheet"
+  "sheet columns.volatilitypointsheet"
+}
+
+decls[FColumnDefinition] {
+  "Event Barrier" ( "sheet columns.exoticeventsheet" ) "";
+  "Event Barrier2" ( "sheet columns.exoticeventsheet" ) "";
+  "Event Fixing" ( "sheet columns.exoticeventsheet" ) "";
+  "Event Fixing Day" ( "sheet columns.exoticeventsheet" ) "";
+  "Event Fixing Instrument" ( "sheet columns.exoticeventsheet" ) "";
+  "Event Number" ( "sheet columns.exoticeventsheet" ) "";
+  "Event Settle Day" ( "sheet columns.exoticeventsheet" ) "";
+  "Event Strike" ( "sheet columns.exoticeventsheet" ) "";
+  "Instrument.Currency.Name" ( "insert item field" "sheet columns.exoticeventsheet" ) "";
+  "Instrument.DealPackageInstrumentLinks.InstrumentPackage.Name" ( "insert item field" "sheet columns.exoticeventsheet" ) "";
+  "Instrument.InsType" ( "insert item field" "sheet columns.exoticeventsheet" ) "";
+  "Instrument.Name" ( "insert item field" "sheet columns.exoticeventsheet" ) "";
+}
+
+clx FExoticEvent [FColumnDefinition] {
+  Instrument.Currency.Name =
+  ColumnName=Currency
+
+
+  Instrument.DealPackageInstrumentLinks.InstrumentPackage.Name =
+  ColumnName=Instrument Package
+
+
+  Instrument.InsType =
+  ColumnName=Instrument Type
+
+
+  Instrument.Name =
+  ColumnName=Instrument
+
+
+}
+
+clx FTradingSheet [FColumnDefinition] {
+  Event Barrier =
+  ExtensionAttribute=eventBarrier
+  Format=VeryDetailedShowZeroHideNaN
+  GroupLabel=Exotic Event
+  LabelList=Barrier
+
+
+  Event Barrier2 =
+  ExtensionAttribute=eventBarrier2
+  Format=VeryDetailedShowZeroHideNaN
+  GroupLabel=Exotic Event
+  LabelList=Barrier2
+
+
+  Event Fixing =
+  Access=ReadWrite
+  ExtensionAttribute=eventFixing
+  Format=VeryDetailedShowZeroHideNaN
+  GroupLabel=Exotic Event
+  LabelList=Fixing
+
+
+  Event Fixing Day =
+  Format=EndDateField
+  GroupLabel=Exotic Event
+  LabelList=Fixing Day
+  Method=Date
+
+
+  Event Fixing Instrument =
+  Access=ReadWrite
+  ExtensionAttribute=eventFixingInstrument
+  GroupLabel=Exotic Event
+  LabelList=Fixing Ins
+
+
+  Event Number =
+  Access=ReadOnly
+  ExtensionAttribute=eventKey
+  GroupLabel=Exotic Event
+  LabelList=#Months
+  Name=Number of months
+  ValueDomain=FSymbol
+
+
+  Event Settle Day =
+  Format=EndDateField
+  GroupLabel=Exotic Event
+  LabelList=Settle Day
+  Method=EndDate
+
+
+  Event Strike =
+  ExtensionAttribute=eventStrike
+  Format=VeryDetailedShowZeroHideNaN
+  GroupLabel=Exotic Event
+  LabelList=Strike
+
+
+}
+
+decls[FCommandExtension] {
+  "insertExoticEventSheet" ( "active commands" ) "";
+  "Suggest Fixing Rates" ( "active commands" ) "";
+}
+
+clx FBackOfficeManagerFrame [FCommandExtension] {
+  insertExoticEventSheet =
+  icon=FExotic
+  LargeIcon=Yes
+  RibbonLabel=Exotic Fixings
+
+
+  Suggest Fixing Rates =
+  icon=GetFixingRates
+  LargeIcon=Yes
+  RibbonLabel=Fixing Rates
+
+
+}
+
+decls[FExtensionAttribute] {
+}
+
+clx FExoticEvent [FExtensionAttribute] {
+  componentInstrument = object.ComponentInstrument;
+  eventBarrier = instrument:barrierValueModel;
+  eventBarrier2 = instrument:barrier2ValueModel;
+  eventFixing = switch(object.EventValue < 0, 
+  true->nil, 
+  default->object.EventValue);
+  eventFixingInstrument = select(componentInstrument, 
+  nil->nil, 
+  default->select(componentInstrument.InsType, 
+    "Curr"->CreateFxRate(componentInstrument, object.Instrument.Currency), 
+    default->componentInstrument));
+  eventKey = int(round(yearsBetween(valuationDate, object.Date, instrument.DayCountMethod, instrument.Currency.Calendar) * 12));
+  eventStrike = shunt(count(arrayAny(instrument:strikeValueModel)) > 1, 
+  true->arrayAny(instrument:strikeValueModel).At(0), 
+  false->instrument:strikeValueModel);
+}
+
+clx FExoticEventSheet [FExtensionAttribute] {
+  _columnSetups = "_defaultExoticEventSheetColumns";
+  _defaultExoticEventSheetColumns = "Event Fixing Instrument.Event Fixing Day.Event Fixing";
+}
+
+decls[FExtensionValue] {
+}
+
+clx FCustomGrouperSubject [FExtensionValue] {
+  Default
+Default
+...
+
+}
+
+clx FExoticEvent [FExtensionValue] {
+  _InsertItems_DefaultQuery
+Oid;Instrument.Name;Instrument.AdditionalInfo.StructureType;Instrument.DealPackageInstrumentLinks.InstrumentPackage.Name;Instrument.InsType;Instrument.Currency.Name;Date;EndDate
+...
+
+}
+
+clx FTrade [FExtensionValue] {
+  _InsertItems_DefaultQuery
+Oid;Instrument.Name;Instrument.InsType;TradeTime;ExecutionTime;Trader.Name;Counterparty.Name;Type;Instrument.AdditionalInfo.StructureType;
+...
+
+}
+
+decls[FMenuExtension] {
+}
+
+clx FBackOfficeManagerFrame [FMenuExtension] {
+  insertExoticEventSheet =
+  Function=ExoticEventSheetUtils.InsertExoticEventSheet
+  MenuType=Application
+  RibbonPosition=Sheets/Fixing
+
+
+  Suggest Fixing Rates =
+  CreateFunction=ExoticEventSheetUtils.CreateSuggestFixingRatesMenuItem
+  MenuType=Application
+  RibbonPosition=Actions/Get Fixing Rates
+
+
+}
+
+clx FExoticEvent [FMenuExtension] {
+  ComponentInstrument =
+  DisplayName=Component Instrument
+  Function=ExoticEventSheetUtils.OpenComponentInstrument
+  MenuType=Object
+
+
+  Instrument =
+  DisplayName=Instrument
+  Function=ExoticEventSheetUtils.OpenInstrument
+  MenuType=Object
+
+
+}
+
+clx FExoticEventSheet [FMenuExtension] {
+  Apply Fixing =
+  CreateFunction=ExoticEventSheetUtils.CreateApplyFixingMenuItem
+  DisplayName=Apply Fixing
+  MenuType=GridCell
+  SheetProcessingMode=Local
+  Standard=Yes
+
+
+}
+
+decls[FPythonCode] {
+}
+
+clx FObject [FPythonCode] {
+  ExoticEventSheetUtils
+import acm
+import FUxCore
+from FFixPerform import UsedPrice
+
+class ApplyFixingMenuItem(FUxCore.MenuItem):
+    
+    def __init__(self, frame):
+        self.frame = frame
+    
+    def Enabled(self):
+        try:
+            cells = self.frame.ActiveSheet().Selection().SelectedCells()
+            return bool(cells)
+        except Exception as e:
+            return False
+    
+    def Applicable(self):
+        try:
+            rows = self.frame.ActiveSheet().Selection().SelectedRowObjects()
+            return any([row.IsKindOf(acm.FExoticEvent) for row in rows])
+        except Exception as e:
+            return False
+
+    def CheckTargetLevel(self, instrument):
+        dealPackages = [t.DealPackage() for t in instrument.Trades()]
+        if dealPackages:
+            editDp = dealPackages[0].Edit()
+            action = editDp.CustomActionAt('checkTargetLevel')
+            updated = action.Invoke()
+            if updated:
+                updated.Save()
+                acm.Log('Termination status updated for %s' % (instrument.Name()))
+
+    def Invoke(self, eii):
+        cells = self.frame.ActiveSheet().Selection().SelectedCells()
+        for cell in cells:
+            evaluator = cell.Evaluator()
+            if evaluator and evaluator.IsSimulated():
+                ee = cell.RowObject()
+                try:        
+                    img = ee.StorageImage()
+                    value = cell.Value()
+                    if isinstance(value, float): 
+                        img.EventValue(value)
+                        img.Commit()
+                        self.CheckTargetLevel(img.Instrument())
+                except Exception as e:
+                    acm.Log('Failed to do fixing for {0}. Reason: {1}'.format(ee.Oid(), str(e)))
+                evaluator.RemoveSimulation()
+
+def InsertExoticEventSheet(eii):
+    app = eii.ExtensionObject()
+    workbook = app.ActiveWorkbook()
+    workbook.NewSheet("ExoticEventSheet")
+
+def CreateApplyFixingMenuItem(frame):
+    return ApplyFixingMenuItem(frame)
+
+def OnDoubleClick(eii):
+    sheet = eii.Parameter( "sheet" )
+    rows = sheet.Selection().SelectedRowObjects()
+    if rows and rows[0].IsKindOf(acm.FExoticEvent):
+        instrument = rows[0].Instrument()
+        dpLinks = instrument.DealPackageInstrumentLinks()
+        if dpLinks:
+            ip = dpLinks.First().InstrumentPackage()
+            dps = ip.DealPackages()
+            entity = dps.First() if dps else ip
+            acm.StartApplication('Deal Package', entity)
+        else:
+            acm.StartApplication('Instrument Definition', instrument)
+
+def InstrumentOrUniqueInsPackage(ins):
+    links = ins.DealPackageInstrumentLinks()
+    if links.Size() == 1:
+        return links[0].InstrumentPackage()
+    return ins
+
+def OpenComponentInstrument(eii):
+    exoticEvents = eii.ExtensionObject()
+    if exoticEvents and exoticEvents.First().ComponentInstrument():
+        acm.StartApplication(None, exoticEvents.First().ComponentInstrument())
+
+def OpenInstrument(eii):
+    exoticEvents = eii.ExtensionObject()
+    if exoticEvents:
+        acm.StartApplication(None, InstrumentOrUniqueInsPackage(exoticEvents.First().Instrument()))
+       
+
+class SuggestFixingRatesMenuItem(FUxCore.MenuItem):
+    
+    def __init__(self, frame):
+        self.frame = frame
+    
+    def Enabled(self):
+        return True
+    
+    def Applicable(self):
+        try:
+            return self.frame.ActiveSheet().SheetClass() == acm.FExoticEventSheet
+        except Exception:
+            return False
+          
+                
+    def Invoke(self, eii):
+        sheet = self.frame.ActiveSheet()
+        cIter = sheet.GridColumnIterator()
+        eventFixingColumn = None
+        column = None
+        threshold = 1e-6
+        while cIter:
+            if cIter.GridColumn() and str(cIter.GridColumn().ColumnId()) == "Event Fixing":
+                eventFixingColumn = cIter
+                break
+            else:
+                cIter = cIter.Next()
+        assert eventFixingColumn, 'Could not find Event fixing column in sheet'
+        iterator = sheet.RowTreeIterator(False)
+        resets = set()
+        while iterator.NextUsingDepthFirst():
+            if iterator.Tree() and (type(iterator.Tree().Item()) is acm._pyClass("FExoticEvent")):
+                try:
+                    reset = iterator.Tree().Item()
+                    if reset.EventValue() <= threshold:
+                        compIns = reset.ComponentInstrument()
+                        if compIns.IsKindOf(acm.FCurrency):
+                            currPair = reset.Instrument().ValuationUnderlying().CurrencyPair()
+                            price = UsedPrice(currPair.Currency1(), reset.Date(), reset.Date(), currPair.Currency2(), reset.Instrument().FixingSource(), False)
+                        else:
+                            price = UsedPrice(compIns, reset.Date(), reset.Date(), reset.Instrument().Currency(), reset.Instrument().FixingSource(), False)
+                        if acm.Math.IsFinite(price) and price > threshold:
+                            sheet.GetCell(iterator, eventFixingColumn).Evaluator().Simulate(price, False)
+                        
+                except Exception as e:
+                    acm.Log('Failed to get fixing rate for reset {0}. Reason: {1}'.format(reset.StringKey(), str(e)))
+
+def CreateSuggestFixingRatesMenuItem(frame):
+    return SuggestFixingRatesMenuItem(frame)
+ 
+
+...
+
+}
+
+decls[FSheetDefinition] {
+}
+
+clx FObject [FSheetDefinition] {
+  FExoticEventSheet =
+  DisplayName=Exotic Event Sheet
+  ObjectType=FExoticEvent
+
+
+}
+
+decls[FStringResource] {
+}
+
+clx FExoticEvent [FStringResource] {
+  objectNamePlural
+Exotic Events
+...
+
+  objectNameSingular
+Exotic Event
+...
+
+}
+
+decls[FUIEventHandlers] {
+}
+
+clx FExoticEventSheet [FUIEventHandlers] {
+  OpenStructure =
+  GridDoubleClickCell=ExoticEventSheetUtils.OnDoubleClick
+  GridMiddleButtonDoubleClickCell=
+
+
+}
+

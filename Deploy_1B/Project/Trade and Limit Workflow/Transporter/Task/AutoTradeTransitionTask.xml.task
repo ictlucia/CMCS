@@ -1,0 +1,3 @@
+<?xml version='1.0' encoding='ISO-8859-1'?>
+<FAelTask><acm_version>2022.4.5, May 22 2023</acm_version><version>1 $Id$</version><update_time>2023-07-28 15:02:29</update_time><object_name>AutoTradeTransitionTask</object_name><owner>ARENASYS</owner><protection>3072</protection><module>AutoTradeTransition</module><context>Standard</context><parameter>log_to_console=1;queryName=AutoTradeTransition;log_level=DEBUG;log_folder=;</parameter><historylength /><description>Task to move trade status from FO Confirmed to BO confirmed
+</description><logfilename /><group>INTEGRATIONS</group><groupstatus>None</groupstatus><historylengthunit>None</historylengthunit></FAelTask>

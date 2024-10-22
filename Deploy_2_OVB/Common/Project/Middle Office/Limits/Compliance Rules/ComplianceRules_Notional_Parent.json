@@ -1,0 +1,119 @@
+[
+    {
+        "FTransaction": {
+            "Objects": [
+                {
+                    "FComplianceRule": {
+                        "Definition": {
+                            "ref(RuleDefinition.PositionAndRiskControl)": {
+                                "Column": {
+                                    "ref(FStandardColumnCreator)": {
+                                        "Configuration": null,
+                                        "ContextSym": {
+                                            "ref(FSymbol)": "Standard"
+                                        },
+                                        "OriginalColumnId": {
+                                            "ref(FSymbol)": "USDNotional"
+                                        }
+                                    }
+                                },
+                                "ColumnIndex": 0,
+                                "CompoundQueryLogicalOperator": "AND",
+                                "FilterQuery": null,
+                                "ForEach": "",
+                                "PythonFilterMethodName": "",
+                                "RelationType": "Explicit",
+                                "RelativeTo": false,
+                                "RelativeToColumn": null,
+                                "RelativeToColumnIndex": 0,
+                                "StoredTimeBuckets": null,
+                                "TradeRelation": "Counterparty.Parent.Name"
+                            }
+                        },
+                        "DefinitionInfo": "PositionAndRiskControl",
+                        "Description": "",
+                        "Name": "Standard_Notional_Parent",
+                        "RuleCategory": {
+                            "ref(FChoiceList)": {
+                                "List": "Compliance Rule Category",
+                                "Name": "Pre-Deal"
+                            }
+                        }
+                    }
+                },
+                {
+                    "FThreshold": {
+                        "ComparisonType": "Greater",
+                        "ComplianceRule": {
+                            "ref(FComplianceRule)": "Standard_Notional_Parent"
+                        },
+                        "Coordinates": {
+                            "ref(FStaticArray)": []
+                        },
+                        "Description": "",
+                        "Parent": null,
+                        "Relative": false,
+                        "Type": {
+                            "ref(FChoiceList)": {
+                                "List": "Threshold Type",
+                                "Name": "Violation"
+                            }
+                        },
+                        "Value": 100.0
+                    }
+                },
+                {
+                    "FAppliedRule": {
+                        "ComplianceRule": {
+                            "ref(FComplianceRule)": "Standard_Notional_Parent"
+                        },
+                        "Data": "!enc!(7II<'@A-C4X(7C:C9)/3\\,P#,7O_136#CO2@C006JE4J'K@P\"8&W+/&3$9I$J6NM'Y[E$;L#Z03N42.K>?W>TJ2UZ6UBE\"^]@HKP0)XL`@/L[)I*],*TK,B`<@E?I(F)J-_!M;.6'0\\C'V`O*ZH\\7WAAK@&0)Z>#(VRZ5%WK*UPHD5&UTVN.?&[_C/]>Z.7#`*$7:GEAU`]3FG_%R.*$AXCRP[H4>,A!7M>]YIXDG\\SM%NC+@\"_X9XO$7;L2.\\B`G/%R]K;>]ZL7MZ95'=586,DRM7V\"QL&$R[!D.TS?Z[K^YN[V\\73XC&;[WB9IT'[F(?W<@@@.`_$'K%(SE/QWZ_X!OIJSC,",
+                        "EndDate": "",
+                        "Inactive": false,
+                        "ReviewDate": "",
+                        "Size": 356,
+                        "StartDate": "",
+                        "Target": {
+                            "ref(FCounterParty)": "Counterparty 2"
+                        },
+                        "Unit": {
+                            "ref(FSymbol)": "<FRuleJSONUtils.DecodedObject object at 0x000001F92765C5B0>"
+                        }
+                    }
+                },
+                {
+                    "FThresholdValue": {
+                        "AppliedRule": {
+                            "ref(FAppliedRule)": {
+                                "ComplianceRule": {
+                                    "ref(FComplianceRule)": "Standard_Notional_Parent"
+                                },
+                                "Target": {
+                                    "ref(FCounterParty)": "Counterparty 2"
+                                }
+                            }
+                        },
+                        "Threshold": {
+                            "ref(FThreshold)": {
+                                "ComparisonType": "Greater",
+                                "ComplianceRule": {
+                                    "ref(FComplianceRule)": "Standard_Notional_Parent"
+                                },
+                                "Coordinates": {
+                                    "ref(FStaticArray)": []
+                                },
+                                "Type": {
+                                    "ref(FChoiceList)": {
+                                        "List": "Threshold Type",
+                                        "Name": "Violation"
+                                    }
+                                }
+                            }
+                        },
+                        "Value": 100.0
+                    }
+                }
+            ]
+        }
+    }
+]

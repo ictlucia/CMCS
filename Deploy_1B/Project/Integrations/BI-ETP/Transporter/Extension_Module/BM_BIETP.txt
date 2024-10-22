@@ -1,0 +1,475 @@
+#
+# Front Arena exported extension module.
+# source          ""
+# timestamp (utc) "2023-10-13 07:56:30"
+# ***** DO NOT EDIT! *****
+#
+name        "BM_BIETP"
+description "$Id$"
+
+groups {
+}
+
+decls[FMenuExtension] {
+}
+
+clx FSessionManagerFrame [FMenuExtension] {
+  BIETP Trade Import =
+  Function=BIETPUtil.StartApplication
+  MenuType=Application
+  ModuleName=BIETP Trade Import
+  ParentMenu=Tools
+  RibbonPosition=BIETP Trade Import
+
+
+}
+
+decls[FParameters] {
+}
+
+clx FObject [FParameters] {
+  BIETPParam =
+  ACQUIRER=Mandiri TRS HO
+  BOND=LLG
+  CPTY=BANK INDONESIA
+  CURRENCY=IDR
+  ERROR=ERROR
+  ERROR_1=can't convert 'None' to FInstrument object
+  ERROR_2=Optional Key (External Id) is already in use
+  FAILED=FAILED
+  HAITCUTTYPE=Percent
+  INTERFACE=BI-ETP
+  PROFILE=BIETP Dealer
+  QUOTATION=Clean
+  REVREPO=RR
+  STATUS=simulated
+  SUCCESS=SUCCESS
+  TRADETYPE=Collateral
+
+
+}
+
+decls[FPythonCode] {
+}
+
+clx FObject [FPythonCode] {
+  BIETP_TradeImport
+
+"""----------------------------------------------------------------------------------------
+MODULE:
+    BI-ETP Insert Trade
+
+    DESCRIPTION: This module provide function to Insert BI-ETP Trade in XML File. The Trade Type Are Bond, Discounted Term Deposit, and Basket Repo/Reverse. The expected error in this program is if the instrument has not been registered and if there have been transactions with the same reference number. 
+
+    For the Currency for the BI-ETP will be always IDR, the Counterparty will always be Bank Indonesia, and Status Trade will always Simulated. Make Sure BI-ETP is already in Interface ChoiceList and Bank Indonesia is already in Counterparty Choicelist
+
+AUTHOR: Ibrahim Alie Balweel
+------------------------------------------------------------------------------------------"""
+
+"""----------------------------------------------------------------------------------------
+                                Import Library
+------------------------------------------------------------------------------------------"""  
+import csv
+import ael
+import FLogger
+import xml
+import xml.etree.ElementTree as ET
+import glob
+import FRunScriptGUI
+import acm
+from datetime import datetime 
+import sys
+import os
+import time
+import ParametersReader
+
+logger = None
+def InitializeLogging(params):
+
+    logfile    = params['logFile']
+    logFileName = "BIETPLOG-"+ acm.Time.DateToday().replace('-', '') + ".txt"
+    logfolderString = logfile.SelectedDirectory().AsString()
+    logfile = os.path.join(logfolderString, logFileName)
+    if logfile == '':
+        logfile = None
+    global logger
+    logger = FLogger.FLogger(level=1,
+                    name='BI-ETP Data',
+                    logToPrime=True,
+                    logToFileAtSpecifiedPath=logfile,
+                    logToConsole=False)
+    
+
+folderPicker = FRunScriptGUI.DirectorySelection()
+
+BIETP_param= ParametersReader.get_params("BIETPParam")
+
+ael_gui_parameters =    {'windowCaption' : 'BI-ETP Posting'}
+
+ael_variables=  [['folder', 'Input folder_Main',folderPicker, None, folderPicker, 1, 1, 'Folder from which XML files should be imported', None, 1],
+                    ['logFile', 'Log File_Logging', folderPicker, None, folderPicker, 0, 1, 'Select where to store the log file', 0, None]]
+
+BIETP_Field = ['agent_bank_name', 'auction_date', 'auction_code','bidding_time','clean_price','coll_code','coll_haircut','dirty_price',
+                'investor_name','iss_cash_value','maturity_date','member_name','nominal_awarded','partic_name','repo_rate',
+                'sec_code','second_leg','security_type','total_iss_cash_value','value_date','trn']
+            
+"""----------------------------------------------------------------------------------------
+        Function to change BI-ETP dateformat to Front Arena float format
+------------------------------------------------------------------------------------------"""            
+
+def datetime_format(value):
+    if len(value) >= 11:
+        date = datetime.strptime(value, "%d/%m/%Y %H:%M:%S").strftime("%Y-%m-%d %H:%M:%S")
+    else:
+        date = datetime.strptime(value, "%d/%m/%Y").strftime("%Y-%m-%d")
+    return(date)
+    
+"""----------------------------------------------------------------------------------------
+        Function to change BI-ETP float format  to Front Arena float format
+------------------------------------------------------------------------------------------"""
+def float_format(value):                                                                        
+    f = float(value.replace('.', '').replace(',', '.'))
+    return(f)
+
+"""----------------------------------------------------------------------------------------
+        Function to Validation Counterparty and Interface
+------------------------------------------------------------------------------------------"""
+def Validation(a):
+    if a == None:
+        value = None
+    else:
+        value = a
+    return value
+
+"""----------------------------------------------------------------------------------------
+                        Function to Export CSV Log
+------------------------------------------------------------------------------------------"""        
+def export_csv(pathlog, rowsContent):
+    header = ["No","Trade No","Reference Number", "Instrument", "Instrument Type","Status","Remarks"]
+    pathfile    = str(pathlog)    
+    if pathfile == '':
+        pathfile = None
+    else:
+        pathfile = pathlog
+        pathfileName = "BIETPLOG-"+ time.strftime("%Y-%m-%d %H_%M_%S") + ".csv"
+        pathfilefolderString = pathfile.SelectedDirectory().AsString()
+        pathfile = os.path.join(pathfilefolderString, pathfileName)
+        with open(pathfile, 'w', newline='') as csvfile:
+            csvwriter = csv.writer(csvfile) 
+            csvwriter.writerow(header)
+            csvwriter.writerows(rowsContent)
+
+"""----------------------------------------------------------------------------------------
+                        Function to Append Log for CSV Log
+------------------------------------------------------------------------------------------""" 
+def output_csv_log(num,ID_Trade,trd_type,ins_type,ref_num,status,details,rowContent):
+    rowContent.append(str(num))
+    rowContent.append(str(ID_Trade))
+    rowContent.append("'" + ref_num)
+    rowContent.append(ins_type)
+    rowContent.append(trd_type)
+    rowContent.append(status)
+    rowContent.append(details)
+
+"""----------------------------------------------------------------------------------------
+                        Function to Insert Instrument
+------------------------------------------------------------------------------------------""" 
+def Insert_Instrument(a, trade_param):
+    BIETP_Ins = acm.FInstrument[trade_param['ins_type']]                           
+    if BIETP_Ins != None:
+        BIETP_Instrument = BIETP_Ins.Name()
+    else:
+        BIETP_Instrument = 'None'
+    a.Instrument(BIETP_Instrument) # If Freetext is None, It will be catch error as "Security Code Is Not Registered"
+    a.FaceValue(trade_param['nominal'])
+    return a, BIETP_Instrument
+    
+"""----------------------------------------------------------------------------------------
+                        Function to Initial Main Trade
+------------------------------------------------------------------------------------------""" 
+def Init_Trade(a, trade_param):
+    u = acm.FUser()
+    optkey2 = acm.FChoiceList[BIETP_param['INTERFACE']]
+    cpty = acm.FParty[BIETP_param['CPTY']]
+    a.Currency(BIETP_param['CURRENCY'])                                                                       
+    a.Acquirer(BIETP_param['ACQUIRER'])                          
+    a.TradeTime(trade_param['trade_time'])
+    a.Status(BIETP_param['STATUS'])                                                                   
+    a.ValueDay(trade_param['value_date'])
+    a.AcquireDay(trade_param['value_date'])
+    a.OptKey2(Validation(optkey2)) # Make sure BI-ETP is already in Interface Choice List
+    a.Counterparty(Validation(cpty)) # Make sure Bank Indonesia is already in Counterparty Choice List  
+    a.OptionalKey(trade_param['ref_num']) # If there is Duplicate Reference Number it will catch Error as "Trade with Reference Number is already exist"
+    a.Trader(u.Owner().Name())
+    return(a)
+
+
+"""----------------------------------------------------------------------------------------
+                        Function to Initiate Collateral Trade
+------------------------------------------------------------------------------------------""" 
+def Init_Col_Trade(a, c, trade_param):
+    u = acm.FUser()
+    optkey2 = acm.FChoiceList[BIETP_param['INTERFACE']]
+    cpty = acm.FParty[BIETP_param['CPTY']]
+    trade_param['haircut'] = float_format(trade_param['haircut'])
+    c.TradeCategory(BIETP_param['TRADETYPE'])                                                                                  
+    c.HaircutType(BIETP_param['HAITCUTTYPE'])
+    c.Currency(BIETP_param['CURRENCY'])                                                                                               
+    c.Acquirer(BIETP_param['ACQUIRER'])                                
+    c.TradeTime(trade_param['trade_time'])
+    c.Status(BIETP_param['STATUS'])                                                                                           
+    c.ValueDay(trade_param['value_date'])
+    c.AcquireDay(trade_param['value_date']) 
+    c.Price(100 * (trade_param['total_premium']) / (trade_param['nominal']))
+    c.Haircut(trade_param['haircut'])
+    c.OptKey2(Validation(optkey2)) # Make sure BI-ETP is already in Interface Choice List                                                                    
+    c.Counterparty(Validation(cpty)) # Make sure Bank Indonesia is already in Counterparty Choice List  
+    c.ReAcquireDay(trade_param['end_date'])
+    c.Trader(u.Owner().Name())
+    return(c)
+
+
+"""----------------------------------------------------------------------------------------
+                        Function to Create Basket Repo Instrument
+------------------------------------------------------------------------------------------""" 
+def Create_BasketRepo_Instrument(a, trade_param):
+    
+    trade_param['repo_rate'] = float_format(trade_param['repo_rate'])
+    ins_type = trade_param['coll_code']
+    trade_param['ins_type'] = trade_param['coll_code']
+    
+    Insert_Ins = Insert_Instrument(a, trade_param)
+    coll_ins = Insert_Ins[1]
+    
+
+    ins = acm.FBasketRepo() # Create Basket Repo/Reverse Instrument 
+    ins.CreateLeg(1,0) # Create Leg, 1 = Fixed, 0 = Receive
+    ins.Currency(BIETP_param['CURRENCY'])                                                              
+    ins.FreeText(BIETP_param['CURRENCY'])  # Free Text Instrument for Repo will be always IDR
+    ins.Quotation(BIETP_param['QUOTATION']) # Quotation will be always Clean
+    ins.Legs()[0].StartDate(trade_param['start_date'])
+    ins.Legs()[0].EndDate(trade_param['end_date'])
+    ins.Legs()[0].AmortStartDay(trade_param['start_date'])
+    ins.Legs()[0].AmortEndDay(trade_param['end_date'])
+    ins.Legs()[0].Currency(BIETP_param['CURRENCY'])                                                           
+    ins.Legs()[0].RollingPeriodBase(trade_param['end_date'])
+    ins.Legs()[0].FixedRate(trade_param['repo_rate'])
+    ins.RegisterInStorage()
+    ins.Commit()
+    
+    a.Instrument(ins)
+    
+    return coll_ins, a
+                                                              
+
+"""----------------------------------------------------------------------------------------
+                        Function to Insert Basket Repo Trade
+------------------------------------------------------------------------------------------""" 
+def Create_BasketRepo_Trade(a,c,trade_param):
+    
+    Init_Col_Trade(a, c, trade_param)
+    
+    BasketRepo_Instrument = Create_BasketRepo_Instrument(a, trade_param)                             
+    coll_ins = BasketRepo_Instrument[0]
+
+    def Init_FaceValue(a, c, trade_param):
+        if trade_param['auction_code'][:2] != BIETP_param['REVREPO']: # Repo Trade
+            a.FaceValue(-abs(trade_param['total_premium']))                                               
+            c.FaceValue(-abs(trade_param['nominal'])) 
+        else: # Repo Rev Trade
+            a.FaceValue(trade_param['total_premium'])                                                                                      
+            c.FaceValue(trade_param['nominal']) 
+        return a,c
+    
+    c.Instrument(coll_ins)
+    Init_FaceValue(a, c, trade_param)
+
+    return coll_ins,a,c 
+
+"""----------------------------------------------------------------------------------------
+                Function to Insert Discounted Term Deposit Trade
+------------------------------------------------------------------------------------------""" 
+def Create_Discounted_Trade(a,trade_param):
+    trade_param['premium'] = float_format(trade_param['premium'])
+    Insert_Instrument(a, trade_param) 
+    a.Price(100 * (trade_param['premium']/ trade_param['nominal']))
+    a.Premium(-abs(trade_param['premium']))
+    return a
+
+"""----------------------------------------------------------------------------------------
+                        Function to Insert Bond Trade
+------------------------------------------------------------------------------------------""" 
+def Create_Bond_Trade(a,trade_param):
+    trade_param['clean_price'] = float_format(trade_param['clean_price'])
+    trade_param['premium'] = float_format(trade_param['premium'])
+    Insert_Instrument(a, trade_param)
+    a.Premium(-abs(trade_param['premium']))
+    a.Price(trade_param['clean_price'])                                                               
+    return a                                                                        
+
+"""----------------------------------------------------------------------------------------
+                       Main Function
+------------------------------------------------------------------------------------------""" 
+def ael_main(params):
+    InitializeLogging(params)
+    logger.LOG('Execution started')
+    folder = (params['folder'])
+    rowsContent = []                                                                            # Array to Capture CSV Log
+    BIP = (glob.glob(str(params['folder']) + "/*xml"))                                          # Read all XML file in one folder
+    num = 0                                                                                     # Number for CSV Log
+    ID_Trade = 0
+    """----------------------------------------------------------------------------------------
+                                Loop For to read BI-ETP Trade in XML File
+    ------------------------------------------------------------------------------------------"""
+    for A in BIP:
+        tree = ET.parse(A)
+        root = tree.getroot()
+        for i in range(len(root[1])):
+            value = root[1][i].attrib
+            res = dict((k, value[k]) for k in BIETP_Field if k in value)                        # Select the required field based on the BIETP_FIELD variable
+            rowContent = []                                                                     # Array to Capture CSV Log
+            
+            """----------------------------------------------------------------------------------------
+                                        Code To Insert BI-ETP Trade
+            ------------------------------------------------------------------------------------------"""
+            acm.BeginTransaction() 
+            try:
+                # a variable is for Trade 
+                a = acm.FTrade()
+                # c variable is for Collateral Trade                                                                        
+                c = acm.FTrade()
+                
+                num = num + 1
+                                                                                                        
+                trade_param = {
+                    'acquirer': res.get('agent_bank_name'),
+                    'trade_time': datetime_format(res.get('bidding_time')),
+                    'value_date': datetime_format(res.get('value_date')),
+                    'start_date': datetime_format(res.get('auction_date')),
+                    'end_date': datetime_format(res.get('maturity_date')),
+                    'repo_rate': res.get('repo_rate'),
+                    'ins_type' : res.get('sec_code'),
+                    'nominal' : float_format(res.get('nominal_awarded')),
+                    'ref_num' : res.get('trn'),
+                    'premium' : res.get('iss_cash_value'),
+                    'total_premium' : float_format(res.get('total_iss_cash_value')),
+                    'clean_price' : res.get('clean_price'),
+                    'auction_code' : res.get('auction_code'),
+                    'security_type' : res.get('security_type'),
+                    'haircut' : res.get('coll_haircut'),
+                    'coll_code' : res.get('coll_code'),
+                    
+                }
+                
+                
+                """----------------------------------------------------------------------------------------
+                                            BI-ETP Trade Main Input
+                ------------------------------------------------------------------------------------------"""
+                Init_Trade(a, trade_param)
+
+
+                """----------------------------------------------------------------------------------------
+                                            BI-ETP Basket Repo Input
+                ------------------------------------------------------------------------------------------"""                                             
+                if trade_param['ins_type'] == BIETP_param['CURRENCY']:                                                       
+                    BRepo = Create_BasketRepo_Trade(a,c,trade_param)
+                    
+                    """----------------------------------------------------------------------------------------
+                                                BI-ETP Bond Input
+                    ------------------------------------------------------------------------------------------""" 
+                elif trade_param['auction_code'][:3] == BIETP_param['BOND']:                                                                       
+                    Bond = Create_Bond_Trade(a,trade_param)
+                    """----------------------------------------------------------------------------------------
+                                            BI-ETP Discounted Term Input
+                    ------------------------------------------------------------------------------------------""" 
+                else:
+                    DT = Create_Discounted_Trade(a,trade_param)
+
+                
+                """----------------------------------------------------------------------------------------
+                                                Commit Transaction
+                                                
+                            For Collateral Trade It has to be commit outsite Commit Transaction,
+                                so the Trans Ref for Collateral Trade Value will be not Negative 
+                ------------------------------------------------------------------------------------------""" 
+                
+                a.RegisterInStorage()
+                a.Commit()        
+                                                                                                     
+                acm.CommitTransaction()
+
+                if trade_param['ins_type'] == res.get('coll_code'):
+                    c.TrxTrade(a.Oid())   
+                    c.RegisterInStorage()
+                    c.Commit()
+                
+                """----------------------------------------------------------------------------------------
+                                    Output If the Trade are Succesfully inserted (Success)
+                ------------------------------------------------------------------------------------------""" 
+                status = BIETP_param['SUCCESS']
+                ID_Trade = a.Oid()
+                
+                if trade_param['ins_type'] == res.get('coll_code'):
+                    ID_Trade = str(a.Oid()) + ' & ' + str(c.Oid())
+                    trade_param['ins_type'] = BRepo[0]
+                
+                details = "Trade " + trade_param['ins_type'] + " with Reference Number " + trade_param['ref_num'] + " has been successfully entered"
+                logger.LOG(details)
+                print(details)
+                
+                """----------------------------------------------------------------------------------------
+                                            Output if The Trade is Failed
+                ------------------------------------------------------------------------------------------"""
+            except Exception as er:
+                acm.AbortTransaction()
+                
+                status = BIETP_param['FAILED']
+                ID_Trade = BIETP_param['ERROR']
+                
+                # If Error because Instrument is not registered
+                if BIETP_param['ERROR_1'] in str(er):
+                    details = "Security Code " + trade_param['ins_type'] + " Is Not Registered"
+                    logger.ELOG(details)
+                    print(details)
+                # If Error because Duplicate Trade Reference Number
+                elif BIETP_param['ERROR_2'] in str(er):
+                    details = "Trade with Reference Number " + trade_param['ref_num'] +" is already exist"
+                    logger.ELOG(details)
+                    print(details)
+                # If other Error
+                else:
+                    details = er
+                    logger.ELOG(details)
+                    print(details)
+                #raise
+            output_csv_log(num,ID_Trade,trade_param['auction_code'],trade_param['ins_type'],trade_param['ref_num'],status,details,rowContent)
+            rowsContent.append(rowContent)  
+  
+    """----------------------------------------------------------------------------------------
+                                Code to Export Log as CSV
+    ------------------------------------------------------------------------------------------"""    
+    export_csv(params['logFile'], rowsContent)
+
+
+
+
+...
+
+  BIETPUtil
+import acm
+import UserProfileUtils as up
+import ParametersReader
+
+def StartApplication(eii):
+    BIETP_param = ParametersReader.get_params("BIETPParam")
+    shell = acm.UX.SessionManager().Shell()
+    isallow = up.is_component_in_user_profile(BIETP_param['PROFILE'])
+    if isallow == 1:
+        acm.RunModuleWithParameters("BIETP_TradeImport", acm.GetDefaultContext())
+    else:
+        acm.UX().Dialogs().MessageBoxInformation(shell, "User doesn't have access right for this menu")
+
+...
+
+}
+

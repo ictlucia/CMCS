@@ -1,0 +1,36 @@
+#
+# Front Arena exported extension module.
+# source          ""
+# timestamp (utc) "2024-03-21 03:05:55"
+# ***** DO NOT EDIT! *****
+#
+name        "BM_SettlementHooks"
+description "$Id$"
+
+groups {
+}
+
+decls[FPythonCode] {
+}
+
+clx FObject [FPythonCode] {
+  FSettlementHooks
+
+import acm
+
+from FSettlementEnums import RelationType
+
+def SettlementModification(settlement, netChildrenList, originalAmount, originalCurrency):
+    try:
+        print('>>>>>>>>>',settlement.CounterpartyAccountRef().NetworkAliasType().Name().upper())
+        if settlement.CounterpartyAccountRef().NetworkAliasType().Name().upper()=='BI-SSSS':
+            settlement.IsValueDayCheckIgnored(True)
+            return "IsValueDayCheckIgnored"
+        return ""
+    except Exception as e:
+        return ""
+
+...
+
+}
+

@@ -1,0 +1,23 @@
+Windows Registry Editor Version 5.00
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Front\Front Arena\AMBA\FA_INSTANCE_NAME]
+"receiver_sources"="{ATCI_RD}"
+"sender_mb_name"="ATCI_RD_SENDER"
+"receiver_mb_name"="ATCI_RD_RECEIVER"
+"sender_off"="1"
+"exit_on_ael_error"="1"
+"receiver_off"="0"
+"show_seqnbr"="1"
+"show_changes"="1"
+"show_protection"="1"
+"nice_enum_names"="1"
+"log_messages"="1"
+"log_to_server"="1"
+"username"="AMBA_ATCIRD"
+"password"="intas"
+"ael_module_name"="ATCIRDMessageAdaptations"
+"ael_receiver_modify"="receiver_modify"
+"create_missing_ref"="{transhst}"
+"fcs_suggest_name_file"="D:\Front\Front Arena\UTILS\suggestname.ttt"
+
+

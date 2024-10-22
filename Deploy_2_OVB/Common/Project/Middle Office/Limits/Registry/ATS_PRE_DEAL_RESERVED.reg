@@ -1,0 +1,8 @@
+Windows Registry Editor Version 5.00
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Front\Front Arena\ATS\FA_INSTANCE_NAME]
+"task"="PreDealReserved"
+"username"="ATS_PREDEAL_RES"
+"password"="intas"
+"unicode"="1"
+

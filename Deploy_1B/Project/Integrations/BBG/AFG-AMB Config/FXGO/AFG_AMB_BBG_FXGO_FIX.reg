@@ -1,0 +1,85 @@
+Windows Registry Editor Version 5.00
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Front\Front Arena\AIF\AFG_TRSY_FIT]
+"Active"=dword:00000001
+"RestartDelayMax"=dword:00000040
+"RestartRetries"=dword:7fffffff
+"ShutdownTimeout"=dword:0000ea60
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Front\Front Arena\AIF\AFG_TRSY_FIT\Providers]
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Front\Front Arena\AIF\AFG_TRSY_FIT\Providers\AmbProvider]
+"Enabled"=dword:00000001
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Front\Front Arena\AIF\AFG_TRSY_FIT\Providers\AmbProvider\Parameters]
+"ConnectToAMB"=dword:00000001
+"User"="mb"
+"Password"="aaa123"
+"ReceiverItems"="Trade"
+"ReceiverName"="BBG_FXGO_FIX_RECEIVER"
+"ReceiverSubjects"="BBG_FXGO_FIX"
+"SenderName"="BBG_FXGO_FIX_SENDER"
+"SenderSource"="BBG_FXGO"
+"SenderSubject"="BBG_FXGO_FIX"
+"Host"="localhost"
+"Port"=dword:0000238c
+
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Front\Front Arena\AIF\AFG_TRSY_FIT\Providers\FixProvider]
+"Enabled"=dword:00000001
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Front\Front Arena\AIF\AFG_TRSY_FIT\Providers\FixProvider\Parameters]
+"IsServer"=dword:00000000
+"LogFixMsgToEvtLog"=dword:00000001
+"Host"="69.191.198.32"
+"ResetSeqNum"=dword:00000000
+"UseOfflineFIXMsgLog"=dword:00000001
+"TargetCompId"="BLPFXSTP_BETA"
+"TargetSubId"="BLPFXSTP_BETA"
+"SenderCompId"="MDRJFXSTP"
+"SenderSubId"="MDRJFXSTP"
+"OnBehalfOfCompId"=""
+"OnBehalfOfSubId"=""
+"HeartBeatInterval"=dword:0000001e
+"Port"="8228"
+"FixVersion"="FIX.4.4"
+"UseSocketComm"=dword:00000001
+"AdapterListenerThreads"=dword:0000000a
+"AdapterListenerQueueSize"=dword:00002710
+"ReconnectInterval"=dword:00001388
+"UseTestRequestAsSynch"=dword:00000001
+"ConnectionEstablished"=dword:00000001
+"RxSeqNum"=dword:000005ec
+"TxSeqNum"=dword:000005ec
+"LogMessagesAs"="Text"
+"LogFixMsgMaxLen"=dword:00989680
+"SocketIsSecure"=dword:00000001
+"SecureMethod"="TLS_v12"
+"SecureOptionNoSSLv2"=dword:00000001
+"SecureOptionNoSSLv3"=dword:00000001
+"SecureOptionNoTLSv1"=dword:00000001
+"SecureOptionNoTLSv11"=dword:00000001
+"SecureOptionNoTLSv12"=dword:00000000
+"SecureOptionDefaultWorkarounds"=dword:00000001
+"SecurePrivateKeyPassword"="hiddenpwd1000x462666dab3b90c410111e13ee73b8a10d8d2aa3a1c423beb"
+"FixUtcTimestampResolution"="millisecond"
+"MiLogFileTimestampResolution"="microsecond"
+"SecureVerifyPeer"=dword:00000001
+
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Front\Front Arena\AIF\AFG_TRSY_FIT\Runtime\AFG_AMB]
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Front\Front Arena\AIF\AFG_TRSY_FIT\Runtime\AFG_AMB\AMBTrades]
+"FIXReceiveExecutionReport"=dword:00000001
+"FIXReceiveTradeCaptureReport"=dword:00000001
+"SubscribeToTradeCaptureReports"=dword:00000000
+"UseAELQueryForIsinIdentification"=dword:00000000
+"FIXMapExecutionReportBack"=dword:00000000
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Front\Front Arena\AIF\AFG_TRSY_FIT\Setup\PrePack]
+"Name"="Bloomberg-FXGO"
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Front\Front Arena\AIF\AFG_TRSY_FIT\Setup]
+"ShortName"="FX"
+"Component"="AFG<->AMB (x64)"
+"ComponentGroup"="AFG_AMB"

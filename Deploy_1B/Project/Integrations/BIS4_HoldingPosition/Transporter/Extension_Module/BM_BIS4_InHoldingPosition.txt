@@ -1,0 +1,173 @@
+#
+# Front Arena exported extension module.
+# source          ""
+# timestamp (utc) "2024-03-11 09:13:03.7"
+# ***** DO NOT EDIT! *****
+#
+name        "BM_BIS4_InHoldingPosition"
+description ""
+
+groups {
+}
+
+decls[FParameters] {
+}
+
+clx FObject [FParameters] {
+  InHoldingPositionParams =
+  logFilename=BIS4_InHoldingPosition_LOG_{}.txt
+
+
+}
+
+decls[FPythonCode] {
+}
+
+clx FObject [FPythonCode] {
+  BI_SSSS_In_HoldingPosition
+"""----------------------------------------------------------------------------------------------------
+MODULE:
+    BI_SSSS_In_HoldingPosition
+
+DESCRIPTION:
+    Entry point to invoke the BIS4 In HoldingPosition run task gui.
+
+-------------------------------------------------------------------------------------------------------"""
+import acm, ael, traceback
+import csv, os
+from datetime import datetime
+import ParametersReader
+import FLogger, FRunScriptGUI
+import BIS4Common
+
+# get value from FPArameter
+holdingPositionParams = ParametersReader.get_params('InHoldingPositionParams')
+
+log_file_name = holdingPositionParams['logFilename'].format(acm.Time.DateToday().replace('-', ''))
+
+
+class BIS4HoldingPosition(BIS4Common.BIS4_TaskBase):
+    def __init__(self):
+        super(BIS4HoldingPosition, self).__init__()
+        self._last_processed_file = None
+        
+        
+    def process_task(self, params):
+        files_processed = list()
+        files_failed = list()
+        self._logger.LOG('Start process_task')
+        input_folder = params['inputFolder'].SelectedDirectory().AsString()
+        archive_folder = params['archiveFolder'].SelectedDirectory().AsString()
+
+        if input_folder == archive_folder:
+            self._logger.LOG('Input and archive folders cannot be same.')
+        else:
+            with os.scandir(input_folder) as dir_iter:
+                for bis4_file in dir_iter:
+                    if bis4_file.name.endswith('.csv'):  # process only CSV files.
+                        try:
+                            self._logger.LOG('Processing file {}.'.format(bis4_file.name))
+                            processed_successfully = self.process_input_record(bis4_file)
+                        except Exception as err:
+                            processed_successfully = False
+                            self._logger.LOG('Error while processing file {}. {}.'.format(bis4_file.name, err))
+                            self._logger.LOG(traceback.format_exc())
+
+                        if processed_successfully:
+                            self.rename_and_archive_file(bis4_file, archive_folder)
+                            files_processed.append(bis4_file.name)
+                        else:
+                            self.rename_and_archive_file(bis4_file, os.path.join(archive_folder,'Error'))
+                            files_failed.append(bis4_file.name)
+                            
+
+        self._logger.LOG(
+            '--------------------------Stats Summary Start-------------------------------------------------')
+        self._logger.LOG(
+            'Files processed successfully. {}'.format('Zero' if not files_processed else ', '.join(files_processed)))
+        self._logger.LOG('Files failed. {}'.format('Zero' if not files_failed else ', '.join(files_failed)))
+        self._logger.LOG('--------------------------Stats Summary End-------------------------------------------------')
+
+        self._logger.LOG('Finish process_task')
+
+    def process_input_record(self, bis4_file):
+        ret_val = True
+        add_info_spec = acm.FAdditionalInfoSpec['HoldPosBIS4']
+
+        #data_dict = dict()
+        with open(bis4_file, newline='') as csvfile:
+            csvreader = csv.reader(csvfile)
+            for count, data in enumerate(csvreader):
+                if count == 0:
+                    continue  # Ignore the header
+                try:
+                    isin_or_alias = data[0]
+                    holding_position_amt = data[4]
+                    update_date = data[5]
+
+                    isin_or_alias = isin_or_alias.strip('')
+                    holding_position_amt = float(holding_position_amt.strip(''))
+                    update_date = update_date.strip('')
+
+                    if isin_or_alias:
+                        alias_obj = acm.FInstrumentAlias.Select01(
+                            "type = '{}' and alias = '{}'".format(BIS4Common.BIS4_INS_ALIAS, isin_or_alias), None)
+                        if alias_obj:
+                            bond_instr = alias_obj.Instrument()
+                            if bond_instr:
+                                existing_update_date = None 
+                                existing_holding_position_amt = None
+                                if bond_instr.AddInfoValue(add_info_spec):
+                                    existing_update_date, existing_holding_position_amt  = bond_instr.AddInfoValue(add_info_spec).split('_')
+                                    existing_holding_position_amt = float(existing_holding_position_amt)
+                                    
+                                if update_date == existing_update_date:
+                                    holding_position_amt += existing_holding_position_amt
+                                
+                                bond_instr.AddInfoValue(add_info_spec, "{}_{}".format(update_date, str(holding_position_amt)))
+                                self._logger.DLOG(
+                    'Instrument {} with Alias {} updated in ADS. Data row {}.'.format(bond_instr.Name(), isin_or_alias,
+                                                                                      data))
+                                bond_instr.Commit() 
+                                    
+                        else:
+                            self._logger.LOG(
+                                'No instrument with Alias {} found in ADS. Data row {}.'.format(isin_or_alias, data))
+                except Exception as err:
+                    ret_val = False
+                    self._logger.LOG('Error while processing row {}. {}.'.format(data, err))
+                    self._logger.LOG(traceback.format_exc())
+
+        return ret_val
+
+
+ael_gui_parameters = {'windowCaption': "BIS4 In HoldingPosition"}
+
+ael_variables = BIS4HoldingPosition()
+ael_variables.LoadDefaultValues(__name__)
+app_name = 'InHoldingPosition'
+
+
+def ael_main(params):
+    """
+    AEL main function
+    :param params: GUI parameters
+    :return: None
+    """
+    bis4_holding_position_loger = None
+    try:
+        bis4_holding_position_loger = BIS4Common.initialize_logging(params, log_file_name, app_name)
+        if bis4_holding_position_loger:
+            bis4_holding_position_loger.LOG('Execution started.')
+            ael_variables.set_logger(bis4_holding_position_loger)
+            ael_variables.process_task(params)
+    except Exception as err:
+        if bis4_holding_position_loger is not None:
+            bis4_holding_position_loger.ELOG(str(err))
+        print(traceback.format_exc())
+        print('Error in ael main. {}'.format(err))
+
+...
+
+}
+

@@ -1,0 +1,10 @@
++BaseCore
++PS_Utilities
++PS_ProjectTools
++Front Office
++Integrations
++Trade and Limit Workflow
++StructuredProducts
++FRTB
+%org
+%user

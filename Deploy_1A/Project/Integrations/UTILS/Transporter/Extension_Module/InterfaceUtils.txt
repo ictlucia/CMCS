@@ -1,0 +1,735 @@
+#
+# Front Arena exported extension module.
+# source          ""
+# timestamp (utc) "2023-09-28 01:50:46.2"
+# ***** DO NOT EDIT! *****
+#
+name        "InterfaceUtils"
+description "$Id$"
+
+groups {
+}
+
+decls[FParameters] {
+}
+
+clx FObject [FParameters] {
+  NotificationSettings =
+  LOGGING_LEVEL=DEBUG
+  #LOGGING_LEVEL=ERROR  #choose INFO, WARNING, ERROR, DEBUG
+  NOTIFICATION_MEDIA=MAIL,MESSAGE
+  #NOTIFICATION_MEDIA=MAIL  #choose  MAIL, MESSAGE, PRIME_LOG, PRIME_LOG_TRANSIENT, OFF
+  NOTIFY_LEVEL=ERROR
+  #NOTIFY_LEVEL=ERROR #choose DEBUG, TRACK, SUCCESS, WARNING, ERROR
+  NOTIFY_USER=
+  SMTP_SERVER=
+  USER_EMAIL=
+
+
+  SMTPSettings =
+  SMTPPassword=
+  SMTPPort=25
+  SMTPServer=
+  SMTPTimeout=60
+  SMTPTLS=False
+  SMTPUsername=
+
+
+}
+
+decls[FPythonCode] {
+}
+
+clx FObject [FPythonCode] {
+  AmbaHelpers
+import ael, acm
+import amb, time
+
+
+
+def event_cb(channel, event, arg):
+    pass
+
+
+class AMBSession(object):
+
+    def __init__(self, pp, cb = None):
+        amb.mb_init(pp['AMBAddress'].Text())
+        self.subject = pp['AMBSubject'].Text()
+        amb.mb_init(pp['AMBAddress'].Text())
+        if not cb: cb = event_cb
+        try:
+            self.writer = amb.mb_queue_init_writer(pp['AMBChannel'].Text(), cb, None)
+        except RuntimeError:
+            raise UserWarning("Could not find channel named %s. Check AMB system Table" %pp['AMBChannel'])
+
+    def send(self, mes, type=''):
+        subj=self.subject+r'/'+type
+        status = amb.mb_queue_write(self.writer,
+            subj,
+            mes,
+            len(mes),
+            time.strftime("%Y-%m-%d %H:%M:%S"))
+        return status
+
+
+def add_space_in_bbg(bbg):
+    bbglist=bbg.split(' ')
+    bbglist[-2] = bbglist[-2]+ ' '
+    return ' '.join(bbglist)
+
+def IndexReferenceOrSelf(ins):
+    x = ins.IndexReference()
+    if x: return x
+    return ins
+
+
+def SmartUnderlyingOrSelf(ins):
+    x = ins.IndexReferenceOrSelf().CreditReferenceOrSelf().UnderlyingOrSelf()
+    if x == ins: return x
+    return SmartUnderlyingOrSelf(x)
+
+# -------------------------------------------------------------------
+
+ALL_TYPES = acm.FEnumeration["enum(InsType)"]
+
+SQL='''\
+select distinct instype
+from instrument
+where instype ='%s'
+'''
+
+def getNiceInstype(xt):
+    print(xt)
+    print(ael.asql(SQL % xt)[1])
+    print(ael.asql(SQL % xt))
+    return ael.asql(SQL % xt)[1][0][0][0]
+
+def getValue(m, n, obj = None):
+    if obj: m = m.mbf_find_object(obj, 'MBFE_BEGINNING')
+    if m:
+        x = m.mbf_find_object(n, 'MBFE_BEGINNING')
+        if x: return x.mbf_get_value()
+        else: return None
+
+def setValue(m, n, v, obj = None):
+    if v == None:
+        return
+
+    if obj: m = m.mbf_find_object(obj, 'MBFE_BEGINNING')
+    x = m.mbf_find_object(n, 'MBFE_BEGINNING')
+    if x: m.mbf_replace_string(n, v)
+    else: m.mbf_add_string(n, v)
+
+def deleteObject(m,n,obj=None):
+    if obj: m = m.mbf_find_object(obj, 'MBFE_BEGINNING')
+    if m:
+        x = m.mbf_find_object(n, 'MBFE_BEGINNING')
+        if x: m.mbf_remove_object( )
+
+
+def findInstrumentAlias(m, n):
+    mi = m.mbf_find_object('INSTRUMENT', 'MBFE_BEGINNING')
+    if not mi: mi = m
+    mx = mi.mbf_find_object('INSTRUMENTALIAS', 'MBFE_CURRENT')
+    while mx:
+        mn = getValue(mx, 'TYPE.ALIAS_TYPE_NAME')
+        if mn == n: return mx
+        mx = mi.mbf_next_object()
+
+def getInstrumentAlias(m,n):
+    mx = findInstrumentAlias(m,n)
+    if mx: return getValue(mx, 'ALIAS')
+
+
+def setInstrumentAlias(m, n, v):
+    mx = findInstrumentAlias(m, n)
+    if not mx:
+        i = m.mbf_find_object('INSTRUMENT', 'MBFE_BEGINNING')
+        mx = i.mbf_start_list("INSTRUMENTALIAS")
+        mx.mbf_add_string("TYPE.ALIAS_TYPE_NAME", n)
+        mx.mbf_add_string("ALIAS", v)
+        mx.mbf_end_list()
+    else: setValue(mx,"ALIAS",v)
+    #mx.mbf_replace_string("ALIAS", v)
+
+def findAddinfo(m, n, typ='INSTRUMENT'):
+    mi = m.mbf_find_object(typ, 'MBFE_BEGINNING')
+    if not mi: mi = m
+    mx = mi.mbf_find_object('!ADDITIONALINFO', 'MBFE_CURRENT')
+    while mx:
+        mn = getValue(mx, 'ADDINF_SPECNBR.FIELD_NAME')
+        if mn == n: return mx
+        mx = mi.mbf_next_object()
+
+def getAddinfo(m, n):
+    mx = findAddinfo(m, n)
+    if mx: return getValue(mx, 'VALUE')
+
+
+def setAddinfo(m, n, v):
+    mx = findAddinfo(m, n)
+    if not mx:
+        i = m.mbf_find_object('INSTRUMENT', 'MBFE_BEGINNING')
+        mx = i.mbf_start_list("!ADDITIONALINFO")
+        mx.mbf_add_string("ADDINF_SPECNBR.FIELD_NAME", n)
+        mx.mbf_add_string("VALUE", v)
+        mx.mbf_end_list()
+    else: mx.mbf_replace_string("VALUE", v)
+
+
+
+def SaveAddInfo(obj, value, AddInfoSpec, Datatype = 3, Desc = ''):
+    """ Set Additional Info field on any object.
+        Create AdditionalInfoSpec if it does not exist.
+        Obj has to be a clone.
+        New AdditionalInfoSpec is returned, if any.
+    """
+    ai = obj.additional_infos()
+    for a in ai:
+        if a.addinf_specnbr.field_name == AddInfoSpec:
+            if a.value == ('%s' % value): return
+            a.value = '%s' % value
+            return
+    a = ael.AdditionalInfo.new(obj)
+    asp = ael.AdditionalInfoSpec.read("field_name = '%s'" % AddInfoSpec)
+    ret_v = None
+    if not asp:
+        asp = ael.AdditionalInfoSpec.new()
+        asp.field_name = AddInfoSpec
+        asp.rec_type = obj.record_type
+        setattr(asp, "data_type.grp", "Standard")
+        setattr(asp, "data_type.type", Datatype)
+        asp.default_value = '0.0'
+        asp.description = Desc
+        asp.commit()
+        ret_v = asp
+    a.addinf_specnbr = asp
+    a.value = '%s' % value
+    return ret_v
+
+def MarkStatus(iname, field, value):
+    ael.poll()
+    ix = ael.Instrument[iname].clone()
+    SaveAddInfo(ix, value, field)
+    ix.commit()
+
+def getBit(x, num):
+    return (x & (1 << num)) >> num
+
+
+def validateSpec(x, asp):
+    i = ALL_TYPES.Enumeration(x)
+    if i == 0: return
+    y = asp.SubRecMask1()
+    if i > 31:
+        i -= 31
+        y = asp.SubRecMask2()
+    return getBit(y, i-1)
+
+
+
+
+def getCallCurrency(ins):
+    if ins.IsCallOption() == 1:
+        return ins.Underlying().Name()
+    else: return ins.StrikeCurrency().Name()
+
+def getPutCurrency(ins):
+    if ins.IsCallOption() == 0:
+        return ins.Underlying().Name()
+    else: return ins.StrikeCurrency().Name()
+
+def ReplaceSpotDay(m,currency,niceInsType):
+    for row in (row1,row2,row3,row4,row5,row6,row7,row8,row9,row10,row11,row12,row13,row14,row15,row16,row17):
+        if row['Currency'] == currency:
+            try:
+                corrspot = row[niceInsType]
+                print("Correct spot %s" %corrspot)
+                mi = m.mbf_find_object('INSTRUMENT','MBFE_BEGINNING')
+                if mi.mbf_find_object('SPOT_BANKING_DAYS_OFFSET','MBFE_BEGINNING'):
+                    mi.mbf_replace_string("SPOT_BANKING_DAYS_OFFSET",corrspot)
+                    print("Replaced Successful")
+            except:
+                print("Failed to set spot days for instype %s" %niceInsType)
+
+
+def getInstrument(mt):
+    ins = None
+    insid = getValue(mt,'INSADDR.INSID')
+    isin = getValue(mt,'INSADDR.ISIN')
+    if insid:
+        ins = acm.FInstrument[insid]
+    elif isin:
+        ins = acm.FInstrument[isin]
+    return ins
+
+...
+
+  FileWriter
+import acm
+import os
+import datetime
+import FLogger
+
+logger = FLogger.FLogger('FileWriter')
+
+class FileWriter(object):
+    def SetFilePath(self, FilePath):
+        self.filePath = FilePath
+
+    def SetFileName(self, FileName, defaultTimestamp=True):
+        self.fileName = self.getFileName(FileName, defaultTimestamp)
+        
+    def getFormattedDate(self, defaultTimestamp=True):
+        today = acm.Time.DateToday().replace('-','')
+        timeonly = acm.Time.TimeNow().split(' ')[1].split('.')[0].replace(':','')
+        formattedDate = today#datetime.datetime.strptime(today,'%Y-%m-%d').strftime('%d-%m-%Y')
+        if defaultTimestamp:
+            return formattedDate+'_'+timeonly
+        return formattedDate
+
+    def getFileName(self, FileName, defaultTimestamp=True):
+        baseName = os.path.splitext(os.path.basename(FileName))[0]
+        fileExtension = os.path.splitext(os.path.basename(FileName))[1]
+        dateToday = self.getFormattedDate(defaultTimestamp)
+        return baseName+str(dateToday)+fileExtension
+
+    def Write2File(self, Data2Write):
+        if not os.path.exists(self.filePath):
+            os.makedirs(self.filePath)
+
+        fileName = self.fileName
+        filenamePath  = os.path.join(self.filePath, fileName)
+        try:
+            file = open(filenamePath, "w")
+            file.write(Data2Write)
+            file.close()
+        except Exception as e:
+            logger.ELOG('Unable to write output file. - %s'%str(e))
+            
+    def WriteDirectly2File(self, filenamePath, Data2Write):
+        try:
+            file = open(filenamePath, "w")
+            file.write(Data2Write)
+            file.close()
+        except Exception as e:
+            logger.ELOG('Unable to write output file. - %s'%str(e))
+
+                
+
+...
+
+  InterfaceUtils
+
+from __future__ import print_function
+import acm
+import traceback, os
+from datetime import datetime, timezone
+from FLogger import FLogger
+import time
+import math
+import http.client
+
+logger = FLogger.GetLogger('InterfaceUtils')
+space = acm.Calculations().CreateStandardCalculationsSpaceCollection()
+
+def LogLevelNameToNumber(level):
+    if level == FLogger.INFO:    return 1
+    if level == FLogger.DEBUG:   return 2
+    if level == FLogger.WARNING: return 3
+    if level == FLogger.ERROR:   return 4   
+    return 1
+
+def PickFolder():
+    res = acm.FFileSelection()
+    res.PickDirectory(True)
+    return res
+
+def InstrumentQueryList():
+    return acm.FStoredASQLQuery.Select('subType="FInstrument"').AsArray()
+
+def GetMarketList():
+    return acm.FMarketPlace.Select('').AsArray()
+
+def GetMTMMarketList():
+    return acm.FMTMMarket.Select('').AsArray()
+
+def ExecuteQueryAndGetResults(queryName):
+    try:
+        storedQuery = acm.FStoredASQLQuery.Select('name="%s"' % queryName)[0]
+        return storedQuery.Query().Select().Sort()
+    except:
+        raise Exception("Exception when retrieving records from stored query " + queryName)
+    return None
+
+def getUsedPriceAsPercentOfNominal(acmIns):
+    try:
+        #marketPrice = acmIns.Calculation().MarketPrice(space)  
+        #print(marketPrice)
+        toQuotation = acm.FQuotation['Pct of Nominal']
+        price = acmIns.Calculation().MarketPriceConverted(space, toQuotation)
+        if price:
+            #print ("converted price")
+            #print (price)
+            used_value = price.Value()
+            return used_value.Number()
+    except Exception as e:
+        raise Exception('Unable to get bond price as percent of nominal. Error : ' + str(e))
+    
+def getHistoricalPriceAsPercentOfNominal(acmIns, date, market):
+    try:
+        price = getMtMPrice(acmIns, date, acmIns.Currency(), market, 'Settle', True)
+        if ( price is not None ) :
+            toQuotation = acm.FQuotation['Pct of Nominal']
+            cPrice = acmIns.Calculation().PriceConvert(space, price, acmIns.Quotation() , toQuotation)
+            if cPrice:
+                used_value = cPrice.Value()
+                return used_value.Number()
+            else:
+                raise Exception('Failed to convert price. Historical price: {str(price)}')
+        return None
+    except Exception as e:
+        raise Exception('Unable to get bond price as percent of nominal. Error : ' + str(e))
+
+def getUsedFXRate(curr1, curr2, pricedate):
+        try:
+            usedPrice   = curr1.Calculation().MarketPrice(space, pricedate , 0, curr2).Value().Number()
+            return usedPrice
+        except Exception as e:
+            raise Exception('Unable to get FX rate. Error : '+ str(e))
+
+def getFXRateForMarketPlace(curr1, curr2, pricedate, market):
+        try:
+            usedPrice   = curr1.Calculation().MarketPrice(space, pricedate , 0, curr2, 1, market, 1).Value().Number()
+            return usedPrice
+        except Exception as e:
+            raise Exception('Unable to get FX rate. Error : '+ str(e))
+        
+def getTodayFromattedDate():
+        date= acm.Time().DateNow()
+        today = date.replace('-','')
+        formattedDate = datetime.strptime(today,'%Y%m%d').strftime('%d%m%Y')
+        return formattedDate
+
+def getTodayDate(dateformat):
+        return time.strftime(dateformat)
+
+#Get call currency pairs with specific currency"
+filterCurr = None
+
+def PositionPairFilter(currPair):
+    global filterCurr
+    if currPair.Currency1()==filterCurr or currPair.Currency2()==filterCurr:
+        return True
+    return False
+
+def GetAllCurrencyPairsForCurrency( currency ):
+    """
+    returns all currencyPairs which contain currency
+    """
+    global filterCurr
+    filterCurr = currency
+    currencyPairs = acm.FCurrencyPair.Select("")
+    currenyPairsFiltered = currencyPairs.Filter(PositionPairFilter)
+    return currenyPairsFiltered
+#End -Get call currency pairs with specific currency"
+
+def getMtMPrice(instr, date, curr, mtmMarket, valueType='Settle', specificDate=False):
+    histPrices = instr.HistoricalPrices()
+    if not histPrices:
+        logger.WLOG(f'No mark-to-market rates available for {instr.Name()} ({curr.Name()}).')
+        return None
+
+    last = None
+    for hp in histPrices:
+        if hp.Market() == mtmMarket and hp.Currency() == curr:
+            if hp.Day() == date:
+                last = hp
+                break
+            
+            if specificDate == True:
+                continue
+
+            # Find latest available before MtM date
+            if hp.Day() < date:
+                if not last:
+                    last = hp
+                elif hp.Day() > last.Day():
+                    last = hp
+
+    if not last:
+        if specificDate == True :
+            logger.WLOG(f'No mark-to-market rates available for {instr.Name()}/{curr.Name()} in MtM market {mtmMarket.Name()} on {date}.')
+        else:
+            logger.WLOG(f'No mark-to-market rates available for {instr.Name()}/{curr.Name()} in MtM market {mtmMarket.Name()} before {date}.')
+        return None
+
+    if last.Day() != date:
+        assert last.Day() < date, ("Found historical price on "
+                "{0} after MtM date {1}".format(last.Day(), date))
+        message = ("No mark-to-market rate available for {0} ({1}) in "
+                "MtM market '{2}' on {3}. Using latest available on "
+                "{4}.".format(instr.Name(), curr.Name(), mtmMarket.Name(),
+                date, last.Day()))
+        logger.LOG(message)
+
+    if valueType == 'Bid':
+        rate = last.Bid()
+    elif valueType == 'Ask':
+        rate = last.Ask()
+    elif valueType == 'High':
+        rate = last.High()
+    elif valueType == 'Low':
+        rate = last.Low()
+    elif valueType == 'Last':
+        rate = last.Last()
+    else:
+        rate = last.Settle()
+
+    if math.isnan(rate):
+        logger.WLOG(f'No valid mark-to-market {valueType.lower()} rate found for {instr.Name()} ({curr.Name()}) on {last.Day()}.')
+        return None
+
+    logger.DLOG(f'MtM {valueType.lower()} rate for {instr.Name()} ({curr.Name()}) {date}: {rate}')
+    return rate
+        
+def getIDRMtMFxRate(instr, date, mtmMarket, valueType='Settle'):
+    if ( instr.Name() == "IDR" ):
+        return 1
+    curr = acm.FCurrency["IDR"]
+    return getMtMPrice(instr, date, curr, mtmMarket, valueType)
+    
+
+def time_from_datetime(dateTime, format_str='%H:%M:%S', convert_to_utc=False):
+    """
+    This function extract time from datetime
+    :param dateTime: datetime
+    :param convert_to_utc: flag
+    :return: string
+    """
+    dateTime_str = ''
+    time_zone = None
+    if convert_to_utc:
+        time_zone = timezone.utc
+    try:
+        dateTime = acm.Time().DateTimeToTime(dateTime)
+        dateTime = datetime.fromtimestamp(dateTime, time_zone)
+        dateTime_str = dateTime.strftime(format_str)
+    except Exception as e:
+        print('Failed to convert ' + str(dateTime) + ' to time. ' + str(e))
+    return dateTime_str
+
+
+def date_from_datetime(dateTime, format_str='%d/%m/%Y', convert_to_utc=False):
+    """
+    This function extracts date from datetime
+    :param dateTime: datetime
+    :param convert_to_utc: flag
+    :return: string
+    """
+    dateTime_str = ''
+    time_zone = None
+    if convert_to_utc:
+        time_zone = timezone.utc
+    try:
+        dateTime = acm.Time().DateTimeToTime(dateTime)
+        dateTime = datetime.fromtimestamp(dateTime, time_zone)
+        dateTime_str = dateTime.strftime(format_str)
+    except Exception as e:
+        print('Failed to convert ' + str(dateTime) + ' to time. ' + str(e))
+    return dateTime_str
+
+
+def initialize_logging(params, logfile_name, app_name):
+    """
+    Initialize logger
+    :param params: parameters
+    :return: FLogger object
+    """
+    logger = None
+    try:
+        logFolder = params['log_folder']
+        logfolderString = logFolder.SelectedDirectory().AsString()
+        logfile = os.path.join(logfolderString, logfile_name)
+        if logfile == '':
+            logfile = None
+
+        logLevel = params['log_level']
+        level = LogLevelNameToNumber(logLevel)
+        print('level: ', level)
+        logger = FLogger(level=level,
+                                 name=app_name,
+                                 logToPrime=True,
+                                 logToFileAtSpecifiedPath=logfile,
+                                 logToConsole=False)
+    except Exception as err:
+        print('Error in initializing logger {}'.format(err))
+        print(traceback.format_exc())
+    return logger
+
+class HttpClient(object):
+    """
+    This class handles https/https client
+    """
+    def __init__(self, host, port, ssl_certificate_path=None):
+        """
+        Initialize the member variables
+        :param host: host
+        :param port: port
+        :param ssl_certificate_path:path the certificate if ssl is desired.
+        """
+        self._host = host
+        self._port = port
+        self._is_http = False
+        if ssl_certificate_path:
+            self._context = ssl.SSLContext(ssl.PROTOCOL_TLSv1)
+            self._context.verify_mode = ssl.CERT_REQUIRED
+            self._context.load_verify_locations(ssl_certificate_path)
+        else:
+            self._is_http = True
+            self._context = None
+        self._headers = {'Content-type': 'application/json', 'Accept': 'application/json'}
+
+        self._connection = self._response = None
+
+    def connect(self):
+        """
+        This function creates connection object.
+        :return: None
+        """
+        if self._is_http:
+            self._connection = http.client.HTTPConnection(self._host, self._port)
+        else:
+            self._connection = http.client.HTTPSConnection(self._host, self._port, context=self._context)
+
+    def close(self):
+        """
+        This function closes the connection
+        :return: None
+        """
+        if self._connection:
+            self._connection.close()
+
+    def send_get_request(self, json_string, url_address):
+        """
+        This function sends a GET request
+        :param json_string:JSON data generated using dumps function
+        :param url_address:url address in server to call
+        :return: http response
+        """
+        self._connection.request('GET', url_address, json_string, self._headers)
+        self._response = self._connection.getresponse()
+        return self._response
+
+    def send_post_request(self, json_string, url_address):
+        """
+        This function sends a POST request
+        :param json_string:JSON data generated using dumps function
+        :param url_address:url address in server to call
+        :return: http response
+        """
+        self._connection.request('POST', url_address, json_string, self._headers)
+        self._response = self._connection.getresponse()
+        return self._response
+
+    def get_last_response(self):
+        """
+        This function returns the last https response.
+        :return: httpresponse
+        """
+        return self._response
+    
+    
+
+
+...
+
+  Notification
+
+import acm
+import FANotification
+import ParametersReader
+
+
+config             = ParametersReader.get_params('NotificationSettings')
+
+#amb_address        = config.get('MESSAGE_BROKER')
+notification_media = config.get('NOTIFICATION_MEDIA')
+notify_level       = config.get('NOTIFY_LEVEL')
+log_level          = config.get('LOGGING_LEVEL')
+smtp_server        = config.get('SMTP_SERVER')
+user_email_list    = config.get('USER_EMAIL')
+
+
+print('notification_media = '+notification_media)
+print('notify_level = '+notify_level)
+print('log_level = '+log_level)
+print('smtp_server = '+smtp_server)
+print('user_email_list = '+user_email_list)
+
+def Notifier():
+    notifier = FANotification.FANotification(name='NOTIFICATION', 
+                    notification_media=notification_media, 
+                    notify_level=notify_level,
+                    logging_level=log_level, 
+                    message_broker=None, 
+                    user=acm.UserName(), 
+                    user_emails=user_email_list, 
+                    smtp_server=smtp_server)
+    return notifier
+
+
+def NotifierLogger(loggerName, log):
+    notifylogger = FANotification.FANotification.FANotificationLogger(name=loggerName, 
+                    notification_media=notification_media, 
+                    notify_level=notify_level,
+                    logging_level=log_level, 
+                    message_broker=None, 
+                    user=acm.UserName(), 
+                    user_emails=user_email_list, 
+                    smtp_server=smtp_server,
+                    flogger=log)
+    return notifylogger
+
+...
+
+  OutFileWriter
+
+class OutFileWriter:
+    def __init__(self, fileName):
+        self.fileName = fileName
+        self.file = None
+
+    def createFile(self):
+        self.file = open(self.fileName, 'w')
+
+    def writeData(self, data):
+        self.file.write(data)
+       
+    def writeRecordWithNewLine(self, record):
+        self.file.write(record)
+        self.file.write('\n')
+
+    def closeFile(self):
+        self.file.close()
+    
+
+def writeRecordsToFile( logger, outputFileName, records):
+    try:
+        logger.DLOG("Creating file writer object")
+        writerObj = OutFileWriter(outputFileName)
+        logger.DLOG("Opening file. - %s"%str(outputFileName))
+        writerObj.createFile()
+        if len(records) > 0:
+            logger.DLOG("Writting records to file.")
+            writerObj.writeData(records)
+        logger.DLOG("Closing output file")
+        writerObj.closeFile()
+    except Exception as e:
+        logger.ELOG('Unable to write output file. Error : %s'%str(e))
+
+...
+
+}
+

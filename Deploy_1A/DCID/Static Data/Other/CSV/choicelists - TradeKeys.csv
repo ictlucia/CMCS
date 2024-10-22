@@ -1,0 +1,7 @@
+CHOICELIST,,,,/CHOICELIST
+DESCRIPTION,LIST,SORT_ORDER,ENTRY,
+,MASTER,,Trade Keys,
+,Trade Keys,1,TradeKey1,
+,Trade Keys,2,TradeKey2,
+,Trade Keys,3,TradeKey3,
+,Trade Keys,4,TradeKey4,

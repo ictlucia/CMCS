@@ -1,0 +1,414 @@
+#
+# Front Arena exported extension module.
+# source          ""
+# timestamp (utc) "2024-03-22 05:47:21.8"
+# ***** DO NOT EDIT! *****
+#
+name        "PS_IRSSettlementIn"
+description ""
+
+groups {
+}
+
+decls[FParameters] {
+}
+
+clx FObject [FParameters] {
+  IRSCitynetMT950InParams =
+  archiveFilePath=C:\temp\mt950\archive
+  inputFilePath=c:\temp\mt950
+  logFilename=IRSCitynetMT950In_LOG_{}.txt
+  logFilePath=c:\temp\log
+
+
+}
+
+decls[FPythonCode] {
+}
+
+clx FObject [FPythonCode] {
+  IRSCitynetMT950In
+"""----------------------------------------------------------------------------------------------------
+MODULE:
+    IRSCitynetMT950In
+
+DESCRIPTION:
+    Entry point to invoke the IRSCitynetMT950In run task gui.
+
+-------------------------------------------------------------------------------------------------------"""
+import acm, ael, traceback
+import os
+import ParametersReader
+import FLogger, FRunScriptGUI, InterfaceUtils
+import IRSCitynetMT950InUtils
+
+# get value from FParameter
+mt950InParams = ParametersReader.get_params('IRSCitynetMT950InParams')
+
+log_file_name = mt950InParams['logFilename'].format(acm.Time.DateToday().replace('-', ''))
+path_to_save_mt_950 = mt950InParams['inputFilePath']
+path_to_archive_mt_950 = mt950InParams['archiveFilePath']
+log_file_path = mt950InParams['logFilePath']
+
+
+def initialize_logging(params, logfile_name, app_name):
+    """
+    Initialize logger
+    :param params: parameters
+    :return: FLogger object
+    """
+    logger = None
+    try:
+        logFolder = params['log_folder']
+        logfolderString = logFolder
+        logfile = os.path.join(logfolderString, logfile_name)
+        if logfile == '':
+            logfile = None
+
+        logLevel = params['log_level']
+        level = InterfaceUtils.LogLevelNameToNumber(logLevel)
+        logger = FLogger.FLogger(level=level,
+                                 name=app_name,
+                                 logToPrime=True,
+                                 logToFileAtSpecifiedPath=logfile,
+                                 logToConsole=False)
+    except Exception as err:
+        print('Error in initializing logger {}'.format(err))
+        print(traceback.format_exc())
+    return logger
+
+
+class IRSCitynetMT950In(FRunScriptGUI.AelVariablesHandler):
+    def __init__(self):
+        """
+        Initialize member variables
+        """
+        logLevels = [FLogger.FLogger.INFO, FLogger.FLogger.ERROR, FLogger.FLogger.WARNING, FLogger.FLogger.DEBUG]
+        # NAME = 0  # internal name
+        # TEXT = 1  # GUI Text
+        # TYPE = 2  # object type
+        # VALUES = 3  # valid values
+        # DEFAULT = 4  # default
+        # MANDATORY = 5  # mandatory
+        # MULTI = 6  # multiple selection
+        # TIP = 7  # floating tip
+        # CB = 8  # callback
+        # ENABLED = 9  # enabled
+
+        gui_vars = [
+            ['inputFolder', 'Folder Path_Input', 'string', path_to_save_mt_950, path_to_save_mt_950, 1, 0,
+             'The file path from where the files will be picked. Configure via FParameter', None, 0],
+            ['archiveFolder', 'Folder Path_Archive', 'string', path_to_archive_mt_950, path_to_archive_mt_950, 1, 0,
+             'The file path where the files will be moved after processing. Configure via FParameter', None, 0],
+            ['logToConsole', 'Log to console_Logging', 'int', [1, 0], 1, 1, 0,
+             'Whether logging should be done in the Log Console or not.'],
+            ['log_folder', 'Log folder_Logging', 'string', log_file_path, log_file_path, 0, 0,
+             'Select where to store the log file', None, 0],
+            ['log_level', 'Log level_Logging', 'string', logLevels, FLogger.FLogger.DEBUG, 1, 0]
+        ]
+        self._logger = None
+        FRunScriptGUI.AelVariablesHandler.__init__(self, gui_vars)
+
+    def set_logger(self, logger):
+        """
+        This function sets the logger
+        :param logger: FLogger
+        :return: None
+        """
+        self._logger = logger
+
+    def archive_file(self, swift_file, archive_folder):
+        """
+        This function archives the files
+        :param swift_file: File to archive
+        :param archive_folder: Archive folder
+        :return: None
+        """
+        os.replace(swift_file, os.path.join(archive_folder, swift_file.name))
+
+    def process_task(self, params):
+        """
+        This function processes the task
+        :param params: Parameters
+        :return: None
+        """
+
+        files_processed = list()
+        files_failed = list()
+        self._logger.LOG('Start process_task')
+        input_folder = params['inputFolder']
+        archive_folder = params['archiveFolder']
+
+        if input_folder == archive_folder:
+            self._logger.LOG('Input and archive folders cannot be same.')
+        else:
+            with os.scandir(input_folder) as dir_iter:
+                for swift_mt_file in dir_iter:
+                    if swift_mt_file.name.endswith('.txt'):  # process only txt files.
+                        try:
+                            processed_successfully = True
+                            with open(swift_mt_file) as swift_file:
+                                mt_950 = swift_file.read()
+                                mt_950_list = IRSCitynetMT950InUtils.swift_message_to_list(mt_950)
+                                msg_id = IRSCitynetMT950InUtils.get_message_identifier_from_message_list(mt_950_list)
+                                self._logger.LOG(
+                                    'Processing MT950 with Transaction Reference Number {}.'.format(msg_id))
+                                success_result, failed_result, log_from_process = IRSCitynetMT950InUtils.process_input_data(mt_950_list)
+                                if success_result:
+                                    self._logger.LOG(
+                                        'Account number {} updated with closing balance in ADS.'.format(','.join(success_result)))
+
+                                if failed_result:
+                                    self._logger.LOG(
+                                        'Account with number {} not found in ADS.'.format(','.join(failed_result)))
+                                    processed_successfully = False
+                                    
+                                if log_from_process:
+                                    self._logger.LOG(log_from_process)
+                                    
+                        except Exception as err:
+                            processed_successfully = False
+                            self._logger.LOG('Error while processing file {}. {}.'.format(swift_mt_file.name, err))
+                            self._logger.LOG(traceback.format_exc())
+
+                        if processed_successfully:
+                            self.archive_file(swift_mt_file, archive_folder)
+                            files_processed.append(swift_mt_file.name)
+                        else:
+                            files_failed.append(swift_mt_file.name)
+
+        self._logger.LOG(
+            '--------------------------Stats Summary Start-------------------------------------------------')
+        self._logger.LOG(
+            'Files processed successfully. {}'.format('Zero' if not files_processed else ', '.join(files_processed)))
+        self._logger.LOG('Files failed. {}'.format('Zero' if not files_failed else ', '.join(files_failed)))
+        self._logger.LOG('--------------------------Stats Summary End-------------------------------------------------')
+
+        self._logger.LOG('Finish process_task')
+
+
+ael_gui_parameters = {'windowCaption': "IRS Citynet MT950 In"}
+
+ael_variables = IRSCitynetMT950In()
+ael_variables.LoadDefaultValues(__name__)
+app_name = 'IRSCitynetMT950In'
+
+
+def ael_main(params):
+    """
+    AEL main function
+    :param params: GUI parameters
+    :return: None
+    """
+    IRS_Citynet_loger = None
+    try:
+        IRS_Citynet_loger = initialize_logging(params, log_file_name, app_name)
+        if IRS_Citynet_loger:
+            IRS_Citynet_loger.LOG('Execution started.')
+            ael_variables.set_logger(IRS_Citynet_loger)
+            ael_variables.process_task(params)
+    except Exception as err:
+        if IRS_Citynet_loger is not None:
+            IRS_Citynet_loger.ELOG(str(err))
+        print(traceback.format_exc())
+        print('Error in ael main. {}'.format(err))
+
+
+
+
+...
+
+  IRSCitynetMT950InUtils
+"""----------------------------------------------------------------------------------------------------
+MODULE:
+    IRSCitynetMT950InUtils
+
+DESCRIPTION:
+    Utils functions.
+
+-------------------------------------------------------------------------------------------------------"""
+import ParametersReader, acm, os
+
+euroClearParams = ParametersReader.get_params('IRSCitynetMT950InParams')
+path_to_save_mt_950 = euroClearParams['inputFilePath']
+ais = acm.FAdditionalInfoSpec['MT950AcntIdentifier']
+
+def swiftmt_to_float(swift_num):
+    """Converts a numeric value from swift to float"""
+    try:
+        swift_num = float(swift_num.replace(',', '.')) if swift_num else None
+    except Exception as e:
+        pass
+    return swift_num
+    
+def get_message_identifier_from_message(swift_msg):
+    swift_list = swift_message_to_list(swift_msg)
+    return get_message_identifier_from_message_list(swift_list)
+
+
+def get_message_identifier_from_message_list(swift_list):
+    ret_val = ''
+    for tag_value in swift_list:
+        if tag_value[0] == '20':
+            ret_val = tag_value[1]
+    return ret_val
+
+
+def process_input_data(swift_list):
+    """ {1:F01BMRIIDJAAXXX3896764125}{2:O9500118210511ANZBAU3MAXXX41892582102105110433N}{3:{108:TSG210511AU28447}}{4:
+        :20:216689SYDNEY
+        :25:216689/00001CURRENT A/C NO.1
+        :28C:00089/00001
+        :60F:C210507AUD4913136,74
+        :61:210510D8,00NTRF0999102048764133//21507202041CS000
+        BLUESCOPE DISTRIBUTION Pty
+        :61:210510D8,00NTRF0916710000057033//21507202008B8G00
+        JAS OCEANIA PTY LTD
+        :61:210510D10,00NTRF0910105003435233//21507151532AGO00
+        ABDUL SAID AHTAR
+        :61:210510D10,00NTRF0912206005366133//21507193059C0800
+        BRISBANE ROAR FOOTBALL CLU
+        :61:210510D10,00NTRF0912212000512733//21507200358CS000
+        AMY CO SO AND ANDRIONO AND
+        :61:210510D10,00NTRF0916805002837633//21507161438CS001
+        ALFAB AUST PTY LTD
+        :61:210510D10,00NTRF0910226000209233//21507153222C0800
+        LOUISE PATRICIA MARY HEWIT
+        :61:210510D10,00NTRF0912211002566933//21507161355B8G00
+        ROBERT FRANCIS DALLIMORE
+        :61:210510D10,00NTRF0916511000575033//21507193105B8G00
+        JASON C TRAN
+        :61:210510D10,00NTRF0999102048757533//21507165644B8G00
+        Online Ventures Pty Ltd
+        :61:210510D10,00NTRF0912219000817833//21507153144B8G00
+        ADLINA ZATALINI
+        :61:210510C30,00NTRFCHG210219013687//21510091837AGO00
+        THE HONGKONG AND SHANGHAI
+        :61:210510C30,00NTRFCHG210219013692//21510091911B8G03
+        THE HONGKONG AND SHANGHAI
+        :61:210510C30,00NTRFCHG210219013686//21510092106B8G01
+        THE HONGKONG AND SHANGHAI
+        :61:210510C30,00NTRFCHG210219013691//21510092110AGO04
+        THE HONGKONG AND SHANGHAI
+        :61:210510C30,00NTRFCHG210219013684//21510092114B8G02
+        THE HONGKONG AND SHANGHAI
+        :61:210510C30,00NTRFCHG210222013963//21510092114CS002
+        THE HONGKONG AND SHANGHAI
+        :62M:C210510AUD4913210,74
+        -}{5:{CHK:050E88751CC4}{DLM:}}
+    """
+
+    success_result = list()
+    failed_result = list()
+    ret_log_str = ''
+
+    account_id = None
+    fa_account_no = None
+    closing_balance_val = None
+    for tag_value in swift_list:
+        if tag_value[0] == '25':
+            account_id = tag_value[1]
+        elif tag_value[0] == '62F':
+            closing_balance_val = tag_value[1]
+
+    if closing_balance_val:  # Only the final message will contain 62F tag
+        #account_id = account_id.split('/')
+
+        #if account_id:
+        #    fa_account_no = account_id[0]
+
+        # 1!a6!n3!a15d  (D/C Mark)(Date)(Currency)(Amount)
+        credit_debit_mark = closing_balance_val[0]
+        date_str = closing_balance_val[1:7]
+        amount_str = swiftmt_to_float(closing_balance_val[10:])
+
+        #fa_accounts = acm.FAccount.Select('account={}'.format(fa_account_no))
+        fa_accounts = find_account(account_id)
+        
+        if not fa_accounts:
+            failed_result.append(account_id)                        
+
+        for acnt in fa_accounts:
+            fa_account_no = str(acnt.Oid())
+            if acnt.Party().IsKindOf(acm.FInternalDepartment):
+                add_info_spec = acm.FAdditionalInfoSpec['ClosingBalance']
+                acnt.AddInfoValue(add_info_spec, "20{}_{}{}".format(date_str, credit_debit_mark, amount_str))
+                acnt.Commit()
+                success_result.append(fa_account_no)
+            else:
+                failed_result.append(fa_account_no)
+                ret_log_str += 'Account {} found in ADS, but not on the Acquirer parties. '.format(fa_account_no)
+                
+    else:
+        ret_log_str = 'Ignoring the message as it does not contain the tag 62F'
+    return success_result, failed_result, ret_log_str
+
+def find_account(account_id):
+    if not account_id:
+        return []
+    add_infos = acm.FAdditionalInfo.Select('addInf={} and fieldValue={}'.format(ais.Oid(), account_id))
+    return [add_info.Parent() for add_info in add_infos]
+    
+    
+def swift_message_to_list(swift_msg, mt_msg_type=''):
+    """ Create list of tagValue pair for each swift tag"""
+    try:
+        swift_rows = swift_msg.split('\n')
+        tag_value_list = []
+        flag = False
+        desc = ''
+        for line in swift_rows:
+            line = line.strip()
+            if desc and line and line[0] == ':' and mt_msg_type in ['MT598_130', 'MT598_131', 'MT598_132']:
+                flag = False
+                tag_value_list.append(['79', desc])
+                desc = ''
+            if line.startswith('{1:'):
+                continue
+            if line.startswith('-}'):
+                break
+            if flag == True:  # 79
+                desc = desc + line + '\n'
+                continue
+            if line and line[0] == ':':
+                tag_values = line.split(':', 2)
+                if tag_values[1].strip() == '79':
+                    desc = desc + tag_values[2].strip() + '\n'
+                    flag = True
+                else:
+                    tag_value_list.append([tag_values[1].strip(),
+                                           tag_values[2].strip()])
+            elif line:
+                tag_value_list[-1][1] = tag_value_list[-1][1] + '\n' + line
+        if flag == True:  # 79
+            tag_value_list.append(['79', desc])
+        return tag_value_list
+    except Exception as error:
+        raise Exception("Invalid swift message format. Unable to parse swift message. Exception : %s" % error)
+
+
+def process_swift_data(swift_data):
+    """
+    This function processes the swift data
+    :param swift_data: Swift message
+    :return: lists
+    """
+    mt_950_list = swift_message_to_list(swift_data)
+    try:
+        file_to_save_name = None
+        for tag_value in mt_950_list:
+            if tag_value[0] == '20':
+                file_to_save_name = '{}.txt'.format(tag_value[1])
+                break
+
+        with open(os.path.join(path_to_save_mt_950, file_to_save_name), 'w') as fp:
+            fp.write(swift_data)
+    except Exception as err:
+        print('Error while saving swift message MT950 {}'.format(err))
+
+    return process_input_data(mt_950_list)
+
+...
+
+}
+

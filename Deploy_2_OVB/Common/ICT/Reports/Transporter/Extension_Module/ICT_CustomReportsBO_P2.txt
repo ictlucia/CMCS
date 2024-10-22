@@ -1,0 +1,2365 @@
+#
+# Front Arena exported extension module.
+# source          ""
+# timestamp (utc) "2024-10-17 07:52:29.6"
+# ***** DO NOT EDIT! *****
+#
+name        "ICT_CustomReportsBO_P2"
+description ""
+
+groups {
+}
+
+decls[FColumnDefinition] {
+  "absSettlementAmount" ( "sheet columns.settlementsheet" ) "";
+  "AmountBuyAudit" ( "sheet columns.tradesheet" ) "";
+  "AmountSellAudit" ( "sheet columns.tradesheet" ) "";
+  "BaseCurrCR" ( "sheet columns.journalsheet" ) "";
+  "BaseCurrDR" ( "sheet columns.journalsheet" ) "";
+  "bulanTradeTime" ( "sheet columns.tradesheet" ) "";
+  "BuySellBank" ( "sheet columns.tradesheet" ) "";
+  "BuySellCustomer" ( "sheet columns.tradesheet" ) "";
+  "CloseRateAllProduct" ( "sheet columns.tradesheet" ) "";
+  "CurrBuyAudit" ( "sheet columns.tradesheet" ) "";
+  "CurrencyCR" ( "sheet columns.journalsheet" ) "";
+  "CurrencyDR" ( "sheet columns.journalsheet" ) "";
+  "currReceive" ( "sheet columns.tradesheet" ) "";
+  "CurrSellAudit" ( "sheet columns.tradesheet" ) "";
+  "Frequency" ( "sheet columns.tradesheet" ) "";
+  "getConvertPriceSGD" ( "sheet columns.portfoliosheet" "sheet columns.settlementsheet" "sheet columns.tradesheet" ) "";
+  "GLNumberSgJournal" ( "sheet columns.journalsheet" ) "";
+  "LSTCPDTE" ( "sheet columns.timesheet" "sheet columns.tradesheet" ) "";
+  "mtmPriceBond" ( "sheet columns.tradesheet" ) "";
+  "nominalConvertPriceSGD" ( "sheet columns.portfoliosheet" "sheet columns.settlementsheet" "sheet columns.tradesheet" ) "";
+  "nominalConvertPriceSGDinThousand" ( "sheet columns.tradesheet" ) "";
+  "nominalHKD" ( "sheet columns.tradesheet" ) "";
+  "origprice_8" ( "sheet columns.tradesheet" ) "";
+  "RateBuyAudit" ( "sheet columns.tradesheet" ) "";
+  "RateSellAudit" ( "sheet columns.tradesheet" ) "";
+  "RemarksJournal" ( "sheet columns.journalsheet" ) "";
+  "StartCashCustom" ( "sheet columns.tradesheet" ) "";
+  "tahunTradeTime" ( "sheet columns.tradesheet" ) "";
+  "tanggalTradeTime" ( "sheet columns.tradesheet" ) "";
+  "tenorInDays" ( "sheet columns.tradesheet" ) "";
+  "tradeTimeLocale" ( "sheet columns.journalsheet" "sheet columns.settlementsheet" ) "";
+}
+
+clx FTradingSheet [FColumnDefinition] {
+  absSettlementAmount =
+  Access=ReadOnly
+  Description=Settlement amount in absolute value
+  ExtensionAttribute=absSettlementAmount
+  Format=
+  GroupLabel=FieldCustom
+  LabelList=absSettlementAmount
+  Name=absSettlementAmount
+
+
+  AmountBuyAudit =
+  Access=ReadOnly
+  Description=if FX and Buy will get Amount else Nominal
+  ExtensionAttribute=AmountBuyAudit
+  Format=
+  GroupLabel=FieldCustom
+  LabelList=Amount (1)
+  Name=Amount (1)
+
+
+  AmountSellAudit =
+  Access=ReadOnly
+  Description=if FX and Sell will get Amount else None
+  ExtensionAttribute=AmountSellAudit
+  Format=
+  GroupLabel=FieldCustom
+  LabelList=Amount (2)
+  Name=Amount (2)
+
+
+  BaseCurrCR =
+  Access=ReadOnly
+  Description=Credit position of base amount of the journal
+  ExtensionAttribute=BaseCurrCR
+  Format=
+  GroupLabel=FieldCustom
+  LabelList=BaseCurrCR
+  Name=BaseCurrCR
+
+
+  BaseCurrDR =
+  Access=ReadOnly
+  Description=Debit position of base amount of the journal
+  ExtensionAttribute=BaseCurrDR
+  Format=
+  GroupLabel=FieldCustom
+  LabelList=BaseCurrDR
+  Name=BaseCurrDR
+
+
+  bulanTradeTime =
+  Access=ReadOnly
+  Description=bulan Trade Time
+  ExtensionAttribute=bulanTradeTime
+  Format=
+  GroupLabel=FieldCustom
+  LabelList=bulanTradeTime
+  Name=bulanTradeTime
+
+
+  BuySellBank =
+  Access=ReadOnly
+  Description=Buy / Sell on Bank Side
+  ExtensionAttribute=BuySellBank
+  Format=
+  GroupLabel=FieldCustom
+  LabelList=BuySellBank
+  Name=BuySellBank
+
+
+  BuySellCustomer =
+  Access=ReadOnly
+  Description=Buy / Sell on Customer Side
+  ExtensionAttribute=BuySellCustomer
+  Format=
+  GroupLabel=FieldCustom
+  LabelList=BuySellCustomer
+  Name=BuySellCustomer
+
+
+  CloseRateAllProduct =
+  Access=ReadOnly
+  Description=Close Rate for all items
+  ExtensionAttribute=CloseRateAllProduct
+  Format=
+  GroupLabel=FieldCustom
+  LabelList=CloseRateAllProduct
+  Name=CloseRateAllProduct
+
+
+  CurrBuyAudit =
+  Access=ReadOnly
+  Description=if FX and Buy will get currency
+  ExtensionAttribute=CurrBuyAudit
+  Format=
+  GroupLabel=FieldCustom
+  LabelList=Curr (1)
+  Name=Curr (1)
+
+
+  CurrencyCR =
+  Access=ReadOnly
+  Description=Credit position of amount of the journal
+  ExtensionAttribute=CurrencyCR
+  Format=
+  GroupLabel=FieldCustom
+  LabelList=CurrencyCR
+  Name=CurrencyCR
+
+
+  CurrencyDR =
+  Access=ReadOnly
+  Description=Debit position of amount of the journal
+  ExtensionAttribute=CurrencyDR
+  Format=
+  GroupLabel=FieldCustom
+  LabelList=CurrencyDR
+  Name=CurrencyDR
+
+
+  currReceive =
+  Access=ReadOnly
+  Description=Get Receive Currency for dual currency product
+  ExtensionAttribute=currReceive
+  Format=
+  GroupLabel=FieldCustom
+  LabelList=currReceive
+  Name=currReceive
+
+
+  CurrSellAudit =
+  Access=ReadOnly
+  Description=if FX and Sell will get currency
+  ExtensionAttribute=CurrSellAudit
+  Format=
+  GroupLabel=FieldCustom
+  LabelList=Curr (2)
+  Name=Curr (2)
+
+
+  Frequency =
+  Access=ReadOnly
+  Description=Frequency
+  ExtensionAttribute=Frequency
+  Format=
+  GroupLabel=FieldCustom
+  LabelList=Frequency
+  Name=Frequency
+
+
+  getConvertPriceSGD =
+  Access=ReadOnly
+  Description=Convert Ntr Price to SGD
+  ExtensionAttribute=getConvertPriceSGD
+  Format=SixDecimalDetailedShowZero
+  GroupLabel=FieldCustom
+  LabelList=getConvertPriceSGD
+  Name=getConvertPriceSGD
+
+
+  GLNumberSgJournal =
+  Access=ReadOnly
+  Description=GL Number for SG
+  ExtensionAttribute=GLNumberSgJournal
+  Format=
+  GroupLabel=FieldCustom
+  LabelList=GLNumberSgJournal
+  Name=GLNumberSgJournal
+
+
+  LSTCPDTE =
+  Access=ReadOnly
+  Description=Last Payment Date in cashflow
+  ExtensionAttribute=LSTCPDTE
+  Format=
+  GroupLabel=FieldCustom
+  LabelList=LSTCPDTE
+  Name=LSTCPDTE
+
+
+  mtmPriceBond =
+  Access=ReadOnly
+  Description=
+  ExtensionAttribute=mtmPriceBond
+  Format=
+  GroupLabel=FieldCustom
+  LabelList=mtmPriceBond
+  Name=mtmPriceBond
+
+
+  nominalConvertPriceSGD =
+  Access=ReadOnly
+  Description=Nominal * NTR SGD
+  ExtensionAttribute=nominalConvertPriceSGD
+  Format=
+  GroupLabel=FieldCustom
+  LabelList=NominalConvertToSGD
+  Name=NominalConvertToSGD
+
+
+  nominalConvertPriceSGDinThousand =
+  Access=ReadOnly
+  Description=Convert Ntr Price to SGD / 1000
+  ExtensionAttribute=nominalConvertPriceSGDinThousand
+  Format=
+  GroupLabel=FieldCustom
+  LabelList=nominalConvertPriceSGDinThousand
+  Name=nominalConvertPriceSGDinThousand
+
+
+  nominalHKD =
+  Access=ReadOnly
+  Description=nominalHKD
+  ExtensionAttribute=nominalHKD
+  Format=
+  GroupLabel=FieldCustom
+  LabelList=nominalHKD
+  Name=nominalHKD
+
+
+  origprice_8 =
+  Access=ReadOnly
+  Description=Price value based on product type
+  ExtensionAttribute=origprice_8
+  Format=
+  GroupLabel=FieldCustom
+  LabelList=origprice_8
+  Name=origprice_8
+
+
+  RateBuyAudit =
+  Access=ReadOnly
+  Description=rate Value
+  ExtensionAttribute=RateBuyAudit
+  Format=
+  GroupLabel=FieldCustom
+  LabelList=Rate (1)
+  Name=Rate (1)
+
+
+  RateSellAudit =
+  Access=ReadOnly
+  Description=rate Value
+  ExtensionAttribute=RateSellAudit
+  Format=
+  GroupLabel=FieldCustom
+  LabelList=Rate (2)
+  Name=Rate (2)
+
+
+  RemarksJournal =
+  Access=RemarksJournal
+  Description=if Manual Journal > Journal Desc ; else, > BIC Code
+  ExtensionAttribute=RemarksJournal
+  Format=
+  GroupLabel=FieldCustom
+  LabelList=RemarksJournal
+  Name=RemarksJournal
+
+
+  StartCashCustom =
+  Access=ReadOnly
+  Description=Start cash of transaction
+  ExtensionAttribute=StartCashCustom
+  Format=
+  GroupLabel=FieldCustom
+  LabelList=StartCashCustom
+  Name=StartCashCustom
+
+
+  tahunTradeTime =
+  Access=ReadOnly
+  Description=tahun Trade Time
+  ExtensionAttribute=tahunTradeTime
+  Format=
+  GroupLabel=FieldCustom
+  LabelList=tahunTradeTime
+  Name=tahunTradeTime
+
+
+  tanggalTradeTime =
+  Access=ReadOnly
+  Description=tanggal Trade Time
+  ExtensionAttribute=tanggalTradeTime
+  Format=
+  GroupLabel=FieldCustom
+  LabelList=tanggalTradeTime
+  Name=tanggalTradeTime
+
+
+  tenorInDays =
+  Access=ReadOnly
+  Description=Tenor In Days
+  ExtensionAttribute=tenorInDays
+  Format=
+  GroupLabel=FieldCustom
+  LabelList=tenorInDays
+  Name=tenorInDays
+
+
+  tradeTimeLocale =
+  Access=ReadOnly
+  Description=Trade time using local computer format
+  ExtensionAttribute=tradeTimeLocale
+  Format=
+  GroupLabel=FieldCustom
+  LabelList=tradeTimeLocale
+  Name=tradeTimeLocale
+
+
+}
+
+decls[FExtensionAttribute] {
+  "nominalConvertPriceSGD" ( "sheet columns.portfoliosheet" ) "";
+}
+
+clx FASQLQueryFolder [FExtensionAttribute] {
+  Frequency = py("Report_PythonBO_P2", context).TotalAmountIdrFasqlSettlement(false);
+}
+
+clx FConfirmation [FExtensionAttribute] {
+  CurrBuyAudit = py("Report_PythonBO_P2", context).currencyBaseOnCategory(true, object.Trade);
+  CurrSellAudit = py("Report_PythonBO_P2", context).currencyBaseOnCategory(false, object.Trade);
+}
+
+clx FInstrumentAndTrades [FExtensionAttribute] {
+  BaseCurrCR = ;
+  Frequency = object.Trades.Size;
+}
+
+clx FJournal [FExtensionAttribute] {
+  BaseCurrCR = select(object.BaseAmount < 0, 
+  true->abs(object.BaseAmount));
+  BaseCurrDR = select(object.BaseAmount > 0, 
+  true->abs(object.BaseAmount));
+  CurrBuyAudit = py("Report_PythonBO_P2", context).currencyBaseOnCategory(true, object.Trade);
+  CurrencyCR = select(object.Amount < 0, 
+  true->abs(object.Amount));
+  CurrencyDR = select(object.Amount > 0, 
+  true->abs(object.Amount));
+  CurrSellAudit = py("Report_PythonBO_P2", context).currencyBaseOnCategory(false, object.Trade);
+  GLNumberSgJournal = py("Report_PythonBO_P2", context).GLNumberSgJournal(object);
+  RemarksJournal = select(object.ManualJournal, 
+  false->object.Counterparty.Swift, 
+  true->object.AdditionalInfo.JournalNarrative1);
+  tradeTimeLocale = py("Report_PythonBO_P2", context).dateLocale(object.JournalTrade.TradeTimeDateOnly);
+}
+
+clx FMultiInstrumentAndTrades [FExtensionAttribute] {
+  CurrBuyAudit = py("Report_PythonBO_P2", context).currencyBaseOnCategory(true, object.Trades.AsArray.First);
+  mtmPriceBond = select(object.GrouperOnLevel.DisplayName, 
+  "Currency"->sumOf(children :* "mtmPriceBond"));
+  nominalConvertPriceSGD = sumOf(children :* "nominalConvertPriceSGD");
+  nominalConvertPriceSGDinThousand = int(round(sumOf(children :* "nominalConvertPriceSGDinThousand")));
+  StartCashCustom = select(object.GrouperOnLevel.DisplayName, 
+  "Currency"->sumOf(children :* "StartCashCustom"), 
+  "Trade Currency"->sumOf(children :* "StartCashCustom"));
+}
+
+clx FPortfolioInstrumentAndTrades [FExtensionAttribute] {
+  CurrBuyAudit = select(object.Trades.Size > 0, 
+  true->py("Report_PythonBO_P2", context).currencyBaseOnCategory(true, object.Trades.AsArray.First));
+  getConvertPriceSGD = ;
+  nominalConvertPriceSGD = sumOf(children :* "nominalConvertPriceSGD");
+  nominalConvertPriceSGDinThousand = int(round(sumOf(children :* "nominalConvertPriceSGDinThousand")));
+  nominalHKD = sumOf(children :* "nominalHKD");
+  StartCashCustom = ;
+}
+
+clx FSettlement [FExtensionAttribute] {
+  absSettlementAmount = abs(object.Amount);
+  AmountBuyAudit = py("Report_PythonBO_P2", context).amountBaseOnCategory(true, object.Trade);
+  AmountSellAudit = py("Report_PythonBO_P2", context).amountBaseOnCategory(false, object.Trade);
+  CurrBuyAudit = py("Report_PythonBO_P2", context).currencyBaseOnCategory(true, object.Trade);
+  CurrSellAudit = py("Report_PythonBO_P2", context).currencyBaseOnCategory(false, object.Trade);
+  Frequency = 1;
+  getConvertPriceSGD = py("Report_PythonBO_P2", context).getConvertPrice(object.Currency.Name, "SGD");
+  nominalConvertPriceSGD = select(object.Currency.Name, 
+  "SGD"->abs(object.Amount), 
+  default->abs(object.Amount) * getConvertPriceSGD);
+  tradeTimeLocale = py("Report_PythonBO_P2", context).dateLocale(object.Trade.TradeTimeDateOnly);
+}
+
+clx FSettlementMultiItem [FExtensionAttribute] {
+  absSettlementAmount = sumOf((object.Settlements.AsArray) :* "absSettlementAmount");
+  Frequency = object.Settlements.Size;
+  nominalConvertPriceSGD = sumOf((object.Settlements.AsArray) :* "nominalConvertPriceSGD");
+}
+
+clx FSingleInstrumentAndTrades [FExtensionAttribute] {
+  CurrBuyAudit = py("Report_PythonBO_P2", context).currencyBaseOnCategory(true, object.Trades.AsArray.First);
+  getConvertPriceSGD = py("Report_PythonBO_P2", context).getConvertPrice(CurrBuyAudit, "SGD");
+}
+
+clx FTradeRow [FExtensionAttribute] {
+  AmountBuyAudit = py("Report_PythonBO_P2", context).amountBaseOnCategory(true, object.Trade);
+  AmountSellAudit = py("Report_PythonBO_P2", context).amountBaseOnCategory(false, object.Trade);
+  BaseCurrCR = ;
+  bulanTradeTime = string(object.Trade.TradeTimeDateOnly).Split("-").At(1);
+  BuySellBank = select(BuySellCustomer, 
+  "Buy"->"Sell", 
+  "Sell"->"Buy");
+  BuySellCustomer = select(object.Trade.OptKey4.Name, 
+  "MDCI"->"Sell", 
+  "MMLD"->"Buy", 
+  "MLDR"->"Buy", 
+  "CCS"->select(object.Instrument.FirstReceiveLeg.Currency.Name == "IDR", 
+    true->"Buy", 
+    false->"Sell"), 
+  default->select(object.Trade.BoughtAsString == "Buy", 
+    true->"Sell", 
+    false->"Buy"));
+  CloseRateAllProduct = select(object.Trade.OptKey3.Name, 
+  "BOND"->py("Report_PythonBO_P2", context).getConvertPrice(object.Trade.Instrument.Name, "IDR", false), 
+  "REPO"->py("Report_PythonBO_P2", context).getConvertPrice(Collateral, "IDR", false), 
+  "REVREPO"->py("Report_PythonBO_P2", context).getConvertPrice(Collateral, "IDR", false), 
+  "DL"->select(object.Trade.Instrument.FirstLeg.LegType, 
+    "Fixed"->nil, 
+    "Float"->py("Report_PythonBO_P2", context).getConvertPrice(object.Trade.Instrument.FirstLeg.FloatPriceReference.Name, trade.Currency.Name, false)), 
+  default->select(object.Trade.CurrencyPair <> nil, 
+    true->py("Report_PythonBO_P2", context).getConvertPrice(object.Trade.CurrencyPair.Currency1.Name, object.Trade.CurrencyPair.Currency2.Name, false), 
+    false->py("Report_PythonBO_P2", context).getConvertPrice(object.Trade.Currency.Name, "IDR", false)));
+  CurrBuyAudit = py("Report_PythonBO_P2", context).currencyBaseOnCategory(true, object.Trade);
+  currReceive = select(object.Trade.OptKey4.Name, 
+  "CCS"->object.Instrument.RecLeg.Currency.Name, 
+  default->object.Trade.Currency.Name);
+  CurrSellAudit = py("Report_PythonBO_P2", context).currencyBaseOnCategory(false, object.Trade);
+  Frequency = object.Trades.Size;
+  getConvertPriceSGD = select(object.Trade.OptKey4.Name, 
+  "CCS"->py("Report_PythonBO_P2", context).getConvertPrice(object.Instrument.RecLeg.Currency.Name, "SGD"), 
+  default->py("Report_PythonBO_P2", context).getConvertPrice(CurrBuyAudit, "SGD"));
+  LSTCPDTE = py("Report_PythonBO_P2", context).lstcpdte(object.Trade.MoneyFlows);
+  mtmPriceBond = select(closingPriceBond <> nil, 
+  true->select(origprice_8 <> nil, 
+    true->(closingPriceBond - origprice_8) * object.Trade.Nominal / 100, 
+    false->(closingPriceBond - 0) * object.Trade.Nominal / 100), 
+  false->select(origprice_8 <> nil, 
+    true->(0 - origprice_8) * object.Trade.Nominal / 100, 
+    false->(0 - 0) * object.Trade.Nominal / 100));
+  nominalConvertPriceSGD = select(object.Portfolio.Name, 
+  "NOSTRO TRANSFER"->py("Report_PythonBO_P2", context).TradeNominalUsingSettAmount(object.Trade), 
+  default->select(currReceive, 
+    "SGD"->abs(StartCashCustom), 
+    default->abs(StartCashCustom) * getConvertPriceSGD));
+  nominalConvertPriceSGDinThousand = nominalConvertPriceSGD / 1000;
+  nominalHKD = select(object.Trade.OptKey3.Name, 
+  "FX"->py("Report_PythonBO_P2", context).getConvertPriceTradeDate(object.Trade, "HKD") * select(object.Trade.Quantity > 0, 
+    true->object.Trade.Nominal, 
+    false->object.Trade.Premium));
+  origprice_8 = py("Report_PythonBO_P2", context).origprice_8(object.Trade);
+  RateBuyAudit = py("Report_PythonBO_P2", context).rateBaseOnCategory(true, object.Trade);
+  RateSellAudit = py("Report_PythonBO_P2", context).rateBaseOnCategory(false, object.Trade);
+  StartCashCustom = select(object.Trade.OptKey4.Name, 
+  "CCS"->abs(object.Trade.StartCash) * abs(object.Instrument.RecLeg.NominalFactor), 
+  default->abs(object.Trade.StartCash));
+  tahunTradeTime = string(object.Trade.TradeTimeDateOnly).Split("-").At(0);
+  tanggalTradeTime = string(object.Trade.TradeTimeDateOnly).Split("-").At(2);
+  tenorInDays = acm.Time.DateDifference(object.Trade.Instrument.EndDate, object.Trade.ValueDay);
+  tradeTimeLocale = py("Report_PythonBO_P2", context).dateLocale(object.Trade.TradeTimeDateOnly);
+}
+
+decls[FPythonCode] {
+  "Report_PythonBO_P2" ( "sheet columns.tradesheet" ) "";
+}
+
+clx FObject [FPythonCode] {
+  im_purpose_P2
+
+import acm, ael
+from datetime import date, datetime
+import locale, os
+from Report_Python import get_Collateral
+
+def getConvertPriceLatest(t, trdnbr, currTo, p3, p4, p5, p6, p7, p8, p9):
+    trade = acm.FTrade[trdnbr]
+    isBought = trade.Bought()
+    currFrom = trade.CurrencyPair().Currency1().Name() if isBought else trade.CurrencyPair().Currency2().Name()
+    
+    if currFrom == currTo : 
+        return 1
+    
+    query = f"instrument IN ('{currFrom}', '{currTo}') AND currency IN ('{currFrom}', '{currTo}') AND historical = true AND market = 'EOD_MtM' AND day >= '{acm.Time().DateToday()}' "
+    prices = acm.FPrice.Select(query)
+    
+    if prices: 
+        priceUse = prices.Last()
+    else :
+        return 0
+    
+    if priceUse.Instrument().Name() != currTo:
+        return priceUse.Settle()
+    else :
+        return 1 / priceUse.Settle()
+
+def getPriceUSD(currFrom, date):
+    
+    query = f"instrument IN ('{currFrom}', 'USD') AND currency IN ('{currFrom}', 'USD') AND historical = true AND market = 'EOD_MtM' AND day = '{date}'"
+    prices = acm.FPrice.Select(query)
+        
+    if prices: 
+        priceUse = prices.Last()
+    else :
+        return 0
+    
+    if priceUse.Instrument().Name() != currFrom:
+        return priceUse.Settle()
+    else :
+        return 1 / priceUse.Settle()
+
+
+def getConvertPriceTradeDate(t, trdnbr, currTo, p3, p4, p5, p6, p7, p8, p9):
+    trade = acm.FTrade[trdnbr]
+    isBought = trade.Bought()
+    currFrom = trade.CurrencyPair().Currency1().Name() if isBought else trade.CurrencyPair().Currency2().Name()
+    tradeDate = trade.TradeTimeDateOnly()
+    
+    if currFrom == currTo : 
+        return 1
+    
+    if "USD" in [currFrom, currTo]:
+        return getPriceUSD(currTo, tradeDate)
+    else :
+        price1 = getPriceUSD(currFrom, tradeDate)
+        price2 = getPriceUSD(currTo, tradeDate)
+        return abs(price1 - price2)
+        
+
+def getPortTradingBook(p, prfnbr, getBranch, p3, p4, p5, p6, p7, p8, p9):
+    port = acm.FPhysicalPortfolio[prfnbr]
+    GoLoop = True    
+    while GoLoop:
+        parentPort = port.MemberLinks().First().OwnerPortfolio()
+        
+        if None in [parentPort, port]:
+            return None
+        
+        if parentPort.Name() in ["BMHK - Banking", "BMHK - Trading"]:
+            compoundName = parentPort.Name().replace("Banking", "Bank").replace("Trading", "Trd")
+            branch, portType = compoundName.split(" - ")
+            return branch if getBranch else portType
+        
+        if port.Name() == parentPort.Name():
+            return None
+            
+        port = parentPort
+
+def partyTypeGroup(py, partyType, p2, p3, p4, p5, p6, p7, p8, p9):
+    dictPartyGroup = {
+        "Bank" : ["Bank"],
+        "NonBank" : ["Lbg.Kg.Non Bank"],
+        "Corporates" : ["Badan Usaha Sws", "BUMN", "BUMD"],
+    }
+    
+    if partyType in dictPartyGroup["Bank"]:
+        return "Bank"
+    elif partyType in dictPartyGroup["NonBank"]:
+        return "NonBank"
+    elif partyType in dictPartyGroup["Corporates"]:
+        return "Corporates"
+    else :
+        return "Other"
+
+...
+
+  Report_PythonBO_P2
+
+import acm, ael
+from datetime import date, datetime
+import locale, os
+from Report_Python import get_Collateral
+
+def lstcpdte(mfs):
+    payDates = [mf.PayDate() for mf in mfs]
+    payDates.sort(reverse=True)
+    for payDate in payDates:
+        if acm.Time().DateDifference(acm.Time().DateToday(), payDate) >= 0:
+            datetimeUse = datetime.strptime(payDate, "%Y-%m-%d").strftime("%x")
+            return datetimeUse
+
+def getConvertPrice(currFrom, currTo, fromYst = True):
+    if currFrom == currTo : 
+        return 1
+        
+    calendar = acm.FCalendar['Jakarta']
+    today = acm.Time.DateToday()
+    yesterday = acm.Time.DateAdjustPeriod(today,'-1d',calendar,2)
+    
+    dayQuery = f"day >= '{yesterday}' and day <= '{today}'" if fromYst else "day = TODAY"
+    
+    query = f"instrument IN ('{currFrom}', '{currTo}') AND currency IN ('{currFrom}', '{currTo}') AND historical = true AND market = 'EOD_MtM' and {dayQuery}"
+    prices = acm.FPrice.Select(query)
+    
+    if prices: 
+        priceUse = prices.Last()
+    else :
+        return 0
+    
+    if priceUse.Instrument().Name() != currTo:
+        return priceUse.Settle()
+    else :
+        return 1 / priceUse.Settle()
+
+def TradeNominalUsingSettAmount(trade):
+    amountL = [abs(sett.Amount() * getConvertPrice(sett.Currency().Name(), "SGD")) for sett in trade.Settlements().AsArray()]
+    
+    return sum(amountL)
+
+def currencyBaseOnCategory(forCurr1, trade):
+    if str(trade.OptKey4AsEnum()) in ["MDCI", "MMLD"]:
+        if forCurr1:
+            return trade.Currency().Name()
+        else :
+            option_trade = [x for x in trade.DealPackage().Trades().AsArray() if "deposit/loan" not in str(x.InstrumentSubType()).lower()][0]
+            curr1, curr2 = option_trade.CurrencyPair().Currency1().Name(), option_trade.CurrencyPair().Currency2().Name()
+            return curr1 if trade.Currency().Name() != curr1 else curr2
+    else :
+        if trade.CurrencyPair():
+            return trade.CurrencyPair().Currency1().Name() if forCurr1 else trade.CurrencyPair().Currency2().Name()
+        else :
+            return trade.Currency().Name() if forCurr1 else trade.Currency().Name() if trade.Instrument().InsType() == "BasketRepo/Reverse" else ""
+ 
+def amountBaseOnCategory(forCurr1, trade, asin=False):
+    if str(trade.OptKey4AsEnum()) in ["MDCI", "MMLD", "MLDR"]:
+        if forCurr1:
+            depo_trade = [x for x in trade.DealPackage().Trades().AsArray() if "deposit/loan" in str(x.InstrumentSubType()).lower()][0]
+            return round(depo_trade.Premium(), 2)
+        else :
+            option_trade = [x for x in trade.DealPackage().Trades().AsArray() if "deposit/loan" not in str(x.InstrumentSubType()).lower()][0]
+            return round(option_trade.FaceValue(), 2) if str(trade.OptKey4AsEnum()) != "MLDR" else None
+    elif str(trade.OptKey4AsEnum()) == "MCS":
+        nominal = round(trade.Nominal(), 2)
+        nominal2 = round(nominal * trade.Instrument().StrikePrice(), 2)
+        return nominal if forCurr1 else nominal2
+    else :
+        if trade.CurrencyPair():
+            if str(trade.OptKey4AsEnum()) == "CCS" :
+                nominal = round(trade.Nominal(), 2)
+                nominal2 = round(nominal * trade.Instrument().FirstReceiveLeg().NominalFactor(), 2) 
+                if trade.Instrument().FirstReceiveLeg().Currency().Name() != trade.CurrencyPair().Currency2().Name() :
+                    return nominal2 if forCurr1 else nominal
+                else :
+                    return nominal if forCurr1 else nominal2
+            elif str(trade.OptKey4AsEnum()) == "OPT" :
+                return round(trade.Quantity(), 2) if forCurr1 else round(trade.Quantity() * trade.Instrument().StrikePrice(), 0)
+            else :
+                return round(trade.Position(), 2) if forCurr1 else round(trade.Premium(), 2)
+        elif trade.Instrument().InsType() == "BasketRepo/Reverse":
+            return round(trade.StartCash(), 2) if forCurr1 else (round(trade.StartCash(), 2) - get_cashflow_proj_interest_amt(trade)) * -1
+        else :
+            return None if asin else round(trade.Nominal(), 2)
+ 
+def rateBaseOnCategory(forCurr1, trade):
+    if trade.OptKey4AsEnum() == "MDCI":
+        option_trade = [x for x in trade.DealPackage().Trades().AsArray() if "deposit/loan" not in str(x.InstrumentSubType()).lower()][0]
+        return option_trade.Instrument().StrikePrice() if forCurr1 else None
+    elif trade.OptKey4AsEnum() in ["MMLD", "MLDR"]:
+        depo_trade = [x for x in trade.DealPackage().Trades().AsArray() if "deposit/loan" in str(x.InstrumentSubType()).lower()][0]
+        option_trade = [x for x in trade.DealPackage().Trades().AsArray() if "deposit/loan" not in str(x.InstrumentSubType()).lower()][0]
+        return depo_trade.Instrument().FirstLeg().FixedRate() if forCurr1 else option_trade.Price()
+    else :
+        if trade.CurrencyPair():
+            return round(trade.Price(), 0) if forCurr1 else None
+        else :
+            try :
+                return None if forCurr1 else round(trade.Instrument().FirstLeg().FixedRate(), 0)
+            except :
+                return None if forCurr1 else round(trade.Price(), 0)
+
+def dateLocale(date):
+    return datetime.strptime(str(date), "%Y-%m-%d").strftime("%x")
+    
+def origprice_8(trade):
+    optkey3 = trade.OptKey3().Name().lower()
+    optkey4 = trade.OptKey4().Name().lower()
+    
+    if optkey3 == "bond": 
+        return trade.Price()
+    if optkey3 == "fx":
+        return trade.Price()
+    if optkey3 == "dl":
+        return None
+    if optkey4 == "ccs":
+        return 1 / trade.Instrument().FirstReceiveLeg().NominalFactor()
+    if optkey4 == "irs":
+        return trade.Instrument().FirstLeg().FixedRate()
+    if "repo" in optkey3:
+        collTrade = get_Collateral(trade)
+        return collTrade[0].Price() if collTrade else None
+
+def GLNumberSgJournal(journal):
+    glno = str(journal.AccountNumber())
+    country = journal.Counterparty().Country().lower()
+    bookAccount = journal.Book().Name().lower()
+    
+    if country in ["singapore", "sg", "", None]:
+        return glno + "011" if "acu" in bookAccount else glno + "012" if "dbu" in bookAccount else None
+    elif country in ["indonesia", "id"]:
+        return glno + "031" if "acu" in bookAccount else glno + "032" if "dbu" in bookAccount else None
+    else :
+        return glno + "021" if "acu" in bookAccount else glno + "022" if "dbu" in bookAccount else None
+
+def amountThresholdAppRule(AppliedRule, p1, p2, p3, p4, p5, p6, p7, p8, p9):
+    return float(acm.FAppliedRule[p1].ThresholdValues().First().ValueAdjusted())
+
+def amountThresholdAppRule(AppliedRule, p1, p2, p3, p4, p5, p6, p7, p8, p9):
+    return float(acm.FAppliedRule[p1].ThresholdValues().First().ValueAdjusted())
+
+def getUtilizationValThreshold(tv, p1, p2, p3, p4, p5, p6, p7, p8, p9):
+    try :
+        return float(acm.FThresholdValue[int(p1)].ResultsHistory()[0].ValuesHistory().Last().Watermark())
+    except:
+        return 0
+
+def getPriceUSD(currFrom, date):
+    
+    query = f"instrument IN ('{currFrom}', 'USD') AND currency IN ('{currFrom}', 'USD') AND historical = true AND market = 'EOD_MtM' AND day = '{date}'"
+    prices = acm.FPrice.Select(query)
+        
+    if prices: 
+        priceUse = prices.Last()
+    else :
+        return 0
+    
+    if priceUse.Instrument().Name() != currFrom:
+        return priceUse.Settle()
+    else :
+        return 1 / priceUse.Settle()
+
+
+def getConvertPriceTradeDate(trade, currTo):
+    isBought = trade.Bought()
+    currFrom = trade.CurrencyPair().Currency1().Name() if isBought else trade.CurrencyPair().Currency2().Name()
+    tradeDate = trade.TradeTimeDateOnly()
+    
+    if currFrom == currTo : 
+        return 1
+    
+    if "USD" in [currFrom, currTo]:
+        return getPriceUSD(currTo, tradeDate)
+    else :
+        price1 = getPriceUSD(currFrom, tradeDate)
+        price2 = getPriceUSD(currTo, tradeDate)
+        return abs(price1 - price2)
+
+...
+
+}
+
+decls[FXSLTemplate] {
+  "XlsTemplateHKMOa11" ( "aef reporting.print templates" "aef reporting.secondary templates" "aef reporting.secondary templates xls" "aef reporting.style sheets" ) "";
+  "XlsTemplateSGBO23" ( "aef reporting.secondary templates" "aef reporting.secondary templates xls" ) "";
+}
+
+clx FObject [FXSLTemplate] {
+  XlsTemplateHKMOa11
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+
+    <style>
+        .head1 {
+            text-align: center;
+            font-weight: bold;
+            border: thin solid;
+            width: 7cm;
+        }
+
+        .head2 {
+            text-align: center;
+            border: thin solid;
+        }
+    </style>
+
+</head>
+<body>
+    <table>
+        <tr>
+            <td colspan="13" style="font-weight: bold; text-align: center;">Off-Balance Sheet Exposures in derivatives and securitization transaction</td>
+        </tr>
+        <tr></tr>
+
+        <!-- Section A: derivatives -->
+        <tr>
+            <td colspan="4" style="font-weight: bold;">Section A: derivatives</td>
+        </tr>
+        <tr></tr>
+
+        <!-- Section A: derivatives - Table 1 Trading Book -->
+        <tr>
+            <td colspan="4" style="font-weight: bold; border-bottom: thin solid windowtext;">Table 1 Trading Book</td>
+        </tr>
+        <tr></tr>
+
+        <tr>
+            <td style="width: 1cm;"></td>
+            <td style="width: .6cm;"></td>
+            <td style="width: .6cm;"></td>
+            <td style="width: 11cm;"></td>
+            <td colspan="2" class="head1">Interest Rate</td>
+            <td colspan="2" class="head1">Foreign Exchange</td>
+            <td colspan="2" class="head1">Equity</td>
+            <td colspan="2" class="head1">Commodity</td>
+            <td colspan="2" class="head1">Other</td>
+        </tr>
+
+        <tr>
+            <td colspan="4"></td>
+            <td class="head2">Notional Amount</td>
+            <td class="head2">Current Market Value</td>
+            <td class="head2">Notional Amount</td>
+            <td class="head2">Current Market Value</td>
+            <td class="head2">Notional Amount</td>
+            <td class="head2">Current Market Value</td>
+            <td class="head2">Notional Amount</td>
+            <td class="head2">Current Market Value</td>
+            <td class="head2">Notional Amount</td>
+            <td class="head2">Current Market Value</td>
+        </tr>
+        <tr></tr>
+
+        <!-- Section A: derivatives - Table 1 Trading Book - 1.Exchange-traded derivatives -->
+        <tr>
+            <td style="font-weight: bold; text-align: center;">1</td>
+            <td colspan="3" style="font-weight: bold;">Exchange-traded derivatives</td>
+            <td style="text-align: right; border: thin solid;">0</td>
+            <td style="text-align: right; border: thin solid;">0</td>
+            <td style="text-align: right; border: thin solid;">0</td>
+            <td style="text-align: right; border: thin solid;">0</td>
+            <td style="text-align: right; border: thin solid;">0</td>
+            <td style="text-align: right; border: thin solid;">0</td>
+            <td style="text-align: right; border: thin solid;">0</td>
+            <td style="text-align: right; border: thin solid;">0</td>
+            <td style="text-align: right; border: thin solid;">0</td>
+            <td style="text-align: right; border: thin solid;">0</td>
+        </tr>
+        
+        <!-- Section A: derivatives - Table 1 Trading Book - 2.OTC derivatives other than credit derivatives -->
+        <tr>
+            <td style="font-weight: bold; text-align: center;">2</td>
+            <td colspan="3" style="font-weight: bold;">OTC derivatives other than credit derivatives</td>
+            <td colspan="10"></td>
+        </tr>
+
+        <!-- Section A: derivatives - Table 1 Trading Book - 2.OTC derivatives other than credit derivatives - a. Forward-->
+        <tr>
+            <td></td>
+            <td>(a)</td>
+            <td colspan="2" style="border-bottom: thin solid;">Forward</td>
+            <td style="text-align: right; border: thin solid;">{IRForwardTrd1}</td>
+            <td style="text-align: right; border: thin solid;">{IRForwardTrd2}</td>
+            <td style="text-align: right; border: thin solid;">{FEForwardTrd1}</td>
+            <td style="text-align: right; border: thin solid;">{FEForwardTrd2}</td>
+            <td style="text-align: right; border: thin solid;">{EQForwardTrd1}</td>
+            <td style="text-align: right; border: thin solid;">{EQForwardTrd2}</td>
+            <td style="text-align: right; border: thin solid;">{COForwardTrd1}</td>
+            <td style="text-align: right; border: thin solid;">{COForwardTrd2}</td>
+            <td style="text-align: right; border: thin solid;">{OTForwardTrd1}</td>
+            <td style="text-align: right; border: thin solid;">{OTForwardTrd2}</td>
+        </tr>
+
+        <!-- Section A: derivatives - Table 1 Trading Book - 2.OTC derivatives other than credit derivatives - b. Swaps-->
+        <tr>
+            <td></td>
+            <td>(b)</td>
+            <td colspan="2" style="border-bottom: thin solid;">Swaps</td>
+            <td style="text-align: right; border: thin solid;">{IRSwapsTrd1}</td>
+            <td style="text-align: right; border: thin solid;">{IRSwapsTrd2}</td>
+            <td style="text-align: right; border: thin solid;">{FESwapsTrd1}</td>
+            <td style="text-align: right; border: thin solid;">{FESwapsTrd2}</td>
+            <td style="text-align: right; border: thin solid;">{EQSwapsTrd1}</td>
+            <td style="text-align: right; border: thin solid;">{EQSwapsTrd2}</td>
+            <td style="text-align: right; border: thin solid;">{COSwapsTrd1}</td>
+            <td style="text-align: right; border: thin solid;">{COSwapsTrd2}</td>
+            <td style="text-align: right; border: thin solid;">{OTSwapsTrd1}</td>
+            <td style="text-align: right; border: thin solid;">{OTSwapsTrd2}</td>
+        </tr>
+
+        <!-- Section A: derivatives - Table 1 Trading Book - 2.OTC derivatives other than credit derivatives - c. bought option positions-->
+        <tr>
+            <td></td>
+            <td>(c)</td>
+            <td colspan="2" style="border-bottom: thin solid;">bought option positions</td>
+            <td style="text-align: right; border: thin solid;">{IRBOPTrd1}</td>
+            <td style="text-align: right; border: thin solid;">{IRBOPTrd2}</td>
+            <td style="text-align: right; border: thin solid;">{FEBOPTrd1}</td>
+            <td style="text-align: right; border: thin solid;">{FEBOPTrd2}</td>
+            <td style="text-align: right; border: thin solid;">{EQBOPTrd1}</td>
+            <td style="text-align: right; border: thin solid;">{EQBOPTrd2}</td>
+            <td style="text-align: right; border: thin solid;">{COBOPTrd1}</td>
+            <td style="text-align: right; border: thin solid;">{COBOPTrd2}</td>
+            <td style="text-align: right; border: thin solid;">{OTBOPTrd1}</td>
+            <td style="text-align: right; border: thin solid;">{OTBOPTrd2}</td>
+        </tr>
+
+        <!-- Section A: derivatives - Table 1 Trading Book - 2.OTC derivatives other than credit derivatives - d. written option positions-->
+        <tr>
+            <td></td>
+            <td>(d)</td>
+            <td colspan="2" style="border-bottom: thin solid;">Written option positions</td>
+            <td style="text-align: right; border: thin solid;">{IRWOPTrd1}</td>
+            <td style="text-align: right; border: thin solid;">{IRWOPTrd2}</td>
+            <td style="text-align: right; border: thin solid;">{FEWOPTrd1}</td>
+            <td style="text-align: right; border: thin solid;">{FEWOPTrd2}</td>
+            <td style="text-align: right; border: thin solid;">{EQWOPTrd1}</td>
+            <td style="text-align: right; border: thin solid;">{EQWOPTrd2}</td>
+            <td style="text-align: right; border: thin solid;">{COWOPTrd1}</td>
+            <td style="text-align: right; border: thin solid;">{COWOPTrd2}</td>
+            <td style="text-align: right; border: thin solid;">{OTWOPTrd1}</td>
+            <td style="text-align: right; border: thin solid;">{OTWOPTrd2}</td>
+        </tr>
+
+        <!-- Section A: derivatives - Table 1 Trading Book - 2.OTC derivatives other than credit derivatives - e. Other-->
+        <tr>
+            <td></td>
+            <td>(e)</td>
+            <td colspan="2" style="border-bottom: thin solid;">Other</td>
+            <td style="text-align: right; border: thin solid;">{IROtherTrd1}</td>
+            <td style="text-align: right; border: thin solid;">{IROtherTrd2}</td>
+            <td style="text-align: right; border: thin solid;">{FEOtherTrd1}</td>
+            <td style="text-align: right; border: thin solid;">{FEOtherTrd2}</td>
+            <td style="text-align: right; border: thin solid;">{EQOtherTrd1}</td>
+            <td style="text-align: right; border: thin solid;">{EQOtherTrd2}</td>
+            <td style="text-align: right; border: thin solid;">{COOtherTrd1}</td>
+            <td style="text-align: right; border: thin solid;">{COOtherTrd2}</td>
+            <td style="text-align: right; border: thin solid;">{OTOtherTrd1}</td>
+            <td style="text-align: right; border: thin solid;">{OTOtherTrd2}</td>
+        </tr>
+
+        <!-- Section A: derivatives - Table 1 Trading Book - 2.OTC derivatives other than credit derivatives - Subtotal-->
+        <tr>
+            <td colspan="4" style="font-style: italic; text-align:right;">Subtotal</td>
+            <td style="text-align: right; border: thin solid;">{IRSubtotalTrd1}</td>
+            <td style="text-align: right; border: thin solid;">{IRSubtotalTrd2}</td>
+            <td style="text-align: right; border: thin solid;">{FESubtotalTrd1}</td>
+            <td style="text-align: right; border: thin solid;">{FESubtotalTrd2}</td>
+            <td style="text-align: right; border: thin solid;">{EQSubtotalTrd1}</td>
+            <td style="text-align: right; border: thin solid;">{EQSubtotalTrd2}</td>
+            <td style="text-align: right; border: thin solid;">{COSubtotalTrd1}</td>
+            <td style="text-align: right; border: thin solid;">{COSubtotalTrd2}</td>
+            <td style="text-align: right; border: thin solid;">{OTSubtotalTrd1}</td>
+            <td style="text-align: right; border: thin solid;">{OTSubtotalTrd2}</td>
+        </tr>
+    
+    <tr></tr>
+    
+    <!-- Section A: derivatives - Table 1 Trading Book - 3.Credit derivatives-->
+    <tr>
+        <td colspan="4"></td>
+        <td colspan="2" class="head1">AAA to A-</td>
+        <td colspan="2" class="head1">BBB+ to BBB-</td>
+        <td colspan="2" class="head1">BB+ or below</td>
+        <td colspan="2" class="head1">Unrated</td>
+    </tr>
+
+    <tr>
+        <td colspan="4"></td>
+        <td class="head2">Notional Amount</td>
+        <td class="head2">Current Market Value</td>
+        <td class="head2">Notional Amount</td>
+        <td class="head2">Current Market Value</td>
+        <td class="head2">Notional Amount</td>
+        <td class="head2">Current Market Value</td>
+        <td class="head2">Notional Amount</td>
+        <td class="head2">Current Market Value</td>
+    </tr>
+
+    <tr>
+        <td style="font-weight: bold; text-align: center;">3</td>
+        <td colspan="3" style="font-weight: bold;">Credit derivatives</td>
+        <td colspan="8"></td>
+    </tr>
+
+    <!-- Section A: derivatives - Table 1 Trading Book - 3.Credit derivatives - a.Credit derivatives - bought protection-->
+    <tr>
+        <td></td>
+        <td>(a)</td>
+        <td colspan="2" style="border-bottom: thin solid;">Credit derivatives - bought protection</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+    </tr>
+
+    <!-- Section A: derivatives - Table 1 Trading Book - 3.Credit derivatives - b. Of which: reference entity / reference obligation is-->
+    <tr>
+        <td></td>
+        <td>(b)</td>
+        <td colspan="2">Of which: reference entity / reference obligation is</td>
+        <td colspan="8"></td>
+    </tr>
+
+    <!-- Section A: derivatives - Table 1 Trading Book - 3.Credit derivatives - b. Of which: reference entity / reference obligation is-->
+    <!-- i. Sovereign -->
+    <tr>
+        <td></td>
+        <td></td>
+        <td style="border-bottom: thin solid;">i.</td>
+        <td style="border-bottom: thin solid;">Sovereign</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+    </tr>
+
+    <!-- Section A: derivatives - Table 1 Trading Book - 3.Credit derivatives - b. Of which: reference entity / reference obligation is-->
+    <!-- ii. Public Sector Entity -->
+    <tr>
+        <td></td>
+        <td></td>
+        <td style="border-bottom: thin solid;">ii.</td>
+        <td style="border-bottom: thin solid;">Public Sector Entity</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+    </tr>
+    
+    <!-- Section A: derivatives - Table 1 Trading Book - 3.Credit derivatives - b. Of which: reference entity / reference obligation is-->
+    <!-- iii. Bank -->
+    <tr>
+        <td></td>
+        <td></td>
+        <td style="border-bottom: thin solid;">iii.</td>
+        <td style="border-bottom: thin solid;">Bank</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+    </tr>
+
+    <!-- Section A: derivatives - Table 1 Trading Book - 3.Credit derivatives - b. Of which: reference entity / reference obligation is-->
+    <!-- iv. Non-bank financial institution (e.g. securities firms, insurance firms, investment banks, fund houses) -->
+    <tr>
+        <td></td>
+        <td></td>
+        <td style="border-bottom: thin solid;">iv.</td>
+        <td style="border-bottom: thin solid;">Non-bank financial institution (e.g. securities firms, insurance firms, investment banks, fund houses)</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+    </tr>    
+
+    <!-- Section A: derivatives - Table 1 Trading Book - 3.Credit derivatives - b. Of which: reference entity / reference obligation is-->
+    <!-- v. Investment fund or highly leveraged institution (e.g. hedge funds) -->
+    <tr>
+        <td></td>
+        <td></td>
+        <td style="border-bottom: thin solid;">v.</td>
+        <td style="border-bottom: thin solid;">Investment fund or highly leveraged institution (e.g. hedge funds)</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+    </tr>    
+
+    <!-- Section A: derivatives - Table 1 Trading Book - 3.Credit derivatives - b. Of which: reference entity / reference obligation is-->
+    <!-- vi. Corporate -->
+    <tr>
+        <td></td>
+        <td></td>
+        <td style="border-bottom: thin solid;">vi.</td>
+        <td style="border-bottom: thin solid;">Corporate</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+    </tr>   
+    
+    <!-- Section A: derivatives - Table 1 Trading Book - 3.Credit derivatives - b. Of which: reference entity / reference obligation is-->
+    <!-- vii. Tranche of MBS, ABS, CDO -->
+    <tr>
+        <td></td>
+        <td></td>
+        <td style="border-bottom: thin solid;">vii.</td>
+        <td style="border-bottom: thin solid;">Tranche of MBS, ABS, CDO</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+    </tr>    
+
+    <!-- Section A: derivatives - Table 1 Trading Book - 3.Credit derivatives - b. Of which: reference entity / reference obligation is-->
+    <!-- viii. Other -->
+    <tr>
+        <td></td>
+        <td></td>
+        <td style="border-bottom: thin solid;">viii.</td>
+        <td style="border-bottom: thin solid;">Other</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+    </tr>   
+
+    <!-- Section A: derivatives - Table 1 Trading Book - 3.Credit derivatives - b. Of which: reference entity / reference obligation is-->
+    <!-- Subtotal -->
+    <tr>
+        <td colspan="4" style="font-style: italic; text-align:right;">Subtotal</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+    </tr> 
+
+    <tr></tr>
+    <!-- Section A: derivatives - Table 1 Trading Book - 3.Credit derivatives - c.Credit derivatives - sold protection-->
+    <tr>
+        <td></td>
+        <td>(c)</td>
+        <td colspan="2" style="border-bottom: thin solid;">Credit derivatives - sold protection</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+    </tr>
+
+    <!-- Section A: derivatives - Table 1 Trading Book - 3.Credit derivatives - d. Of which: reference entity / reference obligation is-->
+    <tr>
+        <td></td>
+        <td>(d)</td>
+        <td colspan="2">Of which: reference entity / reference obligation is</td>
+        <td colspan="8"></td>
+    </tr>
+
+    <!-- Section A: derivatives - Table 1 Trading Book - 3.Credit derivatives - d. Of which: reference entity / reference obligation is-->
+    <!-- i. Sovereign -->
+    <tr>
+        <td></td>
+        <td></td>
+        <td style="border-bottom: thin solid;">i.</td>
+        <td style="border-bottom: thin solid;">Sovereign</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+    </tr>
+
+    <!-- Section A: derivatives - Table 1 Trading Book - 3.Credit derivatives - d. Of which: reference entity / reference obligation is-->
+    <!-- ii. Public Sector Entity -->
+    <tr>
+        <td></td>
+        <td></td>
+        <td style="border-bottom: thin solid;">ii.</td>
+        <td style="border-bottom: thin solid;">Public Sector Entity</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+    </tr>
+    
+    <!-- Section A: derivatives - Table 1 Trading Book - 3.Credit derivatives - d. Of which: reference entity / reference obligation is-->
+    <!-- iii. Bank -->
+    <tr>
+        <td></td>
+        <td></td>
+        <td style="border-bottom: thin solid;">iii.</td>
+        <td style="border-bottom: thin solid;">Bank</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+    </tr>
+
+    <!-- Section A: derivatives - Table 1 Trading Book - 3.Credit derivatives - d. Of which: reference entity / reference obligation is-->
+    <!-- iv. Non-bank financial institution (e.g. securities firms, insurance firms, investment banks, fund houses) -->
+    <tr>
+        <td></td>
+        <td></td>
+        <td style="border-bottom: thin solid;">iv.</td>
+        <td style="border-bottom: thin solid;">Non-bank financial institution (e.g. securities firms, insurance firms, investment banks, fund houses)</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+    </tr>    
+
+    <!-- Section A: derivatives - Table 1 Trading Book - 3.Credit derivatives - d. Of which: reference entity / reference obligation is-->
+    <!-- v. Investment fund or highly leveraged institution (e.g. hedge funds) -->
+    <tr>
+        <td></td>
+        <td></td>
+        <td style="border-bottom: thin solid;">v.</td>
+        <td style="border-bottom: thin solid;">Investment fund or highly leveraged institution (e.g. hedge funds)</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+    </tr>    
+
+    <!-- Section A: derivatives - Table 1 Trading Book - 3.Credit derivatives - d. Of which: reference entity / reference obligation is-->
+    <!-- vi. Corporate -->
+    <tr>
+        <td></td>
+        <td></td>
+        <td style="border-bottom: thin solid;">vi.</td>
+        <td style="border-bottom: thin solid;">Corporate</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+    </tr>   
+    
+    <!-- Section A: derivatives - Table 1 Trading Book - 3.Credit derivatives - d. Of which: reference entity / reference obligation is-->
+    <!-- vii. Tranche of MBS, ABS, CDO -->
+    <tr>
+        <td></td>
+        <td></td>
+        <td style="border-bottom: thin solid;">vii.</td>
+        <td style="border-bottom: thin solid;">Tranche of MBS, ABS, CDO</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+    </tr>    
+
+    <!-- Section A: derivatives - Table 1 Trading Book - 3.Credit derivatives - d. Of which: reference entity / reference obligation is-->
+    <!-- viii. Other -->
+    <tr>
+        <td></td>
+        <td></td>
+        <td style="border-bottom: thin solid;">viii.</td>
+        <td style="border-bottom: thin solid;">Other</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+    </tr>   
+
+    <!-- Section A: derivatives - Table 1 Trading Book - 3.Credit derivatives - d. Of which: reference entity / reference obligation is-->
+    <!-- Subtotal -->
+    <tr>
+        <td colspan="4" style="font-style: italic; text-align:right;">Subtotal</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+    </tr> 
+
+    <tr></tr>
+    <tr>
+        <td colspan="4"></td>
+        <td class="head2">Notional Amount</td>
+        <td class="head2">Current Market Value</td>
+    </tr>
+
+    <tr>
+        <td style="font-weight: bold; text-align: center;">4</td>
+        <td colspan="3" style="font-weight: bold;">Total</td>
+        <td style="text-align: right; border: thin solid;">{TotalTrd1}</td>
+        <td style="text-align: right; border: thin solid;">{TotalTrd2}</td>
+    </tr>
+
+    <tr></tr>
+
+    <!-- Section A: derivatives - Table 2 Banking Book -->
+    <tr>
+        <td colspan="4" style="font-weight: bold; border-bottom: thin solid windowtext;">Table 2 Banking Book</td>
+    </tr>
+    <tr></tr>
+
+    <tr>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td colspan="2" class="head1">Interest Rate</td>
+        <td colspan="2" class="head1">Foreign Exchange</td>
+        <td colspan="2" class="head1">Equity</td>
+        <td colspan="2" class="head1">Commodity</td>
+        <td colspan="2" class="head1">Other</td>
+    </tr>
+
+    <tr>
+        <td colspan="4"></td>
+        <td class="head2">Notional Amount</td>
+        <td class="head2">Current Market Value</td>
+        <td class="head2">Notional Amount</td>
+        <td class="head2">Current Market Value</td>
+        <td class="head2">Notional Amount</td>
+        <td class="head2">Current Market Value</td>
+        <td class="head2">Notional Amount</td>
+        <td class="head2">Current Market Value</td>
+        <td class="head2">Notional Amount</td>
+        <td class="head2">Current Market Value</td>
+    </tr>
+    <tr></tr>
+
+    <!-- Section A: derivatives - Table 2 Banking Book - 1.Exchange-traded derivatives -->
+    <tr>
+        <td style="font-weight: bold; text-align: center;">1</td>
+        <td colspan="3" style="font-weight: bold;">Exchange-traded derivatives</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+    </tr>
+    
+    <!-- Section A: derivatives - Table 2 Banking Book - 2.OTC derivatives other than credit derivatives -->
+    <tr>
+        <td style="font-weight: bold; text-align: center;">2</td>
+        <td colspan="3" style="font-weight: bold;">OTC derivatives other than credit derivatives</td>
+        <td colspan="10"></td>
+    </tr>
+
+    <!-- Section A: derivatives - Table 2 Banking Book - 2.OTC derivatives other than credit derivatives - a. Forward-->
+    <tr>
+        <td></td>
+        <td>(a)</td>
+        <td colspan="2" style="border-bottom: thin solid;">Forward</td>
+        <td style="text-align: right; border: thin solid;">{IRForwardBank1}</td>
+        <td style="text-align: right; border: thin solid;">{IRForwardBank2}</td>
+        <td style="text-align: right; border: thin solid;">{FEForwardBank1}</td>
+        <td style="text-align: right; border: thin solid;">{FEForwardBank2}</td>
+        <td style="text-align: right; border: thin solid;">{EQForwardBank1}</td>
+        <td style="text-align: right; border: thin solid;">{EQForwardBank2}</td>
+        <td style="text-align: right; border: thin solid;">{COForwardBank1}</td>
+        <td style="text-align: right; border: thin solid;">{COForwardBank2}</td>
+        <td style="text-align: right; border: thin solid;">{OTForwardBank1}</td>
+        <td style="text-align: right; border: thin solid;">{OTForwardBank2}</td>
+    </tr>
+
+    <!-- Section A: derivatives - Table 2 Banking Book - 2.OTC derivatives other than credit derivatives - b. Swaps-->
+    <tr>
+        <td></td>
+        <td>(b)</td>
+        <td colspan="2" style="border-bottom: thin solid;">Swaps</td>
+        <td style="text-align: right; border: thin solid;">{IRSwapsBank1}</td>
+        <td style="text-align: right; border: thin solid;">{IRSwapsBank2}</td>
+        <td style="text-align: right; border: thin solid;">{FESwapsBank1}</td>
+        <td style="text-align: right; border: thin solid;">{FESwapsBank2}</td>
+        <td style="text-align: right; border: thin solid;">{EQSwapsBank1}</td>
+        <td style="text-align: right; border: thin solid;">{EQSwapsBank2}</td>
+        <td style="text-align: right; border: thin solid;">{COSwapsBank1}</td>
+        <td style="text-align: right; border: thin solid;">{COSwapsBank2}</td>
+        <td style="text-align: right; border: thin solid;">{OTSwapsBank1}</td>
+        <td style="text-align: right; border: thin solid;">{OTSwapsBank2}</td>
+    </tr>
+
+    <!-- Section A: derivatives - Table 2 Banking Book - 2.OTC derivatives other than credit derivatives - c. bought option positions-->
+    <tr>
+        <td></td>
+        <td>(c)</td>
+        <td colspan="2" style="border-bottom: thin solid;">bought option positions</td>
+        <td style="text-align: right; border: thin solid;">{IRBOPBank1}</td>
+        <td style="text-align: right; border: thin solid;">{IRBOPBank2}</td>
+        <td style="text-align: right; border: thin solid;">{FEBOPBank1}</td>
+        <td style="text-align: right; border: thin solid;">{FEBOPBank2}</td>
+        <td style="text-align: right; border: thin solid;">{EQBOPBank1}</td>
+        <td style="text-align: right; border: thin solid;">{EQBOPBank2}</td>
+        <td style="text-align: right; border: thin solid;">{COBOPBank1}</td>
+        <td style="text-align: right; border: thin solid;">{COBOPBank2}</td>
+        <td style="text-align: right; border: thin solid;">{OTBOPBank1}</td>
+        <td style="text-align: right; border: thin solid;">{OTBOPBank2}</td>
+    </tr>
+
+    <!-- Section A: derivatives - Table 2 Banking Book - 2.OTC derivatives other than credit derivatives - d. written option positions-->
+    <tr>
+        <td></td>
+        <td>(d)</td>
+        <td colspan="2" style="border-bottom: thin solid;">Written option positions</td>
+        <td style="text-align: right; border: thin solid;">{IRWOPBank1}</td>
+        <td style="text-align: right; border: thin solid;">{IRWOPBank2}</td>
+        <td style="text-align: right; border: thin solid;">{FEWOPBank1}</td>
+        <td style="text-align: right; border: thin solid;">{FEWOPBank2}</td>
+        <td style="text-align: right; border: thin solid;">{EQWOPBank1}</td>
+        <td style="text-align: right; border: thin solid;">{EQWOPBank2}</td>
+        <td style="text-align: right; border: thin solid;">{COWOPBank1}</td>
+        <td style="text-align: right; border: thin solid;">{COWOPBank2}</td>
+        <td style="text-align: right; border: thin solid;">{OTWOPBank1}</td>
+        <td style="text-align: right; border: thin solid;">{OTWOPBank2}</td>
+    </tr>
+
+    <!-- Section A: derivatives - Table 2 Banking Book - 2.OTC derivatives other than credit derivatives - e. Other-->
+    <tr>
+        <td></td>
+        <td>(e)</td>
+        <td colspan="2" style="border-bottom: thin solid;">Other</td>
+        <td style="text-align: right; border: thin solid;">{IROtherBank1}</td>
+        <td style="text-align: right; border: thin solid;">{IROtherBank2}</td>
+        <td style="text-align: right; border: thin solid;">{FEOtherBank1}</td>
+        <td style="text-align: right; border: thin solid;">{FEOtherBank2}</td>
+        <td style="text-align: right; border: thin solid;">{EQOtherBank1}</td>
+        <td style="text-align: right; border: thin solid;">{EQOtherBank2}</td>
+        <td style="text-align: right; border: thin solid;">{COOtherBank1}</td>
+        <td style="text-align: right; border: thin solid;">{COOtherBank2}</td>
+        <td style="text-align: right; border: thin solid;">{OTOtherBank1}</td>
+        <td style="text-align: right; border: thin solid;">{OTOtherBank2}</td>
+    </tr>
+
+    <!-- Section A: derivatives - Table 2 Banking Book - 2.OTC derivatives other than credit derivatives - Subtotal-->
+    <tr>
+        <td colspan="4" style="font-style: italic; text-align:right;">Subtotal</td>
+        <td style="text-align: right; border: thin solid;">{IRSubtotalBank1}</td>
+        <td style="text-align: right; border: thin solid;">{IRSubtotalBank2}</td>
+        <td style="text-align: right; border: thin solid;">{FESubtotalBank1}</td>
+        <td style="text-align: right; border: thin solid;">{FESubtotalBank2}</td>
+        <td style="text-align: right; border: thin solid;">{EQSubtotalBank1}</td>
+        <td style="text-align: right; border: thin solid;">{EQSubtotalBank2}</td>
+        <td style="text-align: right; border: thin solid;">{COSubtotalBank1}</td>
+        <td style="text-align: right; border: thin solid;">{COSubtotalBank2}</td>
+        <td style="text-align: right; border: thin solid;">{OTSubtotalBank1}</td>
+        <td style="text-align: right; border: thin solid;">{OTSubtotalBank2}</td>
+    </tr>
+    
+    <tr></tr>
+    
+    <!-- Section A: derivatives - Table 2 Banking Book - 3.Credit derivatives-->
+    <tr>
+        <td colspan="4"></td>
+        <td colspan="2" class="head1">AAA to A-</td>
+        <td colspan="2" class="head1">BBB+ to BBB-</td>
+        <td colspan="2" class="head1">BB+ or below</td>
+        <td colspan="2" class="head1">Unrated</td>
+    </tr>
+
+    <tr>
+        <td colspan="4"></td>
+        <td class="head2">Notional Amount</td>
+        <td class="head2">Current Market Value</td>
+        <td class="head2">Notional Amount</td>
+        <td class="head2">Current Market Value</td>
+        <td class="head2">Notional Amount</td>
+        <td class="head2">Current Market Value</td>
+        <td class="head2">Notional Amount</td>
+        <td class="head2">Current Market Value</td>
+    </tr>
+
+    <tr>
+        <td style="font-weight: bold; text-align: center;">3</td>
+        <td colspan="3" style="font-weight: bold;">Credit derivatives</td>
+        <td colspan="8"></td>
+    </tr>
+
+    <!-- Section A: derivatives - Table 2 Banking Book - 3.Credit derivatives - a.Credit derivatives - bought protection-->
+    <tr>
+        <td></td>
+        <td>(a)</td>
+        <td colspan="2" style="border-bottom: thin solid;">Credit derivatives - bought protection</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+    </tr>
+
+    <!-- Section A: derivatives - Table 2 Banking Book - 3.Credit derivatives - b. Of which: reference entity / reference obligation is-->
+    <tr>
+        <td></td>
+        <td>(b)</td>
+        <td colspan="2">Of which: reference entity / reference obligation is</td>
+        <td colspan="8"></td>
+    </tr>
+
+    <!-- Section A: derivatives - Table 2 Banking Book - 3.Credit derivatives - b. Of which: reference entity / reference obligation is-->
+    <!-- i. Sovereign -->
+    <tr>
+        <td></td>
+        <td></td>
+        <td style="border-bottom: thin solid;">i.</td>
+        <td style="border-bottom: thin solid;">Sovereign</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+    </tr>
+
+    <!-- Section A: derivatives - Table 2 Banking Book - 3.Credit derivatives - b. Of which: reference entity / reference obligation is-->
+    <!-- ii. Public Sector Entity -->
+    <tr>
+        <td></td>
+        <td></td>
+        <td style="border-bottom: thin solid;">ii.</td>
+        <td style="border-bottom: thin solid;">Public Sector Entity</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+    </tr>
+    
+    <!-- Section A: derivatives - Table 2 Banking Book - 3.Credit derivatives - b. Of which: reference entity / reference obligation is-->
+    <!-- iii. Bank -->
+    <tr>
+        <td></td>
+        <td></td>
+        <td style="border-bottom: thin solid;">iii.</td>
+        <td style="border-bottom: thin solid;">Bank</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+    </tr>
+
+    <!-- Section A: derivatives - Table 2 Banking Book - 3.Credit derivatives - b. Of which: reference entity / reference obligation is-->
+    <!-- iv. Non-bank financial institution (e.g. securities firms, insurance firms, investment banks, fund houses) -->
+    <tr>
+        <td></td>
+        <td></td>
+        <td style="border-bottom: thin solid;">iv.</td>
+        <td style="border-bottom: thin solid;">Non-bank financial institution (e.g. securities firms, insurance firms, investment banks, fund houses)</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+    </tr>    
+
+    <!-- Section A: derivatives - Table 2 Banking Book - 3.Credit derivatives - b. Of which: reference entity / reference obligation is-->
+    <!-- v. Investment fund or highly leveraged institution (e.g. hedge funds) -->
+    <tr>
+        <td></td>
+        <td></td>
+        <td style="border-bottom: thin solid;">v.</td>
+        <td style="border-bottom: thin solid;">Investment fund or highly leveraged institution (e.g. hedge funds)</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+    </tr>    
+
+    <!-- Section A: derivatives - Table 2 Banking Book - 3.Credit derivatives - b. Of which: reference entity / reference obligation is-->
+    <!-- vi. Corporate -->
+    <tr>
+        <td></td>
+        <td></td>
+        <td style="border-bottom: thin solid;">vi.</td>
+        <td style="border-bottom: thin solid;">Corporate</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+    </tr>   
+    
+    <!-- Section A: derivatives - Table 2 Banking Book - 3.Credit derivatives - b. Of which: reference entity / reference obligation is-->
+    <!-- vii. Tranche of MBS, ABS, CDO -->
+    <tr>
+        <td></td>
+        <td></td>
+        <td style="border-bottom: thin solid;">vii.</td>
+        <td style="border-bottom: thin solid;">Tranche of MBS, ABS, CDO</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+    </tr>    
+
+    <!-- Section A: derivatives - Table 2 Banking Book - 3.Credit derivatives - b. Of which: reference entity / reference obligation is-->
+    <!-- viii. Other -->
+    <tr>
+        <td></td>
+        <td></td>
+        <td style="border-bottom: thin solid;">viii.</td>
+        <td style="border-bottom: thin solid;">Other</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+    </tr>   
+
+    <!-- Section A: derivatives - Table 2 Banking Book - 3.Credit derivatives - b. Of which: reference entity / reference obligation is-->
+    <!-- Subtotal -->
+    <tr>
+        <td colspan="4" style="font-style: italic; text-align:right;">Subtotal</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+    </tr>
+
+    <tr></tr>
+    <!-- Section A: derivatives - Table 2 Banking Book - 3.Credit derivatives - c.Credit derivatives + sold protection-->
+    <tr>
+        <td></td>
+        <td>(c)</td>
+        <td colspan="2" style="border-bottom: thin solid;">Credit derivatives - sold protection</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+    </tr>
+
+    <!-- Section A: derivatives - Table 2 Banking Book - 3.Credit derivatives - d. Of which: reference entity / reference obligation is-->
+    <tr>
+        <td></td>
+        <td>(d)</td>
+        <td colspan="2">Of which: reference entity / reference obligation is</td>
+        <td colspan="8"></td>
+    </tr>
+
+    <!-- Section A: derivatives - Table 2 Banking Book - 3.Credit derivatives - d. Of which: reference entity / reference obligation is-->
+    <!-- i. Sovereign -->
+    <tr>
+        <td></td>
+        <td></td>
+        <td style="border-bottom: thin solid;">i.</td>
+        <td style="border-bottom: thin solid;">Sovereign</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+    </tr>
+
+    <!-- Section A: derivatives - Table 2 Banking Book - 3.Credit derivatives - d. Of which: reference entity / reference obligation is-->
+    <!-- ii. Public Sector Entity -->
+    <tr>
+        <td></td>
+        <td></td>
+        <td style="border-bottom: thin solid;">ii.</td>
+        <td style="border-bottom: thin solid;">Public Sector Entity</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+    </tr>
+    
+    <!-- Section A: derivatives - Table 2 Banking Book - 3.Credit derivatives - d. Of which: reference entity / reference obligation is-->
+    <!-- iii. Bank -->
+    <tr>
+        <td></td>
+        <td></td>
+        <td style="border-bottom: thin solid;">iii.</td>
+        <td style="border-bottom: thin solid;">Bank</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+    </tr>
+
+    <!-- Section A: derivatives - Table 2 Banking Book - 3.Credit derivatives - d. Of which: reference entity / reference obligation is-->
+    <!-- iv. Non-bank financial institution (e.g. securities firms, insurance firms, investment banks, fund houses) -->
+    <tr>
+        <td></td>
+        <td></td>
+        <td style="border-bottom: thin solid;">iv.</td>
+        <td style="border-bottom: thin solid;">Non-bank financial institution (e.g. securities firms, insurance firms, investment banks, fund houses)</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+    </tr>    
+
+    <!-- Section A: derivatives - Table 2 Banking Book - 3.Credit derivatives - d. Of which: reference entity / reference obligation is-->
+    <!-- v. Investment fund or highly leveraged institution (e.g. hedge funds) -->
+    <tr>
+        <td></td>
+        <td></td>
+        <td style="border-bottom: thin solid;">v.</td>
+        <td style="border-bottom: thin solid;">Investment fund or highly leveraged institution (e.g. hedge funds)</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+    </tr>    
+
+    <!-- Section A: derivatives - Table 2 Banking Book - 3.Credit derivatives - d. Of which: reference entity / reference obligation is-->
+    <!-- vi. Corporate -->
+    <tr>
+        <td></td>
+        <td></td>
+        <td style="border-bottom: thin solid;">vi.</td>
+        <td style="border-bottom: thin solid;">Corporate</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+    </tr>   
+    
+    <!-- Section A: derivatives - Table 2 Banking Book - 3.Credit derivatives - d. Of which: reference entity / reference obligation is-->
+    <!-- vii. Tranche of MBS, ABS, CDO -->
+    <tr>
+        <td></td>
+        <td></td>
+        <td style="border-bottom: thin solid;">vii.</td>
+        <td style="border-bottom: thin solid;">Tranche of MBS, ABS, CDO</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+    </tr>    
+
+    <!-- Section A: derivatives - Table 2 Banking Book - 3.Credit derivatives - d. Of which: reference entity / reference obligation is-->
+    <!-- viii. Other -->
+    <tr>
+        <td></td>
+        <td></td>
+        <td style="border-bottom: thin solid;">viii.</td>
+        <td style="border-bottom: thin solid;">Other</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+    </tr>   
+
+    <!-- Section A: derivatives - Table 2 Banking Book - 3.Credit derivatives - d. Of which: reference entity / reference obligation is-->
+    <!-- Subtotal -->
+    <tr>
+        <td colspan="4" style="font-style: italic; text-align:right;">Subtotal</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+    </tr> 
+
+    <tr></tr>
+    <tr>
+        <td colspan="4"></td>
+        <td class="head2">Notional Amount</td>
+        <td class="head2">Current Market Value</td>
+    </tr>
+
+    <tr>
+        <td style="font-weight: bold; text-align: center;">4</td>
+        <td colspan="3" style="font-weight: bold;">Total</td>
+        <td style="text-align: right; border: thin solid;">{TotalBank1}</td>
+        <td style="text-align: right; border: thin solid;">{TotalBank2}</td>
+    </tr>
+
+
+    <tr></tr>
+        <tr>
+            <td colspan="4" style="font-weight: bold; border-bottom: thin solid windowtext;">Table 3 Counterparty</td>
+        </tr>
+        <tr></tr>
+
+        <tr>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td colspan="2" class="head1">Credit derivatives</td>
+            <td colspan="2" class="head1">Other derivatives</td>
+        </tr>
+
+        <tr>
+            <td colspan="4"></td>
+            <td class="head2">Notional Amount</td>
+            <td class="head2">Current Market Value</td>
+            <td class="head2">Notional Amount</td>
+            <td class="head2">Current Market Value</td>
+        </tr>
+
+        <tr>
+            <td colspan="4" style="font-weight: bold;">Derivatives with</td>
+        </tr>
+
+        <tr>
+            <td style="font-weight: bold; text-align: center;">1</td>
+            <td colspan="3" style="font-weight: bold;">Related parties</td>
+            <td colspan="10"></td>
+        </tr>
+        <tr>
+            <td></td>
+            <td>(a)</td>
+            <td colspan="2" style="border-bottom: thin solid;">Parent</td>
+            <td style="text-align: right; border: thin solid;">0</td>
+            <td style="text-align: right; border: thin solid;">0</td>
+            <td style="text-align: right; border: thin solid;">0</td>
+            <td style="text-align: right; border: thin solid;">0</td>
+        </tr>
+        <tr>
+            <td></td>
+            <td>(b)</td>
+            <td colspan="2" style="border-bottom: thin solid;">Subsidiares</td>
+            <td style="text-align: right; border: thin solid;">0</td>
+            <td style="text-align: right; border: thin solid;">0</td>
+            <td style="text-align: right; border: thin solid;">0</td>
+            <td style="text-align: right; border: thin solid;">0</td>
+        </tr>
+        <tr>
+            <td></td>
+            <td>(c)</td>
+            <td colspan="2" style="border-bottom: thin solid;">Associates / joint ventures</td>
+            <td style="text-align: right; border: thin solid;">0</td>
+            <td style="text-align: right; border: thin solid;">0</td>
+            <td style="text-align: right; border: thin solid;">0</td>
+            <td style="text-align: right; border: thin solid;">0</td>
+        </tr>
+        <tr>
+            <td></td>
+            <td>(d)</td>
+            <td colspan="2" style="border-bottom: thin solid;">Other related parties</td>
+            <td style="text-align: right; border: thin solid;">0</td>
+            <td style="text-align: right; border: thin solid;">0</td>
+            <td style="text-align: right; border: thin solid;">0</td>
+            <td style="text-align: right; border: thin solid;">0</td>
+        </tr>
+
+        <tr>
+            <td style="font-weight: bold; text-align: center;">2</td>
+            <td colspan="3" style="font-weight: bold;">Independent parties</td>
+            <td colspan="10"></td>
+        </tr>
+        <tr>
+            <td></td>
+            <td>(a)</td>
+            <td colspan="2" style="border-bottom: thin solid;">Banks</td>
+            <td style="text-align: right; border: thin solid;">0</td>
+            <td style="text-align: right; border: thin solid;">0</td>
+            <td style="text-align: right; border: thin solid;">{IpBank1}</td>
+            <td style="text-align: right; border: thin solid;">{IpBank2}</td>
+        </tr>
+        <tr>
+            <td></td>
+            <td>(b)</td>
+            <td colspan="2" style="border-bottom: thin solid;">Non-bank financial institution (e.g. securities firms, insurance firms, investment banks, fund houses)</td>
+            <td style="text-align: right; border: thin solid;">0</td>
+            <td style="text-align: right; border: thin solid;">0</td>
+            <td style="text-align: right; border: thin solid;">{IpNonBank1}</td>
+            <td style="text-align: right; border: thin solid;">{IpNonBank2}</td>
+        </tr>
+        <tr>
+            <td></td>
+            <td>(c)</td>
+            <td colspan="2" style="border-bottom: thin solid;">Investment fund or highly leveraged institution (e.g. hedge funds)</td>
+            <td style="text-align: right; border: thin solid;">0</td>
+            <td style="text-align: right; border: thin solid;">0</td>
+            <td style="text-align: right; border: thin solid;">{IpInvestment1}</td>
+            <td style="text-align: right; border: thin solid;">{IpInvestment2}</td>
+        </tr>
+        <tr>
+            <td></td>
+            <td>(d)</td>
+            <td colspan="2" style="border-bottom: thin solid;">Corporates</td>
+            <td style="text-align: right; border: thin solid;">0</td>
+            <td style="text-align: right; border: thin solid;">0</td>
+            <td style="text-align: right; border: thin solid;">{IpCorporates1}</td>
+            <td style="text-align: right; border: thin solid;">{IpCorporates2}</td>
+        </tr>
+
+        <tr>
+            <td></td>
+            <td>(e)</td>
+            <td colspan="2" style="border-bottom: thin solid;">Other</td>
+            <td style="text-align: right; border: thin solid;">0</td>
+            <td style="text-align: right; border: thin solid;">0</td>
+            <td style="text-align: right; border: thin solid;">{IpOther1}</td>
+            <td style="text-align: right; border: thin solid;">{IpOther2}</td>
+        </tr>
+    
+    <!-- Section A: derivatives -->
+    <tr></tr><tr></tr><tr></tr>
+    <tr>
+        <td colspan="4" style="font-weight: bold;">Section A: Securitization Exposures</td>
+    </tr>
+    <tr></tr>
+
+    <tr>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td colspan="2" class="head1">AI as originator</td>
+        <td colspan="2" class="head1">AI as investor</td>
+    </tr>
+
+    <tr>
+        <td colspan="4"></td>
+        <td class="head2">Principal amount</td>
+        <td class="head2">Drawn amount</td>
+        <td class="head2">Principal amount</td>
+        <td class="head2">Drawn amount</td>
+    </tr>
+
+    <tr></tr>
+
+    <tr>
+        <td>1</td>
+        <td></td>
+        <td colspan="2" style="border-bottom: thin solid;">Unfunded securitization tranches (e.g. super senior tranche)</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid; background-color: black;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid; background-color: black;">0</td>
+    </tr>
+    <tr>
+        <td>2</td>
+        <td></td>
+        <td colspan="2" style="border-bottom: thin solid;">Liquidity facilities for ABCP programmes</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+    </tr>
+    <tr>
+        <td>3</td>
+        <td></td>
+        <td colspan="2" style="border-bottom: thin solid;">Liquidity facilities for securitization transaction other than ABCP programmes</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+    </tr>
+    <tr>
+        <td>4</td>
+        <td></td>
+        <td colspan="2" style="border-bottom: thin solid;">Servicer cash advance facilities</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+    </tr>
+    <tr>
+        <td>5</td>
+        <td></td>
+        <td colspan="2" style="border-bottom: thin solid;">Credit enhancements</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid; background-color: black;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid; background-color: black;">0</td>
+    </tr>
+    <tr>
+        <td>6</td>
+        <td></td>
+        <td colspan="2" style="border-bottom: thin solid;">Interest rate / currency derivatives</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid; background-color: black;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid; background-color: black;">0</td>
+    </tr>
+    <tr>
+        <td>7</td>
+        <td></td>
+        <td colspan="2" style="border-bottom: thin solid;">Other</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+    </tr>
+
+    <tr></tr>
+    <tr style="font-weight: bold;">
+        <td>8</td>
+        <td></td>
+        <td colspan="2">Total</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+        <td style="text-align: right; border: thin solid;">0</td>
+    </tr>
+
+    <tr></tr><tr></tr>
+    <tr>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td colspan="2" class="head1">AI as originator</td>
+    </tr>
+
+    <tr>
+        <td colspan="4"></td>
+        <td colspan="2" class="head2">Principal amount</td>
+    </tr>
+
+    <tr></tr>
+    <tr>
+        <td>9</td>
+        <td></td>
+        <td colspan="2">Outstanding securities issued under securitization transaction</td>
+        <td colspan="2" style="text-align: right; border: thin solid;">0</td>
+    </tr>
+
+    </table>
+</body>
+</html>
+
+...
+
+  XlsTemplateSGBO23
+<?xml version='1.0'?>
+<!DOCTYPE xsl:stylesheet [
+    <!ENTITY nbsp "<xsl:text>&#160;</xsl:text>">
+]>
+<xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
+<xsl:output method="html"/>
+
+<xsl:variable name="useLabelColumn" select="//PRIMEReport/Type !='ASQL Table'"/>
+
+<xsl:template match="ReportContents">
+    <html>
+    <head>
+    </head>
+    <body>
+    <xsl:apply-templates select="Table"/>
+    </body>
+    </html>
+</xsl:template>
+
+<xsl:template match="Table">
+    
+    <table>
+        <tr>
+            <td>FOR THE MONTH OF:</td>
+            <td style="font-weight:bold;">October 2024</td>
+        </tr>
+        
+        <tr></tr>
+        
+        <tr>
+            <td></td>
+            <td></td>
+            <td style="text-align: right;">SGD'000</td>
+        </tr>
+        
+        <tr style="font-weight: bold; text-align: center; vertical-align: middle;">
+            <td style="border: thin solid windowtext; width=2cm">TYPE</td>
+            <td style="border: thin solid windowtext; width=3cm">NO OF DEALS</td>
+            <td style="border: thin solid windowtext; width=3cm">VOLUME</td>
+        </tr>
+        
+        <tr>
+            <td style="border: thin solid;"></td>
+            <td style="border: thin solid;"></td>
+            <td style="border: thin solid;"></td>
+        </tr>
+        
+        <xsl:apply-templates select="Rows/Row">
+            <xsl:with-param name="treeDepth" select="$treeDepth + 1" />
+            <xsl:with-param name="colorStep" select="$colorStep" />
+        </xsl:apply-templates>
+        
+    </table>
+</xsl:template>
+
+<xsl:template match="Row">
+    <xsl:param name = "treeDepth"/>
+    <xsl:param name = "colorStep"/>
+    <xsl:variable name="rwId" select="RowId"/>
+    
+    <xsl:if test="count(ancestor::Row) = 0">
+        <tr>
+            <xsl:if test="$useLabelColumn">
+                <td style="font-weight: bold; border: thin solid windowtext; mso-number-format:'\@'">
+                    <xsl:value-of select="Label"/>
+                </td>
+            </xsl:if>
+            
+            <xsl:apply-templates select="Cells/Cell">
+                <xsl:with-param name="colorStep" select="$colorStep" />
+            </xsl:apply-templates>
+        </tr>
+        <tr>
+            <td style="border: thin solid;"></td>
+            <td style="border: thin solid;"></td>
+            <td style="border: thin solid;"></td>
+        </tr>
+    </xsl:if>
+    
+    <xsl:apply-templates select="Rows/Row">
+        <xsl:with-param name="treeDepth" select="$treeDepth + 1" />
+        <xsl:with-param name="colorStep" select="$colorStep" />
+    </xsl:apply-templates>
+    
+</xsl:template>
+
+<xsl:template match="Cell">
+    <xsl:param name="colorStep"/>
+    
+    <xsl:if test="position() = 1">
+        <td style="text-align:center; border: thin solid windowtext; mso-number-format:'\@'">
+            <xsl:choose>
+                <xsl:when test="ValueType and DefaultData">
+                    <acronym>
+                        <xsl:attribute name="title">
+                            <xsl:value-of select="DefaultData"/>
+                        </xsl:attribute>
+                        <xsl:call-template name="CellData" />
+                    </acronym>
+                </xsl:when>
+                <xsl:otherwise>
+                    <xsl:call-template name="CellData" />
+                </xsl:otherwise>
+            </xsl:choose>
+        </td>
+    </xsl:if>
+    
+    <xsl:if test="position() = 2">
+        <td style="text-align:right; border: thin solid windowtext; mso-number-format:'\@'">
+            <xsl:choose>
+                <xsl:when test="ValueType and DefaultData">
+                    <acronym>
+                        <xsl:attribute name="title">
+                            <xsl:value-of select="DefaultData"/>
+                        </xsl:attribute>
+                        <xsl:call-template name="CellData" />
+                    </acronym>
+                </xsl:when>
+                <xsl:otherwise>
+                    <xsl:call-template name="CellData" />
+                </xsl:otherwise>
+            </xsl:choose>
+        </td>
+    </xsl:if>
+</xsl:template>
+
+
+<xsl:template name="CellData">
+        <xsl:choose>             
+            <xsl:when test="FormattedData">
+                <xsl:value-of select="FormattedData"/>
+            </xsl:when>
+            <xsl:when test="RawData">
+                <xsl:choose>
+                    <xsl:when test ="contains(RawData, 'http:') or contains(RawData, 'https:')">
+                        <xsl:value-of select="RawData " disable-output-escaping="yes"/>
+                    </xsl:when>
+                    <xsl:otherwise>
+                        <xsl:value-of select="RawData"/>
+                    </xsl:otherwise>
+                </xsl:choose>
+            </xsl:when>
+            <xsl:when test="DefaultData">
+                <xsl:choose>
+                        <xsl:when test="ValueType">
+                                <xsl:text>#</xsl:text>
+                        </xsl:when>
+                        <xsl:otherwise>
+                                <xsl:value-of select="DefaultData"/>
+                        </xsl:otherwise>
+                </xsl:choose>
+            </xsl:when>
+            <xsl:otherwise>
+                  <xsl:message terminate="yes"><xsl:text>No dataformat turned on</xsl:text></xsl:message>
+            </xsl:otherwise>
+            
+        </xsl:choose>
+</xsl:template>
+
+<!-- derived from http://www.exslt.org/math/functions/max/index.html -->
+<xsl:template name="max">
+   <xsl:param name="nodes" select="/.." />
+   <xsl:choose>
+      <xsl:when test="not($nodes)">0</xsl:when>
+      <xsl:otherwise>
+         <xsl:for-each select="$nodes">
+            <xsl:sort select="translate(.,'-','')" data-type="number" order="descending" />
+            <xsl:if test="position( ) = 1">
+               <xsl:value-of select="number(translate(.,'-',''))" />
+            </xsl:if>
+         </xsl:for-each>
+      </xsl:otherwise>
+   </xsl:choose>
+</xsl:template>
+
+</xsl:stylesheet>
+
+...
+
+}
+

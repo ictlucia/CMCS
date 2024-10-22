@@ -1,0 +1,295 @@
+#
+# Front Arena exported extension module.
+# source          ""
+# timestamp (utc) "2024-01-05 10:47:11.6"
+# ***** DO NOT EDIT! *****
+#
+name        "PS_MBOX"
+description ""
+
+groups {
+}
+
+decls[FParameters] {
+}
+
+clx FObject [FParameters] {
+  MBOXOutFTPParams =
+  destination_dir=.
+  host=10.243.210.25
+  password=0x4wpTCt8K7wrbCm8KlwppoecKJ
+  port=22
+  user=MBOX
+
+
+  MBOXParams =
+  DOC_TYPES=['Underlying', 'DealTicket']
+  DOCID_HEADER=ObjectID
+  FILES_LIST=['MK002_DETAIL.csv', 'MK005_DETAIL.csv', 'MK006_DETAIL.csv']
+  LOG_FILE=MBox_LOG_{}.txt
+
+
+}
+
+decls[FPythonCode] {
+}
+
+clx FObject [FPythonCode] {
+  MBOX_Interface
+import acm, traceback, os, csv, ast
+import datetime, InterfaceUtils
+import ParametersReader, FRunScriptGUI, FLogger
+from MBOXRecord_Handler import MBOXRecordHandler, MBOX_FTP_KEY
+import FSFTPOperations
+import EncoderUtils
+
+MBOX_params = ParametersReader.get_params('MBOXParams')
+MboxFtpParams = ParametersReader.get_params('MBOXOutFTPParams')
+log_file_name = MBOX_params['LOG_FILE'].format(acm.Time.DateToday().replace('-', ''))
+
+destination_dir = MboxFtpParams['destination_dir']
+host = MboxFtpParams['host']
+port = MboxFtpParams['port']
+user = MboxFtpParams['user']
+password = MboxFtpParams['password']
+
+
+def initialize_logging(params, logfile_name, app_name):
+    logger = None
+    try:
+        logFolder = params['log_folder']
+        logfolderString = logFolder.SelectedDirectory().AsString()
+        logfile = os.path.join(logfolderString, logfile_name)
+        if logfile == '':
+            logfile = None
+
+        logLevel = params['log_level']
+        level = InterfaceUtils.LogLevelNameToNumber(logLevel)
+        print('level: ', level)
+        logger = FLogger.FLogger(level=level,
+                                 name=app_name,
+                                 logToPrime=True,
+                                 logToFileAtSpecifiedPath=logfile,
+                                 logToConsole=False)
+    except Exception as err:
+        print('Error in initializing logger {}'.format(err))
+        print(traceback.format_exc())
+    return logger
+
+
+class MBOXInterface(FRunScriptGUI.AelVariablesHandler):
+
+    def __init__(self, mbox_params):
+
+        logLevels = [FLogger.FLogger.INFO, FLogger.FLogger.ERROR, FLogger.FLogger.WARNING, FLogger.FLogger.DEBUG]
+        folderPicker = FRunScriptGUI.DirectorySelection()
+
+        gui_vars = [
+            ['inputFolder', 'Input Folder', folderPicker, None, folderPicker, 1, 1,
+             'The file path where files from mbox available.', None, 1],
+            ['outputFolder', 'Output Folder', folderPicker, None, folderPicker, 1, 1,
+             'The file path where output files will be generated.', None, 1],
+            ['archiveFolder', 'Archive Folder', folderPicker, None, folderPicker, 1, 1,
+             'The file path where processed files will be moved.', None, 1],
+            ['logToConsole', 'Log to console_Logging', 'int', [1, 0], 1, 1, 0,
+             'Whether logging should be done in the Log Console or not.'],
+            ['log_folder', 'Log folder_Logging', folderPicker, None, folderPicker, 0, 1,
+             'Select where to store the log file',
+             0, None],
+            ['log_level', 'Log level_Logging', 'string', logLevels, FLogger.FLogger.DEBUG, 1, 0]
+        ]
+
+        self._logger = None
+        self.file_list = ast.literal_eval(mbox_params['FILES_LIST'])
+        self.document_type_list = ast.literal_eval(mbox_params['DOC_TYPES'])
+        self.docid_header = mbox_params['DOCID_HEADER']
+
+        FRunScriptGUI.AelVariablesHandler.__init__(self, gui_vars)
+
+    def set_logger(self, logger):
+        self._logger = logger
+
+    def process(self, params):
+        self._logger.LOG('MBOX processing started')
+        try:
+            input_folder = params['inputFolder'].SelectedDirectory().AsString()
+            output_folder = params['outputFolder'].SelectedDirectory().AsString()
+            archive_folder = params['archiveFolder'].SelectedDirectory().AsString()
+
+            for file in self.file_list:
+                input_file = os.path.join(input_folder, file)
+                output_file = os.path.join(output_folder, file)
+                try:
+                    if self.process_file(input_file, output_file):
+                        self.move_file_to_archive(input_file, archive_folder, file)
+                except Exception as err:
+                    self._logger.ELOG(str(err))
+                    self._logger.ELOG(f'Failed to process file: {input_file}')
+        except Exception as err:
+            self._logger.ELOG(str(err))
+            self._logger.ELOG('Failed to process MBOX files')
+        self._logger.LOG('MBOX processing complete')
+
+    def upload_files_to_server(self, source_file):
+        """ This function uploads the file to FTP"""
+        pwd = EncoderUtils.get_decrypted_password(password, MBOX_FTP_KEY)
+        connstr = '{}:{}:{}:{}'.format(host, port, user, pwd)
+        ret_val = FSFTPOperations.write_to_sftp(app_name, source_file, connstr, destination_dir)
+        return ret_val
+
+    def process_file(self, input_file, output_file):
+        try:
+            ret_val = False
+            rows = []
+            output_headers = None
+            recHandler = MBOXRecordHandler(self.docid_header, self.document_type_list, self._logger)
+
+            self._logger.LOG('processing file : {}.'.format(input_file))
+            with open(input_file, 'r') as fp:
+                d_reader = csv.DictReader(fp)
+
+                # get fieldnames from DictReader object and store in list
+                headers = d_reader.fieldnames
+                output_headers = list(headers)
+                output_headers.append(self.docid_header)
+                # self._logger.DLOG(f" input Header : {headers}")
+                # self._logger.DLOG(f" output Header : {output_headers}")
+
+                output_records = []
+                for record in d_reader:
+                    try:
+                        output_records = recHandler.get_output_records(record)
+                        # self._logger.DLOG(f"Generated records : {output_records}")
+                    except Exception as err:
+                        self._logger.ELOG(str(err))
+                        self._logger.ELOG('Failed to process record for : {}'.format(record))
+                    rows.append(output_records)
+
+            if self.write_to_File(output_file, output_headers, rows):
+                if self.upload_files_to_server(output_file):
+                    self._logger.LOG('Uploaded file {} to FTP.'.format(output_file))
+                    ret_val = True
+                else:
+                    self._logger.ELOG('Error uploading file {} to FTP.'.format(output_file))
+            else:
+                self._logger.ELOG('Error generating file {}.'.format(output_file))
+
+        except Exception as err:
+            self._logger.ELOG(str(err))
+            self._logger.ELOG(f'Failed to process records from file :{input_file}')
+            
+        return ret_val
+
+    def write_to_File(self, filename, headers, rows):
+        ret_val = False
+        try:
+            self._logger.LOG(f"Generating output file : {filename}")
+            with open(filename, 'w', newline='') as csvfile:
+                writer = csv.DictWriter(csvfile, fieldnames=headers)
+                writer.writeheader()
+                for rowlist in rows:
+                    writer.writerows(rowlist)    
+                ret_val = True
+        except Exception as err:
+            self._logger.ELOG(str(err))
+            self._logger.ELOG(f'Failed to create file : {filename}')
+        return ret_val
+
+    def current_datetime_string(self):
+        date_time_now = datetime.datetime.now()
+        date_time_str = date_time_now.strftime('%d%m%y_%H%M%S')
+        return date_time_str
+
+    def move_file_to_archive(self, source_file, archive_folder, filename):
+        try:
+            archive_filename = filename.replace('.csv', f'_{self.current_datetime_string()}.csv')
+            archive_file_path = os.path.join(archive_folder, archive_filename)
+            os.rename(source_file, archive_file_path)
+        except Exception as err:
+            self._logger.ELOG(str(err))
+            self._logger.ELOG(f'Failed to move file: {source_file}. Manual handling required.')
+
+
+ael_gui_parameters = {'windowCaption': "MBOX Interface"}
+
+ael_variables = MBOXInterface(MBOX_params)
+ael_variables.LoadDefaultValues(__name__)
+app_name = 'MBOX Interface'
+
+
+def ael_main(params):
+    MBOX_logger = None
+    try:
+        MBOX_logger = initialize_logging(params, log_file_name, app_name)
+        if MBOX_logger:
+            MBOX_logger.LOG('MBOX Interface : Execution started.')
+            ael_variables.set_logger(MBOX_logger)
+            ael_variables.process(params)
+            MBOX_logger.LOG('MBOX Interface : Execution Complete.')
+
+    except Exception as err:
+        if MBOX_logger is not None:
+            MBOX_logger.ELOG(str(err))
+        print(traceback.format_exc())
+        print(f'Error in ael main. {err}')
+
+
+...
+
+  MBOXRecord_Handler
+
+import acm
+import datetime, copy
+import FLogger
+from DocumentumTextObject_Handler import DocumentString_Handler
+MBOX_FTP_KEY = 'GVMR2317'
+
+    
+class MBOXRecordHandler():
+    
+    def __init__(self, header, doc_types, logger):
+        self.header = header
+        self.doc_types = doc_types
+        self._logger = logger
+    
+    
+    def get_record(self, record, docid):
+        rec = copy.deepcopy(record )
+        rec[self.header] = docid
+        return rec
+    
+    def get_objectid(self, documentId):
+        str_list = documentId.split('_')
+        if len(str_list) > 0:
+            return str_list[-1]
+        else:
+            return documentId
+    
+    def get_output_records(self, record):
+        tradeid = record['TradeID']
+        self._logger.DLOG(f'Processing Tradeid : {tradeid}')
+        if tradeid:
+            trade = acm.FTrade[tradeid]
+        else:
+            trade = None
+        record_list = []
+
+        if trade is not None:
+            self._logger.DLOG('Generating output records')
+            for type in self.doc_types:
+                self._logger.DLOG(f'Processing document type: {type}')
+                documentIds = DocumentString_Handler.GetDocumentIds(trade, type)
+                for docId in documentIds:
+                    obj_id = self.get_objectid(docId)
+                    self._logger.DLOG(f'Processing ObjectId : {obj_id}')
+                    record_list.append( self.get_record(record, obj_id) )
+        else:
+            record_list.append( self.get_record(record, '') )
+        
+        return record_list
+    
+
+...
+
+}
+

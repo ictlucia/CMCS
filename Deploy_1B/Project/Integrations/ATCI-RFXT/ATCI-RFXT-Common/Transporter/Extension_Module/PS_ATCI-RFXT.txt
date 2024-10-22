@@ -1,0 +1,766 @@
+#
+# Front Arena exported extension module.
+# source          ""
+# timestamp (utc) "2024-09-24 09:29:12.5"
+# ***** DO NOT EDIT! *****
+#
+name        "PS_ATCI-RFXT"
+description "Import deals from Reuters Dealing Trade Interface in the TOF format into Front Arena"
+
+groups {
+}
+
+decls[FMenuExtension] {
+}
+
+clx FFrame [FMenuExtension] {
+  Show Conversation =
+  Function=DealingConversationUx.StartApplicationInstance
+  MenuType=Application
+  ParentMenu=Admin
+
+
+}
+
+clx FSessionManagerFrame [FMenuExtension] {
+  Cashflow Projection IDR =
+  Function=LIQ19Util.StartApplication
+  MenuType=Application
+  ModuleName=Cashflow Projection IDR
+  ParentMenu=Tools
+  RibbonPosition=Back Office Report
+
+
+}
+
+decls[FParameters] {
+}
+
+clx FObject [FParameters] {
+  FRDAMBConfig =
+  #As per Phase 1B UAT
+  FRD_AMB_HOST='RVNTCSA3ABC22WU:9100'
+  FRD_AMB_PWD='Complex55Password' #amb password
+  FRD_AMB_SENDER='ATCI_RD_SENDER' #AMB channel name on which we put our messages. Entry should be present in the amb system table
+
+
+  FRDConfig =
+  FRD_ADDITIONAL_REQUEST='0'
+  FRD_DEFAULT_ACQUIRER='MANDIRI TRS HO'
+  FRD_DEFAULT_BROKER=''
+  FRD_DEFAULT_PORTFOLIO=''
+  FRD_DEFAULT_TRADE_STATUS='Simulated'
+  FRD_PRINCIPAL_TYPE='Custom 1' #The principal type used for the user alias.
+  FRD_SERVER_HOST='172.16.1.9' #Hostname/IP of the RD TOF source
+  FRD_SERVER_PORT='14002'
+  FRD_TCID='RTNS' #The TCID for this instance
+
+
+  FRDNotificationConfig =
+  FRD_NOTIFY_LEVEL='WARNING' #Choose from SUCCESS/ERROR/WARNING/TRACK/DEBUG Default - ERROR
+
+
+  PS_CustomConfig =
+  MANDATORY_FIELDS=['COUNTERPARTY_PTYNBR.PTYID', 'TRADER_USRNBR.USERID', 'PRFNBR.PRFID', 'ACQUIRER_PTYNBR.PTYID', 'VALUE_DAY']
+  REFINITIV_TRADE_ID_NAME=REFINITIV_BM_TRADE_ID
+
+
+}
+
+decls[FPythonCode] {
+}
+
+clx FObject [FPythonCode] {
+  ATCIRDMessageAdaptations
+import acm
+import AmbaHelpers
+import FLogger
+from PS_Custom import GetMandetoryFieldList
+
+
+logger = FLogger.FLogger('ATCI_RD')
+partyAliasType = 'ReutersDealing'
+
+
+
+'''
+As per PDR workflow
+'''
+def CheckFieldValuesPresent(mt, fieldList):
+    allMandetoryFieldsPresent = True
+    
+    try:
+        for field in fieldList:
+            fieldValue = AmbaHelpers.getValue(mt, field)
+            if fieldValue is None:
+                allMandetoryFieldsPresent = False
+                break
+
+    except Exception as e:
+        logger.WLOG(f'Failed to process mandetory Field List.')
+        allMandetoryFieldsPresent = False
+    
+    return allMandetoryFieldsPresent
+    
+    
+def SetTradeStatus(mt):
+    fieldList = GetMandetoryFieldList()
+    isMandetoryFieldsPresent = CheckFieldValuesPresent(mt, fieldList)
+    if not isMandetoryFieldsPresent:
+        status = 'Simulated'
+    else:
+        status = 'Reserved'
+    AmbaHelpers.setValue(mt, 'status', status)
+    return mt
+    
+
+def SetPortfolio(mt, trader):
+    trdPortfolioName = trader.add_info('TraderPortfolio')
+    if trdPortfolioName is None or (len(trdPortfolioName) ==0):
+        trdPortfolioName = None
+    if trdPortfolioName is not None :
+        AmbaHelpers.setValue(mt, 'PRFNBR.PRFID', trdPortfolioName)
+        return True
+    return False
+ 
+   
+def ValidateCounterPartyAndBroker(mt):
+    #Validate Counterparty
+    counterpartyname = AmbaHelpers.getValue(mt, 'counterparty_ptynbr.ptyid')
+    if counterpartyname:
+        logger.DLOG(f"Checking counterparty : {counterpartyname}")
+        cpObj = acm.FParty[counterpartyname]
+        if cpObj is None:
+            logger.DLOG(f"Checking counterparty with alias : {counterpartyname}")
+            # check counter party with alias
+            db_alias_type = acm.FPartyAliasType[partyAliasType]
+            if db_alias_type:
+                # check if party exits with alias
+                party_alias = acm.FPartyAlias.Select('type={} and alias="{}"'.format(db_alias_type.Oid(), str(counterpartyname)))
+                if party_alias and (len(party_alias) > 0):
+                    cpObj = party_alias[0].Party()
+                    AmbaHelpers.setValue(mt, 'counterparty_ptynbr.ptyid', cpObj.Name())
+                else:
+                    logger.ELOG(f"Removing {counterpartyname} : Counterparty not present in FA")
+                    AmbaHelpers.deleteObject(mt, 'counterparty_ptynbr.ptyid')
+            else:
+                logger.ELOG(f"Party alias : {partyAliasType} not present in FA. \nRemoving {counterpartyname} : Counterparty not present in FA")
+                AmbaHelpers.deleteObject(mt, 'counterparty_ptynbr.ptyid')
+        
+    
+    #Validate Broker
+    brokername = AmbaHelpers.getValue(mt, 'broker_ptynbr.ptyid')
+    if brokername:
+        if counterpartyname == brokername:
+            AmbaHelpers.deleteObject(mt, 'broker_ptynbr.ptyid')
+            logger.LOG(f"Removing  broker {brokername} : counterparty and broker is same")
+        else:  
+            broker = acm.FBroker[brokername]
+            if broker is None:
+                #Changes done for ticket TCSTCSPBDT-434983
+                db_alias_type = acm.FPartyAliasType[partyAliasType]
+                if db_alias_type:
+                    # check if party exits with alias
+                    party_alias = acm.FPartyAlias.Select('type={} and alias="{}"'.format(db_alias_type.Oid(), str(brokername)))
+                    if party_alias and (len(party_alias) > 0):
+                        cpObj = party_alias[0].Party()
+                        AmbaHelpers.setValue(mt, 'broker_ptynbr.ptyid', cpObj.Name())
+                    else:
+                        logger.WLOG(f"Removing {brokername} : Broker not present in FA")
+                        AmbaHelpers.deleteObject(mt, 'broker_ptynbr.ptyid')
+                else:
+                    logger.ELOG(f"Party alias : {partyAliasType} not present in FA. \nRemoving {brokername} : Broker not present in FA")
+                    AmbaHelpers.deleteObject(mt, 'broker_ptynbr.ptyid')
+    else:
+        AmbaHelpers.deleteObject(mt, 'broker_ptynbr.ptyid')
+        logger.DLOG("Removed Broker field.")
+
+
+def ValidateTrader(mt):
+    if mt:
+        #Get Trader id
+        traderId = AmbaHelpers.getValue(mt, 'trader_usrnbr.userid')
+        foundTrader = False
+        #Set Trader
+        if traderId:
+            try:
+                trader = acm.FUser[traderId]
+                if trader is not None:
+                    foundTrader = True
+                    SetPortfolio(mt, trader)
+            except TypeError:
+                logger.WLOG(f'Unable to get trader information for the trader.')
+      
+        if not foundTrader:
+            #AmbaHelpers.setValue(mt, 'trader_usrnbr.userid', defaultTrader)
+            logger.LOG(f"Removing Trader {traderId}- Trader  not present in FA.")
+            AmbaHelpers.deleteObject(mt, 'trader_usrnbr.userid')
+            #logger.LOG(f"Trader {traderId} not present in FA. Trader set to default : {defaultTrader}")
+    
+    
+def ProcessTradeMessage(mt):
+    if mt:
+
+        ValidateCounterPartyAndBroker(mt)
+        ValidateTrader(mt)
+        SetTradeStatus(mt)
+        # This needs to be set for FX swap
+        connectTrade_optKey = AmbaHelpers.getValue(mt, 'CONNECTED_TRDNBR.OPTIONAL_KEY')
+        if connectTrade_optKey:
+            newOptionalKey = connectTrade_optKey+'FarLeg'
+            logger.LOG("OptionalKey for Far Leg : %s"%newOptionalKey)
+            AmbaHelpers.setValue(mt, 'OPTIONAL_KEY', newOptionalKey)
+        
+        
+
+
+
+def receiver_modify(m):
+    logger.LOG("----------------receiver modify execution started -----------------")
+    mtrans = m.mbf_find_object('TRANSACTION', 'MBFE_BEGINNING')
+    if mtrans:
+        mt = mtrans.mbf_find_object('TRADE', 'MBFE_BEGINNING')
+        while mt:
+            logger.LOG(f'***********{mt.mbf_get_name().upper()}************')
+            if ( mt.mbf_get_name().upper() == 'TRADE'):
+                ProcessTradeMessage(mt)
+            mt = mtrans.mbf_next_object()
+    else:
+        mt = m.mbf_find_object ('TRADE', 'MBFE_BEGINNING')
+        if mt:
+            ProcessTradeMessage(mt)
+        else:
+            logger.LOG("Updating ATCI-RD message - TRADE message not found!")
+    logger.DLOG("--- Updated AMB message ---")
+    logger.DLOG(m.mbf_object_to_string())
+    logger.LOG("----------------receiver modify execution complete-----------------")
+    return m
+
+...
+
+  DealingConversationUx
+
+import acm
+import FUxCore
+
+def StartApplicationInstance(eii):
+    obj = eii.ExtensionObject()
+    shell = obj.Shell()
+    trade = obj.OriginalTrade()
+    integration_type = 'ATCIRDFXT_DC'
+    conversation = 'No Conversation available'
+    existing_external_obj = acm.FExternalObject.Select01("integrationType='%s' and trade='%s'"%(integration_type, str(trade.Oid())), None)
+    if existing_external_obj:
+        conversation = existing_external_obj.Data().Text()
+    start_dialog(shell, conversation)
+
+
+class FGenerateShowConversationUI(FUxCore.LayoutDialog):
+
+    def __init__(self, conversation):
+        self._conversation = conversation
+
+    def HandleApply(self):
+        return 1
+
+    def UpdateControls(self):
+        pass
+
+    def HandleCreate(self, dlg, layout):
+        self.fuxDlg = dlg
+        self.binder.AddLayout(layout)
+        self.conversationText = layout.GetControl("Conversation")
+        self.conversationText.SetData(self._conversation)
+        self.conversationText.Editable(False)
+        self.UpdateControls()
+
+    def InitControls(self):
+        self.binder = acm.FUxDataBindings()
+        self.binder.AddDependent(self)
+
+    def CreateLayout(self):
+        b = acm.FUxLayoutBuilder()
+        b.BeginVertBox('EtchedIn', "Conversation")
+        b.BeginHorzBox("None")
+        b.AddText('Conversation', 350, 350)
+        b.EndBox()
+        b.BeginHorzBox('None')
+        b.AddSpace(50)
+        b.AddFill()
+        b.AddButton('cancel', 'Ok')
+        b.EndBox()
+        b.EndBox()
+        return b
+
+
+def start_dialog(shell, conversation):
+    conversationDlg = FGenerateShowConversationUI(conversation)
+    conversationDlg.InitControls()
+    acm.UX().Dialogs().ShowCustomDialogModal(shell, conversationDlg.CreateLayout(), conversationDlg)
+
+...
+
+  FRDExtensionPoint
+import amb
+import acm
+import AmbaHelpers
+import FLogger
+import time
+import datetime
+import ParametersReader
+from PS_Custom import GetProductTypeInfo
+from PS_ATCIRDUtils import ProcessRawData
+from PS_ATCIRDUtils import CreateExternalObject
+import traceback
+logger = FLogger.FLogger('ATCI_RD')
+
+
+'''
+As per PDR workflow
+'''
+'''
+def CheckFieldValuesPresent(mt, fieldList):
+    allMandetoryFieldsPresent = True
+    
+    try:
+        for field in fieldList:
+            fieldValue = AmbaHelpers.getValue(mt, field)
+            if fieldValue is None:
+                allMandetoryFieldsPresent = False
+                break
+
+    except Exception as e:
+        logger.WLOG(f'Failed to process mandetory Field List.')
+        allMandetoryFieldsPresent = False
+    
+    return allMandetoryFieldsPresent
+    
+    
+def SetTradeStatus(mt):
+    fieldList = GetMandetoryFieldList()
+    isMandetoryFieldsPresent = CheckFieldValuesPresent(mt, fieldList)
+    if not isMandetoryFieldsPresent:
+        status = 'Simulated'
+    else:
+        status = 'Reserved'
+    AmbaHelpers.setValue(mt, 'status', status)
+    return mt
+    
+
+
+def updateText1(mt, text1val):
+    AmbaHelpers.setValue(mt, 'Text1', text1val)
+    
+    
+def updateText2(mt, text2val):
+    AmbaHelpers.setValue(mt, 'Text2', text2val)
+'''
+
+'''
+
+def ValidateAndSetTraderPortfolio(mt):
+    if mt:
+        #Get Trader id
+        traderId = AmbaHelpers.getValue(mt, 'trader_usrnbr.userid')
+        isPortfolioSet = False
+        #Set Trader
+        if traderId:
+            try:
+                trader = acm.FUser[traderId]
+                if trader is not None:
+                    foundTrader = True
+                    isPortfolioSet = setTraderPortfolio(mt, trader)
+            
+            except TypeError:
+                logger.WLOG(f'Unable to get trader information for the trader.')
+        return mt
+
+    
+    
+    if not foundTrader:
+        AmbaHelpers.setValue(mt, 'trader_usrnbr.userid', defaultTrader)
+        logger.LOG(f"Trader {traderId} not present in FA. Trader set to default : {defaultTrader}")
+      
+'''
+
+def SetProductTypeOnTrade(mt, pType, pCat):
+    logger.LOG(f'Setting Product Type info on Trade- {pType}  {pCat}' )
+    if pType is not None:
+        AmbaHelpers.setValue(mt, 'OPTKEY3_CHLNBR.ENTRY', pType)
+    if pCat is not None:
+        AmbaHelpers.setValue(mt, 'OPTKEY4_CHLNBR.ENTRY', pCat)
+    return(mt)
+
+
+def SetCounterParty(mt, tof_message):
+    """Check when fiels 508 which provides counterparty code is empty,
+       then use field 509 for counterparty code """
+    brokerCode = tof_message[510]
+    counterPartyCode = tof_message[509]
+    logger.LOG('Mapping counter party from field-[509]' )
+    if not tof_message[508] and (brokerCode and counterPartyCode):
+        AmbaHelpers.setValue(mt, 'COUNTERPARTY_PTYNBR.PTYID', counterPartyCode)
+    return mt
+   
+def GetTradeAlias(tof_message):
+    #ConversationID = TCID + tag[501]
+    #return tof_message[551]+tof_message[501]
+    return tof_message[551]+tof_message[501]
+    
+def SetTradeAlias(mt, tof_message):
+    conversationId= GetTradeAlias(tof_message)
+    if conversationId:
+        nameParams = ParametersReader.get_params('PS_CustomConfig')
+        name = nameParams['REFINITIV_TRADE_ID_NAME']
+        mx = mt.mbf_start_list("TRADEALIAS")
+        mx.mbf_add_string("TYPE.ALIAS_TYPE_NAME", name)
+        connectTradeId = AmbaHelpers.getValue(mt, 'CONNECTED_TRDNBR.OPTIONAL_KEY')
+        if connectTradeId:
+            newConnectTrade_Id = connectTradeId+'FarLeg'
+            logger.LOG("Trade Alias for Far Leg : %s"%newConnectTrade_Id)
+            mx.mbf_add_string("ALIAS", newConnectTrade_Id)
+        else:
+            mx.mbf_add_string("ALIAS", conversationId)
+        mx.mbf_end_list()
+    else:
+        logger.LOG("No conversationId found hence failed to update conversationId in trade Alias.")
+            
+        
+    
+def processTradeMessage(mt, tof_message, pType, pCat, dndfTransaction):
+    # set patform identifier
+    tcid = tof_message[551]  # FLN551  = TCID
+    currencyamt = tof_message[519]
+    AmbaHelpers.setValue(mt, 'OPTKEY2_CHLNBR.ENTRY', tcid)
+    if dndfTransaction:
+        AmbaHelpers.setValue(mt, 'CURR.INSID', 'IDR')
+        #TCSTCSPBDT-437940: mapped tag value 519 to first currency
+        AmbaHelpers.setValue(mt, 'QUANTITY', currencyamt)
+    
+    
+    #set product type information on trade
+    mt = SetProductTypeOnTrade(mt, pType, pCat)
+    
+    #set trader portfolio from Trader additional info TraderPortfolio
+    #mt = ValidateAndSetTraderPortfolio(mt)
+    # Need to removed this when supported in core
+    mt = SetCounterParty(mt, tof_message)
+
+    #Trade status needs to be handled for RTNS
+    #mt = SetTradeStatus(mt)
+    
+    #As per ticket TCSTCSPBDT-439672
+    SetTradeAlias(mt, tof_message)
+
+    return mt
+
+    
+def processInstrumentAsDNDF(mt, dndfTransaction):
+    processed_ins_for_DNDF = False
+    if dndfTransaction:
+        logger.DLOG("Processing DNDF Instrument for settle currency")
+        dndfCurr = AmbaHelpers.getValue(mt, 'CURR.INSID')
+        if not (dndfCurr=='IDR'):
+            dndfUndCurr = AmbaHelpers.getValue(mt, 'UND_INSADDR.INSID')
+            if (dndfUndCurr == 'IDR'):
+                logger.LOG("Updating DNDF Instrument for settle currency")
+                AmbaHelpers.setValue(mt, 'CURR.INSID', 'IDR')
+                AmbaHelpers.setValue(mt, 'UND_INSADDR.INSID', dndfCurr)
+                AmbaHelpers.setValue(mt, 'QUOTATION_SEQNBR.NAME', 'Per Unit')
+                processed_ins_for_DNDF = True
+    return mt, processed_ins_for_DNDF
+    
+def import_entry_raw_data(raw_data):
+    """The raw date message is provided here to make any changes to it before being processed"""
+    return raw_data
+ 
+def import_entry(tof_message, raw_data):
+    """The tof message is proovided here to make any changes to it before being processed"""
+    #TCSTCSPBDT-330909 - EFX Mapping Transaction time
+    trdtime = tof_message[506]
+    tcid = tof_message[551]
+    if(  (len(trdtime.strip()) == 0) and (tcid in ['RETM', 'RINT', 'RETB', 'RRTM']) ):
+        logger.LOG("[506] is empty : using trade time from [503]")
+        tof_message[506] = tof_message[503]
+    return tof_message
+  
+
+def import_exit(tof_message, amba_message, raw_data):
+    """the tof message from which the amba message is created as well as 
+    the amba message that will be written on the amb for commit are available for
+    modifications before being committed"""
+    #global tradeRcvTime
+    #tradeRcvTime = datetime.datetime.now().time()
+    
+    logger.LOG("-----------------import_exit execution started---------------")
+    
+    #logger.LOG(f"---TOF message recevied : receive time {tradeRcvTime}---")
+    try:
+        if amba_message is None:
+            deal_id, tof_dict = ProcessRawData(raw_data)
+            logger.LOG('{0}, {1}'.format(deal_id, tof_dict))
+            opt_key = deal_id.strip()
+            #Delay is added because when we try to fetch the trade from below query then it returns no trade as its fetching before commiting the trade.
+            #Delay of 2 sec is giving time to commit the trade
+            delay = 2
+            time.sleep(delay)
+            trade = acm.FTrade.Select01('optionalKey= %s' % (opt_key), None)
+            trade_oid = trade.Oid() if trade else None
+            if trade:
+                data = tof_dict.get(548)
+                tcid = deal_id.split('#')[0]
+                ext_obj = CreateExternalObject(data, str(trade.Oid()), tcid)
+                logger.LOG('For trade {0} external object is created {0}'.format(trade.Oid(), ext_obj))
+            else:
+                logger.LOG("TRADE message not found!")
+            
+        
+        else:
+            p_type, p_cat = GetProductTypeInfo(tof_message)
+            isDNDFTransaction = False
+            if(p_cat == 'NS') and (tof_message[551] == 'MDRX'):
+                isDNDFTransaction = True
+            print(p_type, p_cat)
+            m = amba_message.mbf_read()  
+            logger.LOG("**** amba_message message before****")
+            logger.LOG(m.mbf_object_to_string()) 
+            
+            ins_processed_asDNDF = False
+            mtrans = m.mbf_find_object('TRANSACTION', 'MBFE_BEGINNING')
+            if mtrans:
+                logger.LOG("Processing Transaction Message")
+                mt = None
+                if isDNDFTransaction:
+                    #TCSTCSPBDT-319315 - Changes to mark all NDF transactions as NS
+                    logger.LOG("DNDF Transaction received")
+                    mt = mtrans.mbf_find_object('INSTRUMENT', 'MBFE_BEGINNING')
+                else:
+                    mt = mtrans.mbf_find_object('TRADE', 'MBFE_BEGINNING')
+                    
+                while mt:
+                    logger.LOG(f'***********Processing message type : {mt.mbf_get_name().upper()}************')
+                    if ( mt.mbf_get_name().upper() == 'INSTRUMENT'):
+                        mt, ins_processed_asDNDF = processInstrumentAsDNDF(mt, isDNDFTransaction)
+                    if ( mt.mbf_get_name().upper() == 'TRADE'):
+                        mt = processTradeMessage(mt, tof_message, p_type, p_cat, ins_processed_asDNDF)
+                    mt = mtrans.mbf_next_object()
+            else:
+                if isDNDFTransaction:
+                    #TCSTCSPBDT-319315 - Changes to mark all NDF transactions as NS
+                    mt = m.mbf_find_object('INSTRUMENT','MBFE_BEGINNING')
+                    if mt:
+                        mt, ins_processed_asDNDF = processInstrumentAsDNDF(mt, isDNDFTransaction)
+                    else:
+                        logger.LOG("Failed to update ATCI-RD message. Error : INSTRUMNET message not found for DNDF processing!")
+            
+                mt = m.mbf_find_object ('TRADE', 'MBFE_BEGINNING')
+                if mt:
+                    mt = processTradeMessage(mt, tof_message, p_type, p_cat, ins_processed_asDNDF)
+                else:
+                    logger.LOG("Failed to update ATCI-RD message. Error : TRADE message not found!")
+            
+            logger.LOG("---Updated AMB message---")
+            logger.LOG(m.mbf_object_to_string())
+            amba_message =  amb.mbf_create_buffer_from_data(m.mbf_object_to_string()) 
+    except Exception as e:
+        logger.LOG('Exception occured in import_exit')
+        logger.LOG(e)
+        logger.LOG(traceback.format_exc())
+    logger.LOG("-----------------import_exit execution complete---------------")
+    return amba_message
+    
+def export_exit(request_message, tcid):
+    """the request message is available 
+    here for modification before it is sent out
+    Ensure the modified message is sent in the form of list.
+    This to accomodate any additional messages that need to be 
+    sent along with the main message being sent by the core solution"""
+    
+    updated_tcid = tcid + 'C'
+    updated_request_message = request_message.replace(tcid, updated_tcid)
+    logger.LOG('Request_message : {0} updated_request_message: {1} {2}'.format(request_message, updated_request_message, tcid))
+    return [updated_request_message]
+    
+    #return[request_message]
+
+...
+
+  PS_ATCIRDUtils
+import acm
+
+FS = '\x1c'
+GS = '\x1d'
+RS = '\x1e'
+US = '\x1f'
+tof = {}
+fid = ''
+
+def CreateTextObject(text_obj_name, external_object_data):
+    """ Creates TextObject to store ExternalObject data """
+    adm_text_object = None
+    try:
+        adm_text_object = acm.FCustomTextObject[text_obj_name]
+        if adm_text_object:
+            adm_text_object.Text = external_object_data
+            adm_text_object.Commit()
+        else:
+            adm_text_object = acm.FCustomTextObject()
+            adm_text_object.Name = text_obj_name
+            adm_text_object.Text = external_object_data
+            adm_text_object.SubType('ExternalObject')
+            adm_text_object.Commit()
+    except Exception as e:
+        print("Exception in create_text_object : %s"%str(e))
+        print(str(e))
+
+    return adm_text_object
+    
+    
+    
+def CreateExternalObject(data, trade_id, tcid):    
+    external_object_data = {'DATA' : data}
+    ext_obj = None
+    try:
+        # Create TextObject to save the data
+        text_obj_name = 'ATCIRDFXT_DC' + tcid + '_' + trade_id  
+        text_object = CreateTextObject(text_obj_name, external_object_data)
+        integration_type = 'ATCIRDFXT_DC'
+        ext_obj = acm.FExternalObject.Select01("integrationType='%s' and trade='%s'"%(integration_type, str(trade_id)), None)
+        if ext_obj:
+            ext_obj.Data = text_object
+            ext_obj.Commit()
+        else:
+            # create externalobject using class defined in FExternalObject module
+            ext_obj = acm.FExternalObject()
+            ext_obj.IntegrationSubtype = tcid 
+            ext_obj.Data = text_object
+            ext_obj.StorageType = 'AMB'
+            ext_obj.IntegrationType(integration_type)
+            ext_obj.Trade(trade_id)
+            ext_obj.Commit()
+    except Exception as e:
+        print("Exception in create_external_object : %s"%str(e))
+        print(str(e))
+        
+    return ext_obj
+        
+
+def ProcessTradeMessage_rowdata(msg):
+    buf = ''
+    for c in msg:
+        if c in (FS, GS, RS, US):
+            handleTag(c, buf)
+            if c == FS:
+                break
+            buf = ''
+        else:
+            buf += c
+           
+def handleTag(tag, buf):
+    global fid
+    if tag == US:
+        fid = buf
+    elif tag in (RS, FS):
+        value = buf
+        tof[int(fid)] = value.strip()
+        fid = ''
+        value = ''
+    else:
+        msg = "Unidentified tag : %s" % tag
+        
+def ProcessRawData(data):
+    msgtype = data[1:4]
+    msg = "msg type : %s" % msgtype
+    idend = 7
+    for c in data[7:]:
+        if c == US:
+            break
+        idend = idend + 1
+    dataid = data[7:idend]
+    deal_id = dataid.replace('C', '')
+    fieldlistnumber = data[idend + 1:idend + 4]
+    datastart = idend + 7
+    msg = "id : %s FLN : %s" % (dataid, fieldlistnumber)
+    ProcessTradeMessage_rowdata(data[datastart:])
+    return (deal_id, tof)
+
+
+...
+
+  PS_Custom
+import ast
+import FLogger
+import ParametersReader
+
+logger = FLogger.FLogger('ATCI_RD')
+
+'''
+def getParamValue(param_name):
+    value = params.get(param_name).strip()
+    if(value and ("'" in value) ):
+        value = value.replace('\'','') 
+    logger.LOG(f'user setting - {param_name} : {value}')
+    return value
+
+defaultPortfolioDeposit = getParamValue('DEFAULT_PORTFOLIO_DEPOSIT')
+defaultTrader = getParamValue('DEFAULT_TRADER')
+'''
+
+logger.DLOG('Reading PS_CustomConfig')
+params = ParametersReader.get_params('PS_CustomConfig')
+MandetoryFields = ast.literal_eval(params['MANDATORY_FIELDS'])
+
+def GetMandetoryFieldList():
+    return MandetoryFields
+
+
+def GetProductTypeInfo(tof_message):
+    logger.DLOG(f'Getting Product Type and Category info -' )
+    product_type =  None
+    category = None
+    
+    #read fileds from incoming tof message
+    keys = tof_message.keys()
+    deal_type  = tof_message[569] if 569 in keys else  None
+    period     = tof_message[515] if 515 in keys else  None
+    settlement = tof_message[674] if 674 in keys else  None
+    currency   = tof_message[517] if 517 in keys else  None
+    comment    = tof_message[553] if 553 in keys else  None
+    logger.LOG(f'Incoming message - DealType:{deal_type}    Period:{period}    Settlement:{settlement}    Currency:{currency}    Comment:{comment}' )
+
+
+    if deal_type == '2' or deal_type == '4' or deal_type == '128':
+        product_type = 'FX'
+        
+        if settlement == '2':
+            #TCSTCSPBDT-319315 - Changes to mark all NDF transactions as NS
+            category = 'NS'
+        
+        else:
+            if period == '1':
+                category = 'TOD'
+            elif period == '2':
+                category = 'TOM'
+            elif period == '4':
+                category = 'SPOT'
+            elif int(period) > 4:
+                category = 'FWD'
+
+    elif deal_type == '8':
+        product_type = 'FX'
+        category     = 'SWAP'
+        
+    elif deal_type == '16' :
+        product_type = 'DL'
+        
+        if comment is not None :
+            commentValue = comment.strip()
+            if len(commentValue) > 0:
+                category  = commentValue
+    
+    return(product_type, category)
+
+...
+
+}
+

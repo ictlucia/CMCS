@@ -1,0 +1,7 @@
+CHOICELIST,,,,/CHOICELIST
+DESCRIPTION,ENTRY,LIST,SORT_ORDER,
+Preference Shares or Tier 1 Capital,PREFT1,Seniority,1,
+Junior Subordinated or Upper Tier 2 Deb,JRSUBUT2,Seniority,2,
+Snr Unsecured or Foreign Curr Sov Debt,SNRFOR,Seniority,3,
+Secured or Domestic Currency Sov Debt,SECDOM,Seniority,4,
+Subordinated or Lower Tier 2 Debt,SUBLT2,Seniority,5,

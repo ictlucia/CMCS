@@ -1,0 +1,276 @@
+#
+# Front Arena exported extension module.
+# source          ""
+# timestamp (utc) "2024-06-06 06:11:29.7"
+# ***** DO NOT EDIT! *****
+#
+name        "PS_AccountingPSAK_BMSH"
+description "$Id$"
+
+groups {
+}
+
+decls[FColumnDefinition] {
+}
+
+clx FTradingSheet [FColumnDefinition] {
+  PSAK FX Revaluation Amt Acc Curr =
+  ExtensionAttribute=PSAKFxRevaluationAmountDenominated
+
+
+}
+
+decls[FCustomMethod] {
+}
+
+clx FLegAndTrade [FCustomMethod] {
+  IsTradeFxAndCNY =
+  Definition=IsTradeFxAndCNY: bool read
+  Function=AccountingPSAKColumnUtils.IsLegAndTradeFxAndCNY
+
+
+}
+
+clx FMoneyFlow [FCustomMethod] {
+  IsTradeFxAndCNY =
+  Definition=IsTradeFxAndCNY: bool read
+  Function=AccountingPSAKColumnUtils.IsMoneyFlowTradeFxAndCNY
+
+
+}
+
+clx FSettlement [FCustomMethod] {
+  IsTradeFxAndCNY =
+  Definition=IsTradeFxAndCNY: bool read
+  Function=AccountingPSAKColumnUtils.IsSettlementTradeFxAndCNY
+
+
+}
+
+clx FTrade [FCustomMethod] {
+  IsTradeFxAndCNY =
+  Definition=IsTradeFxAndCNY: bool read
+  Function=AccountingPSAKColumnUtils.IsTradeFxAndCNY
+
+
+}
+
+decls[FExtensionAttribute] {
+}
+
+clx FMoneyFlowAndTrades [FExtensionAttribute] {
+  currencyPairOne = tradeCurrencyPair.Currency1;
+  currencyPairTwo = tradeCurrencyPair.Currency2;
+  currSwapDealPrice = shunt(instrument:insType, 
+  default->0, 
+  "CurrSwap"->shunt(trade:currencyPair, 
+    nil->nominalAmountAccountingCCSCurrOne.Number / nominalAmountAccountingCCSCurrTwo.Number, 
+    default->shunt((currencyPairOne.Name == "USD") and (currencyPairTwo.Name == "CNY"), 
+      default->nominalAmountAccountingCCSCurrOne.Number / nominalAmountAccountingCCSCurrTwo.Number, 
+      true->nominalAmountAccountingCCSCurrTwo.Number / nominalAmountAccountingCCSCurrOne.Number)));
+  nominalAmountAccounting = trade:nominalAmountAccounting;
+  nominalAmountAccountingCCSCurrOne = trade:nominalAmountAccountingCCSCurrOne;
+  nominalAmountAccountingCCSCurrTwo = trade:nominalAmountAccountingCCSCurrTwo;
+  nominalAmountAccountingCurrency2 = trade:nominalAmountAccountingCurrency2;
+  profitAndLossEndAccRate = getAccCurrHistoricalRate(currency, "EOD_MtM", profitAndLossEndDate, "Settle");
+  PSAKDirection = shunt(nominalAmountAccountingCCSCurrOne > 0, 
+  true->-1, 
+  default->1);
+  PSAKFxRevaluationAmount = shunt(currency == accountingCurrency, 
+  true->0, 
+  default->shunt(instrument:insType, 
+    "Curr"->shunt((moneyFlowType == "Trade Quantity") or (moneyFlowType == "Trade Premium"), 
+      default->0, 
+      true->shunt((currencyPairOne == accountingCurrency) or (currencyPairTwo == accountingCurrency), 
+        true->shunt((currencyPairOne == dbuCurrency) or (currencyPairTwo == dbuCurrency), 
+          true->PSAKFXRevaluationAmountAccVsDBU, 
+          default->PSAKFXRevaluationAmountAccVsNonDBU), 
+        default->shunt(currency == currencyPairOne, 
+          true->PSAKFXRevaluationNonAccCurrOne, 
+          false->PSAKFXRevaluationNonAccCurrTwo, 
+          default->0))), 
+    "CurrSwap"->shunt(moneyFlowType == "Fixed Amount", 
+      default->0, 
+      true->shunt((currencyPairOne == accountingCurrency) or (currencyPairTwo == accountingCurrency), 
+        default->shunt(currency == currencyPairOne, 
+          true->projectedMoneyFlow.Number * (profitAndLossEndAccRate - boFxRate), 
+          default->projectedMoneyFlow.Number * (profitAndLossEndAccRate - trade:boFxRateCurrTwo)), 
+        true->projectedMoneyFlow.Number * PSAKDirection * (profitAndLossEndAccRate - abs(currSwapDealPrice)))), 
+    default->0));
+  PSAKFXRevaluationAmountAccVsDBU = nominalAmountAccountingCurrency2 * (profitAndLossEndAccRate - abs(nominalAmountAccounting.Number / nominalAmountAccountingCurrency2.Number));
+  PSAKFXRevaluationAmountAccVsNonDBU = nominalAmountAccounting * (getAccCurrHistoricalRate(currency, "EOD_MtM", profitAndLossEndDate, "Settle") - abs(nominalAmountAccountingCurrency2.Number / nominalAmountAccounting.Number));
+  PSAKFxRevaluationAmountDenominated = denominatedvalue(PSAKFxRevaluationAmount, accountingCurrency, , );
+  PSAKFXRevaluationNonAccCurrOne = nominalAmountAccounting * (profitAndLossEndAccRate - boFxRate);
+  PSAKFXRevaluationNonAccCurrTwo = nominalAmountAccountingCurrency2 * (profitAndLossEndAccRate - abs((boFxRate * nominalAmountAccounting.Number / nominalAmountAccountingCurrency2.Number)));
+  tradeCurrencyPair = trade:tradeCurrencyPair;
+}
+
+clx FObject [FExtensionAttribute] {
+  dbuCurrency = getObject("FCurrency", "CNY");
+}
+
+clx FTrade [FExtensionAttribute] {
+  boFxRateCurrTwo = shunt(accountingCurrencyPair.Currency2.Name == accountingCurrency, 
+  true->1, 
+  default->shunt(instrument:insType, 
+    "CurrSwap"->abs(nominalAmountAccountingCCSCurrTwo.Number / nominalAmountAccountingCCSCurrOne.Number) * object.AdditionalInfo.BoFxRate, 
+    default->0));
+  ccsRecLegCurrOne = select(currencyPair, 
+  true->currencyPair.Currency1 == instrument.RecLeg.Currency, 
+  default->false);
+  currencyPair = instrument:currencyPair;
+  nominalAmountAccounting = riskPositionSubLedger * nominalValueSubLedger;
+  nominalAmountAccountingCCSCurrOne = select(insType, 
+  "CurrSwap"->select(ccsRecLegCurrOne, 
+    true->nominalAmountAccountingRec, 
+    default->nominalAmountAccountingPay), 
+  default->nil);
+  nominalAmountAccountingCCSCurrTwo = select(insType, 
+  "CurrSwap"->select(ccsRecLegCurrOne, 
+    false->nominalAmountAccountingRec, 
+    default->nominalAmountAccountingPay), 
+  default->nil);
+  nominalAmountAccountingCurrency2 = riskPositionSubLedger * nominalValueSubLedgerCurrency2;
+  nominalAmountAccountingPay = riskPositionSubLedgerPay * nominalValueSubLedgerPay;
+  nominalAmountAccountingRec = riskPositionSubLedgerRec * nominalValueSubLedgerRec;
+  nominalValueSubLedger = instrument :* "nominalValueSubLedger" [profitAndLossEndDate, singleTradePosition];
+  nominalValueSubLedgerCurrency2 = instrument :* "nominalValueSubLedgerCurrency2" [profitAndLossEndDate, singleTradePosition];
+  nominalValueSubLedgerPay = payLeg :* "nominalValueSubLedger" [profitAndLossEndDate, singleTradePosition];
+  nominalValueSubLedgerRec = recLeg :* "nominalValueSubLedger" [profitAndLossEndDate, singleTradePosition];
+  payLeg = instrument.FirstPayLeg;
+  recLeg = instrument.FirstReceiveLeg;
+  riskPositionSubLedger = instrument :* "riskPositionSubLedger" [includeAllTrades, profitAndLossEndDate, singleTradePosition];
+  riskPositionSubLedgerPay = payLeg :* "riskPositionSubLedger" [includeAllTrades, profitAndLossEndDate, singleTradePosition];
+  riskPositionSubLedgerRec = recLeg :* "riskPositionSubLedger" [includeAllTrades, profitAndLossEndDate, singleTradePosition];
+  tradeCurrencyPair = shunt(object.CurrencyPair, 
+  nil->currencyPair, 
+  default->object.CurrencyPair);
+}
+
+clx FTradeRow [FExtensionAttribute] {
+  nominalAmountAccountingCCSCurrOne = select(insType, 
+  "CurrSwap"->select(trade:ccsRecLegCurrOne, 
+    true->nominalAmountAccountingRec, 
+    default->nominalAmountAccountingPay), 
+  default->nil);
+  nominalAmountAccountingCCSCurrTwo = select(insType, 
+  "CurrSwap"->select(trade:ccsRecLegCurrOne, 
+    false->nominalAmountAccountingRec, 
+    default->nominalAmountAccountingPay), 
+  default->nil);
+  nominalAmountAccountingPay = riskPositionSubLedgerPay * nominalValueSubLedgerPay;
+  nominalAmountAccountingRec = riskPositionSubLedgerRec * nominalValueSubLedgerRec;
+}
+
+decls[FParameters] {
+}
+
+clx FObject [FParameters] {
+  CustomJournalOutputValidation =
+  BookName=Treasury_SH
+
+
+}
+
+decls[FPythonCode] {
+}
+
+clx FObject [FPythonCode] {
+  AccountingPSAKColumnUtils
+import acm
+
+CURRENCY_NAME = 'CNY'
+
+def IsLegAndTradeFxAndCNY(legAndTrade):
+    trade = legAndTrade.Trade()
+    if not trade:
+        return False
+    return IsTradeFxAndCNY(trade)
+
+def IsMoneyFlowTradeFxAndCNY(moneyFlow):
+    trade = moneyFlow.Trade()
+    if trade is None:
+        return False
+    return IsTradeFxAndCNY(trade)
+
+def IsSettlementTradeFxAndCNY(settlement):
+    trade = settlement.Trade()
+    if trade is None:
+        return False
+    return IsTradeFxAndCNY(trade)
+
+def IsTradeFxAndCNY(trade):
+    instrument = trade.Instrument()
+    ins_type = instrument.InsType()
+    curr_pair = None
+    if ins_type == 'Option':
+        if instrument.UnderlyingType() == 'Curr':
+            curr_pair = trade.InstrumentPair()
+    elif ins_type == 'Future/Forward':
+        if instrument.UnderlyingType() == 'Curr':
+            curr_pair = trade.InstrumentPair()
+    elif ins_type == 'CurrSwap':
+        curr_pair = trade.InstrumentPair()
+    elif ins_type == 'Curr':
+        curr_pair = trade.InstrumentPair()
+    if curr_pair is None:
+        return False
+    if CURRENCY_NAME in [curr_pair.Currency1().Name(), curr_pair.Currency2().Name()]:
+        return True
+    return False
+
+...
+
+  FValidationSaveRateOnBOBOConfirmed
+import ael
+import acm
+import AccountingColumnUtils
+
+usdCurr = acm.FInstrument['USD']
+market_spot = acm.FParty['REFINITIV_SPOT']
+market_historic = acm.FParty['EOD_MtM']
+
+def validate_transaction(transaction_list, *rest):
+    for (e, op) in transaction_list:
+        if e.record_type == "Trade":
+            orig = e.original()
+            if not orig or orig.status != 'BO-BO Confirmed':
+                if e.status == "BO-BO Confirmed":
+                    if e.insaddr.instype in ('Curr', 'CurrSwap'):
+                        try:
+                            if e.correction_trdnbr and e.correction_trdnbr.trdnbr != e.trdnbr:
+                                should_continue = False
+                                if e.correction_trdnbr.add_info('BoFxRate'):
+                                    AccountingColumnUtils.set_addinfo(e, 'BoFxRate', e.correction_trdnbr.add_info('BoFxRate'))
+                                    should_continue = True
+                                if should_continue:
+                                    continue
+                            insName = e.insaddr.insid
+                            if insName:
+                                market = market_spot
+                                liveRate = True
+                                ins = acm.FInstrument[insName]
+                                trade = acm.FTrade[e.trdnbr]
+                                tradeCurr = trade.CurrencyPair().Currency1()
+                                curr2 = trade.CurrencyPair().Currency2()
+                                if tradeCurr.Name() != 'USD' and curr2.Name() != 'USD':
+                                    if ins and tradeCurr and market:
+                                        fxRate = AccountingColumnUtils.getLatestRateForInstrument(tradeCurr, usdCurr, 'Bid', market, liveRate)
+                                        if not fxRate:
+                                            fxRate = AccountingColumnUtils.getLatestRateForInstrument(usdCurr, tradeCurr, 'Bid', market, liveRate)
+                                            if fxRate and str(fxRate) != 'nan':
+                                                fxRate = 1/fxRate
+                                        if fxRate and str(fxRate) != 'nan':
+                                            AccountingColumnUtils.set_addinfo(e, 'BoFxRate', str(fxRate))
+                        except Exception as exc:
+                            print(exc)
+    return transaction_list
+
+
+
+    
+
+...
+
+}
+

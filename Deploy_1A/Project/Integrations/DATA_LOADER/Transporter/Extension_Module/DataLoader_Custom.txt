@@ -1,0 +1,49 @@
+#
+# Front Arena exported extension module.
+# source          ""
+# timestamp (utc) "2022-12-08 10:09:58.5"
+# ***** DO NOT EDIT! *****
+#
+name        "DataLoader_Custom"
+description ""
+
+groups {
+}
+
+decls[FParameters] {
+}
+
+clx FObject [FParameters] {
+  FDLConfigAMBSettings =
+  AMBA_SENDER_MB_NAME=AMBA_DL_SENDER
+  AMBA_SENDER_SOURCE_ex=AMBA_DL_SENDER_SOURCE
+  MESSAGE_BROKER_ex=localhost:9100/mb
+
+
+  FDLConfigFileSettings =
+  BBG_DATA_FILE_PATH_ex=D:\DataLoader\data
+  BBG_PUTTY_INSTALLABLE_PATH=D:\DataLoader\PuTTy
+  BBG_XSL_FILE_PATH=D:\DataLoader\xsl
+
+
+  FDLConfigFTPSettings =
+  BBG_DECRYPT_SOFTWARE_PATH=D:\blp\bbdl\rb6.0\des.exe
+  BBG_FTP_DECRYPT_MESSAGE=False
+  BBG_FTP_PASSWORD=Passw0rdbloomberg%
+  BBG_FTP_USER=dl793124
+  BBG_LICENSE_REQUEST_TYPE=adhoc
+  BBG_SFTP_HOST=sftp.bloomberg.com
+  BBG_SFTP_PORT=22
+
+
+  FDLConfigOpenFigiSettings =
+  DO_NOT_USE_OPENFIGI_API=True
+
+
+  FDLConfigSystemSettings =
+  BBG_IDENTIFIER_PREFERENCE=BB_TICKER,ISIN,BB_UNIQUE,SEDOL,CUSIP
+  BBG_USE_PRICE_DEFINITION=False
+
+
+}
+

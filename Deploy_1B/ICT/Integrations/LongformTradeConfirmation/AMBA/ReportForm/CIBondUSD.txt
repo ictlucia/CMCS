@@ -1,0 +1,152 @@
+[MESSAGE]
+  TYPE=INSERT_ORGANISATION
+  VERSION=1.0
+  TIME=2024-05-03 06:34:20
+  SOURCE=FAMBAMessageGenerator
+  [ORGANISATION]
+    DESCRIPTION=The Client
+    ORGID=CLIENT
+  [/ORGANISATION]
+[/MESSAGE]
+[MESSAGE]
+  TYPE=INSERT_GROUP
+  VERSION=1.0
+  TIME=2024-05-03 06:34:20
+  SOURCE=FAMBAMessageGenerator
+  [GROUP]
+    DESCRIPTION=Default Front Arena group
+    GRPID=ADMINISTRATION
+    ORGNBR.ORGID=CLIENT
+    [GROUPPROFILELINK]
+      PROFNBR.PROFID=ALL_COMPONENTS
+    [/GROUPPROFILELINK]
+    [GROUPPROFILELINK]
+      PROFNBR.PROFID=ALL_WORKFLOW
+    [/GROUPPROFILELINK]
+  [/GROUP]
+[/MESSAGE]
+[MESSAGE]
+  TYPE=INSERT_USER
+  VERSION=1.0
+  TIME=2024-05-03 06:34:20
+  SOURCE=FAMBAMessageGenerator
+  [USER]
+    EMAIL=emilia.kinsy@inticorp.tech
+    GRPNBR.GRPID=ADMINISTRATION
+    NAME=#1
+    USERID=ARENASYS
+    [USERPROFILELINK]
+      PROFNBR.PROFID=ALL_COMPONENTS
+    [/USERPROFILELINK]
+    [USERPROFILELINK]
+      PROFNBR.PROFID=ALL_WORKFLOW
+    [/USERPROFILELINK]
+    [PRINCIPAL]
+      TYPE=Kerberos
+      PRINCIPAL=#anonym@318
+    [/PRINCIPAL]
+    [PRINCIPAL]
+      TYPE=Kerberos
+      PRINCIPAL=#anonym@340
+    [/PRINCIPAL]
+    [PRINCIPAL]
+      TYPE=Kerberos
+      PRINCIPAL=#anonym@361
+    [/PRINCIPAL]
+    [PRINCIPAL]
+      TYPE=Kerberos
+      PRINCIPAL=#anonym@362
+    [/PRINCIPAL]
+    [PRINCIPAL]
+      TYPE=Kerberos
+      PRINCIPAL=#anonym@363
+    [/PRINCIPAL]
+  [/USER]
+[/MESSAGE]
+[MESSAGE]
+  TYPE=INSERT_ORGANISATION
+  VERSION=1.0
+  TIME=2024-05-03 06:34:20
+  SOURCE=FAMBAMessageGenerator
+  [ORGANISATION]
+    DESCRIPTION=Bank Mandiri
+    ORGID=MANDIRI
+  [/ORGANISATION]
+[/MESSAGE]
+[MESSAGE]
+  TYPE=INSERT_GROUP
+  VERSION=1.0
+  TIME=2024-05-03 06:34:20
+  SOURCE=FAMBAMessageGenerator
+  [GROUP]
+    GRPID=IT_SUPERADMIN
+    ORGNBR.ORGID=MANDIRI
+    [GROUPPROFILELINK]
+      PROFNBR.PROFID=ALL_COMPONENTS
+    [/GROUPPROFILELINK]
+    [GROUPPROFILELINK]
+      PROFNBR.PROFID=ALL_WORKFLOW
+    [/GROUPPROFILELINK]
+    [GROUPPROFILELINK]
+      PROFNBR.PROFID=PORT_ALL
+    [/GROUPPROFILELINK]
+    [GROUPPROFILELINK]
+      PROFNBR.PROFID=BIETP_DEAL
+    [/GROUPPROFILELINK]
+  [/GROUP]
+[/MESSAGE]
+[MESSAGE]
+  TYPE=INSERT_USER
+  VERSION=1.0
+  TIME=2024-05-03 06:34:20
+  SOURCE=FAMBAMessageGenerator
+  [USER]
+    GRPNBR.GRPID=IT_SUPERADMIN
+    USERID=LUCIA
+    [USERPROFILELINK]
+      PROFNBR.PROFID=ALL_COMPONENTS
+    [/USERPROFILELINK]
+  [/USER]
+[/MESSAGE]
+[MESSAGE]
+  TYPE=INSERT_TEXTOBJECT
+  VERSION=1.0
+  TIME=2024-05-03 06:34:20
+  SOURCE=FAMBAMessageGenerator
+  [TEXTOBJECT]
+    TYPE=Customizable
+    DATA={\
+    "MSWordTemplates": [\
+        {\
+            "name": "PAYMENT COUPON FIXED INCOME USD",\
+            "type": "LongFormTPL",\
+            "version": "9",\
+            "checksumFields": {\
+                "RegularFields": [],\
+                "LoopFields": []\
+            }\
+        }\
+    ],\
+    "PrimeSheetTemplates": [\
+        {\
+            "name": "CIBondFixedIncomeUSD",\
+            "classType": "Confirmation Sheet",\
+            "type": "Primary",\
+            "insertItem": "",\
+            "insertQuery": ""\
+        },\
+        {\
+            "name": "CIbondUSDTQA",\
+            "classType": "Confirmation Sheet",\
+            "type": "Supplement",\
+            "insertItem": "Confirmation",\
+            "insertQuery": ""\
+        }\
+    ],\
+    "FormattedColumnSet": []\
+}
+    NAME=CIBondUSD
+    SIZE=766
+    SUBTYPE=ReportForm
+  [/TEXTOBJECT]
+[/MESSAGE]

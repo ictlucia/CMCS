@@ -1,0 +1,1082 @@
+#
+# Front Arena exported extension module.
+# source          ""
+# timestamp (utc) "2024-09-25 04:00:34"
+# ***** DO NOT EDIT! *****
+#
+name        "BM_MenuReportGenerate"
+description "$Id$"
+
+groups {
+}
+
+decls[FMenuExtension] {
+}
+
+clx FObject [FMenuExtension] {
+  Audit Trail =
+  Function=BOa28Util.StartApplication
+  MenuType=Application
+  ModuleName=Audit Trail
+  ParentMenu=Tools
+  RibbonPosition=Reporting Menu/Back Office Report
+
+
+  BO62 =
+  Function=BO62Util.StartApplication
+  MenuType=Application
+  ModuleName=BO62
+  ParentMenu=Tools
+  RibbonPosition=Reporting Menu/Back Office Report
+
+
+  Bond Holding Period =
+  Function=FO05Util.StartApplication
+  MenuType=Application
+  ModuleName=Bond Holding Period
+  ParentMenu=Tools
+  RibbonPosition=Reporting Menu/Front Office Report
+
+
+  Cashflow Projection IDR =
+  Function=LIQ19Util.StartApplication
+  MenuType=Application
+  ModuleName=Cashflow Projection IDR
+  ParentMenu=Tools
+  RibbonPosition=Reporting Menu/Front Office Report
+
+
+  Cashflow Projection Non-IDR =
+  Function=LIQ18Util.StartApplication
+  MenuType=Application
+  ModuleName=Cashflow Projection Non-IDR
+  ParentMenu=Tools
+  RibbonPosition=Reporting Menu/Front Office Report
+
+
+  Counterparty Limit Utilization =
+  DisplayName=Counterparty Limit Utilization
+  Function=MO12_LimitUtilization_Utill.StartApplication
+  MenuType=Application
+  ModuleName=Counterparty Limit Utilization
+  ParentMenu=Tools
+  RibbonPosition=Tools/Middle Office Report
+
+
+  Counterparty Limit Utilization DV =
+  DisplayName=Counterparty Limit Utilization DV
+  Function=MO12_LimitUtilizationDV_Utill.StartApplication
+  MenuType=Application
+  ModuleName=Counterparty Limit Utilization DV
+  ParentMenu=Tools
+  RibbonPosition=Tools/Middle Office Report
+
+
+  Counterparty Limit Utilization FX =
+  DisplayName=Counterparty Limit Utilization FX
+  Function=MO12_LimitUtilizationFX_Utill.StartApplication
+  MenuType=Application
+  ModuleName=Counterparty Limit Utilization FX
+  ParentMenu=Tools
+  RibbonPosition=Tools/Middle Office Report
+
+
+  Country Limit Utilization =
+  DisplayName=Country Limit Utilization
+  Function=MO14_CountryLimitUtilization_Utill.StartApplication
+  MenuType=Application
+  ModuleName=Country Limit Utilization
+  ParentMenu=Tools
+  RibbonPosition=Tools/Middle Office Report
+
+
+  Custody Out Bond =
+  Function=CustodyOutBondUtil.StartApplication
+  MenuType=Application
+  ModuleName=Custody Out Bond
+  ParentMenu=Tools
+  RibbonPosition=Tools
+
+
+  Daily Cust Report =
+  Function=FO10Util.StartApplication
+  MenuType=Application
+  ModuleName=Daily Cust Report
+  ParentMenu=Tools
+  RibbonPosition=Reporting Menu/Front Office Report
+
+
+  Daily Dashboard =
+  Function=FO11Util.StartApplication
+  MenuType=Application
+  ModuleName=Daily Dashboard
+  ParentMenu=Tools
+  RibbonPosition=Reporting Menu/Front Office Report
+
+
+  Data Cabang Daily SOD =
+  Function=FO50Util.StartApplication
+  MenuType=Application
+  ModuleName=Data Cabang Daily SOD
+  ParentMenu=Tools
+  RibbonPosition=Reporting Menu/Front Office Report
+
+
+  Interest Rate MtM Report =
+  Function=BO61Util.StartApplication
+  MenuType=Application
+  ModuleName=Interest Rate MtM Report
+  ParentMenu=Tools
+  RibbonPosition=Reporting Menu/Back Office Report
+
+
+  Issuer Limit Utilization =
+  DisplayName=Issuer Limit Utilization
+  Function=MO13_IssuerLimitUtilization_Utill.StartApplication
+  MenuType=Application
+  ModuleName=Issuer Limit Utilization
+  ParentMenu=Tools
+  RibbonPosition=Tools/Middle Office Report
+
+
+  Journal Import =
+  Function=FJournalImportUtil.StartApplication
+  MenuType=Application
+  ModuleName=Journal Import
+  ParentMenu=Tools
+  RibbonPosition=Tools
+
+
+  Laporan Penginputan NTR Akhir Hari =
+  Function=BO39Util.StartApplication
+  MenuType=Application
+  ModuleName=Laporan Penginputan NTR Akhir Hari
+  ParentMenu=Tools
+  RibbonPosition=Reporting Menu/Back Office Report
+
+
+  Mark to Market Nasabah =
+  Function=BO22Util.StartApplication
+  MenuType=Application
+  ModuleName=Mark to Market Nasabah
+  ParentMenu=Tools
+  RibbonPosition=Reporting Menu/Back Office Report
+
+
+  Monthly and Yearly Loss Limit Client =
+  DisplayName=Monthly and Yearly Loss Limit Client
+  Function=MO06_Client_Util.StartApplication
+  MenuType=Application
+  ModuleName=Monthly and Yearly Loss Limit Client
+  ParentMenu=Tools
+  RibbonPosition=Tools/Middle Office Report
+
+
+  Monthly and Yearly Loss Limit FXT =
+  DisplayName=Monthly and Yearly Loss Limit FXT
+  Function=MO06_FXT_Util.StartApplication
+  MenuType=Application
+  ModuleName=Monthly and Yearly Loss Limit FXT
+  ParentMenu=Tools
+  RibbonPosition=Tools/Middle Office Report
+
+
+  Monthly and Yearly Loss Limit IRT =
+  DisplayName=Monthly and Yearly Loss Limit IRT
+  Function=MO06_IRT_Util.StartApplication
+  MenuType=Application
+  ModuleName=Monthly and Yearly Loss Limit IRT
+  ParentMenu=Tools
+  RibbonPosition=Tools/Middle Office Report
+
+
+  Monthly Report =
+  Function=BO54Util.StartApplication
+  MenuType=Application
+  ModuleName=Monthly Report
+  ParentMenu=Tools
+  RibbonPosition=Reporting Menu/Back Office Report
+
+
+  Net Open Poisition Limit Custom Report =
+  DisplayName=Net Open Poisition Limit
+  Function=MO05Util.StartApplication
+  MenuType=Application
+  ModuleName=Net Open Poisition Limit Custom Report
+  ParentMenu=Tools
+  RibbonPosition=Tools/Middle Office Report
+
+
+  New Customer Registration =
+  Function=FO15Util.StartApplication
+  MenuType=Application
+  ModuleName=New Customer Registration
+  ParentMenu=Tools
+  RibbonPosition=Reporting Menu/Front Office Report
+
+
+  PPE EBUS Sebagai Pedagang & Perantara =
+  Function=BO70Util.StartApplication
+  MenuType=Application
+  ModuleName=PPE EBUS Sebagai Pedagang & Perantara
+  ParentMenu=Tools
+  RibbonPosition=Reporting Menu/Back Office Report
+
+
+  PV01 Limit Custom Report =
+  DisplayName=PV01 Limit Custom Report
+  Function=MO07_Custom_Util.StartApplication
+  MenuType=Application
+  ModuleName=PV01 Limit Custom Report
+  ParentMenu=Tools
+  RibbonPosition=Tools/Middle Office Report
+
+
+  PV01 Limit per Asset Custom Report =
+  DisplayName=PV01 Limit per Asset Custom Report
+  Function=MO07_LimitPerAsset_Util.StartApplication
+  MenuType=Application
+  ModuleName=PV01 Limit per Asset Custom Report
+  ParentMenu=Tools
+  RibbonPosition=Tools/Middle Office Report
+
+
+  PV01 Limit per Currency Custom Report =
+  DisplayName=PV01 Limit per Currency Custom Report
+  Function=MO07_LimitPerCurrency_Utill.StartApplication
+  MenuType=Application
+  ModuleName=PV01 Limit per Currency Custom Report
+  ParentMenu=Tools
+  RibbonPosition=Tools/Middle Office Report
+
+
+  Report Data Pemutakhiran Nasabah =
+  Function=BOa25Util.StartApplication
+  MenuType=Application
+  ModuleName=Report Data Pemutakhiran Nasabah
+  ParentMenu=Tools
+  RibbonPosition=Reporting Menu/Back Office Report
+
+
+  Report Data Permintaan Nasabah =
+  Function=BOa24Util.StartApplication
+  MenuType=Application
+  ModuleName=Report Data Permintaan Nasabah
+  ParentMenu=Tools
+  RibbonPosition=Reporting Menu/Back Office Report
+
+
+  Report Generation =
+  DisplayName=Report Generation
+  Function=MO05_ReportGeneration_Util.StartApplication
+  MenuType=Application
+  ModuleName=Report Generation
+  ParentMenu=Tools
+  RibbonPosition=Tools/Middle Office Report
+
+
+  Report Resume Tax Reconciliation =
+  Function=BO33Util.StartApplication
+  MenuType=Application
+  ModuleName=Report Resume Tax Reconciliation
+  ParentMenu=Tools
+  RibbonPosition=Reporting Menu/Back Office Report
+
+
+  TAS Report - Dashboard Performance Client =
+  Function=FO16Util.StartApplication
+  MenuType=Application
+  ModuleName=TAS Report - Dashboard Performance Client
+  ParentMenu=Tools
+  RibbonPosition=Reporting Menu/Front Office Report
+
+
+  TAS Report - Target Monitoring =
+  Function=FO12Util.StartApplication
+  MenuType=Application
+  ModuleName=Target Monitoring
+  ParentMenu=Tools
+  RibbonPosition=Reporting Menu/Front Office Report
+
+
+  TMPG Charges =
+  Function=TMPGChargesUtil.StartApplication
+  MenuType=Application
+  ModuleName=TMPG Charges
+  ParentMenu=Tools
+  RibbonPosition=Reporting Menu/Back Office Report
+
+
+  TMPG Claim Invoice =
+  Function=BO58Util.StartApplication
+  MenuType=Application
+  ModuleName=TMPG Claim Invoice
+  ParentMenu=Tools
+  RibbonPosition=Reporting Menu/Back Office Report
+
+
+  TMPGFailChargesUtil =
+  Function=TMPGFailChargesUtil.StartApplication
+  MenuType=Application
+  ModuleName=TMPGFailCharges
+  ParentMenu=Tools
+  RibbonPosition=Tools
+
+
+  TRC BN Requirement - Target Monitoring =
+  Function=FO47Util.StartApplication
+  MenuType=Application
+  ModuleName=TRC BN Requirement - Target Monitoring
+  ParentMenu=Tools
+  RibbonPosition=Reporting Menu/Front Office Report
+
+
+  Yearly Report =
+  Function=BO55Util.StartApplication
+  MenuType=Application
+  ModuleName=Yearly Report
+  ParentMenu=Tools
+  RibbonPosition=Reporting Menu/Back Office Report
+
+
+}
+
+clx FSessionManagerFrame [FMenuExtension] {
+  Cashflow Projection IDR =
+  Function=LIQ19Util.StartApplication
+  MenuType=Application
+  ModuleName=Cashflow Projection IDR
+  ParentMenu=Tools
+  RibbonPosition=Reporting Menu/Front Office Report
+
+
+  Cashflow Projection Non-IDR =
+  Function=LIQ18Util.StartApplication
+  MenuType=Application
+  ModuleName=Cashflow Projection Non-IDR
+  ParentMenu=Tools
+  RibbonPosition=Reporting Menu/Front Office Report
+
+
+  Daily Cust Report =
+  Function=FO10Util.StartApplication
+  MenuType=Application
+  ModuleName=Daily Cust Report
+  ParentMenu=Tools
+  RibbonPosition=Reporting Menu/Front Office Report
+
+
+  Daily Dashboard =
+  Function=FO11Util.StartApplication
+  MenuType=Application
+  ModuleName=Daily Dashboard
+  ParentMenu=Tools
+  RibbonPosition=Reporting Menu/Front Office Report
+
+
+  Interest Rate MtM Report =
+  Function=BO61Util.StartApplication
+  MenuType=Application
+  ModuleName=Interest Rate MtM Report
+  ParentMenu=Tools
+  RibbonPosition=Reporting Menu/Back Office Report
+
+
+  Journal Import =
+  Function=FJournalImportUtil.StartApplication
+  MenuType=Application
+  ModuleName=Journal Import
+  ParentMenu=Tools
+  RibbonPosition=Tools
+
+
+  Laporan Penginputan NTR Akhir Hari =
+  Function=BO39Util.StartApplication
+  MenuType=Application
+  ModuleName=Laporan Penginputan NTR Akhir Hari
+  ParentMenu=Tools
+  RibbonPosition=Reporting Menu/Back Office Report
+
+
+  Monthly Report =
+  Function=BO54Util.StartApplication
+  MenuType=Application
+  ModuleName=Monthly Report
+  ParentMenu=Tools
+  RibbonPosition=Reporting Menu/Back Office Report
+
+
+  New Customer Registration =
+  Function=FO15Util.StartApplication
+  MenuType=Application
+  ModuleName=New Customer Registration
+  ParentMenu=Tools
+  RibbonPosition=Reporting Menu/Front Office Report
+
+
+  Report Resume Tax Reconciliation =
+  Function=BO33Util.StartApplication
+  MenuType=Application
+  ModuleName=Report Resume Tax Reconciliation
+  ParentMenu=Tools
+  RibbonPosition=Reporting Menu/Back Office Report
+
+
+  TAS Report - Target Monitoring =
+  Function=FO12Util.StartApplication
+  MenuType=Application
+  ModuleName=Target Monitoring
+  ParentMenu=Tools
+  RibbonPosition=Reporting Menu/Front Office Report
+
+
+  TRC BN Requirement - Target Monitoring =
+  Function=FO47Util.StartApplication
+  MenuType=Application
+  ModuleName=TRC BN Requirement - Target Monitoring
+  ParentMenu=Tools
+  RibbonPosition=Reporting Menu/Front Office Report
+
+
+  Yearly Report =
+  Function=BO55Util.StartApplication
+  MenuType=Application
+  ModuleName=Yearly Report
+  ParentMenu=Tools
+  RibbonPosition=Reporting Menu/Back Office Report
+
+
+}
+
+decls[FPythonCode] {
+}
+
+clx FObject [FPythonCode] {
+  BO22Util
+
+import acm
+import UserProfileUtils as up
+
+def StartApplication(eii):
+    component = 'Back Office'
+    shell = acm.UX.SessionManager().Shell()
+    isallow = up.is_component_in_user_profile(component, 'Operation')
+    if isallow == 1:
+        acm.RunModuleWithParameters("BO22 - Mark to Market Nasabah (adhoc)", acm.GetDefaultContext())
+    else:
+        acm.UX().Dialogs().MessageBoxInformation(shell,"User not have access")
+
+...
+
+  BO33Util
+
+import acm
+import UserProfileUtils as up
+
+def StartApplication(eii):
+    component = 'Back Office'
+    shell = acm.UX.SessionManager().Shell()
+    isallow = up.is_component_in_user_profile(component, 'Operation')
+    if isallow == 1:
+        acm.RunModuleWithParameters("BO33 - Rekonsiliasi Pajak - Report Resume Tax Reconciliation", acm.GetDefaultContext())
+    else:
+        acm.UX().Dialogs().MessageBoxInformation(shell,"User not have access")
+
+...
+
+  BO39Util
+
+import acm
+import UserProfileUtils as up
+
+def StartApplication(eii):
+    component = 'Back Office'
+    shell = acm.UX.SessionManager().Shell()
+    isallow = up.is_component_in_user_profile(component, 'Operation')
+    if isallow == 1:
+        acm.RunModuleWithParameters("BO39 - Laporan Penginputan NTR Akhir Hari", acm.GetDefaultContext())
+    else:
+        acm.UX().Dialogs().MessageBoxInformation(shell,"User not have access")
+
+...
+
+  BO54Util
+
+import acm
+import UserProfileUtils as up
+
+def StartApplication(eii):
+    component = 'Back Office'
+    shell = acm.UX.SessionManager().Shell()
+    isallow = up.is_component_in_user_profile(component, 'Operation')
+    if isallow == 1:
+        acm.RunModuleWithParameters("BO54 - Monthly Report", acm.GetDefaultContext())
+    else:
+        acm.UX().Dialogs().MessageBoxInformation(shell,"User not have access")
+
+...
+
+  BO55Util
+
+
+import acm
+import UserProfileUtils as up
+
+def StartApplication(eii):
+    component = 'Back Office'
+    shell = acm.UX.SessionManager().Shell()
+    isallow = up.is_component_in_user_profile(component, 'Operation')
+    if isallow == 1:
+        acm.RunModuleWithParameters("BO55 - Yearly Report", acm.GetDefaultContext())
+    else:
+        acm.UX().Dialogs().MessageBoxInformation(shell,"User not have access")
+
+...
+
+  BO58Util
+
+import acm
+import UserProfileUtils as up
+
+def StartApplication(eii):
+    component = 'Back Office'
+    shell = acm.UX.SessionManager().Shell()
+    isallow = up.is_component_in_user_profile(component, 'Operation')
+    if isallow == 1:
+        acm.RunModuleWithParameters("BO58 - TMPG Claim Invoice", acm.GetDefaultContext())
+    else:
+        acm.UX().Dialogs().MessageBoxInformation(shell,"User not have access")
+
+...
+
+  BO61Util
+
+import acm
+import UserProfileUtils as up
+
+def StartApplication(eii):
+    component = 'Back Office'
+    shell = acm.UX.SessionManager().Shell()
+    isallow = up.is_component_in_user_profile(component, 'Operation')
+    if isallow == 1:
+        acm.RunModuleWithParameters("BO61 - Interest Rate MtM Report", acm.GetDefaultContext())
+    else:
+        acm.UX().Dialogs().MessageBoxInformation(shell,"User not have access")
+
+...
+
+  BO62Util
+
+import acm
+import UserProfileUtils as up
+
+def StartApplication(eii):
+    component = 'Back Office'
+    shell = acm.UX.SessionManager().Shell()
+    isallow = up.is_component_in_user_profile(component, 'Operation')
+    if isallow == 1:
+        acm.RunModuleWithParameters("BO62_Runscript", acm.GetDefaultContext())
+    else:
+        acm.UX().Dialogs().MessageBoxInformation(shell,"User not have access")
+
+...
+
+  BO70Util
+
+import acm
+import UserProfileUtils as up
+
+def StartApplication(eii):
+    component = 'Back Office'
+    shell = acm.UX.SessionManager().Shell()
+    isallow = up.is_component_in_user_profile(component, 'Operation')
+    if isallow == 1:
+        acm.RunModuleWithParameters("BO70 - PPE EBUS Sebagai Pedagang & Perantara", acm.GetDefaultContext())
+    else:
+        acm.UX().Dialogs().MessageBoxInformation(shell,"User not have access")
+
+...
+
+  BOa24Util
+
+import acm
+import UserProfileUtils as up
+
+def StartApplication(eii):
+    component = 'Back Office'
+    shell = acm.UX.SessionManager().Shell()
+    isallow = up.is_component_in_user_profile(component, 'Operation')
+    if isallow == 1:
+        acm.RunModuleWithParameters("BOa24 - Customer Data Report - Report Data Permintaan Nasabah", acm.GetDefaultContext())
+    else:
+        acm.UX().Dialogs().MessageBoxInformation(shell,"User not have access")
+
+...
+
+  BOa25Util
+
+import acm
+import UserProfileUtils as up
+
+def StartApplication(eii):
+    component = 'Back Office'
+    shell = acm.UX.SessionManager().Shell()
+    isallow = up.is_component_in_user_profile(component, 'Operation')
+    if isallow == 1:
+        acm.RunModuleWithParameters("BOa25 - Customer Data Report - Report Data Pemutakhiran Nasabah", acm.GetDefaultContext())
+    else:
+        acm.UX().Dialogs().MessageBoxInformation(shell,"User not have access")
+
+...
+
+  BOa28Util
+
+import acm
+import UserProfileUtils as up
+
+def StartApplication(eii):
+    component = 'Back Office'
+    shell = acm.UX.SessionManager().Shell()
+    isallow = up.is_component_in_user_profile(component, 'Operation')
+    if isallow == 1:
+        acm.RunModuleWithParameters("BOa28 - Audit Trail", acm.GetDefaultContext())
+    else:
+        acm.UX().Dialogs().MessageBoxInformation(shell,"User not have access")
+
+...
+
+  CustodyOutBondUtil
+
+import acm
+import UserProfileUtils as up
+
+def StartApplication(eii):
+    component = 'Back Office'
+    shell = acm.UX.SessionManager().Shell()
+    isallow = up.is_component_in_user_profile(component, 'Operation')
+    if isallow == 1:
+        acm.RunModuleWithParameters("CustodySystemOutBond", acm.GetDefaultContext())
+    else:
+        acm.UX().Dialogs().MessageBoxInformation(shell,"User not have access")
+
+...
+
+  FJournalImportUtil
+
+import acm
+import UserProfileUtils as up
+
+def StartApplication(eii):
+    component = 'BO Journal Upload'
+    shell = acm.UX.SessionManager().Shell()
+    isallow = up.is_component_in_user_profile(component, 'Operation')
+    if isallow == 1:
+        acm.RunModuleWithParameters("FJournalImport", acm.GetDefaultContext())
+    else:
+        acm.UX().Dialogs().MessageBoxInformation(shell,"User not have access")
+
+...
+
+  FO05Util
+
+import acm
+import UserProfileUtils as up
+
+def StartApplication(eii):
+    component = 'Front Office'
+    shell = acm.UX.SessionManager().Shell()
+    isallow = up.is_component_in_user_profile(component, 'Operation')
+    if isallow == 1:
+        acm.RunModuleWithParameters("FO05 - FXT FX Report Requirement - Bond Holding Period", acm.GetDefaultContext())
+    else:
+        acm.UX().Dialogs().MessageBoxInformation(shell,"User not have access")
+
+...
+
+  FO10Util
+
+import acm
+import UserProfileUtils as up
+
+def StartApplication(eii):
+    component = 'Front Office'
+    shell = acm.UX.SessionManager().Shell()
+    isallow = up.is_component_in_user_profile(component, 'Operation')
+    if isallow == 1:
+        acm.RunModuleWithParameters("FO10 - Daily Cust Report", acm.GetDefaultContext())
+    else:
+        acm.UX().Dialogs().MessageBoxInformation(shell,"User not have access")
+
+...
+
+  FO11Util
+
+import acm
+import UserProfileUtils as up
+
+def StartApplication(eii):
+    component = 'Front Office'
+    shell = acm.UX.SessionManager().Shell()
+    isallow = up.is_component_in_user_profile(component, 'Operation')
+    if isallow == 1:
+        acm.RunModuleWithParameters("FO11 - TAS Report - Daily Dashboard", acm.GetDefaultContext())
+    else:
+        acm.UX().Dialogs().MessageBoxInformation(shell,"User not have access")
+
+...
+
+  FO12Util
+
+import acm
+import UserProfileUtils as up
+
+def StartApplication(eii):
+    component = 'Front Office'
+    shell = acm.UX.SessionManager().Shell()
+    isallow = up.is_component_in_user_profile(component, 'Operation')
+    if isallow == 1:
+        acm.RunModuleWithParameters("FO12 - TAS Report - Target Monitoring", acm.GetDefaultContext())
+    else:
+        acm.UX().Dialogs().MessageBoxInformation(shell,"User not have access")
+
+...
+
+  FO15Util
+
+import acm
+import UserProfileUtils as up
+
+def StartApplication(eii):
+    component = 'Front Office'
+    shell = acm.UX.SessionManager().Shell()
+    isallow = up.is_component_in_user_profile(component, 'Operation')
+    if isallow == 1:
+        acm.RunModuleWithParameters("FO15 - TAS Report - New Customer Registration", acm.GetDefaultContext())
+    else:
+        acm.UX().Dialogs().MessageBoxInformation(shell,"User not have access")
+
+
+...
+
+  FO16Util
+
+import acm
+import UserProfileUtils as up
+
+def StartApplication(eii):
+    component = 'Front Office'
+    shell = acm.UX.SessionManager().Shell()
+    isallow = up.is_component_in_user_profile(component, 'Operation')
+    if isallow == 1:
+        acm.RunModuleWithParameters("FO16 - TAS Report - Dashboard Performance Client", acm.GetDefaultContext())
+    else:
+        acm.UX().Dialogs().MessageBoxInformation(shell,"User not have access")
+
+...
+
+  FO47Util
+
+import acm
+import UserProfileUtils as up
+
+def StartApplication(eii):
+    component = 'Front Office'
+    shell = acm.UX.SessionManager().Shell()
+    isallow = up.is_component_in_user_profile(component, 'Operation')
+    if isallow == 1:
+        acm.RunModuleWithParameters("FO47 - TRC BN Requirement - Target Monitoring", acm.GetDefaultContext())
+    else:
+        acm.UX().Dialogs().MessageBoxInformation(shell,"User not have access")
+
+...
+
+  FO50Util
+
+import acm
+import UserProfileUtils as up
+
+def StartApplication(eii):
+    component = 'Front Office'
+    shell = acm.UX.SessionManager().Shell()
+    isallow = up.is_component_in_user_profile(component, 'Operation')
+    if isallow == 1:
+        acm.RunModuleWithParameters("FO50 - TRC BONDRI Report Requirement - Data Cabang Daily SOD", acm.GetDefaultContext())
+    else:
+        acm.UX().Dialogs().MessageBoxInformation(shell,"User not have access")
+
+...
+
+  LIQ18Util
+
+import acm
+import UserProfileUtils as up
+
+def StartApplication(eii):
+    component = 'Front Office'
+    shell = acm.UX.SessionManager().Shell()
+    isallow = up.is_component_in_user_profile(component, 'Operation')
+    if isallow == 1:
+        acm.RunModuleWithParameters("LIQ18 - NON_IDR Projections", acm.GetDefaultContext())
+    else:
+        acm.UX().Dialogs().MessageBoxInformation(shell,"User not have access")
+
+...
+
+  LIQ19Util
+
+import acm
+import UserProfileUtils as up
+
+def StartApplication(eii):
+    component = 'Front Office'
+    shell = acm.UX.SessionManager().Shell()
+    isallow = up.is_component_in_user_profile(component, 'Operation')
+    if isallow == 1:
+        acm.RunModuleWithParameters("LIQ19 - IDR Projections", acm.GetDefaultContext())
+    else:
+        acm.UX().Dialogs().MessageBoxInformation(shell,"User not have access")
+
+...
+
+  MO05_ReportGeneration_Util
+
+import acm
+import UserProfileUtils as up
+
+def StartApplication(eii):
+    component = 'Middle Office'
+    shell = acm.UX.SessionManager().Shell()
+    isallow = up.is_component_in_user_profile(component, 'Operation')
+    if isallow == 1:
+        acm.RunModuleWithParameters("MO05_Report_Generation", acm.GetDefaultContext())
+    else:
+        acm.UX().Dialogs().MessageBoxInformation(shell,"User not have access")
+
+...
+
+  MO05Util
+
+import acm
+import UserProfileUtils as up
+
+def StartApplication(eii):
+    component = 'Middle Office'
+    shell = acm.UX.SessionManager().Shell()
+    isallow = up.is_component_in_user_profile(component, 'Operation')
+    if isallow == 1:
+        acm.RunModuleWithParameters("MO05 - Market Risk - Net Open Position Limit Custom Report", acm.GetDefaultContext())
+    else:
+        acm.UX().Dialogs().MessageBoxInformation(shell,"User not have access")
+
+...
+
+  MO06_Client_Util
+
+import acm
+import UserProfileUtils as up
+
+def StartApplication(eii):
+    component = 'Middle Office'
+    shell = acm.UX.SessionManager().Shell()
+    isallow = up.is_component_in_user_profile(component, 'Operation')
+    if isallow == 1:
+        acm.RunModuleWithParameters("MO06 - Market Risk Monthly and Yearly Loss Limit Client", acm.GetDefaultContext())
+    else:
+        acm.UX().Dialogs().MessageBoxInformation(shell,"User not have access")
+
+...
+
+  MO06_FXT_Util
+
+import acm
+import UserProfileUtils as up
+
+def StartApplication(eii):
+    component = 'Middle Office'
+    shell = acm.UX.SessionManager().Shell()
+    isallow = up.is_component_in_user_profile(component, 'Operation')
+    if isallow == 1:
+        acm.RunModuleWithParameters("MO06 - Market Risk Monthly and Yearly Loss Limit FXT", acm.GetDefaultContext())
+    else:
+        acm.UX().Dialogs().MessageBoxInformation(shell,"User not have access")
+
+...
+
+  MO06_IRT_Util
+
+import acm
+import UserProfileUtils as up
+
+def StartApplication(eii):
+    component = 'Middle Office'
+    shell = acm.UX.SessionManager().Shell()
+    isallow = up.is_component_in_user_profile(component, 'Operation')
+    if isallow == 1:
+        acm.RunModuleWithParameters("MO06 - Market Risk Monthly and Yearly Loss Limit IRT", acm.GetDefaultContext())
+    else:
+        acm.UX().Dialogs().MessageBoxInformation(shell,"User not have access")
+
+...
+
+  MO07_Custom_Util
+
+import acm
+import UserProfileUtils as up
+
+def StartApplication(eii):
+    component = 'Middle Office'
+    shell = acm.UX.SessionManager().Shell()
+    isallow = up.is_component_in_user_profile(component, 'Operation')
+    if isallow == 1:
+        acm.RunModuleWithParameters("MO07 - Market Risk - PV01 Limit Custom Report", acm.GetDefaultContext())
+    else:
+        acm.UX().Dialogs().MessageBoxInformation(shell,"User not have access")
+
+...
+
+  MO07_LimitPerAsset_Util
+
+import acm
+import UserProfileUtils as up
+
+def StartApplication(eii):
+    component = 'Middle Office'
+    shell = acm.UX.SessionManager().Shell()
+    isallow = up.is_component_in_user_profile(component, 'Operation')
+    if isallow == 1:
+        acm.RunModuleWithParameters("MO07 - Market Risk - PV01 Limit per Asset Custom Report", acm.GetDefaultContext())
+    else:
+        acm.UX().Dialogs().MessageBoxInformation(shell,"User not have access")
+
+...
+
+  MO07_LimitPerCurrency_Utill
+
+import acm
+import UserProfileUtils as up
+
+def StartApplication(eii):
+    component = 'Middle Office'
+    shell = acm.UX.SessionManager().Shell()
+    isallow = up.is_component_in_user_profile(component, 'Operation')
+    if isallow == 1:
+        acm.RunModuleWithParameters("MO07 - Market Risk - PV01 Limit per Currency Custom Report", acm.GetDefaultContext())
+    else:
+        acm.UX().Dialogs().MessageBoxInformation(shell,"User not have access")
+
+...
+
+  MO12_LimitUtilization_Utill
+
+import acm
+import UserProfileUtils as up
+
+def StartApplication(eii):
+    component = 'Middle Office'
+    shell = acm.UX.SessionManager().Shell()
+    isallow = up.is_component_in_user_profile(component, 'Operation')
+    if isallow == 1:
+        acm.RunModuleWithParameters("MO12 - Credit Risk - Counterparty Limit Utilization", acm.GetDefaultContext())
+    else:
+        acm.UX().Dialogs().MessageBoxInformation(shell,"User not have access")
+
+...
+
+  MO12_LimitUtilizationDV_Utill
+
+import acm
+import UserProfileUtils as up
+
+def StartApplication(eii):
+    component = 'Middle Office'
+    shell = acm.UX.SessionManager().Shell()
+    isallow = up.is_component_in_user_profile(component, 'Operation')
+    if isallow == 1:
+        acm.RunModuleWithParameters("MO12 - Credit Risk - Counterparty Limit Utilization DV", acm.GetDefaultContext())
+    else:
+        acm.UX().Dialogs().MessageBoxInformation(shell,"User not have access")
+
+...
+
+  MO12_LimitUtilizationFX_Utill
+
+import acm
+import UserProfileUtils as up
+
+def StartApplication(eii):
+    component = 'Middle Office'
+    shell = acm.UX.SessionManager().Shell()
+    isallow = up.is_component_in_user_profile(component, 'Operation')
+    if isallow == 1:
+        acm.RunModuleWithParameters("MO12 - Credit Risk - Counterparty Limit Utilization FX", acm.GetDefaultContext())
+    else:
+        acm.UX().Dialogs().MessageBoxInformation(shell,"User not have access")
+
+...
+
+  MO13_IssuerLimitUtilization_Utill
+
+import acm
+import UserProfileUtils as up
+
+def StartApplication(eii):
+    component = 'Middle Office'
+    shell = acm.UX.SessionManager().Shell()
+    isallow = up.is_component_in_user_profile(component, 'Operation')
+    if isallow == 1:
+        acm.RunModuleWithParameters("MO13 - Credit Risk - Issuer Limit Utilization", acm.GetDefaultContext())
+    else:
+        acm.UX().Dialogs().MessageBoxInformation(shell,"User not have access")
+
+...
+
+  MO14_CountryLimitUtilization_Utill
+
+import acm
+import UserProfileUtils as up
+
+def StartApplication(eii):
+    component = 'Middle Office'
+    shell = acm.UX.SessionManager().Shell()
+    isallow = up.is_component_in_user_profile(component, 'Operation')
+    if isallow == 1:
+        acm.RunModuleWithParameters("MO14 - Credit Risk - Country Limit Utilization", acm.GetDefaultContext())
+    else:
+        acm.UX().Dialogs().MessageBoxInformation(shell,"User not have access")
+
+...
+
+  TMPGChargesUtil
+
+import acm
+import UserProfileUtils as up
+
+def StartApplication(eii):
+    component = 'Back Office'
+    shell = acm.UX.SessionManager().Shell()
+    isallow = up.is_component_in_user_profile(component, 'Operation')
+    if isallow == 1:
+        acm.RunModuleWithParameters("SendEmailToSpecificCounterParty", acm.GetDefaultContext())
+    else:
+        acm.UX().Dialogs().MessageBoxInformation(shell,"User not have access")
+
+...
+
+  TMPGFailChargesUtil
+
+import acm
+import UserProfileUtils as up
+
+def StartApplication(eii):
+    component = 'TMPG Menu'
+    shell = acm.UX.SessionManager().Shell()
+    isallow = up.is_component_in_user_profile(component, 'Operation')
+    if isallow == 1:
+        acm.RunModuleWithParameters("TMPGFailCharges", acm.GetDefaultContext())
+    else:
+        acm.UX().Dialogs().MessageBoxInformation(shell,"User not have access")
+
+...
+
+}
+

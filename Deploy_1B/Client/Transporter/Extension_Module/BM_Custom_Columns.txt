@@ -1,0 +1,35 @@
+#
+# Front Arena exported extension module.
+# source          ""
+# timestamp (utc) "2024-09-13 04:18:57.1"
+# ***** DO NOT EDIT! *****
+#
+name        "BM_Custom_Columns"
+description ""
+
+groups {
+}
+
+decls[FColumnDefinition] {
+  "BMInsTerminated" ( "sheet columns.tradesheet" ) "";
+}
+
+clx FTradingSheet [FColumnDefinition] {
+  BMInsTerminated =
+  Description=Show info whether the Instrument of the trade terminated.
+  ExtensionAttribute=BMInsTerminated
+  Format=
+  GroupLabel=FieldCustom
+  Label=BMInsTerminated
+  Name=BMInsTerminated
+
+
+}
+
+decls[FExtensionAttribute] {
+}
+
+clx FTradeRow [FExtensionAttribute] {
+  BMInsTerminated = object.Trade.Instrument.IsTerminated;
+}
+

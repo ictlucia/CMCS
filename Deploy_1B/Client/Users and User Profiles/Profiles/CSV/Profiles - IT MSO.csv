@@ -1,0 +1,10 @@
+USERPROFILE,,PROFILECOMPONENT,,,,/PROFILECOMPONENT,/USERPROFILE
+DESCRIPTION,PROFID,ALLOW_CREATE,ALLOW_WRITE,COMPNBR.COMPNAME,COMPNBR.TYPE,,
+Operations for IT_MSO,IT_MSO,,,Run Script,Operation,,
+,,Yes,,Extension Module,DBObject,,
+,,Yes,Yes,TextObject,DBObject,,
+,,,,Task Management,Application,,
+,,,,Run Script,Application,,
+,,,,User Preferences,Application,,
+,,,Yes,TaskHistory,DBObject,,
+,,,Yes,Task,DBObject,,

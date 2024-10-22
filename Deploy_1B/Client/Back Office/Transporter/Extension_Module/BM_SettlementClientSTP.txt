@@ -1,0 +1,64 @@
+#
+# Front Arena exported extension module.
+# source          ""
+# timestamp (utc) "2024-03-15 08:35:19.3"
+# ***** DO NOT EDIT! *****
+#
+name        "BM_SettlementClientSTP"
+description ""
+
+groups {
+}
+
+decls[FPythonCode] {
+}
+
+clx FObject [FPythonCode] {
+  FSettlementClientSTP
+#def ClientSTP(settlement):
+#    if (settlement.Trade() and
+#        settlement.Trade().Instrument().InsType() == "Bond"):
+#        return "Manual Match: Settlements from bond trades needs manual authorisation"
+#    else:
+#        return "Authorised"
+#    return "Authorised"
+
+#acquirerAccountRef
+#def ClientSTP(settlement):
+#    cpNetwork = str(settlement.CounterpartyAccountRef().NetworkAliasType().Name().upper())
+#    acqnetwork = str(settlement.AcquirerAccountRef().NetworkAliasType().Name().upper())
+#    if (settlement.Trade() and
+#        cpNetwork != acqnetwork):
+#        #return f"Manual Match: {settlement.CounterpartyAccountRef().NetworkAliasType().Name().upper()}" 
+#        return f"Manual Match: Network is not Match between acquier {acqnetwork}  and counterparty {cpNetwork}"
+#    else:
+#        return "Authorised" 
+#    return "Authorised"
+
+def ClientSTP(settlement):
+    if settlement is not None:
+        cpNetwork = settlement.CounterpartyAccountRef()
+        acqNetwork = settlement.AcquirerAccountRef()
+        
+        if cpNetwork is not None and acqNetwork is not None:
+            cpNetwork = cpNetwork.NetworkAliasType()
+            acqNetwork = acqNetwork.NetworkAliasType()
+
+            if cpNetwork is not None and acqNetwork is not None:
+                cpNetworkName = cpNetwork.Name()
+                acqNetworkName = acqNetwork.Name()
+
+                if cpNetworkName is not None and acqNetworkName is not None:
+                    cpNetworkName = cpNetworkName.upper()
+                    acqNetworkName = acqNetworkName.upper()
+
+                    if cpNetworkName != acqNetworkName:
+                        return f"Manual Match: Network is not matched between acquirer {acqNetworkName} and counterparty {cpNetworkName}"
+                    else:
+                        return "Authorised"
+    return "Authorised"
+
+...
+
+}
+

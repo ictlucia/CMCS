@@ -1,0 +1,530 @@
+#
+# Front Arena exported extension module.
+# source          ""
+# timestamp (utc) "2024-08-30 13:33:43.4"
+# ***** DO NOT EDIT! *****
+#
+name        "PS_IRSGLSytem"
+description ""
+
+groups {
+}
+
+decls[FParameters] {
+}
+
+clx FObject [FParameters] {
+  GLSystemParams =
+  bridge_account_list_IRS=['19511633']
+  default_Ref_no_IRS=99120
+  logFilename=IRS_GLSystemExport_LOG_{}.txt
+  outputFileEOD=NTCS01.txt
+  outputFileRealTime=NTCS02.txt
+  position_account_list_IRS=['19811105']
+
+
+  IRSGLOutFTPParams =
+  destination_dir=/OPICS/NTCS/Input/
+  host=10.243.211.186
+  password=0x4wrLCu8K7dMKDwojChXXCmQ==
+  port=2222
+  user=sftp_ntcs
+
+
+}
+
+decls[FPythonCode] {
+}
+
+clx FObject [FPythonCode] {
+  GLSystemExport
+import acm, ael, traceback, os, ast
+import datetime, InterfaceUtils
+import ParametersReader, FRunScriptGUI, FLogger
+from InterfaceUtils import ExecuteQueryAndGetResults
+import GLSystemJournalInfo, EncoderUtils
+import FSFTPOperations
+
+GL_System_params = ParametersReader.get_params('GLSystemParams')
+IRSFtpParams = ParametersReader.get_params('IRSGLOutFTPParams')
+
+log_file_name = GL_System_params['logFilename'].format(acm.Time.DateToday().replace('-', ''))
+ref_no = GL_System_params['default_Ref_no_IRS']
+bridge_account_list =ast.literal_eval(GL_System_params['bridge_account_list_IRS'])
+position_account_list=ast.literal_eval(GL_System_params['position_account_list_IRS'])
+
+destination_dir = IRSFtpParams['destination_dir']
+host = IRSFtpParams['host']
+port = IRSFtpParams['port']
+user = IRSFtpParams['user']
+password = IRSFtpParams['password']
+
+IRS_FTP_KEY = 'EWRC3324'
+
+
+def initialize_logging(params, logfile_name, app_name):
+    logger = None
+    try:
+        logFolder = params['log_folder']
+        logfolderString = logFolder.SelectedDirectory().AsString()
+        logfile = os.path.join(logfolderString, logfile_name)
+        if logfile == '':
+            logfile = None
+
+        logLevel = params['log_level']
+        level = InterfaceUtils.LogLevelNameToNumber(logLevel)
+        logger = FLogger.FLogger(level=level,
+                                 name=app_name,
+                                 logToPrime=True,
+                                 logToFileAtSpecifiedPath=logfile,
+                                 logToConsole=False)
+    except Exception as err:
+        print('Error in initializing logger {}'.format(err))
+        print(traceback.format_exc())
+    return logger
+
+
+class GLSystemExporter(FRunScriptGUI.AelVariablesHandler):
+
+    def __init__(self, accntng_export_params):
+
+        logLevels = [FLogger.FLogger.INFO, FLogger.FLogger.ERROR, FLogger.FLogger.WARNING, FLogger.FLogger.DEBUG]
+
+        folderPicker = FRunScriptGUI.DirectorySelection()
+        query = [query.Name() for query in acm.FStoredASQLQuery.Select("subType='FJournal'")]
+        query.sort()
+
+        gui_vars = [
+            ['realtimeJournals', 'Query Folder(Realtime journals)', 'string', query, 'PS_QF_IRSRealTimeJournals', 1, 0,
+             'realtime journals today', None, 1],
+            ['EODJournals', 'Query Folder(EOD journals)', 'string', query, 'PS_QF_IRSEODJournals', 1, 0,
+             'EOD today', None, 1],
+            ['branch_id', 'Branch Id', 'string', None, ref_no, 1, 0, 'Branch Id', None, 1],
+            ['outputFolder', 'Folder Path_Output', folderPicker, None, folderPicker, 1, 1,
+             'The file path where summary result will be generated.', None, 1],
+            ['archiveFolder', 'Archive Path_Output', folderPicker, None, folderPicker, 1, 1,
+             'Archive path where output file will be moved after successful ftp copy.', None, 1],
+            ['failedArchiveFolder', 'Failed Archive Path_Output', folderPicker, None, folderPicker, 1, 1,
+             'Archive path where output file will be moved if ftp copy is failed.', None, 1],
+            ['logToConsole', 'Log to console_Logging', 'int', [1, 0], 1, 1, 0,
+             'Whether logging should be done in the Log Console or not.'],
+            ['log_folder', 'Log folder_Logging', folderPicker, None, folderPicker, 0, 1,
+             'Select where to store the log file',
+             0, None],
+            ['log_level', 'Log level_Logging', 'string', logLevels, FLogger.FLogger.DEBUG, 1, 0]
+        ]
+
+        self._logger = None
+        outputFileEOD = GL_System_params['outputFileEOD']
+        outputFileRealTime = GL_System_params['outputFileRealTime']
+        date_time_now = datetime.datetime.now()
+        date_today = date_time_now.strftime('%d%m%y')
+        #self.file_realtime_journals = outputFileRealTime.format(date_today)
+        self.file_realtime_journals = outputFileRealTime
+        #self.file_EOD_journals = outputFileEOD.format(date_today)
+        self.file_EOD_journals = outputFileEOD
+        FRunScriptGUI.AelVariablesHandler.__init__(self, gui_vars)
+
+    def generate_records(self, jurnals, isEOD, branch_id):
+
+        record_list = list()
+        trade_list = list()
+        for jr in jurnals:
+            try:
+                journal_info = GLSystemJournalInfo.JournalInfo(jr, branch_id, bridge_account_list, position_account_list)
+                journal_entry = journal_info.get_journal_record(isEOD)
+                if jr.LinkedTrade():
+                    trade_list.append(jr.LinkedTrade())
+
+                record_list.append(journal_entry)
+                record_list.append("\n")
+            except Exception as err:
+                self._logger.ELOG(str(err))
+                self.set_add_info_value(jr.Trade(), False)
+                self._logger.ELOG(f'Failed to export journal: {jr.Oid()}')
+
+        return record_list, trade_list
+
+    def upload_files_to_server(self, destination_dir, host, port, user, password, source_dir):
+        """ This function uploads the file to FTP"""
+        ret_val = False
+        password = EncoderUtils.get_decrypted_password(password, IRS_FTP_KEY)
+        connstr = '{}:{}:{}:{}'.format(host, port, user, password)
+        ret_val = FSFTPOperations.write_to_sftp(app_name, source_dir, connstr, destination_dir)
+        return ret_val
+        
+    def move_file_to_archive(self, file_name, source_file, archive_folder):
+        try:
+            date_time_now = datetime.datetime.now()
+            date_today = date_time_now.strftime('%Y%m%d')
+            time_now = date_time_now.strftime('%H%M%S%f')[:7]
+            file_name_without_ext, ext = os.path.splitext(file_name)
+            archive_filename = f'{file_name_without_ext}_{date_today}_{time_now}.{ext}'
+            archive_file_path = os.path.join(archive_folder, archive_filename)
+            os.rename(source_file, archive_file_path)
+        except Exception as err:
+            self._logger.ELOG(str(err))
+            self._logger.ELOG(f'Failed to move file: {source_file}. Manual handling required.') 
+
+    def export_to_file(self, file_name, journal_query, output_path, archive_folder, failed_archive_folder, branch_id, isEOD=False):
+
+        try:
+            # output_folder = params['outputFolder'].SelectedDirectory().AsString()
+            full_file_path = os.path.join(output_path, file_name)
+            jurnals = ExecuteQueryAndGetResults(journal_query)
+
+            journal_entries, trade_entries = self.generate_records(jurnals, isEOD, branch_id)
+
+            with open(full_file_path, 'w') as fp:
+                fp.writelines(journal_entries)
+            
+            self._logger.LOG(f'Created output file {full_file_path}.')
+
+            if self.upload_files_to_server(destination_dir, host, port, user, password, full_file_path):
+                for trd in trade_entries:
+                    self.set_add_info_value(trd, True)
+                self.move_file_to_archive(file_name, full_file_path, archive_folder)
+                self._logger.LOG('Uploaded file {} to FTP.'.format(full_file_path))
+            else:
+                self._logger.LOG('Error uploading file {} to FTP.'.format(full_file_path))
+                self.move_file_to_archive(file_name, full_file_path, failed_archive_folder)
+        except Exception as err:
+            self._logger.ELOG(str(err))
+            self._logger.ELOG(f'Failed to export file: {file_name}')
+
+    def export_jurnals(self, params):
+        self._logger.LOG('Journal export started')
+        try:
+            output_folder = params['outputFolder'].SelectedDirectory().AsString()
+            archive_folder = params['archiveFolder'].SelectedDirectory().AsString()
+            failed_archive_folder = params['failedArchiveFolder'].SelectedDirectory().AsString()
+            branch_id = params['branch_id']
+
+            self._logger.LOG('Exporting realtime journals')
+            # full_file_path = os.path.join(output_folder, self.file_realtime_journals)
+            realtime_journals = params['realtimeJournals']
+            # realtime_journals = acm.FJournal.Select('')
+            journal_entries = self.export_to_file(self.file_realtime_journals, realtime_journals, output_folder, archive_folder, failed_archive_folder, branch_id)
+
+            self._logger.LOG('Exporting EOD journals')
+            # full_file_path = os.path.join(output_folder, self.file_EOD_journals) 
+            EOD_journals = params['EODJournals']
+            # EOD_journals = acm.FJournal.Select('')
+            journal_entries = self.export_to_file(self.file_EOD_journals, EOD_journals, output_folder, archive_folder, failed_archive_folder, branch_id, True)
+        except Exception as err:
+            self._logger.ELOG(str(err))
+            self._logger.ELOG('Failed to export journals')
+        self._logger.LOG('Journal export complete')
+
+    def set_logger(self, logger):
+        self._logger = logger
+
+    def set_add_info_value(self, trade, value):
+        if (trade != None):
+            try:
+
+                currVal = trade.AdditionalInfo().IRSCitynetJournals()
+                if currVal != value:
+                    trdClone = trade.Clone()
+                    trdClone.AdditionalInfo().IRSCitynetJournals(value)
+                    trade.Apply(trdClone)
+                    trade.Commit()
+            except Exception as err:
+                self._logger.ELOG(str(err))
+                self._logger.ELOG(f'Trade {trade.Oid()} : Failed to commit with IRSCitynetJournals update')
+
+
+ael_gui_parameters = {'windowCaption': "GL System Export"}
+
+ael_variables = GLSystemExporter(GL_System_params)
+ael_variables.LoadDefaultValues(__name__)
+app_name = 'GL System Export'
+
+
+def ael_main(params):
+    acntg_export = None
+    try:
+        acntg_export = initialize_logging(params, log_file_name, app_name)
+        if acntg_export:
+            acntg_export.LOG('GL System Export : Execution started.')
+            ael_variables.set_logger(acntg_export)
+            ael_variables.export_jurnals(params)
+            acntg_export.LOG('GL System Export : Execution Complete.')
+
+    except Exception as err:
+        if acntg_export is not None:
+            acntg_export.ELOG(str(err))
+        print(traceback.format_exc())
+        print(f'Error in ael main. {err}')
+
+...
+
+  GLSystemJournalInfo
+
+from datetime import datetime
+import acm
+import ParametersReader
+import InterfaceSettingUtils
+glsystem_export_params = ParametersReader.get_params('GLSystemParams')
+
+context = acm.GetDefaultContext()
+sheet_type = 'FJournalSheet'
+g_calc_space = acm.Calculations().CreateCalculationSpace(context, sheet_type)
+
+class JournalInfo:
+
+    def __init__(self, journal, branch_id, acc_list, pos_account_list):
+        self.journal  =  journal
+        self.ref_no = branch_id    
+        self.bridge_acc_list = acc_list
+        self.position_account_list = pos_account_list
+    
+    def get_column_formatting(self, col_val, length, is_rjust=True,  chr=' '):
+        if is_rjust:
+            col_value = str(col_val).rjust(length,chr)
+        else:
+            col_value = str(col_val).ljust(length,chr)
+        if len(col_value) > length:
+            if is_rjust:
+                col_value =  col_value[:length]
+            else:
+                col_value =  col_value[-length:]
+        return col_value
+    
+    
+    def get_amount_formatting(self, col_val, length, is_rjust=True,  chr='0'):
+        num = col_val
+        decimal_part = ''
+        
+        split_num = str(num).split('.')
+        int_part = split_num[0]
+        if len(split_num) > 1:
+            decimal_part = split_num[1]
+        if self.JournalCurrency() == 'IDR':
+            col_val = int_part + decimal_part[:2]
+        else:
+            col_val = int_part + decimal_part
+        if col_val[0] =='-':
+            col_val = col_val[1:]
+            col_val = self.get_column_formatting(col_val, length, is_rjust, chr )
+            #col_val = col_val.replace('0', '-', 1)
+        else:
+            col_val = self.get_column_formatting(col_val, length, is_rjust, chr )
+        return col_val
+
+
+    def get_journal_record(self, isEOD = False):
+        journal_record=''
+        if isEOD:
+            journal_record = f"{self.branch_id()}{self.get_column_formatting(self.GL_no(),19)}{self.get_column_formatting(self.processing_code(), 5)}{self.get_column_formatting(self.JournalCurrency(), 4, False)}{self.get_column_formatting(self.original_currency(), 4, False)}{self.DebitCredit()}{self.get_column_formatting(self.ProcessDate(), 6)}{self.JournalAmount()}{self.get_column_formatting(self.trans_descrption(), 40)}{self.get_column_formatting(self.reference_no(), 20)}{self.get_column_formatting(self.user_id(), 10, False)}{self.get_column_formatting(self.user_define(),1)}{self.get_column_formatting(self.responding_branch(), 5) }{self.get_column_formatting(self.local_equivalent(),17)}{self.get_column_formatting(self.transaction_rate(),13)}{self.identifier_source()}{self.get_column_formatting(self.original_trans_currency(), 4, False)}{self.get_column_formatting(self.original_trans_amt(),17)}{self.get_column_formatting(self.product_code(), 5) }{self.get_column_formatting(self.internal_account(), 19)}"
+        else:
+            journal_record = f'{self.branch_id()}|{self.GL_no()}|{self.trans_descrption()}|{self.DebitCredit()}|{self.JournalCurrency()}|{self.JournalAmount_NTCS02()}|{self.ProcessDate_NTCS02()}|{self.reference_no()}|{self.remark1()}|{self.remark2()}|{self.remark3()}|{self.remark4()}'
+        return journal_record
+        
+
+    def branch_id(self):
+        return self.ref_no
+        
+        
+    def GL_no(self):
+        t_account_no = ''
+        settlement = self.journal.Settlement() if self.journal.Settlement() else None
+        
+        if self.journal.ChartOfAccount():
+            if self.journal.ChartOfAccount().TAccount():
+                account_no = self.journal.ChartOfAccount().TAccount().Number()
+                if account_no is not None:
+                    t_account_no = str(account_no)
+                    
+        index = t_account_no.find('_')
+        t_account_no = t_account_no[:index] if index != -1 else t_account_no
+
+        return t_account_no
+
+
+    def processing_code(self):
+        return ' '
+        
+        
+    def JournalAmount(self):
+        amount = self.journal.Amount()
+        if isinstance(amount,float):
+            amount = round(amount,2)
+            amount = amount * 100
+            amount = round(amount) # Round it again to avoid floating point residue e.g. 131.39*100 = 13138.999999999998
+        return str(abs(amount)).rjust(17,'0')
+    
+    
+    def JournalAmount_NTCS02(self):
+        int_part = ''
+        amount = self.journal.Amount()
+        if isinstance(amount,float):
+            amount = round(amount,2)
+            stramount = str(abs(amount * 100))
+            split_num = stramount.split('.')
+            int_part = split_num[0]
+        return int_part
+
+
+    def JournalCurrency(self):
+        curr = self.journal.Currency().Name()
+        return curr
+        
+
+    def _get_compare_currency(self):
+        compare_curr = 'IDR'
+        env_name = InterfaceSettingUtils.get_env_name()
+        if env_name != 'HO':            
+            j_book = self.journal.Book()
+            if j_book:
+                if env_name in ['SG', 'SH']:
+                    if j_book.endswith('_DBU'):
+                        if env_name == 'SG':
+                            compare_curr = 'SGD'
+                        elif env_name == 'SH':
+                            compare_curr = 'CNY'
+                    elif j_book.endswith('_ACU'):
+                        compare_curr = 'USD'
+                elif env_name in ['HK', 'CI', 'DL']:
+                    compare_curr = 'USD'
+                
+        return compare_curr
+        
+
+    def original_currency(self):
+        curr = ''
+        try:
+            compare_curr = self._get_compare_currency()
+            if self.journal.Currency().Name() != compare_curr:
+                curr = self.journal.Currency().Name()
+            else:
+                acc = self.journal.ChartOfAccount().TAccount()
+                acc_no =  acc.Number()
+                if (acc_no in self.bridge_acc_list) or (not (  (acc.Type() in ['Expense', 'Revenue'])or(acc_no in self.position_account_list) ) ):
+                    curr = ''
+                else:
+                    reval_curr = g_calc_space.CalculateValue(self.journal, "Accounting FX Revaluation Currency")
+            
+                    if "<class 'FCurrency'>" == str(type(reval_curr)):
+                        reval_curr = reval_curr.Name()
+                        if reval_curr:
+                            curr = reval_curr
+        except Exception as e:
+            print('Error in original_currency {}'.format(e))
+        return curr
+        
+        
+    def DebitCredit(self):
+        debitCredit = self.journal.DebitOrCredit()
+        if (debitCredit == 'Debit'):
+            return 'D'
+        else:
+            return 'C'
+        
+        
+    def ProcessDate(self):
+        try:
+            pd = datetime.strptime(self.journal.ProcessDate(), "%Y-%m-%d").strftime("%d%m%y")
+        except Exception as err:
+            pd = ''
+        return pd
+    
+    def ProcessDate_NTCS02(self):
+        try:
+            pd = datetime.strptime(self.journal.ProcessDate(), "%Y-%m-%d").strftime("%Y%m%d")
+        except Exception as err:
+            pd = ''
+        return pd
+
+
+    def trans_descrption(self):
+        descrptn = ''
+        if self.journal.AccountingInstruction():
+            descrptn = 'FAT_' + self.journal.AccountingInstruction().Name() 
+        return descrptn
+
+
+    def reference_no(self):
+        ref = ''
+        journalTrade = self.journal.LinkedTrade()
+        if not journalTrade:
+            if self.journal.JournalInformation().Trade():
+                journalTrade = self.journal.JournalInformation().Trade()
+            elif self.journal.JournalInformation().ContractTrade():
+                journalTrade = self.journal.JournalInformation().Trade()
+        
+        journal_id = self.journal.Oid()
+        
+        if journalTrade:
+            ref = str(self.ref_no) + '02' + str(journalTrade.Oid())
+        elif self.journal.Settlement():
+            settlement = self.journal.Settlement()
+            if (settlement.Type()== 'Stand Alone Payment') and (settlement.Counterparty().Name() in ['BPS','TPS','EXIMBill']):
+                ref = settlement.Text()
+            else:
+                ref = str(self.ref_no) + '01'+ str(settlement.Oid())
+        else:
+            ref = str(self.ref_no) + '03' + str(journal_id)
+        
+        return ref
+
+        
+    def user_id(self):
+        return 'NTCS'
+        
+    def user_define(self):
+        return ' '
+        
+    def responding_branch(self):
+        return ' '
+    
+    def local_equivalent(self):
+        return ' '
+        
+    def transaction_rate(self):
+        return ' '
+        
+    def identifier_source(self):
+        return 'h'
+    
+    def original_trans_currency(self):
+        curr = ''
+        if self.journal.Currency().Name() != 'IDR':
+            curr = self.journal.Currency().Name()
+        return curr
+        
+    def original_trans_amt(self):
+        return ' '
+        
+    def product_code(self):
+        return ' '
+        
+    def internal_account(self):
+        return ' '
+
+        
+    def remark1(self):
+        ref ='FAS_'
+        if self.journal.Settlement():
+            ref = 'FAS_'+ str(self.journal.Settlement().Oid())
+            
+        return ref
+    
+    def remark2(self):
+        counterparty =''
+        if self.journal.Counterparty():
+            counterparty = ''+ str(self.journal.Counterparty().Name())
+            
+        return counterparty
+    
+    def remark3(self):
+        return self.trans_descrption()
+
+    def remark4(self):
+        return ''
+
+
+...
+
+}
+

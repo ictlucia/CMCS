@@ -1,0 +1,178 @@
+[MESSAGE]
+  TYPE=INSERT_TEXTOBJECT
+  VERSION=1.0
+  TIME=2022-10-28 13:59:55
+  SOURCE=FAMBAMessageGenerator
+  [TEXTOBJECT]
+    TYPE=Stored Scenario
+    DATA=<?xml version='1.0' encoding='UTF-8'?>\
+<FrontArenaPrimeSheetExport>\
+<!--PRIME Version: 2022.2.0-->\
+<FDictionary type ="AcmDomain">\
+  <Element>\
+  <FAssociation type ="AcmDomain">\
+    <associationKey type ="Property">\
+      <FSymbol type ="AcmDomain">\
+        <Text type ="Property">\
+          <string type ="AcmDomain">scenario</string>\
+        </Text>\
+      </FSymbol>\
+    </associationKey>\
+    <associationValue type ="Property">\
+      <FExplicitScenario type ="AcmDomain">\
+        <name type ="Property">\
+          <string type ="AcmDomain"></string>\
+        </name>\
+        <uniqueId type ="Property">\
+          <FSymbol type ="AcmDomain">\
+            <Text type ="Property">\
+              <string type ="AcmDomain">c835391a-ed3e-4cb6-862f-bc06ccbc6a07</string>\
+            </Text>\
+          </FSymbol>\
+        </uniqueId>\
+        <defaultSettings type ="Property">\
+          <FScenarioSettings type ="AcmDomain">\
+            <showColors type ="Property">\
+              <bool type ="AcmDomain">true</bool>\
+            </showColors>\
+            <ShiftDisplayType type ="Property">\
+              <eShiftDisplayType type ="AcmDomain">Absolute</eShiftDisplayType>\
+            </ShiftDisplayType>\
+          </FScenarioSettings>\
+        </defaultSettings>\
+        <ExplicitDimensions type ="Property">\
+          <FArray type ="AcmDomain">\
+            <Element>\
+            <FScenarioDimension type ="AcmDomain">\
+              <perimeterCriteriaTopOnly type ="Property">\
+                <bool type ="AcmDomain">false</bool>\
+              </perimeterCriteriaTopOnly>\
+              <ShiftVectors type ="Property">\
+                <FArray type ="AcmDomain">\
+                  <Element>\
+                  <FShiftVector type ="AcmDomain">\
+                    <commonParameters type ="Property">\
+                      <FDictionary type ="AcmDomain">\
+                        <Element>\
+                        <FAssociation type ="AcmDomain">\
+                          <associationKey type ="Property">\
+                            <FSymbol type ="AcmDomain">\
+                              <Text type ="Property">\
+                                <string type ="AcmDomain">floor</string>\
+                              </Text>\
+                            </FSymbol>\
+                          </associationKey>\
+                          <associationValue type ="Property">\
+                            <FReal type ="AcmDomain">\
+                              <Number type ="Property">\
+                                <double type ="AcmDomain">NaN</double>\
+                              </Number>\
+                            </FReal>\
+                          </associationValue>\
+                        </FAssociation>\
+                        </Element>\
+                      </FDictionary>\
+                    </commonParameters>\
+                    <function type ="Property">\
+                      <string type ="AcmDomain">deltabasispointswithfloor</string>\
+                    </function>\
+                    <entitiesGroupItem type ="Property">\
+                      <FSymbol type ="AcmDomain">\
+                        <Text type ="Property">\
+                          <string type ="AcmDomain">yield curve</string>\
+                        </Text>\
+                      </FSymbol>\
+                    </entitiesGroupItem>\
+                    <filter type ="Property">\
+                      <FDomain type ="AcmDomain">\
+                        <DomainName type ="Property">\
+                          <string type ="AcmDomain">FYieldCurve</string>\
+                        </DomainName>\
+                      </FDomain>\
+                    </filter>\
+                    <filterTransform type ="Property">\
+                      <FDomain type ="AcmDomain">\
+                        <DomainName type ="Property">\
+                          <string type ="AcmDomain">FYieldCurveFilter</string>\
+                        </DomainName>\
+                      </FDomain>\
+                    </filterTransform>\
+                    <usePostFilter type ="Property">\
+                      <bool type ="AcmDomain">false</bool>\
+                    </usePostFilter>\
+                    <topOnly type ="Property">\
+                      <bool type ="AcmDomain">false</bool>\
+                    </topOnly>\
+                    <shiftFunctionInformation type ="Property">\
+                      <string type ="AcmDomain">deltabasispointswithfloor</string>\
+                    </shiftFunctionInformation>\
+                    <DynamicFilteringDimensionGroup type ="Property">\
+                      <FSymbol type ="AcmDomain">\
+                        <Text type ="Property">\
+                          <string type ="AcmDomain">yield curve grouping</string>\
+                        </Text>\
+                      </FSymbol>\
+                    </DynamicFilteringDimensionGroup>\
+                    <proxyShiftFunction type ="Property">\
+                      <string type ="AcmDomain"></string>\
+                    </proxyShiftFunction>\
+                    <isBuildShiftVector type ="Property">\
+                      <bool type ="AcmDomain">false</bool>\
+                    </isBuildShiftVector>\
+                    <useDynamicFiltering2 type ="Property">\
+                      <FTrue type ="AcmDomain">\
+                      </FTrue>\
+                    </useDynamicFiltering2>\
+                    <functionWithDynamicParameters type ="Property">\
+                      <string type ="AcmDomain"></string>\
+                    </functionWithDynamicParameters>\
+                    <Element>\
+                    <FShiftVectorItem type ="AcmDomain">\
+                      <parameters type ="Property">\
+                        <FDictionary type ="AcmDomain">\
+                          <Element>\
+                          <FAssociation type ="AcmDomain">\
+                            <associationKey type ="Property">\
+                              <FSymbol type ="AcmDomain">\
+                                <Text type ="Property">\
+                                  <string type ="AcmDomain">basispoints</string>\
+                                </Text>\
+                              </FSymbol>\
+                            </associationKey>\
+                            <associationValue type ="Property">\
+                              <FReal type ="AcmDomain">\
+                                <Number type ="Property">\
+                                  <double type ="AcmDomain">1.0</double>\
+                                </Number>\
+                              </FReal>\
+                            </associationValue>\
+                          </FAssociation>\
+                          </Element>\
+                        </FDictionary>\
+                      </parameters>\
+                      <name type ="Property">\
+                        <string type ="AcmDomain">1</string>\
+                      </name>\
+                      <uniqueTag type ="Property">\
+                        <string type ="AcmDomain"></string>\
+                      </uniqueTag>\
+                    </FShiftVectorItem>\
+                    </Element>\
+                  </FShiftVector>\
+                  </Element>\
+                </FArray>\
+              </ShiftVectors>\
+            </FScenarioDimension>\
+            </Element>\
+          </FArray>\
+        </ExplicitDimensions>\
+      </FExplicitScenario>\
+    </associationValue>\
+  </FAssociation>\
+  </Element>\
+</FDictionary>\
+</FrontArenaPrimeSheetExport>
+    NAME=1BPS Zero Shift
+    SIZE=7426
+  [/TEXTOBJECT]
+[/MESSAGE]

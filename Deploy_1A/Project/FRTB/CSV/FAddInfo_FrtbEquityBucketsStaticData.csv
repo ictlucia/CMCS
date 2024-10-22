@@ -1,0 +1,5 @@
+ADDITIONALINFOSPEC,,,,,/ADDITIONALINFOSPEC
+DATA_TYPE.GRP,DESCRIPTION,DATA_TYPE.TYPE,FIELD_NAME,REC_TYPE,
+RecordRef,FRTB_Eq_Economy,ChoiceList,FRTB_Eq_Economy,Party,
+RecordRef,FRTB_Eq_MarketCap,ChoiceList,FRTB_Eq_MarketCap,Party,
+RecordRef,FRTB_Eq_Sector,ChoiceList,FRTB_Eq_Sector,Party,

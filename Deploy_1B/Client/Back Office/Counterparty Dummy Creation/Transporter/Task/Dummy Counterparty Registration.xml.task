@@ -1,0 +1,2 @@
+<?xml version='1.0' encoding='ISO-8859-1'?>
+<FAelTask><acm_version>2022.4.9, Oct 13 2023</acm_version><version>15 $Id$</version><update_time>2024-02-26 10:04:03</update_time><object_name>Dummy Counterparty Registration</object_name><owner>DIAN</owner><protection>3072</protection><module>DummyCptyCreation</module><context>Standard</context><parameter>logFile=;folderPath=D:\Interface\EMAS\DUMMY COUNTERPARTY CREATION;</parameter><historylength /><description /><logfilename /><group>EOD</group><groupstatus>None</groupstatus><historylengthunit>None</historylengthunit></FAelTask>

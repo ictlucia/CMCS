@@ -1,0 +1,25 @@
+#
+# Front Arena exported extension module.
+# source          ""
+# timestamp (utc) "2023-12-22 05:09:47.8"
+# ***** DO NOT EDIT! *****
+#
+name        "OVB_Trades_to_HO_settings"
+description ""
+
+groups {
+}
+
+decls[FParameters] {
+}
+
+clx FObject [FParameters] {
+  OVB Trades to HO =
+  Port=9101
+  Sender=BMSG_TRADES_WRITER
+  Server=localhost
+  Subject=BMSG_TRADES
+
+
+}
+

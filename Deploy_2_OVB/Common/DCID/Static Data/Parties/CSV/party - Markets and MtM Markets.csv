@@ -1,0 +1,9 @@
+PARTY,,,,,,,,,,,,/PARTY
+NOT_TRADING,FULLNAME,ISSUER,CORRESPONDENT_BANK,TIME_ZONE,CITY,INTERNAL_CUTOFF,EXTERNAL_CUTOFF,BIS_STATUS,EXTERNAL_CUTOFF,TYPE,PTYID,
+Yes,,,,,,,,OECD Bank,,Market,EOD,
+Yes,,,,,,,,OECD Bank,,Market,SPOT,
+Yes,,,,,,,,OECD Bank,,MtM Market,internal,
+,,,,Asia/Hong_Kong,Hong Kong,,,OECD Bank,1100,MtM Market,HONGKONG 11:00,
+,,,,Europe/London,London,,,OECD Bank,1200,MtM Market,LONDON 12:00,
+,,,,America/New_York,New York,,,OECD Bank,1000,MtM Market,NY 10AM,
+,,,,Asia/Tokyo,Tokyo,,,OECD Bank,1500,MtM Market,TOKYO 15:00,

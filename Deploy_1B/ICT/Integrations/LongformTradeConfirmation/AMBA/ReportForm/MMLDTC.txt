@@ -1,0 +1,35 @@
+[MESSAGE]
+  TYPE=INSERT_TEXTOBJECT
+  VERSION=1.0
+  TIME=2024-04-02 03:36:41
+  SOURCE=FAMBAMessageGenerator
+  [TEXTOBJECT]
+    TYPE=Customizable
+    DATA={\
+    "MSWordTemplates": [\
+        {\
+            "name": "TC MMLD",\
+            "type": "LongFormTPL",\
+            "version": "25",\
+            "checksumFields": {\
+                "RegularFields": [],\
+                "LoopFields": []\
+            }\
+        }\
+    ],\
+    "PrimeSheetTemplates": [\
+        {\
+            "name": "TCMMLD",\
+            "classType": "Confirmation Sheet",\
+            "type": "Primary",\
+            "insertItem": "",\
+            "insertQuery": ""\
+        }\
+    ],\
+    "FormattedColumnSet": []\
+}
+    NAME=MMLDTC
+    SIZE=519
+    SUBTYPE=ReportForm
+  [/TEXTOBJECT]
+[/MESSAGE]

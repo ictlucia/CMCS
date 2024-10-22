@@ -1,0 +1,801 @@
+TEXTOBJECT,,,,,/TEXTOBJECT
+DATA,NAME,SIZE,TYPE,USRNBR.USERID,
+"<?xml version='1.0' encoding='UTF-8'?>\
+<FrontArenaPrimeSheetExport>\
+<!--PRIME Version: 2022.4.5-->\
+<FDictionary type =""AcmDomain"">\
+  <Element>\
+  <FAssociation type =""AcmDomain"">\
+    <associationKey type =""Property"">\
+      <FSymbol type =""AcmDomain"">\
+        <Text type =""Property"">\
+          <string type =""AcmDomain"">contents</string>\
+        </Text>\
+      </FSymbol>\
+    </associationKey>\
+    <associationValue type =""Property"">\
+      <FDictionary type =""AcmDomain"">\
+        <Element>\
+        <FAssociation type =""AcmDomain"">\
+          <associationKey type =""Property"">\
+            <FSymbol type =""AcmDomain"">\
+              <Text type =""Property"">\
+                <string type =""AcmDomain"">configuration</string>\
+              </Text>\
+            </FSymbol>\
+          </associationKey>\
+          <associationValue type =""Property"">\
+            <FDictionary type =""AcmDomain"">\
+              <Element>\
+              <FAssociation type =""AcmDomain"">\
+                <associationKey type =""Property"">\
+                  <FSymbol type =""AcmDomain"">\
+                    <Text type =""Property"">\
+                      <string type =""AcmDomain"">pythonModule</string>\
+                    </Text>\
+                  </FSymbol>\
+                </associationKey>\
+                <associationValue type =""Property"">\
+                  <FSymbol type =""AcmDomain"">\
+                    <Text type =""Property"">\
+                      <string type =""AcmDomain"">RiskManagerUxConfiguration</string>\
+                    </Text>\
+                  </FSymbol>\
+                </associationValue>\
+              </FAssociation>\
+              </Element>\
+            </FDictionary>\
+          </associationValue>\
+        </FAssociation>\
+        </Element>\
+        <Element>\
+        <FAssociation type =""AcmDomain"">\
+          <associationKey type =""Property"">\
+            <FSymbol type =""AcmDomain"">\
+              <Text type =""Property"">\
+                <string type =""AcmDomain"">contentsByKey</string>\
+              </Text>\
+            </FSymbol>\
+          </associationKey>\
+          <associationValue type =""Property"">\
+            <FDictionary type =""AcmDomain"">\
+              <Element>\
+              <FAssociation type =""AcmDomain"">\
+                <associationKey type =""Property"">\
+                  <FSymbol type =""AcmDomain"">\
+                    <Text type =""Property"">\
+                      <string type =""AcmDomain"">FRTB SA Basel Sensitivities</string>\
+                    </Text>\
+                  </FSymbol>\
+                </associationKey>\
+                <associationValue type =""Property"">\
+                  <FPersistentArchive type =""AcmDomain"">\
+                    <ArchiveContents type =""Property"">\
+                      <FDictionary type =""AcmDomain"">\
+                        <Element>\
+                        <FAssociation type =""AcmDomain"">\
+                          <associationKey type =""Property"">\
+                            <FSymbol type =""AcmDomain"">\
+                              <Text type =""Property"">\
+                                <string type =""AcmDomain"">uuid</string>\
+                              </Text>\
+                            </FSymbol>\
+                          </associationKey>\
+                          <associationValue type =""Property"">\
+                            <FSymbol type =""AcmDomain"">\
+                              <Text type =""Property"">\
+                                <string type =""AcmDomain"">9891c3dc-523a-4925-9780-a4023ee72777</string>\
+                              </Text>\
+                            </FSymbol>\
+                          </associationValue>\
+                        </FAssociation>\
+                        </Element>\
+                        <Element>\
+                        <FAssociation type =""AcmDomain"">\
+                          <associationKey type =""Property"">\
+                            <FSymbol type =""AcmDomain"">\
+                              <Text type =""Property"">\
+                                <string type =""AcmDomain"">viewContents</string>\
+                              </Text>\
+                            </FSymbol>\
+                          </associationKey>\
+                          <associationValue type =""Property"">\
+                            <FString type =""AcmDomain"">\
+                              <Text type =""Property"">\
+                                <string type =""AcmDomain"">""AE&amp;&lt;F]N=$%R96YA+E!O&lt;VET:6]N36%S=&amp;5R$C42#4925$(@4T$@0F%S96P:)#`Q8C9C-C,X+3&lt;W,#(M-&amp;%D-2UA.#&lt;V+6%D,S8P,30R9C4V,1H=$AM&amp;4E1""(%-!($)A&lt;V5L(%-E;G-I=&amp;EV:71I97,B!7-H965T*C@(`1HT""B82)#=F,#,Q9CED+3,R.68M-#)B,2UA9C,P+3)D9#0V9#`S-#`X-1(*$@AN;T9I;'1E&lt;C+&lt;-0J5`@J.`F4Y9F8Y,F%B+30T9&amp;8M-#4Y,""UB93-F+3&lt;X,S$Y-&amp;-E8S1B,""`\\1E=&amp;/$8\\54D\\1E)40BY%&lt;75I='DN5F5G82Y74SY//%M0:60\\&lt;&amp;%R86UE=&amp;5R5F5G83Y4/#$^5CQ40CQM&lt;W(N1E)40B!302!""87-E;""Y&amp;4E1""(%-""07Q%&lt;75I='E\\5F5G83X^+""!0:60\\0V%L8W5L871I;VY087)A;65T97)S/E0\\-CY6/$925$(@4T$@0F%S96P@1&amp;%T83XL(%!I9#Q2:7-K0VQA&lt;W,^5#PU/E8\\4FES:T-L87-S/BP@4&amp;ED/$)U8VME=#Y4/#4^5CQ""=6-K970^73X^3SQ)9#Q);7!R96-I&lt;V4^/CX^(!`R(@`*@P(*_`%C86%E8F%D-RTR8S4T+30Y9C,M8C(Q,BUF,3AF-#,W868W-3(@/$971CQ&amp;/%5)/$925$(N0U-2(""A3+4Y#*2Y696=A+E=3/D\\\\6U!I9#QP87)A;65T97)696=A/E0\\,3Y6/%1""/&amp;US&lt;BY&amp;4E1""(%-!($)A&lt;V5L+D925$(@4T)!?$-34B`H4RU.0RE\\5F5G83X^+""!0:60\\0V%L8W5L871I;VY087)A;65T97)S/E0\\-CY6/$925$(@4T$@0F%S96P@1&amp;%T83XL(%!I9#Q2:7-K0VQA&lt;W,^5#PU/E8\\4FES:T-L87-S/ET^/D\\\\260\\26UP&lt;F5C:7-E/CX^/B`0,B(`""I,!""HP!,F0Q9#@P960M.3,U,RTT-#AB+3AB,C&lt;M8F$R,#DV86,V8C&lt;V(#Q&amp;5T8\\1CQ523Q3=6T^3SQ;4&amp;ED/'!A&lt;F%M971E&lt;C$^5#PX/E8\\23Q40CQM&lt;W(N1E)40B!302!""87-E;""Y&amp;4E1""(%-""07Q&amp;6'Q$96QT83X^/ET^/D\\\\260\\26UP&lt;F5C:7-E/CX^/B`06R(`""I0!""HT!9C&lt;P-V1F-#,M-3!D.""TT,C1A+6$U9#4M-S@X.&amp;5E.61E.6%C(#Q&amp;5T8\\1CQ523Q3=6T^3SQ;4&amp;ED/'!A&lt;F%M971E&lt;C$^5#PX/E8\\23Q21CQ.1CQ#4U(@*%,M3D,I(%-T&lt;FEP&lt;&amp;5D($-U&lt;G9A='5R92!5&lt;#X^/CY=/CY//$ED/$EM&lt;')E8VES93X^/CX@$#(B``J&lt;`@J5`F$Y.#AA96,Y+6,X-C&lt;M-&amp;-D9BUA,S8W+64T93(P83AB8F,V,R`\\1E=&amp;/$8\\54D\\1E)40BY#4U(@*$Y3*2Y$96QT82Y74SY//%M0:60\\&lt;&amp;%R86UE=&amp;5R1&amp;5L=&amp;$^5#PQ/E8\\5$(\\;7-R+D925$(@4T$@0F%S96PN1E)40B!30D%\\0U-2(""A.4RE\\1&amp;5L=&amp;$^/BP@4&amp;ED/$-A;&amp;-U;&amp;%T:6]N4&amp;%R86UE=&amp;5R&lt;SY4/#8^5CQ&amp;4E1""(%-!($)A&lt;V5L($1A=&amp;$^+""!0:60\\4FES:T-L87-S/E0\\-3Y6/%)I&lt;VM#;&amp;%S&lt;SXL(%!I9#Q""=6-K970^5#PU/E8\\0G5C:V5T/ET^/D\\\\260\\26UP&lt;F5C:7-E/CX^/B`09""(`""O\\!""O@!,6$Q,#EF,SDM93`W,RTT960Q+6$Q-#@M-CAB86-F9C0R-&amp;$V(#Q&amp;5T8\\1CQ523Q&amp;4E1""+D-34B`H3E,I+E9E9V$N5U,^3SQ;4&amp;ED/'!A&lt;F%M971E&lt;E9E9V$^5#PQ/E8\\5$(\\;7-R+D925$(@4T$@0F%S96PN1E)40B!30D%\\0U-2(""A.4RE\\5F5G83X^+""!0:60\\0V%L8W5L871I;VY087)A;65T97)S/E0\\-CY6/$925$(@4T$@0F%S96P@1&amp;%T83XL(%!I9#Q2:7-K0VQA&lt;W,^5#PU/E8\\4FES:T-L87-S/ET^/D\\\\260\\26UP&lt;F5C:7-E/CX^/B`0,B(`""I8!""H\\!-68R,34Q964M9#8X-2TT9#=F+6(U.#4M-65F93AD,SEF-C=D(#Q&amp;5T8\\1CQ523Q3=6T^3SQ;4&amp;ED/'!A&lt;F%M971E&lt;C$^5#PX/E8\\23Q21CQ.1CQ#4U(@*%,M3D,I(%-T&lt;FEP&lt;&amp;5D($-U&lt;G9A='5R92!$;W=N/CX^/ET^/D\\\\260\\26UP&lt;F5C:7-E/CX^/B`0,B(`""H$""""OH!,&amp;$W,S%B864M8S-D.2TT9C@W+6)A83,M-S1E-CAC968Y9&amp;5F(#Q&amp;5T8\\1CQ523QI;G0N365R9V4^3SQ;4&amp;ED/'!A&lt;F%M971E&lt;C$^5#PS/E8\\3D8\\1TE24B!$96QT83X^5#PS/E8\\3D8\\1E@@1&amp;5L=&amp;$^/E0\\,SY6/$Y&amp;/$5Q=6ET&gt;2!$96QT83X^5#PS/E8\\3D8\\0V]M;6]D:71Y($1E;'1A/CY4/#,^5CQ.1CQ#4U(@*$Y3*2!$96QT83X^5#PS/E8\\3D8\\0U-2(""A3+4Y#*2!$96QT82!&amp;;W)M=6QA/CY=/CY//$ED/$EM&lt;')E8VES93X^/CX@6S)=(!!F(@`*@0(*^@$P83&lt;S,6)A92UC,V0Y+31F.#&lt;M8F%A,RTW-&amp;4V.&amp;-E9CED968@/$971CQ&amp;/%5)/&amp;EN=""Y-97)G93Y//%M0:60\\&lt;&amp;%R86UE=&amp;5R,3Y4/#,^5CQ.1CQ'25)2($1E;'1A/CY4/#,^5CQ.1CQ&amp;6""!$96QT83X^5#PS/E8\\3D8\\17%U:71Y($1E;'1A/CY4/#,^5CQ.1CQ#;VUM;V1I='D@1&amp;5L=&amp;$^/E0\\,SY6/$Y&amp;/$-34B`H3E,I($1E;'1A/CY4/#,^5CQ.1CQ#4U(@*%,M3D,I($1E;'1A($9O&lt;FUU;&amp;$^/ET^/D\\\\260\\26UP&lt;F5C:7-E/CX^/B!;,5T@$&amp;8B``J!`@KZ`3!A-S,Q8F%E+6,S9#DM-&amp;8X-RUB86$S+3&lt;T938X8V5F.61E9B`\\1E=&amp;/$8\\54D\\:6YT+DUE&lt;F=E/D\\\\6U!I9#QP87)A;65T97(Q/E0\\,SY6/$Y&amp;/$=)4E(@1&amp;5L=&amp;$^/E0\\,SY6/$Y&amp;/$98($1E;'1A/CY4/#,^5CQ.1CQ%&lt;75I='D@1&amp;5L=&amp;$^/E0\\,SY6/$Y&amp;/$-O;6UO9&amp;ET&gt;2!$96QT83X^5#PS/E8\\3D8\\0U-2(""A.4RD@1&amp;5L=&amp;$^/E0\\,SY6/$Y&amp;/$-34B`H4RU.0RD@1&amp;5L=&amp;$@1F]R;75L83X^73X^3SQ)9#Q);7!R96-I&lt;V4^/CX^(%LP72`09B(`""HX!""H&lt;!.#0S8S4V.60M.#)C-BTT,6,R+3AB-S&lt;M,F%A-V4W-V4V83DT(#Q&amp;5T8\\1CQ523Q3=6T^3SQ;4&amp;ED/'!A&lt;F%M971E&lt;C$^5#PX/E8\\23Q21CQ.1CQ&amp;6""!3=')I&lt;'!E9""!#=7)V871U&lt;F4@1&amp;]W;CX^/CY=/CY//$ED/$EM&lt;')E8VES93X^/CX@$$\\B``J2`0J+`3@W,C5B-#@S+3!A93DM-&amp;0R82UA-38T+39A,60Y-3EF93&lt;X8B`\\1E=&amp;/$8\\54D\\4W5M/D\\\\6U!I9#QP87)A;65T97(Q/E0\\.#Y6/$D\\4D8\\3D8\\17%U:71Y(%-T&lt;FEP&lt;&amp;5D($-U&lt;G9A='5R92!$;W=N/CX^/ET^/D\\\\260\\26UP&lt;F5C:7-E/CX^/B`0,B(`""J`""""ID"",V0Y9#@Q,&amp;0M834Q,""TT,V$U+6(U9#8M,S!C83,Y83,R,S-C(#Q&amp;5T8\\1CQ523Q&amp;4E1""+D-34B`H4RU.0RDN1&amp;5L=&amp;$N5U,^3SQ;4&amp;ED/'!A&lt;F%M971E&lt;D1E;'1A/E0\\,3Y6/%1""/&amp;US&lt;BY&amp;4E1""(%-!($)A&lt;V5L+D925$(@4T)!?$-34B`H4RU.0RE\\1&amp;5L=&amp;$^/BP@4&amp;ED/$-A;&amp;-U;&amp;%T:6]N4&amp;%R86UE=&amp;5R&lt;SY4/#8^5CQ&amp;4E1""(%-!($)A&lt;V5L($1A=&amp;$^+""!0:60\\4FES:T-L87-S/E0\\-3Y6/%)I&lt;VM#;&amp;%S&lt;SXL(%!I9#Q""=6-K970^5#PU/E8\\0G5C:V5T/ET^/D\\\\260\\26UP&lt;F5C:7-E/CX^/B`0,B(`""OL!""O0!96-B-C@R9&amp;8M-#9B-""TT9C%C+3AA86,M8F,R-3(U8C(U93,Y(#Q&amp;5T8\\1CQ523QI;G0N365R9V4^3SQ;4&amp;ED/'!A&lt;F%M971E&lt;C$^5#PS/E8\\3D8\\1TE24B!696=A/CY4/#,^5CQ.1CQ&amp;6""!696=A/CY4/#,^5CQ.1CQ%&lt;75I='D@5F5G83X^5#PS/E8\\3D8\\0V]M;6]D:71Y(%9E9V$^/E0\\,SY6/$Y&amp;/$-34B`H3E,I(%9E9V$^/E0\\,SY6/$Y&amp;/$-34B`H4RU.0RD@5F5G82!&amp;;W)M=6QA/CY=/CY//$ED/$EM&lt;')E8VES93X^/CX@6S)=(!!+(@`*^P$*]`%E8V(V.#)D9BTT-F(T+31F,6,M.&amp;%A8RUB8S(U,C5B,C5E,SD@/$971CQ&amp;/%5)/&amp;EN=""Y-97)G93Y//%M0:60\\&lt;&amp;%R86UE=&amp;5R,3Y4/#,^5CQ.1CQ'25)2(%9E9V$^/E0\\,SY6/$Y&amp;/$98(%9E9V$^/E0\\,SY6/$Y&amp;/$5Q=6ET&gt;2!696=A/CY4/#,^5CQ.1CQ#;VUM;V1I='D@5F5G83X^5#PS/E8\\3D8\\0U-2(""A.4RD@5F5G83X^5#PS/E8\\3D8\\0U-2(""A3+4Y#*2!696=A($9O&lt;FUU;&amp;$^/ET^/D\\\\260\\26UP&lt;F5C:7-E/CX^/B!;,5T@$$LB``K[`0KT`65C8C8X,F1F+30V8C0M-&amp;8Q8RTX86%C+6)C,C4R-6(R-64S.2`\\1E=&amp;/$8\\54D\\:6YT+DUE&lt;F=E/D\\\\6U!I9#QP87)A;65T97(Q/E0\\,SY6/$Y&amp;/$=)4E(@5F5G83X^5#PS/E8\\3D8\\1E@@5F5G83X^5#PS/E8\\3D8\\17%U:71Y(%9E9V$^/E0\\,SY6/$Y&amp;/$-O;6UO9&amp;ET&gt;2!696=A/CY4/#,^5CQ.1CQ#4U(@*$Y3*2!696=A/CY4/#,^5CQ.1CQ#4U(@*%,M3D,I(%9E9V$@1F]R;75L83X^73X^3SQ)9#Q);7!R96-I&lt;V4^/CX^(%LP72`02R(`""K0""""JT""-#%B,F,P-V8M8C0W8BTT,C%F+6(Q-#`M,60T-V)A.#$W960Q(#Q&amp;5T8\\1CQ523Q&amp;4E1""+D5Q=6ET&gt;2Y$96QT82Y74SY//%M0:60\\&lt;&amp;%R86UE=&amp;5R1&amp;5L=&amp;$^5#PQ/E8\\5$(\\;7-R+D925$(@4T$@0F%S96PN1E)40B!30D%\\17%U:71Y?$1E;'1A/CXL(%!I9#Q#86QC=6QA=&amp;EO;E!A&lt;F%M971E&lt;G,^5#PV/E8\\1E)40B!302!""87-E;""!$871A/BP@4&amp;ED/%)I&lt;VM#;&amp;%S&lt;SY4/#4^5CQ2:7-K0VQA&lt;W,^+""!0:60\\0G5C:V5T/E0\\-3Y6/$)U8VME=#XL(%!I9#Q3=6)T&gt;7!E/E0\\-3Y6/%-U8G1Y&lt;&amp;4^73X^3SQ)9#Q);7!R96-I&lt;V4^/CX^(!!F(@`*C`$*A0$R-C4U,C@R-""TY,F5D+30Q,3&lt;M8C1A-""UF83,Q-C9A-S,Y93(@/$971CQ&amp;/%5)/%-U;3Y//%M0:60\\&lt;&amp;%R86UE=&amp;5R,3Y4/#@^5CQ)/%)&amp;/$Y&amp;/$98(%-T&lt;FEP&lt;&amp;5D($-U&lt;G9A='5R92!5&lt;#X^/CY=/CY//$ED/$EM&lt;')E8VES93X^/CX@$$\\B``J0`0J)`34T-&amp;-C.69D+3%D,V,M-#,V,BTX-S)D+69D83`S,F%D8C%A.2`\\1E=&amp;/$8\\54D\\4W5M/D\\\\6U!I9#QP87)A;65T97(Q/E0\\.#Y6/$D\\4D8\\3D8\\17%U:71Y(%-T&lt;FEP&lt;&amp;5D($-U&lt;G9A='5R92!5&lt;#X^/CY=/CY//$ED/$EM&lt;')E8VES93X^/CX@$#(B``J.`0J'`34S-C,X9F1D+6)B96$M-&amp;0U,RTX-39D+60U8V)D83$Q9#(R,R`\\1E=&amp;/$8\\54D\\4W5M/D\\\\6U!I9#QP87)A;65T97(Q/E0\\.#Y6/$D\\4D8\\3D8\\1TE24B!3=')I&lt;'!E9""!#=7)V871U&lt;F4@57`^/CX^73X^3SQ)9#Q);7!R96-I&lt;V4^/CX^(!`R(@`*F0(*D@(P-#-A.#(U,BUD83EB+31F96$M.#5A-2TV.3AE93DV-V)A-C$@/$971CQ&amp;/%5)/&amp;EN=""Y-97)G93Y//%M0:60\\&lt;&amp;%R86UE=&amp;5R,3Y4/#,^5CQ.1CQ'25)2($-U&lt;G9A='5R93X^5#PS/E8\\3D8\\1E@@0W5R=F%T=7)E/CY4/#,^5CQ.1CQ%&lt;75I='D@0W5R=F%T=7)E/CY4/#,^5CQ.1CQ#;VUM;V1I='D@0W5R=F%T=7)E/CY4/#,^5CQ.1CQ#4U(@*$Y3*2!#=7)V871U&lt;F4^/E0\\,SY6/$Y&amp;/$-34B`H4RU.0RD@0W5R=F%T=7)E($9O&lt;FUU;&amp;$^/ET^/D\\\\260\\26UP&lt;F5C:7-E/CX^/B!;,%T@$$LB``J9`@J2`C`T,V$X,C4R+61A.6(M-&amp;9E82TX-6$U+38Y.&amp;5E.38W8F$V,2`\\1E=&amp;/$8\\54D\\:6YT+DUE&lt;F=E/D\\\\6U!I9#QP87)A;65T97(Q/E0\\,SY6/$Y&amp;/$=)4E(@0W5R=F%T=7)E/CY4/#,^5CQ.1CQ&amp;6""!#=7)V871U&lt;F4^/E0\\,SY6/$Y&amp;/$5Q=6ET&gt;2!#=7)V871U&lt;F4^/E0\\,SY6/$Y&amp;/$-O;6UO9&amp;ET&gt;2!#=7)V871U&lt;F4^/E0\\,SY6/$Y&amp;/$-34B`H3E,I($-U&lt;G9A='5R93X^5#PS/E8\\3D8\\0U-2(""A3+4Y#*2!#=7)V871U&lt;F4@1F]R;75L83X^73X^3SQ)9#Q);7!R96-I&lt;V4^/CX^(%LQ72`02R(`""ID""""I("",#0S83@R-3(M9&amp;$Y8BTT9F5A+3@U834M-CDX964Y-C=B838Q(#Q&amp;5T8\\1CQ523QI;G0N365R9V4^3SQ;4&amp;ED/'!A&lt;F%M971E&lt;C$^5#PS/E8\\3D8\\1TE24B!#=7)V871U&lt;F4^/E0\\,SY6/$Y&amp;/$98($-U&lt;G9A='5R93X^5#PS/E8\\3D8\\17%U:71Y($-U&lt;G9A='5R93X^5#PS/E8\\3D8\\0V]M;6]D:71Y($-U&lt;G9A='5R93X^5#PS/E8\\3D8\\0U-2(""A.4RD@0W5R=F%T=7)E/CY4/#,^5CQ.1CQ#4U(@*%,M3D,I($-U&lt;G9A='5R92!&amp;;W)M=6QA/CY=/CY//$ED/$EM&lt;')E8VES93X^/CX@6S)=(!!+(@`*D`$*B0%D-#`U,F0Q-2TU,C,P+31E,38M8F,T92TP939C93%C869D-F0@/$971CQ&amp;/%5)/%-U;3Y//%M0:60\\&lt;&amp;%R86UE=&amp;5R,3Y4/#@^5CQ)/%)&amp;/$Y&amp;/$=)4E(@4W1R:7!P960@0W5R=F%T=7)E($1O=VX^/CX^73X^3SQ)9#Q);7!R96-I&lt;V4^/CX^(!`R(@`*Q@(*OP(R,#`Y,39F92UA,V5A+31B-#4M.3&lt;Q-RTU.#,U-V$S-6,Q-3$@/$971CQ&amp;/%5)/$925$(N1TE24BY$96QT82Y74SY//%M0:60\\&lt;&amp;%R86UE=&amp;5R1&amp;5L=&amp;$^5#PQ/E8\\5$(\\;7-R+D925$(@4T$@0F%S96PN1E)40B!30D%\\1TE24GQ$96QT83X^+""!0:60\\0V%L8W5L871I;VY087)A;65T97)S/E0\\-CY6/$925$(@4T$@0F%S96P@1&amp;%T83XL(%!I9#Q2:7-K0VQA&lt;W,^5#PU/E8\\4FES:T-L87-S/BP@4&amp;ED/$)U8VME=#Y4/#4^5CQ""=6-K970^+""!0:60\\4W5B='EP93Y4/#4^5CQ3=6)T&gt;7!E/BP@4&amp;ED/%1I;64^5#PU/E8\\5&amp;EM93Y=/CY//$ED/$EM&lt;')E8VES93X^/CX@$%4B``J2`0J+`3-D93%B-#`Y+6(U,&amp;8M-#5D,RUB-SAB+6,Y.#EA.6)F.6)C,""`\\1E=&amp;/$8\\54D\\4W5M/D\\\\6U!I9#QP87)A;65T97(Q/E0\\.#Y6/$D\\4D8\\3D8\\0U-2(""A.4RD@4W1R:7!P960@0W5R=F%T=7)E(%5P/CX^/ET^/D\\\\260\\26UP&lt;F5C:7-E/CX^/B`0,B(`""I0!""HT!,&amp;5F,S,Y9#0M,#$S8RTT93AB+6%E93$M9F9F,S@T-#&lt;X.31F(#Q&amp;5T8\\1CQ523Q3=6T^3SQ;4&amp;ED/'!A&lt;F%M971E&lt;C$^5#PX/E8\\23Q21CQ.1CQ#4U(@*$Y3*2!3=')I&lt;'!E9""!#=7)V871U&lt;F4@1&amp;]W;CX^/CY=/CY//$ED/$EM&lt;')E8VES93X^/CX@$#(B``J0`@J)`C,Y8F4X,SDT+68S9C4M-#DQ,RUB8V0P+3(U-39E8F4R,V)F-""`\\1E=&amp;/$8\\54D\\1E)40BY&amp;6""Y$96QT82Y74SY//%M0:60\\&lt;&amp;%R86UE=&amp;5R1&amp;5L=&amp;$^5#PQ/E8\\5$(\\;7-R+D925$(@4T$@0F%S96PN1E)40B!30D%\\1EA\\1&amp;5L=&amp;$^/BP@4&amp;ED/$-A;&amp;-U;&amp;%T:6]N4&amp;%R86UE=&amp;5R&lt;SY4/#8^5CQ&amp;4E1""(%-!($)A&lt;V5L($1A=&amp;$^+""!0:60\\4FES:T-L87-S/E0\\-3Y6/%)I&lt;VM#;&amp;%S&lt;SXL(%!I9#Q""=6-K970^5#PU/E8\\0G5C:V5T/ET^/D\\\\260\\26UP&lt;F5C:7-E/CX^/B`06R(`""O&lt;!""O`!,S(W-S(W,#4M-#`W-RTT-&amp;(S+3@Q9CDM-S5A,&amp;0Y.6$X.&amp;8W(#Q&amp;5T8\\1CQ523Q&amp;4E1""+D=)4E(N5F5G82Y74SY//%M0:60\\&lt;&amp;%R86UE=&amp;5R5F5G83Y4/#$^5CQ40CQM&lt;W(N1E)40B!302!""87-E;""Y&amp;4E1""(%-""07Q'25)2?%9E9V$^/BP@4&amp;ED/$-A;&amp;-U;&amp;%T:6]N4&amp;%R86UE=&amp;5R&lt;SY4/#8^5CQ&amp;4E1""(%-!($)A&lt;V5L($1A=&amp;$^+""!0:60\\4FES:T-L87-S/E0\\-3Y6/%)I&lt;VM#;&amp;%S&lt;SY=/CY//$ED/$EM&lt;')E8VES93X^/CX@$#(B``KS`0KL`65E9C@R,3@W+3&lt;Q,S(M-&amp;1D9""TY9#4V+3=B9#0R,&amp;5A9#4R92`\\1E=&amp;/$8\\54D\\1E)40BY&amp;6""Y696=A+E=3/D\\\\6U!I9#QP87)A;65T97)696=A/E0\\,3Y6/%1""/&amp;US&lt;BY&amp;4E1""(%-!($)A&lt;V5L+D925$(@4T)!?$98?%9E9V$^/BP@4&amp;ED/$-A;&amp;-U;&amp;%T:6]N4&amp;%R86UE=&amp;5R&lt;SY4/#8^5CQ&amp;4E1""(%-!($)A&lt;V5L($1A=&amp;$^+""!0:60\\4FES:T-L87-S/E0\\-3Y6/%)I&lt;VM#;&amp;%S&lt;SY=/CY//$ED/$EM&lt;')E8VES93X^/CX@$$\\B`!(V""B`\\3F\\@1FEL=&amp;5R/B`H1W)O=7`@0GD@4&amp;]R=&amp;9O;&amp;EO*1(2""A!)4E0@4W!E8VEA;&amp;ES=""`Q&amp;/,!,`$X9$(`2@((`5(`</string>\
+                              </Text>\
+                            </FString>\
+                          </associationValue>\
+                        </FAssociation>\
+                        </Element>\
+                      </FDictionary>\
+                    </ArchiveContents>\
+                    <Class type =""Property"">\
+                      <FDomain type =""AcmDomain"">\
+                        <DomainName type =""Property"">\
+                          <string type =""AcmDomain"">FHgcStoredView</string>\
+                        </DomainName>\
+                      </FDomain>\
+                    </Class>\
+                  </FPersistentArchive>\
+                </associationValue>\
+              </FAssociation>\
+              </Element>\
+              <Element>\
+              <FAssociation type =""AcmDomain"">\
+                <associationKey type =""Property"">\
+                  <FSymbol type =""AcmDomain"">\
+                    <Text type =""Property"">\
+                      <string type =""AcmDomain"">rvm_GIRR</string>\
+                    </Text>\
+                  </FSymbol>\
+                </associationKey>\
+                <associationValue type =""Property"">\
+                  <FPersistentArchive type =""AcmDomain"">\
+                    <ArchiveContents type =""Property"">\
+                      <FDictionary type =""AcmDomain"">\
+                        <Element>\
+                        <FAssociation type =""AcmDomain"">\
+                          <associationKey type =""Property"">\
+                            <FSymbol type =""AcmDomain"">\
+                              <Text type =""Property"">\
+                                <string type =""AcmDomain"">uuid</string>\
+                              </Text>\
+                            </FSymbol>\
+                          </associationKey>\
+                          <associationValue type =""Property"">\
+                            <FSymbol type =""AcmDomain"">\
+                              <Text type =""Property"">\
+                                <string type =""AcmDomain"">fd4909fb-500c-400f-a0ac-09190dae91d6</string>\
+                              </Text>\
+                            </FSymbol>\
+                          </associationValue>\
+                        </FAssociation>\
+                        </Element>\
+                        <Element>\
+                        <FAssociation type =""AcmDomain"">\
+                          <associationKey type =""Property"">\
+                            <FSymbol type =""AcmDomain"">\
+                              <Text type =""Property"">\
+                                <string type =""AcmDomain"">viewContents</string>\
+                              </Text>\
+                            </FSymbol>\
+                          </associationKey>\
+                          <associationValue type =""Property"">\
+                            <FString type =""AcmDomain"">\
+                              <Text type =""Property"">\
+                                <string type =""AcmDomain"">""AE&amp;&lt;F]N=$%R96YA+E!O&lt;VET:6]N36%S=&amp;5R$C42#4925$(@4T$@0F%S96P:)#`X-60P-6%F+3DW,34M-#)E,BTX,6)B+30Y,65B8SAD-V1D9AH*$@AR=FU?1TE24B(%&lt;VAE970J;@@!&amp;C0*)A(D.#)F9&amp;4X-#DM-F0R-RTT,F0U+6(T93@M8C-B,3%E,C)E.3`Q$@H2""&amp;YO1FEL=&amp;5R&amp;C0*)A(D-#DR,3(S83DM-S,R9""TT.60Q+3AD96,M,3-A9F1F-S&lt;Q9#`U$@H2""&amp;YO1FEL=&amp;5R,J8F""I`!""HD!-3-C,3&lt;P.&amp;4M-#=A82TT864X+6%A-V(M.#&lt;W,#`U,V5C9#DT(#Q&amp;5T8\\1CQ523Q3=6T^3SQ;4&amp;ED/'!A&lt;F%M971E&lt;C$^5#PX/E8\\23Q21CQ.1CQ'25)2(%-T&lt;FEP&lt;&amp;5D($-U&lt;G9A='5R92!$;W=N/CX^/ET^/D\\\\260\\26UP&lt;F5C:7-E/CX^/B`0,B(`""HX!""H&lt;!-S1C8S@Q,3DM8C(Q.2TT-6(T+6)E-S@M-C,R968S,6)A96,T(#Q&amp;5T8\\1CQ523Q3=6T^3SQ;4&amp;ED/'!A&lt;F%M971E&lt;C$^5#PX/E8\\23Q21CQ.1CQ'25)2(%-T&lt;FEP&lt;&amp;5D($-U&lt;G9A='5R92!5&lt;#X^/CY=/CY//$ED/$EM&lt;')E8VES93X^/CX@$#(B``K?`@K8`F%F9C0T830W+69F,3,M-#!D9BTY93&lt;W+3(R,F)C-C&lt;T,SDR.2`\\1E=&amp;/$8\\54D\\1E)40BY'25)2+D1E;'1A/D\\\\6U!I9#QP87)A;65T97)$96QT83Y4/#$^5CQ40CQM&lt;W(N1E)40B!302!""87-E;""Y&amp;4E1""(%-""07Q'25)2?$1E;'1A/CXL(%!I9#Q#86QC=6QA=&amp;EO;E!A&lt;F%M971E&lt;G,^5#PV/E8\\1E)40B!302!""87-E;""!$871A/BP@4&amp;ED/%)I&lt;VM#;&amp;%S&lt;SY4/#4^5CQ2:7-K0VQA&lt;W,^+""!0:60\\0G5C:V5T/E0\\-3Y6/$)U8VME=#XL(%!I9#Q3=6)T&gt;7!E/E0\\-3Y6/%-U8G1Y&lt;&amp;4^+""!0:60\\0F%S:7,^5#PU/E8\\0F%S:7,^+""!0:60\\5&amp;EM93Y4/#4^5CQ4:6UE/ET^/D\\\\260\\26UP&lt;F5C:7-E/CX^/B!;,ET@$%$B``K?`@K8`F%F9C0T830W+69F,3,M-#!D9BTY93&lt;W+3(R,F)C-C&lt;T,SDR.2`\\1E=&amp;/$8\\54D\\1E)40BY'25)2+D1E;'1A/D\\\\6U!I9#QP87)A;65T97)$96QT83Y4/#$^5CQ40CQM&lt;W(N1E)40B!302!""87-E;""Y&amp;4E1""(%-""07Q'25)2?$1E;'1A/CXL(%!I9#Q#86QC=6QA=&amp;EO;E!A&lt;F%M971E&lt;G,^5#PV/E8\\1E)40B!302!""87-E;""!$871A/BP@4&amp;ED/%)I&lt;VM#;&amp;%S&lt;SY4/#4^5CQ2:7-K0VQA&lt;W,^+""!0:60\\0G5C:V5T/E0\\-3Y6/$)U8VME=#XL(%!I9#Q3=6)T&gt;7!E/E0\\-3Y6/%-U8G1Y&lt;&amp;4^+""!0:60\\0F%S:7,^5#PU/E8\\0F%S:7,^+""!0:60\\5&amp;EM93Y4/#4^5CQ4:6UE/ET^/D\\\\260\\26UP&lt;F5C:7-E/CX^/B!;,5T@$%$B``K?`@K8`F%F9C0T830W+69F,3,M-#!D9BTY93&lt;W+3(R,F)C-C&lt;T,SDR.2`\\1E=&amp;/$8\\54D\\1E)40BY'25)2+D1E;'1A/D\\\\6U!I9#QP87)A;65T97)$96QT83Y4/#$^5CQ40CQM&lt;W(N1E)40B!302!""87-E;""Y&amp;4E1""(%-""07Q'25)2?$1E;'1A/CXL(%!I9#Q#86QC=6QA=&amp;EO;E!A&lt;F%M971E&lt;G,^5#PV/E8\\1E)40B!302!""87-E;""!$871A/BP@4&amp;ED/%)I&lt;VM#;&amp;%S&lt;SY4/#4^5CQ2:7-K0VQA&lt;W,^+""!0:60\\0G5C:V5T/E0\\-3Y6/$)U8VME=#XL(%!I9#Q3=6)T&gt;7!E/E0\\-3Y6/%-U8G1Y&lt;&amp;4^+""!0:60\\0F%S:7,^5#PU/E8\\0F%S:7,^+""!0:60\\5&amp;EM93Y4/#4^5CQ4:6UE/ET^/D\\\\260\\26UP&lt;F5C:7-E/CX^/B!;,%T@$%$B``KW`0KP`3,R-S&lt;R-S`U+30P-S&lt;M-#1B,RTX,68Y+3&lt;U83!D.3EA.#AF-R`\\1E=&amp;/$8\\54D\\1E)40BY'25)2+E9E9V$N5U,^3SQ;4&amp;ED/'!A&lt;F%M971E&lt;E9E9V$^5#PQ/E8\\5$(\\;7-R+D925$(@4T$@0F%S96PN1E)40B!30D%\\1TE24GQ696=A/CXL(%!I9#Q#86QC=6QA=&amp;EO;E!A&lt;F%M971E&lt;G,^5#PV/E8\\1E)40B!302!""87-E;""!$871A/BP@4&amp;ED/%)I&lt;VM#;&amp;%S&lt;SY4/#4^5CQ2:7-K0VQA&lt;W,^73X^3SQ)9#Q);7!R96-I&lt;V4^/CX^(!`R(@`*ZP(*Y`)F965A,S0V.""TY-&amp;,R+30T,V0M869B8BUC,V4P939F-V,Q8C`@/$971CQ&amp;/%5)/$925$(N1TE24BY696=A/D\\\\6U!I9#QP87)A;65T97)696=A/E0\\,3Y6/%1""/&amp;US&lt;BY&amp;4E1""(%-!($)A&lt;V5L+D925$(@4T)!?$=)4E)\\5F5G83X^+""!0:60\\0V%L8W5L871I;VY087)A;65T97)S/E0\\-CY6/$925$(@4T$@0F%S96P@1&amp;%T83XL(%!I9#Q2:7-K0VQA&lt;W,^5#PU/E8\\4FES:T-L87-S/BP@4&amp;ED/$)U8VME=#Y4/#4^5CQ""=6-K970^+""!0:60\\4W5B='EP93Y4/#4^5CQ3=6)T&gt;7!E/BP@4&amp;ED/%1I;64^5#PU/E8\\5&amp;EM93XL(%!I9#Q5;F1-870^5#PU/E8\\56YD97)L&gt;6EN9R!-871U&lt;FET&gt;3Y=/CY//$ED/$EM&lt;')E8VES93X^/CX@6S!=(!`R(@`*ZP(*Y`)F965A,S0V.""TY-&amp;,R+30T,V0M869B8BUC,V4P939F-V,Q8C`@/$971CQ&amp;/%5)/$925$(N1TE24BY696=A/D\\\\6U!I9#QP87)A;65T97)696=A/E0\\,3Y6/%1""/&amp;US&lt;BY&amp;4E1""(%-!($)A&lt;V5L+D925$(@4T)!?$=)4E)\\5F5G83X^+""!0:60\\0V%L8W5L871I;VY087)A;65T97)S/E0\\-CY6/$925$(@4T$@0F%S96P@1&amp;%T83XL(%!I9#Q2:7-K0VQA&lt;W,^5#PU/E8\\4FES:T-L87-S/BP@4&amp;ED/$)U8VME=#Y4/#4^5CQ""=6-K970^+""!0:60\\4W5B='EP93Y4/#4^5CQ3=6)T&gt;7!E/BP@4&amp;ED/%1I;64^5#PU/E8\\5&amp;EM93XL(%!I9#Q5;F1-870^5#PU/E8\\56YD97)L&gt;6EN9R!-871U&lt;FET&gt;3Y=/CY//$ED/$EM&lt;')E8VES93X^/CX@6S%=(!`R(@`*ZP(*Y`)F965A,S0V.""TY-&amp;,R+30T,V0M869B8BUC,V4P939F-V,Q8C`@/$971CQ&amp;/%5)/$925$(N1TE24BY696=A/D\\\\6U!I9#QP87)A;65T97)696=A/E0\\,3Y6/%1""/&amp;US&lt;BY&amp;4E1""(%-!($)A&lt;V5L+D925$(@4T)!?$=)4E)\\5F5G83X^+""!0:60\\0V%L8W5L871I;VY087)A;65T97)S/E0\\-CY6/$925$(@4T$@0F%S96P@1&amp;%T83XL(%!I9#Q2:7-K0VQA&lt;W,^5#PU/E8\\4FES:T-L87-S/BP@4&amp;ED/$)U8VME=#Y4/#4^5CQ""=6-K970^+""!0:60\\4W5B='EP93Y4/#4^5CQ3=6)T&gt;7!E/BP@4&amp;ED/%1I;64^5#PU/E8\\5&amp;EM93XL(%!I9#Q5;F1-870^5#PU/E8\\56YD97)L&gt;6EN9R!-871U&lt;FET&gt;3Y=/CY//$ED/$EM&lt;')E8VES93X^/CX@6S)=(!`R(@`*UP$*SP%E9C`S,38V92TY83=B+31B9&amp;4M.#(V82TQ93@V93=A-&amp;,V-6(@/$971CQ&amp;/%5)/$925$(N4T$N36%X/D\\\\6U!I9#Q&amp;4E1""+E-!+D9O&lt;FUU;&amp;$^5#PS/E8\\3D8\\1&amp;5L=&amp;$@4&amp;5R(%-C96YA&lt;FEO/CXL(%!I9#Q&amp;4E1""+E-!+E1O=&amp;%L+DUA&gt;""Y38V5N87)I;SY4/#,^5CQ.1CQ4;W1A;""!2:7-K($-H87)G92!-87@@4V-E;F%R:6\\^/ET^/D\\\\260\\26UP&lt;F5C:7-E/CX^/B`0V`$B``J5`0J.`64V-S1A-S8Q+3%A,&amp;8M-#@S,RUB8C%C+34V.#(Y,C=F9#9D9B`\\1E=&amp;/$8\\54D\\4W5M/D\\\\6U!I9#QP87)A;65T97(Q/E0\\.#Y6/$D\\5$(\\;7-R+D925$(@4T$@0F%S96PN1E)40B!30D%\\1TE24GQ$96QT83X^/ET^/D\\\\260\\26UP&lt;F5C:7-E/CX^/B`09""(`""OP""""O4"",V$Y-#,S968M9#`U9BTT-&amp;)F+6$T83(M,6%F9&amp;,V83$S9F(Y(#Q&amp;5T8\\1CQ523Q&amp;4E1""+D=)4E(N0W5R=F%T=7)E/D\\\\6U!I9#QP87)A;65T97)#=7)V871U&lt;F55&lt;#Y4/#$^5CQ21CQ.1CQ'25)2(%-T&lt;FEP&lt;&amp;5D($-U&lt;G9A='5R92!5&lt;#X^/BP@4&amp;ED/'!A&lt;F%M971E&lt;D-U&lt;G9A='5R941O=VX^5#PQ/E8\\4D8\\3D8\\1TE24B!3=')I&lt;'!E9""!#=7)V871U&lt;F4@1&amp;]W;CX^/BP@4&amp;ED/$-A;&amp;-U;&amp;%T:6]N4&amp;%R86UE=&amp;5R&lt;SY4/#8^5CQ&amp;4E1""(%-!($)A&lt;V5L($1A=&amp;$^+""!0:60\\4FES:T-L87-S/E0\\-3Y6/%)I&lt;VM#;&amp;%S&lt;SXL(%!I9#Q""=6-K970^5#PU/E8\\0G5C:V5T/BP@4&amp;ED/%-U8G1Y&lt;&amp;4^5#PU/E8\\4W5B='EP93Y=/CY//$ED/$EM&lt;')E8VES93X^/CX@6S)=(!`R(@`*_`(*]0(S83DT,S-E9BUD,#5F+30T8F8M831A,BTQ869D8S9A,3-F8CD@/$971CQ&amp;/%5)/$925$(N1TE24BY#=7)V871U&lt;F4^3SQ;4&amp;ED/'!A&lt;F%M971E&lt;D-U&lt;G9A='5R955P/E0\\,3Y6/%)&amp;/$Y&amp;/$=)4E(@4W1R:7!P960@0W5R=F%T=7)E(%5P/CX^+""!0:60\\&lt;&amp;%R86UE=&amp;5R0W5R=F%T=7)E1&amp;]W;CY4/#$^5CQ21CQ.1CQ'25)2(%-T&lt;FEP&lt;&amp;5D($-U&lt;G9A='5R92!$;W=N/CX^+""!0:60\\0V%L8W5L871I;VY087)A;65T97)S/E0\\-CY6/$925$(@4T$@0F%S96P@1&amp;%T83XL(%!I9#Q2:7-K0VQA&lt;W,^5#PU/E8\\4FES:T-L87-S/BP@4&amp;ED/$)U8VME=#Y4/#4^5CQ""=6-K970^+""!0:60\\4W5B='EP93Y4/#4^5CQ3=6)T&gt;7!E/ET^/D\\\\260\\26UP&lt;F5C:7-E/CX^/B!;,5T@$#(B``J3`0J,`3$S-#,S,#!F+6%F-34M-&amp;,U.""TX,&amp;%C+65B-S9A8S!D,6%A,B`\\1E=&amp;/$8\\54D\\4W5M/D\\\\6U!I9#QP87)A;65T97(Q/E0\\.#Y6/$D\\5$(\\;7-R+D925$(@4T$@0F%S96PN1E)40B!30D%\\1EA\\1&amp;5L=&amp;$^/CY=/CY//$ED/$EM&lt;')E8VES93X^/CX@$%LB``K\\`@KU`C-A.30S,V5F+60P-68M-#1B9BUA-&amp;$R+3%A9F1C-F$Q,V9B.2`\\1E=&amp;/$8\\54D\\1E)40BY'25)2+D-U&lt;G9A='5R93Y//%M0:60\\&lt;&amp;%R86UE=&amp;5R0W5R=F%T=7)E57`^5#PQ/E8\\4D8\\3D8\\1TE24B!3=')I&lt;'!E9""!#=7)V871U&lt;F4@57`^/CXL(%!I9#QP87)A;65T97)#=7)V871U&lt;F5$;W=N/E0\\,3Y6/%)&amp;/$Y&amp;/$=)4E(@4W1R:7!P960@0W5R=F%T=7)E($1O=VX^/CXL(%!I9#Q#86QC=6QA=&amp;EO;E!A&lt;F%M971E&lt;G,^5#PV/E8\\1E)40B!302!""87-E;""!$871A/BP@4&amp;ED/%)I&lt;VM#;&amp;%S&lt;SY4/#4^5CQ2:7-K0VQA&lt;W,^+""!0:60\\0G5C:V5T/E0\\-3Y6/$)U8VME=#XL(%!I9#Q3=6)T&gt;7!E/E0\\-3Y6/%-U8G1Y&lt;&amp;4^73X^3SQ)9#Q);7!R96-I&lt;V4^/CX^(%LP72`0,B(`""L8""""K\\"",C`P.3$V9F4M83-E82TT8C0U+3DW,3&lt;M-3@S-3=A,S5C,34Q(#Q&amp;5T8\\1CQ523Q&amp;4E1""+D=)4E(N1&amp;5L=&amp;$N5U,^3SQ;4&amp;ED/'!A&lt;F%M971E&lt;D1E;'1A/E0\\,3Y6/%1""/&amp;US&lt;BY&amp;4E1""(%-!($)A&lt;V5L+D925$(@4T)!?$=)4E)\\1&amp;5L=&amp;$^/BP@4&amp;ED/$-A;&amp;-U;&amp;%T:6]N4&amp;%R86UE=&amp;5R&lt;SY4/#8^5CQ&amp;4E1""(%-!($)A&lt;V5L($1A=&amp;$^+""!0:60\\4FES:T-L87-S/E0\\-3Y6/%)I&lt;VM#;&amp;%S&lt;SXL(%!I9#Q""=6-K970^5#PU/E8\\0G5C:V5T/BP@4&amp;ED/%-U8G1Y&lt;&amp;4^5#PU/E8\\4W5B='EP93XL(%!I9#Q4:6UE/E0\\-3Y6/%1I;64^73X^3SQ)9#Q);7!R96-I&lt;V4^/CX^(!!5(@`2P`$*(#Q.;R!&amp;:6QT97(^(""A'&lt;F]U&lt;""!""&gt;2!0;W)T9F]L:6\\I$IL!""A!)4E0@4W!E8VEA;&amp;ES=""`Q$CT*($E$4BU54T0O0T-3+TI),TTM1B\\R,C`U,3DM,C0P-3$V$@\\*#4EN=&amp;5R97-T(%)A=&amp;42""`H&amp;/$YO;F4^$D@*'4E$4BU54T0O0T-3+T8M1B\\R,C`U,3DM,C&lt;P-3$Y$@\\*#4EN=&amp;5R97-T(%)A=&amp;42%@H40W)O&lt;W,@0W5R&lt;F5N8WD@0F%S:7,8Z@$P`3AD0@!*`@@!4@`</string>\
+                              </Text>\
+                            </FString>\
+                          </associationValue>\
+                        </FAssociation>\
+                        </Element>\
+                      </FDictionary>\
+                    </ArchiveContents>\
+                    <Class type =""Property"">\
+                      <FDomain type =""AcmDomain"">\
+                        <DomainName type =""Property"">\
+                          <string type =""AcmDomain"">FHgcStoredView</string>\
+                        </DomainName>\
+                      </FDomain>\
+                    </Class>\
+                  </FPersistentArchive>\
+                </associationValue>\
+              </FAssociation>\
+              </Element>\
+            </FDictionary>\
+          </associationValue>\
+        </FAssociation>\
+        </Element>\
+        <Element>\
+        <FAssociation type =""AcmDomain"">\
+          <associationKey type =""Property"">\
+            <FSymbol type =""AcmDomain"">\
+              <Text type =""Property"">\
+                <string type =""AcmDomain"">dockWindows</string>\
+              </Text>\
+            </FSymbol>\
+          </associationKey>\
+          <associationValue type =""Property"">\
+            <FDictionary type =""AcmDomain"">\
+            </FDictionary>\
+          </associationValue>\
+        </FAssociation>\
+        </Element>\
+        <Element>\
+        <FAssociation type =""AcmDomain"">\
+          <associationKey type =""Property"">\
+            <FSymbol type =""AcmDomain"">\
+              <Text type =""Property"">\
+                <string type =""AcmDomain"">layout</string>\
+              </Text>\
+            </FSymbol>\
+          </associationKey>\
+          <associationValue type =""Property"">\
+            <FDictionary type =""AcmDomain"">\
+              <Element>\
+              <FAssociation type =""AcmDomain"">\
+                <associationKey type =""Property"">\
+                  <FSymbol type =""AcmDomain"">\
+                    <Text type =""Property"">\
+                      <string type =""AcmDomain"">DockingManager</string>\
+                    </Text>\
+                  </FSymbol>\
+                </associationKey>\
+                <associationValue type =""Property"">\
+                  <FString type =""AcmDomain"">\
+                    <Text type =""Property"">\
+                      <string type =""AcmDomain"">!enc!``````0``````````""````````#__________P``````````!@````8``````````0````8````!```````````````AZ`````````````````````````$````AZ````0```""'H`````````(````````#__________P``````````!@````8``````````0````8````!```````````````@Z`````````````````````````$````@Z````0```""#H```````````````````</string>\
+                    </Text>\
+                  </FString>\
+                </associationValue>\
+              </FAssociation>\
+              </Element>\
+              <Element>\
+              <FAssociation type =""AcmDomain"">\
+                <associationKey type =""Property"">\
+                  <FSymbol type =""AcmDomain"">\
+                    <Text type =""Property"">\
+                      <string type =""AcmDomain"">DockWindowsContents</string>\
+                    </Text>\
+                  </FSymbol>\
+                </associationKey>\
+                <associationValue type =""Property"">\
+                  <FDictionary type =""AcmDomain"">\
+                    <Element>\
+                    <FAssociation type =""AcmDomain"">\
+                      <associationKey type =""Property"">\
+                        <FSymbol type =""AcmDomain"">\
+                          <Text type =""Property"">\
+                            <string type =""AcmDomain"">filterViewDockWindow</string>\
+                          </Text>\
+                        </FSymbol>\
+                      </associationKey>\
+                      <associationValue type =""Property"">\
+                        <FDictionary type =""AcmDomain"">\
+                        </FDictionary>\
+                      </associationValue>\
+                    </FAssociation>\
+                    </Element>\
+                    <Element>\
+                    <FAssociation type =""AcmDomain"">\
+                      <associationKey type =""Property"">\
+                        <FSymbol type =""AcmDomain"">\
+                          <Text type =""Property"">\
+                            <string type =""AcmDomain"">InformationBar</string>\
+                          </Text>\
+                        </FSymbol>\
+                      </associationKey>\
+                      <associationValue type =""Property"">\
+                        <FDictionary type =""AcmDomain"">\
+                        </FDictionary>\
+                      </associationValue>\
+                    </FAssociation>\
+                    </Element>\
+                  </FDictionary>\
+                </associationValue>\
+              </FAssociation>\
+              </Element>\
+              <Element>\
+              <FAssociation type =""AcmDomain"">\
+                <associationKey type =""Property"">\
+                  <FSymbol type =""AcmDomain"">\
+                    <Text type =""Property"">\
+                      <string type =""AcmDomain"">DockWindowsLayout</string>\
+                    </Text>\
+                  </FSymbol>\
+                </associationKey>\
+                <associationValue type =""Property"">\
+                  <FDictionary type =""AcmDomain"">\
+                    <Element>\
+                    <FAssociation type =""AcmDomain"">\
+                      <associationKey type =""Property"">\
+                        <FSymbol type =""AcmDomain"">\
+                          <Text type =""Property"">\
+                            <string type =""AcmDomain"">filterViewDockWindow</string>\
+                          </Text>\
+                        </FSymbol>\
+                      </associationKey>\
+                      <associationValue type =""Property"">\
+                        <FString type =""AcmDomain"">\
+                          <Text type =""Property"">\
+                            <string type =""AcmDomain"">!enc!`(`````````*````""@```&amp;X```!N``````````````!C````A``````````</string>\
+                          </Text>\
+                        </FString>\
+                      </associationValue>\
+                    </FAssociation>\
+                    </Element>\
+                    <Element>\
+                    <FAssociation type =""AcmDomain"">\
+                      <associationKey type =""Property"">\
+                        <FSymbol type =""AcmDomain"">\
+                          <Text type =""Property"">\
+                            <string type =""AcmDomain"">InformationBar</string>\
+                          </Text>\
+                        </FSymbol>\
+                      </associationKey>\
+                      <associationValue type =""Property"">\
+                        <FString type =""AcmDomain"">\
+                          <Text type =""Property"">\
+                            <string type =""AcmDomain"">!enc!`""`````````*````""@```&amp;X```!N```````````````""```````````````</string>\
+                          </Text>\
+                        </FString>\
+                      </associationValue>\
+                    </FAssociation>\
+                    </Element>\
+                  </FDictionary>\
+                </associationValue>\
+              </FAssociation>\
+              </Element>\
+              <Element>\
+              <FAssociation type =""AcmDomain"">\
+                <associationKey type =""Property"">\
+                  <FSymbol type =""AcmDomain"">\
+                    <Text type =""Property"">\
+                      <string type =""AcmDomain"">MDILayout</string>\
+                    </Text>\
+                  </FSymbol>\
+                </associationKey>\
+                <associationValue type =""Property"">\
+                  <FString type =""AcmDomain"">\
+                    <Text type =""Property"">\
+                      <string type =""AcmDomain"">!enc!`0````0````!`````0```````````````0````0``````````0````$`````````*````""@````!`````@````$````!````__[_&amp;T8`4@!4`$(`(`!3`$$`(`!""`&amp;$`&lt;P!E`&amp;P`(`!3`&amp;4`;@!S`&amp;D`=`!I`'8`:0!T`&amp;D`90!S``````#__O\\;1@!2`%0`0@`@`%,`00`@`$(`80!S`&amp;4`;``@`%,`90!N`',`:0!T`&amp;D`=@!I`'0`:0!E`',``````/____________[_""'(`=@!M`%\\`1P!)`%(`4@``````__[_""'(`=@!M`%\\`1P!)`%(`4@``````__________\\`````$````,74\\@#_W'@`OLZA`/""@H0""\\J.$`G,&amp;V`/&gt;XA@#9K&lt;(`I&lt;+7`+.FO@#JUJ,`]OI]`+7IG0!?P\\\\`P8.#`,K*U0```````0````0```""2````&lt;0$``!$&amp;``!&amp;`P``</string>\
+                    </Text>\
+                  </FString>\
+                </associationValue>\
+              </FAssociation>\
+              </Element>\
+              <Element>\
+              <FAssociation type =""AcmDomain"">\
+                <associationKey type =""Property"">\
+                  <FSymbol type =""AcmDomain"">\
+                    <Text type =""Property"">\
+                      <string type =""AcmDomain"">PaneIds</string>\
+                    </Text>\
+                  </FSymbol>\
+                </associationKey>\
+                <associationValue type =""Property"">\
+                  <FDictionary type =""AcmDomain"">\
+                    <Element>\
+                    <FAssociation type =""AcmDomain"">\
+                      <associationKey type =""Property"">\
+                        <FSymbol type =""AcmDomain"">\
+                          <Text type =""Property"">\
+                            <string type =""AcmDomain"">filterViewDockWindow</string>\
+                          </Text>\
+                        </FSymbol>\
+                      </associationKey>\
+                      <associationValue type =""Property"">\
+                        <FInteger type =""AcmDomain"">\
+                          <Number type =""Property"">\
+                            <int64 type =""AcmDomain"">59424</int64>\
+                          </Number>\
+                        </FInteger>\
+                      </associationValue>\
+                    </FAssociation>\
+                    </Element>\
+                    <Element>\
+                    <FAssociation type =""AcmDomain"">\
+                      <associationKey type =""Property"">\
+                        <FSymbol type =""AcmDomain"">\
+                          <Text type =""Property"">\
+                            <string type =""AcmDomain"">InformationBar</string>\
+                          </Text>\
+                        </FSymbol>\
+                      </associationKey>\
+                      <associationValue type =""Property"">\
+                        <FInteger type =""AcmDomain"">\
+                          <Number type =""Property"">\
+                            <int64 type =""AcmDomain"">59425</int64>\
+                          </Number>\
+                        </FInteger>\
+                      </associationValue>\
+                    </FAssociation>\
+                    </Element>\
+                  </FDictionary>\
+                </associationValue>\
+              </FAssociation>\
+              </Element>\
+              <Element>\
+              <FAssociation type =""AcmDomain"">\
+                <associationKey type =""Property"">\
+                  <FSymbol type =""AcmDomain"">\
+                    <Text type =""Property"">\
+                      <string type =""AcmDomain"">RibbonMinmized</string>\
+                    </Text>\
+                  </FSymbol>\
+                </associationKey>\
+                <associationValue type =""Property"">\
+                  <FFalse type =""AcmDomain"">\
+                  </FFalse>\
+                </associationValue>\
+              </FAssociation>\
+              </Element>\
+              <Element>\
+              <FAssociation type =""AcmDomain"">\
+                <associationKey type =""Property"">\
+                  <FSymbol type =""AcmDomain"">\
+                    <Text type =""Property"">\
+                      <string type =""AcmDomain"">StoredDockedWindows</string>\
+                    </Text>\
+                  </FSymbol>\
+                </associationKey>\
+                <associationValue type =""Property"">\
+                  <FArray type =""AcmDomain"">\
+                    <Element>\
+                    <FDictionary type =""AcmDomain"">\
+                      <Element>\
+                      <FAssociation type =""AcmDomain"">\
+                        <associationKey type =""Property"">\
+                          <FSymbol type =""AcmDomain"">\
+                            <Text type =""Property"">\
+                              <string type =""AcmDomain"">dockBar</string>\
+                            </Text>\
+                          </FSymbol>\
+                        </associationKey>\
+                        <associationValue type =""Property"">\
+                          <FInteger type =""AcmDomain"">\
+                            <Number type =""Property"">\
+                              <int64 type =""AcmDomain"">4</int64>\
+                            </Number>\
+                          </FInteger>\
+                        </associationValue>\
+                      </FAssociation>\
+                      </Element>\
+                      <Element>\
+                      <FAssociation type =""AcmDomain"">\
+                        <associationKey type =""Property"">\
+                          <FSymbol type =""AcmDomain"">\
+                            <Text type =""Property"">\
+                              <string type =""AcmDomain"">flag</string>\
+                            </Text>\
+                          </FSymbol>\
+                        </associationKey>\
+                        <associationValue type =""Property"">\
+                          <FInteger type =""AcmDomain"">\
+                            <Number type =""Property"">\
+                              <int64 type =""AcmDomain"">33</int64>\
+                            </Number>\
+                          </FInteger>\
+                        </associationValue>\
+                      </FAssociation>\
+                      </Element>\
+                      <Element>\
+                      <FAssociation type =""AcmDomain"">\
+                        <associationKey type =""Property"">\
+                          <FSymbol type =""AcmDomain"">\
+                            <Text type =""Property"">\
+                              <string type =""AcmDomain"">id</string>\
+                            </Text>\
+                          </FSymbol>\
+                        </associationKey>\
+                        <associationValue type =""Property"">\
+                          <FInteger type =""AcmDomain"">\
+                            <Number type =""Property"">\
+                              <int64 type =""AcmDomain"">106</int64>\
+                            </Number>\
+                          </FInteger>\
+                        </associationValue>\
+                      </FAssociation>\
+                      </Element>\
+                      <Element>\
+                      <FAssociation type =""AcmDomain"">\
+                        <associationKey type =""Property"">\
+                          <FSymbol type =""AcmDomain"">\
+                            <Text type =""Property"">\
+                              <string type =""AcmDomain"">key</string>\
+                            </Text>\
+                          </FSymbol>\
+                        </associationKey>\
+                        <associationValue type =""Property"">\
+                          <FSymbol type =""AcmDomain"">\
+                            <Text type =""Property"">\
+                              <string type =""AcmDomain"">filterViewDockWindow</string>\
+                            </Text>\
+                          </FSymbol>\
+                        </associationValue>\
+                      </FAssociation>\
+                      </Element>\
+                      <Element>\
+                      <FAssociation type =""AcmDomain"">\
+                        <associationKey type =""Property"">\
+                          <FSymbol type =""AcmDomain"">\
+                            <Text type =""Property"">\
+                              <string type =""AcmDomain"">name</string>\
+                            </Text>\
+                          </FSymbol>\
+                        </associationKey>\
+                        <associationValue type =""Property"">\
+                          <FSymbol type =""AcmDomain"">\
+                            <Text type =""Property"">\
+                              <string type =""AcmDomain"">Quick Filter</string>\
+                            </Text>\
+                          </FSymbol>\
+                        </associationValue>\
+                      </FAssociation>\
+                      </Element>\
+                    </FDictionary>\
+                    </Element>\
+                    <Element>\
+                    <FDictionary type =""AcmDomain"">\
+                      <Element>\
+                      <FAssociation type =""AcmDomain"">\
+                        <associationKey type =""Property"">\
+                          <FSymbol type =""AcmDomain"">\
+                            <Text type =""Property"">\
+                              <string type =""AcmDomain"">dockBar</string>\
+                            </Text>\
+                          </FSymbol>\
+                        </associationKey>\
+                        <associationValue type =""Property"">\
+                          <FInteger type =""AcmDomain"">\
+                            <Number type =""Property"">\
+                              <int64 type =""AcmDomain"">1</int64>\
+                            </Number>\
+                          </FInteger>\
+                        </associationValue>\
+                      </FAssociation>\
+                      </Element>\
+                      <Element>\
+                      <FAssociation type =""AcmDomain"">\
+                        <associationKey type =""Property"">\
+                          <FSymbol type =""AcmDomain"">\
+                            <Text type =""Property"">\
+                              <string type =""AcmDomain"">flag</string>\
+                            </Text>\
+                          </FSymbol>\
+                        </associationKey>\
+                        <associationValue type =""Property"">\
+                          <FInteger type =""AcmDomain"">\
+                            <Number type =""Property"">\
+                              <int64 type =""AcmDomain"">1</int64>\
+                            </Number>\
+                          </FInteger>\
+                        </associationValue>\
+                      </FAssociation>\
+                      </Element>\
+                      <Element>\
+                      <FAssociation type =""AcmDomain"">\
+                        <associationKey type =""Property"">\
+                          <FSymbol type =""AcmDomain"">\
+                            <Text type =""Property"">\
+                              <string type =""AcmDomain"">id</string>\
+                            </Text>\
+                          </FSymbol>\
+                        </associationKey>\
+                        <associationValue type =""Property"">\
+                          <FInteger type =""AcmDomain"">\
+                            <Number type =""Property"">\
+                              <int64 type =""AcmDomain"">3</int64>\
+                            </Number>\
+                          </FInteger>\
+                        </associationValue>\
+                      </FAssociation>\
+                      </Element>\
+                      <Element>\
+                      <FAssociation type =""AcmDomain"">\
+                        <associationKey type =""Property"">\
+                          <FSymbol type =""AcmDomain"">\
+                            <Text type =""Property"">\
+                              <string type =""AcmDomain"">key</string>\
+                            </Text>\
+                          </FSymbol>\
+                        </associationKey>\
+                        <associationValue type =""Property"">\
+                          <FSymbol type =""AcmDomain"">\
+                            <Text type =""Property"">\
+                              <string type =""AcmDomain"">InformationBar</string>\
+                            </Text>\
+                          </FSymbol>\
+                        </associationValue>\
+                      </FAssociation>\
+                      </Element>\
+                      <Element>\
+                      <FAssociation type =""AcmDomain"">\
+                        <associationKey type =""Property"">\
+                          <FSymbol type =""AcmDomain"">\
+                            <Text type =""Property"">\
+                              <string type =""AcmDomain"">name</string>\
+                            </Text>\
+                          </FSymbol>\
+                        </associationKey>\
+                        <associationValue type =""Property"">\
+                          <FSymbol type =""AcmDomain"">\
+                            <Text type =""Property"">\
+                              <string type =""AcmDomain"">Information</string>\
+                            </Text>\
+                          </FSymbol>\
+                        </associationValue>\
+                      </FAssociation>\
+                      </Element>\
+                    </FDictionary>\
+                    </Element>\
+                  </FArray>\
+                </associationValue>\
+              </FAssociation>\
+              </Element>\
+              <Element>\
+              <FAssociation type =""AcmDomain"">\
+                <associationKey type =""Property"">\
+                  <FSymbol type =""AcmDomain"">\
+                    <Text type =""Property"">\
+                      <string type =""AcmDomain"">TabBkColor</string>\
+                    </Text>\
+                  </FSymbol>\
+                </associationKey>\
+                <associationValue type =""Property"">\
+                  <FArray type =""AcmDomain"">\
+                    <Element>\
+                    <FInteger64 type =""AcmDomain"">\
+                      <Number type =""Property"">\
+                        <int64 type =""AcmDomain"">4294967295</int64>\
+                      </Number>\
+                    </FInteger64>\
+                    </Element>\
+                    <Element>\
+                    <FInteger64 type =""AcmDomain"">\
+                      <Number type =""Property"">\
+                        <int64 type =""AcmDomain"">4294967295</int64>\
+                      </Number>\
+                    </FInteger64>\
+                    </Element>\
+                  </FArray>\
+                </associationValue>\
+              </FAssociation>\
+              </Element>\
+              <Element>\
+              <FAssociation type =""AcmDomain"">\
+                <associationKey type =""Property"">\
+                  <FSymbol type =""AcmDomain"">\
+                    <Text type =""Property"">\
+                      <string type =""AcmDomain"">WindowPlacement</string>\
+                    </Text>\
+                  </FSymbol>\
+                </associationKey>\
+                <associationValue type =""Property"">\
+                  <FString type =""AcmDomain"">\
+                    <Text type =""Property"">\
+                      <string type =""AcmDomain"">44 0 1 -1 -1 -1 -1 143 213 1556 863</string>\
+                    </Text>\
+                  </FString>\
+                </associationValue>\
+              </FAssociation>\
+              </Element>\
+            </FDictionary>\
+          </associationValue>\
+        </FAssociation>\
+        </Element>\
+        <Element>\
+        <FAssociation type =""AcmDomain"">\
+          <associationKey type =""Property"">\
+            <FSymbol type =""AcmDomain"">\
+              <Text type =""Property"">\
+                <string type =""AcmDomain"">registeredUtilityViews</string>\
+              </Text>\
+            </FSymbol>\
+          </associationKey>\
+          <associationValue type =""Property"">\
+            <FDictionary type =""AcmDomain"">\
+              <Element>\
+              <FAssociation type =""AcmDomain"">\
+                <associationKey type =""Property"">\
+                  <FSymbol type =""AcmDomain"">\
+                    <Text type =""Property"">\
+                      <string type =""AcmDomain"">registeredUtilityViewsList</string>\
+                    </Text>\
+                  </FSymbol>\
+                </associationKey>\
+                <associationValue type =""Property"">\
+                  <FArray type =""AcmDomain"">\
+                    <Element>\
+                    <FString type =""AcmDomain"">\
+                      <Text type =""Property"">\
+                        <string type =""AcmDomain"">""A)&amp;82Y#;W)E+E1R861E4VAE9702*R(+5')A9&amp;5S4VAE970Z#0H+5')A9&amp;4@4VAE971*#0H+4VAO=R!T&lt;F%D97,</string>\
+                      </Text>\
+                    </FString>\
+                    </Element>\
+                    <Element>\
+                    <FString type =""AcmDomain"">\
+                      <Text type =""Property"">\
+                        <string type =""AcmDomain"">""AEB=6EL=&amp;EN+G9I97=3;W5R8V5/8FIE8W1S$E(B!51A8FQE.A(*$%9I97&lt;@4V]U&lt;F-E(%)O=W-*-0HS4VAO=R!T:&amp;4@&lt;V]U&lt;F-E(&amp;]B:F5C=',O&lt;F]W&lt;R!F;W(@=&amp;AE('-E;&amp;5C=&amp;5D(&amp;QE=F5L</string>\
+                      </Text>\
+                    </FString>\
+                    </Element>\
+                    <Element>\
+                    <FString type =""AcmDomain"">\
+                      <Text type =""Property"">\
+                        <string type =""AcmDomain"">""A)F&lt;F]M4W1O&lt;F5D+D-34BA.4RD2D0$B!51A8FQE.@D*!T-34BA.4RE""`@H`2GD*=T1R:6QL(&amp;1O=VX@;V8@&lt;V5N&lt;VET:79I='D@8V]M&lt;&amp;]N96YT&lt;RX@5&amp;AI&lt;R!V:65W(&amp;ES(')E8V]M;65N9&amp;5D('1O(&amp;)E('5S960@87,@82!U=&amp;EL:71Y('9I97&lt;@=&amp;\\@1E)40B!302!""87-E;""!0;W-I=&amp;EO;G,N</string>\
+                      </Text>\
+                    </FString>\
+                    </Element>\
+                    <Element>\
+                    <FString type =""AcmDomain"">\
+                      <Text type =""Property"">\
+                        <string type =""AcmDomain"">""@YF&lt;F]M4W1O&lt;F5D+D120Q(6(@5486)L93H%""@-$4D-""`@H`2@(*``</string>\
+                      </Text>\
+                    </FString>\
+                    </Element>\
+                    <Element>\
+                    <FString type =""AcmDomain"">\
+                      <Text type =""Property"">\
+                        <string type =""AcmDomain"">""A1F&lt;F]M4W1O&lt;F5D+D120RA3+4Y#*1(&lt;(@5486)L93H+""@E$4D,H4RU.0RE""`@H`2@(*``</string>\
+                      </Text>\
+                    </FString>\
+                    </Element>\
+                    <Element>\
+                    <FString type =""AcmDomain"">\
+                      <Text type =""Property"">\
+                        <string type =""AcmDomain"">""B)F&lt;F]M4W1O&lt;F5D+D925$(@4T$@0F%S96P@4&amp;]S:71I;VYS$E@B!51A8FQE.AD*%T925$(@4T$@0F%S96P@4&amp;]S:71I;VYS0@(*`$HP""BY0;W-I=&amp;EO;B!D&lt;FEL;""!D;W=N(&amp;]F('1O=&amp;%L(&amp;-H87)G92!C;VUP;VYE;G1S</string>\
+                      </Text>\
+                    </FString>\
+                    </Element>\
+                    <Element>\
+                    <FString type =""AcmDomain"">\
+                      <Text type =""Property"">\
+                        <string type =""AcmDomain"">""B9F&lt;F]M4W1O&lt;F5D+D925$(@4T$@0F%S96P@4V5N&lt;VET:79I=&amp;EE&lt;Q*E`2(%5&amp;%B;&amp;4Z'0H;1E)40B!302!""87-E;""!396YS:71I=FET:65S0@(*`$IY""G=$&lt;FEL;""!D;W=N(&amp;]F('-E;G-I=&amp;EV:71Y(&amp;-O;7!O;F5N=',N(%1H:7,@=FEE=R!I&lt;R!R96-O;6UE;F1E9""!T;R!B92!U&lt;V5D(&amp;%S(&amp;$@=71I;&amp;ET&gt;2!V:65W('1O($925$(@4T$@0F%S96P@4&amp;]S:71I;VYS+@</string>\
+                      </Text>\
+                    </FString>\
+                    </Element>\
+                    <Element>\
+                    <FString type =""AcmDomain"">\
+                      <Text type =""Property"">\
+                        <string type =""AcmDomain"">""A]F&lt;F]M4W1O&lt;F5D+D925$(@4T$@0F%S96P@5&amp;]T86QS$H&lt;!(@5486)L93H6""A1&amp;4E1""(%-!($)A&lt;V5L(%1O=&amp;%L&lt;T(""""@!*8@I@3W9E&lt;G9I97&lt;@;V8@5&amp;]T86P@4FES:R!#:&amp;%R9V4@8V]M&lt;&amp;]N96YT&lt;RX@4F5C;VUM96YD960@=&amp;\\@8F4@=FEE=V5D(&amp;%S(&amp;$@&lt;VAE970@;W(@87,@82!P:64@8VAA&lt;G0N</string>\
+                      </Text>\
+                    </FString>\
+                    </Element>\
+                    <Element>\
+                    <FString type =""AcmDomain"">\
+                      <Text type =""Property"">\
+                        <string type =""AcmDomain"">""BIF&lt;F]M4W1O&lt;F5D+D925$(@4T$@1E@@0W5R=F%T=7)E(%)I&lt;VL@+2!R=FT2&lt;""(%5&amp;%B;&amp;4Z(0H?1E)40B!302!&amp;6""!#=7)V871U&lt;F4@4FES:R`M(')V;4(""""@!*0`H^4&amp;]S:71I;VX@9')I;&amp;P@9&amp;]W;B!O9B!T;W1A;""!C:&amp;%R9V4@8V]M&lt;&amp;]N96YT&lt;R`M(&amp;9O&lt;B!C=7)V871U&lt;F4</string>\
+                      </Text>\
+                    </FString>\
+                    </Element>\
+                    <Element>\
+                    <FString type =""AcmDomain"">\
+                      <Text type =""Property"">\
+                        <string type =""AcmDomain"">""D1F&lt;F]M4W1O&lt;F5D+D925$(@4T$@1E@@0W5R=F%T=7)E(%)I&lt;VL@+2!R=FU?=VET:""!&amp;6""!#=7)V871U&lt;F4@1&amp;EV:7-O&lt;A**`2(%5&amp;%B;&amp;4Z.PHY1E)40B!302!&amp;6""!#=7)V871U&lt;F4@4FES:R`M(')V;5]W:71H($98($-U&lt;G9A='5R92!$:79I&lt;V]R0@(*`$I`""CY0;W-I=&amp;EO;B!D&lt;FEL;""!D;W=N(&amp;]F('1O=&amp;%L(&amp;-H87)G92!C;VUP;VYE;G1S(""T@9F]R(&amp;-U&lt;G9A='5R90</string>\
+                      </Text>\
+                    </FString>\
+                    </Element>\
+                    <Element>\
+                    <FString type =""AcmDomain"">\
+                      <Text type =""Property"">\
+                        <string type =""AcmDomain"">""@UF&lt;F]M4W1O&lt;F5D+D98$HP!(@5486)L93H$""@)&amp;6$(""""@!*&gt;0IW1')I;&amp;P@9&amp;]W;B!O9B!S96YS:71I=FET&gt;2!C;VUP;VYE;G1S+B!4:&amp;ES('9I97&lt;@:7,@&lt;F5C;VUM96YD960@=&amp;\\@8F4@=7-E9""!A&lt;R!A('5T:6QI='D@=FEE=R!T;R!&amp;4E1""(%-!($)A&lt;V5L(%!O&lt;VET:6]N&lt;RX</string>\
+                      </Text>\
+                    </FString>\
+                    </Element>\
+                    <Element>\
+                    <FString type =""AcmDomain"">\
+                      <Text type =""Property"">\
+                        <string type =""AcmDomain"">""@]F&lt;F]M4W1O&lt;F5D+D=)4E(2C@$B!51A8FQE.@8*!$=)4E)""`@H`2GD*=T1R:6QL(&amp;1O=VX@;V8@&lt;V5N&lt;VET:79I='D@8V]M&lt;&amp;]N96YT&lt;RX@5&amp;AI&lt;R!V:65W(&amp;ES(')E8V]M;65N9&amp;5D('1O(&amp;)E('5S960@87,@82!U=&amp;EL:71Y('9I97&lt;@=&amp;\\@1E)40B!302!""87-E;""!0;W-I=&amp;EO;G,N</string>\
+                      </Text>\
+                    </FString>\
+                    </Element>\
+                    <Element>\
+                    <FString type =""AcmDomain"">\
+                      <Text type =""Property"">\
+                        <string type =""AcmDomain"">""@]F&lt;F]M4W1O&lt;F5D+E)204\\212(%5&amp;%B;&amp;4Z!@H$4E)!3T(""""@!*,`HN4&amp;]S:71I;VX@9')I;&amp;P@9&amp;]W;B!O9B!T;W1A;""!C:&amp;%R9V4@8V]M&lt;&amp;]N96YT&lt;P</string>\
+                      </Text>\
+                    </FString>\
+                    </Element>\
+                    <Element>\
+                    <FString type =""AcmDomain"">\
+                      <Text type =""Property"">\
+                        <string type =""AcmDomain"">""A-F&lt;F]M4W1O&lt;F5D+G)V;5]'25)2$I(!(@5486)L93H*""@AR=FU?1TE24D(""""@!*&gt;0IW1')I;&amp;P@9&amp;]W;B!O9B!S96YS:71I=FET&gt;2!C;VUP;VYE;G1S+B!4:&amp;ES('9I97&lt;@:7,@&lt;F5C;VUM96YD960@=&amp;\\@8F4@=7-E9""!A&lt;R!A('5T:6QI='D@=FEE=R!T;R!&amp;4E1""(%-!($)A&lt;V5L(%!O&lt;VET:6]N&lt;RX</string>\
+                      </Text>\
+                    </FString>\
+                    </Element>\
+                  </FArray>\
+                </associationValue>\
+              </FAssociation>\
+              </Element>\
+            </FDictionary>\
+          </associationValue>\
+        </FAssociation>\
+        </Element>\
+      </FDictionary>\
+    </associationValue>\
+  </FAssociation>\
+  </Element>\
+</FDictionary>\
+</FrontArenaPrimeSheetExport>",rvm_CcsBasisGirr,57228,Hgc Workbook,ARENASYS,

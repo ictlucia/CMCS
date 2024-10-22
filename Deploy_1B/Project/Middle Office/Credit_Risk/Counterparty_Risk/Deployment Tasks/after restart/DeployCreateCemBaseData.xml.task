@@ -1,0 +1,2 @@
+<?xml version='1.0' encoding='ISO-8859-1'?>
+<FAelTask><acm_version>2022.4.6, Jun 19 2023</acm_version><version>0 $Id$</version><update_time>2023-08-17 06:02:37</update_time><object_name>DeployCreateCemBaseData</object_name><owner>ARENASYS</owner><protection>3072</protection><module>CreateCemBaseData</module><context>Standard</context><parameter /><historylength /><description /><logfilename /><group /><groupstatus>None</groupstatus><historylengthunit>None</historylengthunit></FAelTask>

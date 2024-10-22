@@ -1,0 +1,8 @@
+CONTEXTLINK,,,,,,,,,,,,/CONTEXTLINK
+CONTEXT_SEQNBR.NAME,CURR.EXTERN_ID1,CURR.INSID,DISC_TYPE_CHLNBR.ENTRY,DISC_TYPE_CHLNBR.LIST,GROUP_CHLNBR.ENTRY,GROUP_CHLNBR.LIST,INSADDR.EXTERN_ID1,INSADDR.INSID,MAPPING_TYPE,NAME,TYPE,
+Global,,USD,,,,,,EUR,Instrument,FX-EURUSD,Volatility,
+Global,,JPY,,,,,,USD,Instrument,FX-USDJPY,Volatility,
+Global,,CHF,,,,,,USD,Instrument,FX-USDCHF,Volatility,
+Global,,CAD,,,,,,USD,Instrument,FX-USDCAD,Volatility,
+Global,,USD,,,,,,GBP,Instrument,FX-GBPUSD,Volatility,
+Global,,USD,,,,,,AUD,Instrument,FX-AUDUSD,Volatility,

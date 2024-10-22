@@ -1,0 +1,9 @@
+USERPROFILE,,PROFILECOMPONENT,,,/PROFILECOMPONENT,/USERPROFILE
+DESCRIPTION,PROFID,ALLOW_WRITE,COMPNBR.COMPNAME,COMPNBR.TYPE,,
+TRC Portfolio,TRC_PORT,Yes,Retail SP,Portfolio,,
+,,Yes,Clients Bonds Tax Amnesty,Portfolio,,
+,,Yes,Clients Bonds Retail,Portfolio,,
+,,Yes,Clients Bonds FI,Portfolio,,
+,,Yes,Banknotes,Portfolio,,
+,,Yes,Retail FX Branch,Portfolio,,
+,,Yes,Retail FX BO,Portfolio,,

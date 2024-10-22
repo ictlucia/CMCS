@@ -1,0 +1,4 @@
+ROUNDINGSPEC,ROUNDING,,,/ROUNDING,/ROUNDINGSPEC
+NAME,ATTRIBUTE,DECIMALS,TYPE,,
+IDR Gov Bond,Accrued Price,4,Truncate Down,,
+,Premium,0,Normal,,

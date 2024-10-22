@@ -1,0 +1,342 @@
+#
+# Front Arena exported extension module.
+# source          ""
+# timestamp (utc) "2024-05-31 03:20:06.9"
+# ***** DO NOT EDIT! *****
+#
+name        "PS_BorisOut"
+description "$Id$"
+
+groups {
+}
+
+decls[FParameters] {
+}
+
+clx FObject [FParameters] {
+  BorisOutConfig =
+  CaptureTradesUntil=16:00:00
+  CertificateFile=D:\Interface\BORIS\Certificate\test_cer.crt
+  KeyFile=D:\Interface\BORIS\Certificate\test_key.key
+  PortfolioMapper={'FTCT' : 'Marktra'}
+  ServerPort=8083
+  TransactionFilter=BorisBondTransactionFilter
+
+
+}
+
+decls[FPythonCode] {
+}
+
+clx FObject [FPythonCode] {
+  BorisOutMapper
+"""-----------------------------------------------------------------------------------------------------
+MODULE
+    BorisOutMapper
+
+DESCRIPTION: This module provides the base class for providing mapping of JSON data to Deal.
+
+-------------------------------------------------------------------------------------------------------"""
+import json, ael, datetime, time, math
+import acm, ast
+import BorisUtils
+boris_config = BorisUtils.Parameters('BorisInConfig')
+g_calcSpace = acm.Calculations().CreateCalculationSpace(acm.GetDefaultContext(), 'FPortfolioSheet')
+
+class BorisOutData(object):
+    def __init__(self):
+        """
+        Initialize the member variables.
+        """
+        self.data_list = list()
+
+    def set_field(self, name_value_dict):
+        """
+        This function sets the field in the data dictionary.
+        :param name: Name of the field
+        :param value: Value of the field
+        :return: None
+        """
+        data_dict = {"secid": None,
+                     "nominalsb": None,
+                     "averagecost": None,
+                     "port": None,
+                     "lastUpdated": None
+                     }
+
+        for name, value in name_value_dict.items():
+            if name in data_dict.keys():
+                if value is not None:
+                    data_dict.update({name: value})
+            else:
+                raise Exception('Field {} not supported for BorisOutData.'.format(name))
+
+        self.data_list.append(data_dict)
+
+    def generate_json_string(self):
+        """
+        This function generates te JSON object.
+        :return: string
+        """
+        # Do not include values which are None (not set)
+        json_object = json.dumps(self.data_list)
+        return json_object
+
+
+class BorisOutMapper(object):
+
+    def __init__(self):
+        """
+        Initialise member varioables
+        :param json_string: string containing input in JSON format
+        """
+        self._boris_data = BorisOutData()
+        self._trades_filter = None
+        boris_out_config = BorisUtils.Parameters('BorisOutConfig')
+        filter_time = getattr(boris_out_config, 'CaptureTradesUntil', None)        
+        trans_filter = getattr(boris_out_config, 'TransactionFilter', None)
+        if trans_filter:
+            #self._trades_filter = self._get_create_time_filter(trans_filter, filter_time)
+            self._trades_filter = acm.FStoredASQLQuery[trans_filter]            
+        #As per UAT ticket
+        self._port_mapper = ast.literal_eval(getattr(boris_out_config,'PortfolioMapper'))
+                        
+    #As per UAT ticket
+    def map_portfolio(self, portfolio_id):
+        return self._port_mapper.get(portfolio_id, None)
+        
+            
+    def _get_create_time_filter(self, trd_query, filter_time):
+        """
+            This function returns the list of filtered trades
+        """
+        ret_val = list()
+        if filter_time and trd_query:
+            trd_query = acm.FStoredASQLQuery[trd_query]
+            if trd_query:
+                trades = trd_query.Query().Select()
+                date_time_today = datetime.datetime.now()
+                hh, mm, ss = filter_time.split(':')
+                
+                filter_time_end = datetime.datetime(hour=int(hh), minute=int(mm), second=int(ss),year=date_time_today.year, month=date_time_today.month, day=date_time_today.day)
+                filter_time_start = datetime.datetime(hour=0, minute=0, second=0,year=date_time_today.year, month=date_time_today.month, day=date_time_today.day)
+                
+                for trd in trades:
+                    deal_time = datetime.datetime.fromisoformat(trd.TradeTime()) 
+                    ret_val.append(trd.Oid())
+                    
+                    if deal_time <= filter_time_end and deal_time >= filter_time_start:
+                        ret_val.append(trd.Oid())
+            
+        return ret_val
+
+    def add_custom_data(self):
+        """
+        This functions let user add customized values in the mapping dictionary
+        :return: dict
+        """
+        return dict()
+
+    def get_json_string(self):
+        """
+        This function return the JSON string
+        :return: string
+        """
+        return self._boris_data.generate_json_string()
+        
+        
+    def _getColumnValue(self, calcSpace, nodeTree, column, fa_instr_id):
+        try:
+            calcObj = calcSpace.CreateCalculation(nodeTree, column)
+            if not calcObj:
+                print('Could not get {0} for {1}. Returning 0.'.format(column, fa_instr_id))
+                return 0
+            val = calcObj.Value()
+            if isinstance(val, float) or isinstance(val, int):
+                return val
+            if math.isnan(val.Number()):
+                return 0
+            return val.Number()
+        except Exception as e:
+            print('Invalid {0} found for {1}: {2}. Returning 0.'.format(column, fa_instr_id, e))
+        return 0
+
+    def process_trades(self):
+        """
+        This function process the json data and creates the trade
+        :return: None
+        """
+        trade = None
+        try: 
+            boris_portfolio_id = None
+            fa_portfolio_id = None
+            for entry in self._port_mapper.items():
+                boris_portfolio_id, fa_portfolio_id = entry
+            fa_portfolio = acm.FPhysicalPortfolio[fa_portfolio_id]
+            if not fa_portfolio:
+                print('Portfolio in request {} is not a FA portfolio. Ignoring request.'.format(fa_portfolio_id))
+                return
+            
+            print('Calculating position for portfolio {}'.format(fa_portfolio_id))
+            
+            topNode = g_calcSpace.InsertItem(fa_portfolio)
+            g_calcSpace.Refresh()
+            it = topNode.Iterator().FirstChild()
+            while it:
+                node_tree = it.Tree()
+                item = node_tree.Item()
+                if item.Instrument().IsKindOf(acm.FBond):                    
+                    fa_instr_id = item.Instrument().Name()
+                    if node_tree:
+                        port_position = self._getColumnValue(g_calcSpace, node_tree, 'Portfolio Position', fa_instr_id)
+                        avg_price = self._getColumnValue(g_calcSpace, node_tree, 'Portfolio Average Price', fa_instr_id)
+                        
+                        trade_value_dict = dict()
+                        trade_value_dict['secid'] = fa_instr_id
+                        trade_value_dict['port'] = boris_portfolio_id
+                        trade_value_dict['nominalsb'] = str(port_position)
+                        trade_value_dict['lastUpdated'] = datetime.datetime.fromtimestamp(time.time()).isoformat()
+                        trade_value_dict['averagecost'] = str(avg_price)
+                        self._boris_data.set_field(trade_value_dict)
+                    else:
+                        print('Instrument {} not found in portfolio {}'.format(fa_instr_id, fa_portfolio_id))
+                it = it.NextSibling()
+        except Exception as err:
+            raise Exception('BorisOutMapper.process_trades for trade {}. Error {}'.format(trade.Oid(), err))
+            
+        g_calcSpace.Clear()
+
+
+...
+
+  BorisOutResponse
+"""-----------------------------------------------------------------------------------------------------
+MODULE
+    BorisOutResponse: This module provides the base class for deal posting response.
+
+-------------------------------------------------------------------------------------------------------"""
+import json
+
+
+class BorisOutResponse(object):
+    def __init__(self, status, status_desc):
+        """
+        Initialize the member variable
+        :param response_dict: dictionary containing response text
+        """
+        response_dict = {'Status': status, 'Message': status_desc}
+        self._resp_json_object = json.dumps(response_dict)
+
+    def get_json_object(self):
+        """
+        This function returns the JSON object
+        :return: string
+        """
+        return self._resp_json_object
+
+...
+
+  BorisOutServer
+"""--------------------------------------------------------------------------------------------------
+MODULE:
+    BorisOutServer : Module for handing the server functions
+
+DESCRIPTION: This module uses flask and provides functions for handling webserver functions from client.
+-------------------------------------------------------------------------------------------------------"""
+from flask import Flask, request, jsonify
+import ael
+import BorisOutResponse
+import BorisUtils
+from BorisOutMapper import BorisOutMapper
+
+import traceback
+
+app = Flask(__name__)
+
+
+@app.route("/", methods=['GET'])
+def welcome():
+    """
+    This function handles the default client request
+    :return: string
+    """
+    return "Welcome to FrontArena webserver for handling BorisOut deals!"
+
+
+@app.route("/borisout", methods=['GET'])
+def borisout():
+    """
+    This function handles the deal posting request from client.
+    :return: JSON object
+    """
+    response_data = None
+    print('Request received.')
+    ael.poll()
+    try:
+        boris_out_obj = BorisOutMapper()                
+        try:
+            boris_out_obj.process_trades()
+            response_data = boris_out_obj.get_json_string()
+        except Exception as err:
+            print(traceback.format_exc())
+            status = BorisUtils.HttpsServerResponses.get('InternalServerError')
+            response_data = BorisOutResponse.BorisOutResponse(status, str(err)).get_json_object()
+    except Exception as err:
+        print('Error in borisout')
+        print(traceback.format_exc())
+        status = BorisUtils.HttpsServerResponses.get('InternalServerError')
+        response_data = BorisOutResponse.BorisOutResponse(status, 'Error occurred in BorisOut {}.'.format(str(err))).get_json_object()
+    print('Request processed.')
+    return response_data
+
+
+...
+
+  BorisOutServerMain
+"""--------------------------------------------------------------------------------------------------
+MODULE:
+    BorisOutServerMain : Main module for ATS
+
+DESCRIPTION: This module uses gevent to run the webserver in start method.
+             The start never returns and hence work and stop functions are not called.
+-------------------------------------------------------------------------------------------------------"""
+from gevent.pywsgi import WSGIServer
+
+import BorisOutServer, BorisUtils
+
+
+def server_routine():
+    """
+    This function starts the gevent WSGI
+    :return: None
+    """
+    try:
+        deal_posting_config = BorisUtils.Parameters('BorisOutConfig')
+        key_file = getattr(deal_posting_config, 'KeyFile', None)
+        server_port = getattr(deal_posting_config, 'ServerPort', None)
+        cert_file = getattr(deal_posting_config, 'CertificateFile', None)
+
+        if not server_port.isdigit():
+            raise Exception('Port should be integer. Supplied {}'.format(server_port))
+
+        bind = ('0.0.0.0', int(server_port))
+        app = BorisOutServer.app
+        g_server = WSGIServer(bind, app, keyfile=key_file, certfile=cert_file)
+        print('Started webserver.', g_server)
+        g_server.serve_forever()
+    except Exception as err:
+        print(err)
+        return False
+
+
+def start():
+    """ ATS start """
+    try:
+        server_routine()
+    except Exception as err:
+        print(err)
+
+...
+
+}
+

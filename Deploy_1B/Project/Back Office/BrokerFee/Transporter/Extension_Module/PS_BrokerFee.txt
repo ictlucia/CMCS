@@ -1,0 +1,823 @@
+#
+# Front Arena exported extension module.
+# source          ""
+# timestamp (utc) "2024-10-14 07:41:33.7"
+# ***** DO NOT EDIT! *****
+#
+name        "PS_BrokerFee"
+description "$Id$"
+
+groups {
+}
+
+decls[FPythonCode] {
+}
+
+clx FObject [FPythonCode] {
+  BrokerFeeCalculations
+import acm
+from datetime import datetime
+
+import FLogger
+logger = FLogger.FLogger('FValidationBrokerFee: ')
+#logger.Reinitialize(level=2)
+
+#-------------------------------    Helper Function    ---------------------------------------#
+
+def getTenor(date1, date2):
+    start_date = datetime.strptime(date1,'%Y-%m-%d')
+    end_date = datetime.strptime(date2, '%Y-%m-%d')
+    tenor = (end_date - start_date).days
+    return tenor
+
+def GetFarTradeValuDay(trade):
+        if trade.FxSwapFarLeg():
+            return trade.FxSwapFarLeg().ValueDay()
+
+def checkFxSwap_FarTrade(trade):
+    if trade.Instrument().InsType()== "Curr" and trade.IsFxSwapFarLeg():
+        return True
+
+def checkFxSwap_NearTrade(trade):
+    if trade.Instrument().InsType()== "Curr" and trade.IsFxSwapNearLeg():
+        return True
+
+def instr_type(trade):
+    if trade.IsFxSpot() or trade.IsFxForward():
+        return 'FX Spot'
+    elif trade.IsFxSwap():
+        return 'FX Swap'
+    elif trade.Instrument().InsType() == 'Deposit':
+        return 'Money Market'        
+    elif trade.Instrument().InsType() in ['Bond','FRN','Bill','MBS/ABS']:
+        return 'Fixed Income'            
+    elif trade.Instrument().InsType() in ('Repo/Reverse', 'BasketRepo/Reverse'):
+        return 'Repo'
+    elif trade.Instrument().IsFxNdf():
+        return 'Non Deliverable Forward'    
+    else:
+        return ''
+
+#-----------------------------------------------------------------------------------------------#
+class BrokerFee_Calc:
+    def __init__(self, brokerfee_hierarchy):
+        self.hierarchy_obj = acm.FHierarchy[brokerfee_hierarchy]
+        self.brokerFee = ''
+        self.payment_curr = None
+        self.tenor = None
+        self._PAYMENT_TYPE = 'Broker Fee'
+
+    def getBrokerFeeFactors(self, hierarchy_node):
+        node_data = [0, 0]
+        for node in self.hierarchy_obj.HierarchyNodes():            
+            if hierarchy_node in str(node.DisplayName()):
+                for data_val in node.HierarchyDataValues():
+                    if data_val.HierarchyColumnSpecification().Name() == 'BrokerFee':
+                        node_data[0] = data_val.DataValue()
+                    elif data_val.HierarchyColumnSpecification().Name() == 'DiscountRate':
+                        node_data[1] = data_val.DataValue()
+                return node_data
+
+    def getBrokerFeeCalculations(self, trade, cpty_type):
+        ins_type = instr_type(trade)
+        if ins_type == 'FX Spot':
+            hierarchy_node = f'{ins_type} {cpty_type}'
+            fee_factor = self.getBrokerFeeFactors(hierarchy_node)
+            orig_amnt = trade.Quantity()
+            self.brokerFee = abs(orig_amnt * (float(fee_factor[0])/1000) * (1 - float(fee_factor[1])))
+            self.payment_curr = trade.CurrencyPair().Currency1()
+        elif ins_type == 'FX Swap':
+            if checkFxSwap_FarTrade(trade):
+                return None, None
+
+            if checkFxSwap_NearTrade(trade):
+                far_trade_value_day  = GetFarTradeValuDay(trade)
+                if not far_trade_value_day:
+                    return None, None
+                trade_time = trade.TradeTime()[:10]
+                hierarchy_node = None
+                fx_swap_tenor = abs(getTenor(trade_time, far_trade_value_day))  
+                if fx_swap_tenor <= 7:
+                    hierarchy_node = f'{ins_type} upto and including 1W {cpty_type}'   
+                elif fx_swap_tenor in range(8, 31):
+                    hierarchy_node = f'{ins_type} over 1W to and including 1M {cpty_type}'
+                elif fx_swap_tenor >= 31:
+                    hierarchy_node = f'{ins_type} over 1M to and including 1Y {cpty_type}'   
+
+            fee_factor = self.getBrokerFeeFactors(hierarchy_node)  
+            if not fee_factor:
+                hierarchy_node = hierarchy_node.replace(cpty_type, '')
+                fee_factor = self.getBrokerFeeFactors(hierarchy_node)  
+
+            orig_amnt = trade.Nominal()
+            self.brokerFee = abs(orig_amnt * (float(fee_factor[0])/1000) * (1 - float(fee_factor[1])))
+            self.payment_curr = trade.CurrencyPair().Currency1()
+        elif ins_type == 'Money Market':
+            self.tenor = getTenor(trade.Instrument().StartDate(), trade.Instrument().EndDate())
+            if trade.Currency().Name() == 'IDR':
+                hierarchy_node = f'{ins_type} Rupiah'
+                fee_factor = self.getBrokerFeeFactors(hierarchy_node)
+            else:
+                hierarchy_node = f'{ins_type} Non Rupiah'
+                fee_factor = self.getBrokerFeeFactors(hierarchy_node)
+
+            orig_amnt = trade.Nominal()
+            self.brokerFee = abs(orig_amnt * (float(fee_factor[0])/100) * (self.tenor/360) * (1 - float(fee_factor[1])))
+            self.payment_curr = trade.Currency()
+        elif ins_type == 'Fixed Income':
+            hierarchy_node = f'{ins_type}'
+            fee_factor = self.getBrokerFeeFactors(hierarchy_node)        
+            orig_amnt = trade.Nominal()
+            self.brokerFee = abs(orig_amnt * (float(fee_factor[0])/100))
+            self.payment_curr = trade.Currency()
+        elif ins_type == 'Non Deliverable Forward':
+            hierarchy_node = f'{ins_type}'
+            fee_factor = self.getBrokerFeeFactors(hierarchy_node) 
+            trade_type = trade.Type()
+            orig_amnt = trade.Nominal()
+            if trade_type != 'Closing':
+                if trade.Quantity() > 0:
+                    orig_amnt  = trade.Quantity()/trade.Price()
+                else:
+                    orig_amnt  = trade.Quantity()/trade.Price()*-1
+                self.brokerFee = abs(orig_amnt * (float(fee_factor[0])/100))
+
+                self.payment_curr = trade.CurrencyPair().Currency1()
+        elif ins_type == 'Repo':
+            self.tenor = getTenor(trade.Instrument().StartDate(), trade.Instrument().EndDate())
+            hierarchy_node = f'{ins_type}'
+            fee_factor = self.getBrokerFeeFactors(hierarchy_node) 
+            orig_amnt = trade.Nominal()
+            self.brokerFee = abs(orig_amnt * (float(fee_factor[0])/100) * (self.tenor/360) * (1 - float(fee_factor[1])))
+            self.payment_curr = trade.Currency()
+        else:
+            fee_factor = None
+            return None, None
+        if self.brokerFee and self.payment_curr:
+            return self.brokerFee, self.payment_curr.Name()
+        else:
+            return None, None
+
+...
+
+  BrokerFeeIDRConversion
+
+
+
+import acm
+
+import datetime
+
+import math
+
+
+
+
+
+space = acm.FCalculationMethods().CreateStandardCalculationsSpaceCollection()
+
+
+
+
+
+def createOffSettingPayment(trades):
+
+    try:
+
+        for trade in trades:
+
+            payments = trade.Payments()
+
+            for payment in payments:
+
+                if isOffSettingBrokerFeePayment(payment):
+
+                    brokerFeePayment = getBrokerFeePaymentObj(trade)
+
+                    if brokerFeePayment:
+
+                        clonePaymentTemp = payment.Clone()
+
+                        clonePaymentTemp.Amount(brokerFeePayment.Amount() * -1)
+
+                        payment.Apply(clonePaymentTemp)
+
+                        payment.Commit()
+
+                elif isOriginalBrokerFeePayment(payment) and not isOffSettingPaymentExistsFromTrade(trade):
+
+                    clonePayment = payment.Clone()
+
+                    clonePayment.Amount(payment.Amount() * -1)
+
+                    clonePayment.Text('Fee Conversion')
+
+                    clonePayment.Commit()
+
+                    print (" created Offsetting Payments for trade Numbe {0} and payment number {1}".format(trade.Oid(),payment.Oid()))
+
+    except Exception as e:
+
+        print (e)
+
+        print ("  Offsetting Payment not created for trade Numbe {0}".format(trade.Oid()))
+
+
+
+
+
+def createIDRConvertedPayment(trades, date , mtmMarket):
+
+    
+
+    try:
+
+        for trade in trades:
+
+            
+
+            payments = trade.Payments()
+
+            for payment in payments:
+
+                if isIDRPaymentExist(payment):
+
+                    brokerFeePayment = getBrokerFeePaymentObj(trade)
+
+                    if brokerFeePayment:
+
+                        clonePaymentTemp = payment.Clone()
+
+                        clonePaymentTemp.Amount(brokerFeePayment.Amount() * getHistoricalFxRate(trade, date, mtmMarket))
+
+                        payment.Apply(clonePaymentTemp)
+
+                        payment.Commit()
+
+                elif isOriginalBrokerFeePayment(payment) and not isIDRPaymentExistFromTrade(trade):
+
+                    clonePayment = payment.Clone()
+
+                    clonePayment.Text('Fee Conversion')
+
+                    clonePayment.Amount(payment.Amount() * getHistoricalFxRate(trade, date, mtmMarket))
+
+                    clonePayment.Currency('IDR')
+
+                    clonePayment.Commit()
+
+                    print (" created converted Payments for trade Numbe {0} and payment number {1}".format(trade.Oid(),payment.Oid()))
+
+    except Exception as e:
+
+        print (e)
+
+        print ("Converted Payment not created for trade Numbe {0}".format(trade.Oid()))
+
+
+
+
+
+####################################################################################################################################################################################
+
+
+
+' Below functions are used in creating OffSetting Payment of the original broker fee payment'
+
+def getBrokerFeePaymentObj(trade):
+
+
+
+    'Pulls the broker fee payment object'
+
+    for payment in trade.Payments():
+
+        if payment.Type() in ['Broker Fee'] and payment.Text() =='' and payment.Currency().Name() != 'IDR':
+
+            return payment
+
+    return None
+
+
+
+
+
+def isOriginalBrokerFeePayment(payment):
+
+
+
+    ' check if the broker fee payment exist'
+
+    try:
+
+        if payment.Type() in ['Broker Fee'] and payment.Text() =='' and payment.Currency().Name() != 'IDR':
+
+            return True
+
+        return False
+
+    except Exception as e:
+
+        print (e)
+
+        return False
+
+
+
+
+
+def isOffSettingBrokerFeePayment(payment):
+
+
+
+    'check if the offsetting broker fee payment exists using FPayment as input'
+
+    try:
+
+        if payment.Type() in ['Broker Fee'] and payment.Text() in ['Fee Conversion'] and payment.Currency().Name() != 'IDR' :
+
+            return True
+
+        return False
+
+    except Exception as e:
+
+        print (e)
+
+        return False
+
+
+
+
+
+
+
+def isOffSettingPaymentExistsFromTrade(trade):
+
+
+
+    'check if the offsetting broker fee payment exists using FTrade as input'
+
+    try:
+
+        for payment in trade.Payments():
+
+            if payment.Type() in ['Broker Fee'] and payment.Text() in ['Fee Conversion'] and payment.Currency().Name() != 'IDR' :
+
+                return True
+
+        return False
+
+    except Exception as e:
+
+        print (e)
+
+        return False
+
+
+
+################################################################################################################################################################################################
+
+
+
+'Below functions are used in creating converted IDR payment of the original Broker Fee Payment'
+
+   
+
+
+
+def isIDRPaymentExist(payment):
+
+
+
+    'check if the offsetting broker fee payment exists using FPayment as input'
+
+    
+
+    try:
+
+        if payment.Type() == 'Broker Fee' and payment.Text() == 'Fee Conversion' and payment.Currency().Name() == 'IDR':
+
+            return True
+
+        return False
+
+    except Exception as e:
+
+        print (e)
+
+        return False
+
+
+
+
+
+def isIDRPaymentExistFromTrade(trade):
+
+
+
+    'check if the offsetting broker fee payment exists using FTrade as input'
+
+    
+
+    try:
+
+        for payment in trade.Payments():
+
+            if payment.Type() == 'Broker Fee' and payment.Text() == 'Fee Conversion' and payment.Currency().Name() == 'IDR':
+
+                return True
+
+        return False
+
+    except Exception as e:
+
+        print (e)
+
+        return False
+
+################################################################################################################################################################################################
+
+
+
+def getLatestFxRate(date, curr1, curr2):
+
+
+
+    ' returns used price of the currency pair'
+
+    if acm.Time().DateDifference(date, acm.Time().DateToday()) < 0:
+
+        date = acm.Time().DateToday()
+
+    val = curr1.Calculation().FXRate(space, curr2, date).Value()
+
+    if val:
+
+        rate = val.Number()
+
+    else:
+
+        rate = 0.
+
+
+
+    return rate
+
+
+
+def getHistoricalFxRate(trade, date, mtmMarket):
+
+
+
+    'returns the markToMarket price from the market mapped in accounting parameter if exists or returns the used price from latest market, calculate if a pair is not directly avaliable'
+
+
+
+    if trade.Instrument().InsType() in 'Curr':
+
+        instrument = trade.Instrument()
+		
+    elif trade.Instrument().IsFxNdf():
+        
+        instrument = trade.CurrencyPair().Currency1()
+    else:
+
+        instrument = trade.Currency()
+
+    
+
+    currency = acm.FCurrency['IDR']
+
+    
+
+    query = "instrument=%d and market=%d and currency=%d and day=%s"
+
+    price = acm.FPrice.Select01(query%(instrument.Oid(),mtmMarket.Oid(),currency.Currency().Oid(),date),"")
+
+    if not price:
+
+        print ( "MtM price not avaliable for {0}:{1} on {2}. Using Latest Price".format(instrument.Name(), currency.Name(), date))
+
+        return getLatestFxRate(date, instrument, currency)
+
+
+
+    else:
+
+        return price.Settle()
+
+
+
+
+
+def getValidDate(date):
+
+    
+
+    today = acm.Time.DateToday()
+
+    calendar = acm.FCurrency['IDR'].Calendar()
+
+    lastDayOfPreviousMonth = calendar.AdjustBankingDays(acm.Time.FirstDayOfMonth(today), -1)
+
+    
+
+    period = acm.Time().PeriodSymbolToDatePeriod(date)
+
+    
+
+    if period:
+
+        date = acm.Time.PeriodSymbolToDate(period)
+
+    elif date == 'Last Day of Previous Month':
+
+        date = lastDayOfPreviousMonth 
+
+    elif date == 'Today':
+
+        date = acm.Time.DateToday()
+
+    elif date == 'Yesterday':
+
+        date = acm.Time.DateAddDelta(today, 0, 0, -1)
+
+    
+
+    return date
+
+
+
+###############################################################################################################################################
+
+
+
+def getParameterQueriesTrades():
+
+    return acm.FStoredASQLQuery.Select('subType="FTrade"')     
+
+    
+
+
+
+def getDefaultInternalMarket():
+
+        
+
+    return acm.FAccountingParameters['DEFAULT'].MtmMarket().Name()
+
+
+
+market = getDefaultInternalMarket()
+
+calendar = acm.FCurrency['IDR'].Calendar()
+
+lastDayOfPreviousMonth = calendar.AdjustBankingDays(acm.Time.FirstDayOfMonth(acm.Time.DateToday()), -1)
+
+
+
+
+
+###############################################################################################################################################
+
+
+
+
+
+ael_variables = [['trades', 'Trades', 'FTrade', None, None, 0, 1,'Select Trades for which Broker fees needs to be converted', None, 1],
+
+                ['QueryFolders', 'Query Folders', 'FStoredASQLQuery', getParameterQueriesTrades, '', 0,1, 'Query folders for input to report'],
+
+                ['mtmMarket', 'MtM Market', 'FMTMMarket',None, market,1,1,'Mtm Market for Historical Rate'],
+
+                 ['date', 'Date', 'string', ['Today', 'Yesterday', 'Last Day of Previous Month'], lastDayOfPreviousMonth, 1, 0, 'Enter the historical date for FX Rate', None, 1]]
+
+                 
+
+                 
+
+
+
+def ael_main(dict):
+
+    if dict['QueryFolders'] and not dict['trades']:
+
+        trades = dict['QueryFolders'][0].Query().Select()
+
+    elif dict['trades'] and not dict['QueryFolders']:
+
+        trades = dict['trades']
+
+    else:
+
+        raise Exception("Please use either a query folder or a selection but not both.")
+
+    
+
+    mtmMarket = dict['mtmMarket'][0]
+
+
+
+    date = getValidDate(dict['date'])
+
+    
+
+    createOffSettingPayment(trades)
+
+    createIDRConvertedPayment(trades, date, mtmMarket)
+
+
+
+
+
+
+
+
+
+
+
+...
+
+  BrokerFeeTradesUpdate
+"""
+Module:         BrokerFeeTradesUpdate
+Description:    Updates broker fee payments for the trades provided via query folder;
+                Ths script sould be run ad-hoc when the brokerfee rates (hierarchy) are updated
+                and open trades needs to be updated basd on new rates
+"""
+
+import acm
+import BrokerFeeCalculations
+
+
+import FLogger
+logger = FLogger.FLogger('BrokerFeeTradesUpdate: ')
+logger.Reinitialize(level=2)
+
+_PAYMENT_TYPE = 'Broker Fee'
+_BROKERFEE_HIERARCHY = 'BrokerFee'
+
+def updatePayment(trade, new_amount):
+    try:
+        for payment in trade.Payments():
+            if payment.Type() == 'Broker Fee' and payment.Amount() != new_amount and payment.Text() != 'Fee Conversion':
+                clonePaymentTemp = payment.Clone()
+                clonePaymentTemp.Amount(new_amount)
+                payment.Apply(clonePaymentTemp)
+                payment.Commit()             
+                logger.debug('Updating broker fee for trade %s' %(trade.Oid()))
+            else:
+                logger.debug('Same Broker fee already present for trade %s' %(trade.Oid()))
+    except Exception as e:
+        logger.debug('Error %s while updating broker fee for trade %s' %(str(e), trade.Oid()))
+
+ael_variables = [['TradesQueryFolder', 'Trade Selection Query Folder', acm.FStoredASQLQuery, None, 'BrokerFeeTradeSelection', 0, 1, None, None, 1]]
+
+def ael_main(params):
+    if params['TradesQueryFolder']:
+        trades_list = params['TradesQueryFolder'][0].Query().Select()
+    else:
+        logger.info('Trade Selection Query Folder not provided')
+        return
+
+    for trade in trades_list:
+        if trade.Type() == 'PL Sweep':
+            continue
+        cpty_type = 'Bank Indonesia' if trade.Counterparty().Name() == '2000269170_BANKINDONESIA' else 'Interbank'
+        brokerFee = BrokerFeeCalculations.BrokerFee_Calc(_BROKERFEE_HIERARCHY)
+        brokerFee_amount, payment_curr = brokerFee.getBrokerFeeCalculations(trade, cpty_type) 
+
+        if brokerFee_amount and payment_curr:
+            updatePayment(trade, brokerFee_amount)
+
+    logger.info('Broker Fee for trades update completed')        
+
+...
+
+  FValidationBrokerFee
+import acm
+import ael
+import BrokerFeeCalculations
+import FLogger
+
+logger = FLogger.FLogger('FValidationBrokerFee: ')
+logger.Reinitialize(level=2)
+
+_PAYMENT_TYPE = 'Broker Fee'
+_BROKERFEE_HIERARCHY = 'BrokerFee'
+
+def validate_transaction(transaction_list, *rest):
+    all_res = list()
+    for entity, operation in transaction_list:
+        if entity.record_type == 'Trade':
+            if is_valid_trade(entity):
+                res = createBrokerfee(entity, operation)
+                if res:
+                    all_res += res
+    transaction_list += all_res
+    return transaction_list
+
+def is_valid_trade(entity):
+    acmTrade = acm.Ael.AelToFObject(entity)
+    valid_trade = True
+     # check if addinfo ManualBrokerFee is set to Yes
+    if check_manual_fee_addinfo(entity):
+        valid_trade = False
+    if acmTrade.DealPackageTradeLinks():
+        valid_trade = False
+    if acmTrade.TradeCategory() == 'Collateral':
+        valid_trade = False
+    #TCSTCSPBDT-436665: Add below code to exclude the extra broker fee added in aggregated trade
+    if acmTrade.Aggregate()!= 0: 
+        valid_trade = False
+    return valid_trade
+
+def check_manual_fee_addinfo(trade):
+    manual_fee = False
+    addinfos = trade.additional_infos()
+    for ai in addinfos:
+        if ai.addinf_specnbr.field_name == 'ManualBrokerFee' and ai.value == 'Yes':
+            manual_fee = True
+    return manual_fee
+
+def createBrokerfee(trd, operation):
+    #check counterparty on trade for broker fee
+    if not trd.counterparty_ptynbr:
+        return
+    if trd.type == 'PL Sweep':
+        return
+
+    trade = acm.Ael.AelToFObject(trd)
+    counterParty = trade.Counterparty().Name() if trade.Counterparty() else ''
+
+    if operation == 'Insert':
+        cpty_type = 'Bank Indonesia' if counterParty == '2000269170_BANKINDONESIA' else 'Interbank'
+        brokerFee = BrokerFeeCalculations.BrokerFee_Calc(_BROKERFEE_HIERARCHY)
+        brokerFee_amount, payment_curr = brokerFee.getBrokerFeeCalculations(trade, cpty_type)
+
+        if brokerFee_amount and payment_curr:
+            deleteCopiedBrokerFeePayment(trade, _PAYMENT_TYPE)
+            createPayment(trd, brokerFee_amount, payment_curr)
+
+    if operation == 'Update':
+        cpty_type = 'Bank Indonesia' if counterParty == '2000269170_BANKINDONESIA' else 'Interbank'
+        brokerFee = BrokerFeeCalculations.BrokerFee_Calc(_BROKERFEE_HIERARCHY)
+        brokerFee_amount, payment_curr = brokerFee.getBrokerFeeCalculations(trade, cpty_type)
+        if brokerFee_amount and payment_curr:
+            res = updatePayment(trd, brokerFee_amount, payment_curr)
+            if res:
+                return res
+            createPayment(trd, brokerFee_amount, payment_curr)
+
+
+def deleteCopiedBrokerFeePayment(trade, payment):
+    """
+        check if the broker fee payment exist when exiting trade window is used to book new
+    """
+    try:
+        payments = trade.Payments()
+        for payment in payments:
+            if payment.Type() == 'Broker Fee':
+                payment.Delete()
+    except Exception as e:
+        logger.error('Error while checking if payment exists on trade - %s' % (str(e)))
+
+def createPayment(trade, amount, payment_curr):
+    try:
+        payment = ael.Payment.new(trade)
+        payment.type = _PAYMENT_TYPE
+        payment.amount = amount
+        payment.curr = payment_curr
+        payment.ptynbr = trade.counterparty_ptynbr
+        payment.payday = trade.value_day
+        payment.valid_from = ael.date_today()
+    except Exception as e:
+        logger.error('Error while creating broker fee for new trade %s' % (trade.pp()))
+
+def updatePayment(trade, new_amount, payment_curr):
+    if not trade.payments():
+        return
+    res = list()
+    try:
+        for payment in trade.payments():
+            if payment.type == 'Broker Fee' and payment.text != 'Fee Conversion':
+                new_payment = payment.clone()
+                new_payment.amount = new_amount
+                new_payment.curr = payment_curr
+                new_payment.ptynbr = trade.counterparty_ptynbr
+                new_payment.payday = trade.value_day
+                new_payment.valid_from = ael.date_today()
+                res.append((new_payment, 'Update'))
+            #else:
+            #    logger.debug('Same Broker fee already present for trade %s' % (trade.trdnbr))
+    except Exception as e:
+        logger.error('Error %s while updating broker fee for trade %s' % (str(e), trade.trdnbr))
+    return res
+
+
+
+...
+
+}
+

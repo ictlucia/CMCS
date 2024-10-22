@@ -1,0 +1,9 @@
+INSTRUMENT,,,,,,,,,,,LEG,,,,,,,,,,,,,/LEG,INSTRUMENTALIAS,,/INSTRUMENTALIAS,/INSTRUMENT
+CONTR_SIZE,CURR.INSID,EXTERN_ID1,GENERIC,INSID,INSTYPE,MTM_FROM_FEED,OTC,PAY_OFFSET_METHOD,QUOTATION_SEQNBR.NAME,SPOT_BANKING_DAYS_OFFSET,CURR.INSID,DAYCOUNT_METHOD,END_DATE_METHOD,END_PERIOD,INTEREST_PAYMENT_TIME,NOMINAL_AT_END,NOMINAL_FACTOR,PAYLEG,PAY_CALNBR.CALID,PAY_DAY_METHOD,ROLLING_CONVENTION,START_PERIOD,TYPE,,ALIAS,TYPE.ALIAS_TYPE_NAME,,
+1,CNY,SHIF1M,Yes,CNY/SHIBOR/1M,RateIndex,Yes,Yes,Business Days,Coupon,0,CNY,Act/365,Relative Start,2m,In Arrears,Yes,1,No,Beijing,Following,None,0d,Fixed,,SHIF1M Index,BB_TICKER,,
+1,CNY,SHIF1W,Yes,CNY/SHIBOR/1W,RateIndex,Yes,Yes,Business Days,Coupon,0,CNY,Act/365,Relative Start,1w,In Arrears,Yes,1,No,Beijing,Following,None,0d,Fixed,,SHIF1W Index,BB_TICKER,,
+1,CNY,SHIF1Y,Yes,CNY/SHIBOR/1Y,RateIndex,Yes,Yes,Business Days,Coupon,0,CNY,Act/365,Relative Start,1y,In Arrears,Yes,1,No,Beijing,Following,None,0d,Fixed,,SHIF1Y Index,BB_TICKER,,
+1,CNY,SHIF2W,Yes,CNY/SHIBOR/2W,RateIndex,Yes,Yes,Business Days,Coupon,0,CNY,Act/365,Relative Start,1m,In Arrears,Yes,1,No,Beijing,Following,None,0d,Fixed,,SHIF2W,BB_TICKER,,
+1,CNY,SHIF3M,Yes,CNY/SHIBOR/3M,RateIndex,Yes,Yes,Business Days,Coupon,0,CNY,Act/365,Relative Start,3m,In Arrears,Yes,1,No,Beijing,Following,None,0d,Fixed,,SHIF3M Index,BB_TICKER,,
+1,CNY,SHIF6M,Yes,CNY/SHIBOR/6M,RateIndex,Yes,Yes,Business Days,Coupon,0,CNY,Act/365,Relative Start,6m,In Arrears,Yes,1,No,Beijing,Following,None,0d,Fixed,,SHIF6M Index,BB_TICKER,,
+1,CNY,SHIFON,Yes,CNY/SHIBOR/ON,RateIndex,Yes,Yes,Business Days,Coupon,0,CNY,Act/365,Relative Start,1d,In Arrears,Yes,1,No,Beijing,Following,None,0d,Fixed,,SHIFON Index,BB_TICKER,,

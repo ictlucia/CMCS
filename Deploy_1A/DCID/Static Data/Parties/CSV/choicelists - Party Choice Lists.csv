@@ -1,0 +1,9 @@
+CHOICELIST,,,,/CHOICELIST
+DESCRIPTION,LIST,SORT_ORDER,ENTRY,
+,MASTER,,Country of Risk,
+,MASTER,,Party Choice Lists,
+,Party Choice Lists,1,Country of Risk,
+,Party Choice Lists,2,PartyChoiceList2,
+,Party Choice Lists,3,PartyChoiceList3,
+,Party Choice Lists,4,PartyChoiceList4,
+,Party Choice Lists,5,PartyChoiceList5,

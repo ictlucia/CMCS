@@ -1,0 +1,860 @@
+#
+# Front Arena exported extension module.
+# source          ""
+# timestamp (utc) "2024-06-05 10:18:44.1"
+# ***** DO NOT EDIT! *****
+#
+name        "FXGOFixTradeHook"
+description ""
+
+groups {
+}
+
+decls[FParameters] {
+}
+
+clx FObject [FParameters] {
+  FXGOFixIntegrationDefaults =
+  DefaultAcquirer=1000001_BANKMANDIRI
+
+
+  PS_FXGOCustomConfig =
+  MANDATORY_FIELDS=['COUNTERPARTY_PTYNBR.PTYID', 'TRADER_USRNBR.USERID', 'PRFNBR.PRFID', 'ACQUIRER_PTYNBR.PTYID']
+
+
+}
+
+decls[FPythonCode] {
+}
+
+clx FObject [FPythonCode] {
+  AmbaHelpers
+import ael, acm
+import amb, time
+
+
+
+def event_cb(channel, event, arg): 
+  print()#in callback
+
+
+class AMBSession(object):
+
+    def __init__(self, pp, cb = None):
+        amb.mb_init(pp['AMBAddress'].Text())
+        self.subject = pp['AMBSubject'].Text()
+        amb.mb_init(pp['AMBAddress'].Text())
+        if not cb: cb = event_cb
+        try:
+            self.writer = amb.mb_queue_init_writer(pp['AMBChannel'].Text(), cb, None)
+        except RuntimeError: 
+            raise UserWarning("Could not find channel named %s. Check AMB system Table" %pp['AMBChannel'])
+
+    def send(self, mes, type=''):
+        subj=self.subject+r'/'+type
+        status = amb.mb_queue_write(self.writer, 
+            subj, 
+            mes, 
+            len(mes), 
+            time.strftime("%Y-%m-%d %H:%M:%S"))
+        return status
+
+
+def add_space_in_bbg(bbg):
+    bbglist=bbg.split(' ')
+    bbglist[-2] = bbglist[-2]+ ' ' 
+    return ' '.join(bbglist)
+
+def IndexReferenceOrSelf(ins):
+    x = ins.IndexReference()
+    if x: return x
+    return ins
+
+
+def SmartUnderlyingOrSelf(ins):
+    x = ins.IndexReferenceOrSelf().CreditReferenceOrSelf().UnderlyingOrSelf()
+    if x == ins: return x
+    return SmartUnderlyingOrSelf(x)
+    
+# -------------------------------------------------------------------
+    
+ALL_TYPES = acm.FEnumeration["enum(InsType)"]
+
+SQL='''\
+select distinct instype 
+from instrument 
+where instype ='%s'
+'''
+
+def getNiceInstype(xt):
+    print(xt)
+    print(ael.asql(SQL % xt)[1])
+    print(ael.asql(SQL % xt))
+    return ael.asql(SQL % xt)[1][0][0][0]
+
+def getValue(m, n, obj = None):
+    if obj: m = m.mbf_find_object(obj, 'MBFE_BEGINNING')
+    if m: 
+        x = m.mbf_find_object(n, 'MBFE_BEGINNING')
+        if x: return x.mbf_get_value()
+        else: return None
+    
+#TCSTCSPBDT-434662    
+def setValue(m, n, v, obj = None):
+    if obj: 
+        m = m.mbf_find_object(obj, 'MBFE_BEGINNING')
+    x = m.mbf_find_object(n, 'MBFE_BEGINNING')
+    if x and v:
+        m.mbf_replace_string(n, v) 
+    else:
+        if v:
+            m.mbf_add_string(n, v)
+    
+def deleteObject(m,n,obj=None):
+    if obj: m = m.mbf_find_object(obj, 'MBFE_BEGINNING')
+    if m: 
+        x = m.mbf_find_object(n, 'MBFE_BEGINNING')
+        if x: m.mbf_remove_object( )        
+        
+    
+def findInstrumentAlias(m, n):
+    mi = m.mbf_find_object('INSTRUMENT', 'MBFE_BEGINNING')
+    if not mi: mi = m
+    mx = mi.mbf_find_object('INSTRUMENTALIAS', 'MBFE_CURRENT')
+    while mx:
+        mn = getValue(mx, 'TYPE.ALIAS_TYPE_NAME')
+        if mn == n: return mx
+        mx = mi.mbf_next_object()    
+
+def getInstrumentAlias(m,n):
+    mx = findInstrumentAlias(m,n)
+    if mx: return getValue(mx, 'ALIAS')
+    
+    
+def setInstrumentAlias(m, n, v):
+    mx = findInstrumentAlias(m, n)
+    if not mx:
+        i = m.mbf_find_object('INSTRUMENT', 'MBFE_BEGINNING')
+        mx = i.mbf_start_list("INSTRUMENTALIAS")
+        mx.mbf_add_string("TYPE.ALIAS_TYPE_NAME", n)
+        mx.mbf_add_string("ALIAS", v)
+        mx.mbf_end_list()
+    else: setValue(mx,"ALIAS",v)
+    #mx.mbf_replace_string("ALIAS", v)
+    
+def findAddinfo(m, n, typ='INSTRUMENT'):
+    mi = m.mbf_find_object(typ, 'MBFE_BEGINNING')
+    if not mi: mi = m
+    mx = mi.mbf_find_object('!ADDITIONALINFO', 'MBFE_CURRENT')
+    while mx:
+        mn = getValue(mx, 'ADDINF_SPECNBR.FIELD_NAME')
+        if mn == n: return mx
+        mx = mi.mbf_next_object()
+    
+def getAddinfo(m, n):
+    mx = findAddinfo(m, n)
+    if mx: return getValue(mx, 'VALUE')
+   
+                
+def setAddinfo(m, n, v):
+    mx = findAddinfo(m, n)
+    if not mx:
+        i = m.mbf_find_object('INSTRUMENT', 'MBFE_BEGINNING')
+        mx = i.mbf_start_list("!ADDITIONALINFO")
+        mx.mbf_add_string("ADDINF_SPECNBR.FIELD_NAME", n)
+        mx.mbf_add_string("VALUE", v)
+        mx.mbf_end_list()
+    else: mx.mbf_replace_string("VALUE", v)
+        
+
+
+def SaveAddInfo(obj, value, AddInfoSpec, Datatype = 3, Desc = ''):
+    """ Set Additional Info field on any object.
+        Create AdditionalInfoSpec if it does not exist.
+        Obj has to be a clone. 
+        New AdditionalInfoSpec is returned, if any.
+    """
+    ai = obj.additional_infos()
+    for a in ai:
+        if a.addinf_specnbr.field_name == AddInfoSpec:
+            if a.value == ('%s' % value): return
+            a.value = '%s' % value
+            return
+    a = ael.AdditionalInfo.new(obj)
+    asp = ael.AdditionalInfoSpec.read("field_name = '%s'" % AddInfoSpec)
+    ret_v = None
+    if not asp:
+        asp = ael.AdditionalInfoSpec.new()
+        asp.field_name = AddInfoSpec
+        asp.rec_type = obj.record_type
+        setattr(asp, "data_type.grp", "Standard")
+        setattr(asp, "data_type.type", Datatype)
+        asp.default_value = '0.0'
+        asp.description = Desc
+        asp.commit()
+        ret_v = asp
+    a.addinf_specnbr = asp
+    a.value = '%s' % value
+    return ret_v
+
+def MarkStatus(iname, field, value):
+    ael.poll()
+    ix = ael.Instrument[iname].clone()
+    SaveAddInfo(ix, value, field)
+    ix.commit()
+    
+def getBit(x, num):
+    return (x & (1 << num)) >> num
+
+
+def validateSpec(x, asp):
+    i = ALL_TYPES.Enumeration(x)
+    if i == 0: return
+    y = asp.SubRecMask1()
+    if i > 31: 
+        i -= 31
+        y = asp.SubRecMask2()
+    return getBit(y, i-1)
+
+
+
+
+def getCallCurrency(ins):
+    if ins.IsCallOption() == 1:
+        return ins.Underlying().Name()
+    else: return ins.StrikeCurrency().Name()
+
+def getPutCurrency(ins):
+    if ins.IsCallOption() == 0:
+        return ins.Underlying().Name()
+    else: return ins.StrikeCurrency().Name()
+    
+def ReplaceSpotDay(m,currency,niceInsType):
+    for row in (row1,row2,row3,row4,row5,row6,row7,row8,row9,row10,row11,row12,row13,row14,row15,row16,row17):
+        if row['Currency'] == currency:
+            try:
+                corrspot = row[niceInsType]
+                print("Correct spot %s" %corrspot)
+                mi = m.mbf_find_object('INSTRUMENT','MBFE_BEGINNING')
+                if mi.mbf_find_object('SPOT_BANKING_DAYS_OFFSET','MBFE_BEGINNING'):
+                    mi.mbf_replace_string("SPOT_BANKING_DAYS_OFFSET",corrspot)
+                    print("Replaced Successful")
+            except:
+                print("Failed to set spot days for instype %s" %niceInsType)
+
+
+def getInstrument(mt):
+    ins = None
+    insid = getValue(mt,'INSADDR.INSID')
+    isin = getValue(mt,'INSADDR.ISIN')
+    if insid:
+        ins = acm.FInstrument[insid]
+    elif isin:
+        ins = acm.FInstrument[isin]
+    return ins
+
+...
+
+  FixTradeLib
+import acm
+import ael
+import AmbaHelpers
+import ParametersReader
+import ast
+
+params = ParametersReader.get_params('PS_FXGOCustomConfig')
+MandetoryFields = ast.literal_eval(params['MANDATORY_FIELDS'])
+curr            = acm.FCurrency['IDR']
+calendar        = curr.Calendar()
+today           = acm.Time().DateNow()
+
+def getPartyByAlias(alias, alias_type):
+    aliases = acm.FPartyAlias.Select('alias = %s' %(alias))
+    for a in aliases:
+        if a.Type() == acm.FPartyAliasType[alias_type]:
+            return a.Party().Name()
+                       
+def getInstrumentByAlias(alias, alias_type):
+    aliases = acm.FInstrumentAlias.Select('alias = %s' %(alias))
+    for a in aliases:
+        if a.Type() == acm.FInstrAliasType[alias_type]:
+            return a.Instrument().Name()
+
+def getTraderByPrincipal(id, principal_type):
+    principals = acm.FPrincipalUser.Select('principal = %s' %(id)) 
+    for p in principals:
+        if p.Type() == principal_type:
+            return p.User()
+
+def GetMandetoryFieldList():
+    return MandetoryFields
+
+def CheckFieldValuesPresent(mt, fieldList):
+    allMandetoryFieldsPresent = True
+    try:
+        for field in fieldList:
+            fieldValue = AmbaHelpers.getValue(mt, field)
+            if fieldValue is None:
+                allMandetoryFieldsPresent = False
+                break
+    except Exception as e:
+        logger.WLOG(f'Failed to process mandetory Field List.')
+        allMandetoryFieldsPresent = False
+    
+    return allMandetoryFieldsPresent
+    
+def GetTradeStatus(mt):
+    fieldList = GetMandetoryFieldList()
+    isMandetoryFieldsPresent = CheckFieldValuesPresent(mt, fieldList)
+    if not isMandetoryFieldsPresent:
+        status = 'Simulated'
+    else:
+        status = 'Reserved'
+    return status
+
+
+def GetProductTypeAndCat(mt):
+    prodType = None
+    cat = None
+    valueDay = ael.date_from_string(AmbaHelpers.getValue(mt, "value_day"))
+    tradeTime = AmbaHelpers.getValue(mt, "time").split()[0]
+    tomorrow = calendar.AdjustBankingDays(tradeTime, 1)
+    spot = calendar.AdjustBankingDays(tradeTime, 2)
+
+    curr = AmbaHelpers.getValue(mt, "curr.insid")
+
+    if AmbaHelpers.getValue(mt, "FXSPOT") == '1' or AmbaHelpers.getValue(mt, "FXFWD") == '1':
+        prodType = 'FX'
+        if valueDay == ael.date_from_string(tradeTime):
+            cat = 'TOD'
+        elif valueDay == ael.date_from_string(tomorrow):
+            cat = 'TOM'
+        elif valueDay ==  ael.date_from_string(spot):
+            cat = 'SPOT'
+        elif valueDay >  ael.date_from_string(spot):
+            cat = 'FWD'
+        print('1', prodType, cat)
+    elif AmbaHelpers.getValue(mt, "NDF") == '1':
+        prodType = 'FX'
+        if curr == 'IDR':
+            cat = 'NS'
+        else:
+            cat = 'NDF'
+        print('2', prodType, cat)
+    elif AmbaHelpers.getValue(mt, "FXSWAP") == '1':
+        prodType = 'FX'
+        cat = 'SWAP'
+        print('3', prodType, cat)
+    elif AmbaHelpers.getValue(mt, "fas_security_type") == "OPT":
+        prodType = 'FX'
+        cat = 'OPT'
+        print('4', prodType, cat)
+    elif AmbaHelpers.getValue(mt, "fas_security_type") == "CASH":
+        prodType = 'DL'
+        premium = AmbaHelpers.getValue(mt, "premium")
+        if premium and (len(premium)>0) and float(premium) > 0:
+            cat = 'CMT'
+        else:
+            cat = 'CMP'
+        print('5', prodType, cat)
+    return (prodType, cat)
+
+
+...
+
+  FXGOFixTradeHook
+from AmbaHelpers import *
+import FixTradeLib
+import acm
+import AmbaHelpers
+
+import re
+
+processed = 0   #Added to fix FXGO amba hook not running
+
+defaults = acm.GetDefaultContext().GetExtension('FParameters', 'FObject', 'FXGOFixIntegrationDefaults').Value()
+
+FxSwapSpecialList = [
+"curr.insid", 
+"insaddr.insid", 
+"acquire_day",
+"value_day",
+"price",
+"quantity",
+"quantity_is_derived",
+"premium",
+"trade_process",
+"optional_key",
+"nearleg_value_day",
+"nearleg_price",
+"nearleg_quantity",
+"nearleg_trade_process",
+"farleg_value_day",
+"farleg_price",
+"farleg_quantity",
+"farleg_trade_process",
+"currencypair",
+"fxswap",
+"trdnbr"]
+
+# ---------------------------------- CUSTOMIZATION START -----------------------------------
+
+
+
+def getObject(m, obj = None):
+    """ Get value for key n"""
+    currObj = None
+    if obj:
+        currObj = m.mbf_find_object(obj, 'MBFE_BEGINNING')
+    return currObj
+    
+def create_common_tradeList(mt, excludeList):
+    tl = amb.mbf_start_list("TRADE")
+    ob = mt.mbf_first_object()
+    while(ob):
+        if ob.mbf_get_name().lower() not in excludeList:
+            tl.mbf_insert_object(ob)
+        ob = mt.mbf_next_object()
+    tl.mbf_end_list()
+    
+    b = amb.mbf_create_buffer() 
+    tl.mbf_generate(b)
+    tlist = b.mbf_read()  
+    
+    return tlist
+    
+def datedelta(dateStr1,dateStr2):
+    # date format 20120223
+    date1 = datetime.date(int(dateStr1[:4]), int(dateStr1[4:6]), int(dateStr1[6:]))
+    date2 = datetime.date(int(dateStr2[:4]), int(dateStr2[4:6]), int(dateStr2[6:]))
+    dateDiff = date2 - date1
+    return dateDiff.days
+       
+def set_payDayOffset(mt):
+    fixingDay = getValue(mt, "insaddr.exp_day")
+    settleDay = getValue(mt, "value_day")
+    if fixingDay and settleDay:
+        try:
+            offset = datedelta(fixingDay, settleDay)
+            setValue(mt, "insaddr.pay_day_offset", str(offset))
+            print("set NDF payDayOffset to %d" %offset)
+        except:
+            print("can't calculate the NDF payDayOffset, using default 2.")
+    
+def change_date_format(date):
+    """ 'date' is in yyyy-mm-dd format, change it to dd-mm-yy format """    
+    year = date[:4]
+    month = date[5:7]
+    day = date[8:]
+    return "%s-%s-%s" %(day, month, year[2:])
+    
+def check_existingNDF(mt):
+    curr1 = getValue(mt, "insaddr.curr.insid")
+    curr2 = getValue(mt, "insaddr.und_insaddr.insid")
+    endDay = getValue(mt, "insaddr.exp_day")
+    payDayOffset = getValue(mt, "insaddr.pay_day_offset")
+    settleDay = getValue(mt, "value_day")
+    try:
+        endDay = endDay[:4]+'-'+endDay[4:6]+'-'+endDay[6:]
+        settleDay = settleDay[:4]+'-'+settleDay[4:6]+'-'+settleDay[6:]
+    except:
+        print('check_existingNDF Error')
+
+    insts = acm.FFuture.Select("currency='%s' and underlying='%s' and expiryDate='%s' and payDayOffset=%s and payType='Forward' and settlementType='Cash'" \
+                                %(curr1, curr2, endDay, payDayOffset))
+    ndf_found = None
+    if len(insts)>0:
+        ndf_found = insts[0]
+
+    if ndf_found:
+        print("Existing NDF instrument found!")
+        # Found existing instrument, modify the message
+        setValue(mt, "insaddr.insid", ndf_found.Name())
+        deleteObject(mt,"insaddr.instype")
+        deleteObject(mt,"insaddr.curr.insid")
+        deleteObject(mt,"insaddr.quote_type")
+        deleteObject(mt,"insaddr.otc")
+        deleteObject(mt,"insaddr.spot_banking_days_offset")
+        deleteObject(mt,"insaddr.product_chlnbr.entry")
+        deleteObject(mt,"insaddr.product_chlnbr.list")
+        deleteObject(mt,"insaddr.contr_size")
+        deleteObject(mt,"insaddr.und_insaddr.insid")
+        deleteObject(mt,"insaddr.und_instype")
+        deleteObject(mt,"insaddr.settlement")
+        deleteObject(mt,"insaddr.paytype")
+        deleteObject(mt,"insaddr.exp_day")
+        deleteObject(mt,"insaddr.pay_day_offset")
+        deleteObject(mt,"insaddr.pay_offset_method")
+        deleteObject(mt,"insaddr.short_dividend_factor")
+        deleteObject(mt,"insaddr.quotation_seqnbr.name")
+        deleteObject(mt,"insaddr.strike_quotation_seqnbr.name")
+    else:
+        # have to set the insid because the PollDbEvents doesn't work to poll new NDF created in AMBA
+        print('Create new NDF Instrument')
+        end_day_f = change_date_format(endDay)
+        settle_day_f = change_date_format(settleDay)
+        name = 'NDF/%s/%s/%s/%s' %(curr1, curr2, end_day_f, settle_day_f)
+        setValue(mt, "insaddr.insid", name)
+                        
+def insert_NDF(mt):
+    set_payDayOffset(mt)
+    check_existingNDF(mt)
+    #flip_NDF(mt)
+
+def insert_FXSwap(m, mt): 
+    time = getValue(mt, "time")
+    acquirer = getValue(mt, "acquirer_ptynbr.ptyid")
+    counterparty = getValue(mt, "counterparty_ptynbr.ptyid")
+    currency = getValue(mt, "curr.insid")
+    insid = getValue(mt, "insaddr.insid")
+    portfolio = getValue(mt, "prfnbr.prfid")
+    referencePrice = getValue(mt, "reference_price") 
+    status = getValue(mt, "status") 
+    trader = getValue(mt, "trader_usrnbr.userid") 
+    
+    acquireDay_near = getValue(mt, "NEARLEG_VALUE_DAY")
+    price_near = getValue(mt, "NEARLEG_PRICE")
+    quantity_near = getValue(mt, "NEARLEG_QUANTITY")
+    tradeProcess_near = getValue(mt, "NEARLEG_TRADE_PROCESS")
+    UTI_near         = getValue(mt, "NEARLEG_UTI")
+    optionalKey_near = getValue(mt, "optional_key")
+
+    acquireDay_far = getValue(mt, "FARLEG_VALUE_DAY")
+    price_far = getValue(mt, "FARLEG_PRICE")
+    quantity_far = getValue(mt, "FARLEG_QUANTITY")
+    tradeProcess_far = getValue(mt, "FARLEG_TRADE_PROCESS")
+    UTI_far          = getValue(mt, "FARLEG_UTI")
+    optionalKey_far = getValue(mt, "optional_key") + '_far'
+    market = getValue(mt, "market_ptynbr.ptyid")
+    
+    prodType = getValue(mt, "OPTKEY3_CHLNBR.ENTRY")     #Cutomized      
+    cat = getValue(mt, "OPTKEY4_CHLNBR.ENTRY")          #Cutomized   
+      
+    deleteObject(m, 'TRADE')
+    
+    m_tr=m.mbf_start_list("TRANSACTION") 
+    # Near Leg
+    m_t1=m_tr.mbf_start_list("TRADE")
+    # add fields
+    setValue(m_t1, "TIME",time)
+    setValue(m_t1, "ACQUIRER_PTYNBR.PTYID",acquirer)
+    setValue(m_t1, "COUNTERPARTY_PTYNBR.PTYID", counterparty)
+    setValue(m_t1, "CURR.INSID", currency)
+    setValue(m_t1, "INSADDR.INSID", insid)
+    setValue(m_t1, "PRFNBR.PRFID", portfolio)
+    setValue(m_t1, "REFERENCE_PRICE", referencePrice)
+    setValue(m_t1, "STATUS", status)
+    setValue(m_t1, "TRADER_USRNBR.USERID", trader)
+    
+    #Cutomization START
+    setValue(m_t1, 'OPTKEY2_CHLNBR.ENTRY', 'BBG_FXGO')
+    setValue(m_t1, 'OPTKEY3_CHLNBR.ENTRY', prodType)
+    setValue(m_t1, 'OPTKEY4_CHLNBR.ENTRY', cat)
+    #Cutomization END
+    
+    # near leg specific
+    setValue(m_t1, "ACQUIRE_DAY", acquireDay_near)   
+    setValue(m_t1, "VALUE_DAY", acquireDay_near)
+    setValue(m_t1, "PRICE", price_near)      
+    setValue(m_t1, "QUANTITY", quantity_near)    
+    setValue(m_t1, "TRADE_PROCESS", tradeProcess_near)
+    setValue(m_t1, "OPTIONAL_KEY", optionalKey_near)
+    #setValue(m_t1, "UNIQUE_TRADE_IDENTIFIER", UTI_near)
+    m_t1.mbf_end_list()
+    
+    # Far Leg
+    m_t2=m_tr.mbf_start_list("TRADE")
+    
+    # add fields
+    setValue(m_t2, "TIME",time)
+    setValue(m_t2, "ACQUIRER_PTYNBR.PTYID",acquirer)
+    setValue(m_t2, "COUNTERPARTY_PTYNBR.PTYID", counterparty)
+    setValue(m_t2, "CURR.INSID", currency)
+    setValue(m_t2, "INSADDR.INSID", insid)
+    setValue(m_t2, "PRFNBR.PRFID", portfolio)
+    setValue(m_t2, "REFERENCE_PRICE", referencePrice)
+    setValue(m_t2, "STATUS", status)
+    setValue(m_t2, "TRADER_USRNBR.USERID", trader)
+    # near leg specific
+    setValue(m_t2, "ACQUIRE_DAY", acquireDay_far)   
+    setValue(m_t2, "VALUE_DAY", acquireDay_far)
+    setValue(m_t2, "PRICE", price_far)      
+    setValue(m_t2, "QUANTITY", quantity_far)        
+    setValue(m_t2, "TRADE_PROCESS", tradeProcess_far)
+    setValue(m_t2, "OPTIONAL_KEY", optionalKey_far)
+    #setValue(m_t2, "UNIQUE_TRADE_IDENTIFIER", UTI_far)
+    setValue(m_t2, "CONNECTED_TRDNBR.OPTIONAL_KEY", optionalKey_near)
+    
+    #Cutomization START
+    setValue(m_t2, 'OPTKEY2_CHLNBR.ENTRY', 'BBG_FXGO')
+    setValue(m_t2, 'OPTKEY3_CHLNBR.ENTRY', prodType)
+    setValue(m_t2, 'OPTKEY4_CHLNBR.ENTRY', cat)
+    #Cutomization END
+    
+    m_t2.mbf_end_list()        
+        
+    m_tr.mbf_end_list()    
+    m.mbf_end_message()      
+
+def create_FXSwap_near_tradeList(mt):
+    nt = create_common_tradeList(mt, FxSwapSpecialList)
+    acquireDay_near = getValue(mt, "NEARLEG_VALUE_DAY")
+    tradeProcess_near = getValue(mt, "NEARLEG_TRADE_PROCESS")
+    optionalKey_near = getValue(mt, "optional_key")  
+    portfolio = getValue(mt, "prfnbr.prfid")
+    setValue(nt, "ACQUIRE_DAY", acquireDay_near)   
+    setValue(nt, "VALUE_DAY", acquireDay_near)
+    setValue(nt, "TRADE_PROCESS", tradeProcess_near)
+    setValue(nt, "OPTIONAL_KEY", optionalKey_near)    
+    setValue(nt, "PRFNBR.PRFID", portfolio)
+    price_near = getValue(mt, "NEARLEG_PRICE")
+    quantity_near = getValue(mt, "NEARLEG_QUANTITY")    
+    check_currencypair_ni(mt, nt, price_near, quantity_near)
+    return nt
+    
+def create_FXSwap_far_tradeList(mt):
+    ft = create_common_tradeList(mt, FxSwapSpecialList)
+    acquireDay_far = getValue(mt, "FARLEG_VALUE_DAY")
+    tradeProcess_far = getValue(mt, "FARLEG_TRADE_PROCESS")
+    optionalKey_near = getValue(mt, "optional_key")
+    portfolio = getValue(mt, "prfnbr.prfid")
+    
+    setValue(ft, "ACQUIRE_DAY", acquireDay_far)   
+    setValue(ft, "VALUE_DAY", acquireDay_far)    
+    setValue(ft, "TRADE_PROCESS", tradeProcess_far)
+    setValue(ft, "OPTIONAL_KEY", optionalKey_near+ '_far')
+    setValue(ft, "CONNECTED_TRDNBR.OPTIONAL_KEY", optionalKey_near)    
+    setValue(ft, "PRFNBR.PRFID", portfolio)
+    price_far = getValue(mt, "FARLEG_PRICE")
+    quantity_far = getValue(mt, "FARLEG_QUANTITY")
+    check_currencypair_ni(mt, ft, price_far, quantity_far)  
+    return ft
+
+NDFSwapSpecialList = [ 
+"acquire_day",
+"value_day",
+"price",
+"quantity",
+"premium",
+"trade_process",
+"optional_key",
+"nearleg_value_day",
+"nearleg_price",
+"nearleg_quantity",
+"nearleg_trade_process",
+"fixingdate_near",
+"farleg_value_day",
+"farleg_price",
+"farleg_quantity",
+"farleg_trade_process",
+"fixingdate_far",
+"currencypair",
+"ndfswap",
+"trdnbr"]
+
+def create_NDFSwap_near_tradeList(mt):
+    nt = create_common_tradeList(mt, NDFSwapSpecialList)
+    acquireDay_near = getValue(mt, "NEARLEG_VALUE_DAY")
+    optionalKey_near = getValue(mt, "optional_key")  
+    
+    setValue(nt, "ACQUIRE_DAY", acquireDay_near)   
+    setValue(nt, "VALUE_DAY", acquireDay_near)
+    setValue(nt, "OPTIONAL_KEY", optionalKey_near)    
+    
+    price_near = getValue(mt, "NEARLEG_PRICE")
+    quantity_near = getValue(mt, "NEARLEG_QUANTITY")  
+    setValue(nt, "PRICE", price_near)
+    setValue(nt, "QUANTITY", quantity_near)
+    
+    #Cutomization START
+    prodType = getValue(mt, "OPTKEY3_CHLNBR.ENTRY")      
+    cat = getValue(mt, "OPTKEY4_CHLNBR.ENTRY")  
+    setValue(nt, 'OPTKEY2_CHLNBR.ENTRY', 'BBG_FXGO')
+    setValue(nt, 'OPTKEY3_CHLNBR.ENTRY', prodType)
+    setValue(nt, 'OPTKEY4_CHLNBR.ENTRY', cat)
+    #Cutomization END
+    
+    process_NDF(nt)
+    return nt
+
+def create_NDFSwap_far_tradeList(mt):
+    ft = create_common_tradeList(mt, NDFSwapSpecialList)
+    acquireDay_far = getValue(mt, "FARLEG_VALUE_DAY")
+    optionalKey_far = getValue(mt, "optional_key")  
+    
+    setValue(ft, "ACQUIRE_DAY", acquireDay_far)   
+    setValue(ft, "VALUE_DAY", acquireDay_far)
+    setValue(ft, "OPTIONAL_KEY", optionalKey_far+ '_f')    
+    
+    price_far = getValue(mt, "FARLEG_PRICE")
+    quantity_far = getValue(mt, "FARLEG_QUANTITY")  
+    setValue(ft, "PRICE", price_far)
+    setValue(ft, "QUANTITY", quantity_far)
+    
+    fixing_far = getValue(mt, "FIXINGDATE_FAR")
+    setValue(ft, "insaddr.exp_day", fixing_far)
+    setValue(ft, "insaddr.exp_time", fixing_far+" 19:00:00")
+    
+    #Cutomization START
+    prodType = getValue(mt, "OPTKEY3_CHLNBR.ENTRY")      
+    cat = getValue(mt, "OPTKEY4_CHLNBR.ENTRY")
+    setValue(ft, 'OPTKEY2_CHLNBR.ENTRY', 'BBG_FXGO')
+    setValue(ft, 'OPTKEY3_CHLNBR.ENTRY', prodType)
+    setValue(ft, 'OPTKEY4_CHLNBR.ENTRY', cat)
+    #Cutomization END
+    
+    process_NDF(ft)
+    return ft
+
+def insert_NDFSwap(m, mt):
+    near_tradeList = create_NDFSwap_near_tradeList(mt)
+    far_tradeList = create_NDFSwap_far_tradeList(mt)
+    
+    deleteObject(m, 'TRADE')
+    
+    m_tr=m.mbf_start_list("TRANSACTION") 
+    # Near Leg
+    m_tr.mbf_insert_object(near_tradeList)
+    
+    # Far Leg
+    m_tr.mbf_insert_object(far_tradeList)      
+        
+    m_tr.mbf_end_list()    
+    m.mbf_end_message() 
+
+
+def ValidateAndSetCounterParty(mt):
+    #Validate Counterparty
+    partyAlias = getValue(mt, 'counterparty_ptynbr.ptyid')
+    counterpartyname = FixTradeLib.getPartyByAlias(partyAlias, 'BB_DEALCODE')
+    if counterpartyname:
+        setValue(mt, 'counterparty_ptynbr.ptyid', counterpartyname)
+    else:
+        print(f"Removing {counterpartyname} : Counterparty not present in FA")
+        deleteObject(mt, 'counterparty_ptynbr.ptyid')
+   
+def ValidatePartyAndSetCounterParty(mt):
+    print('ValidatePartyAndSetCounterParty')
+    #Validate Counterparty
+    counterpartyname = AmbaHelpers.getValue(mt, 'counterparty_ptynbr.ptyid')
+    counterpartyfound = False
+    #check if counterparty exists
+    if counterpartyname:
+        cpObj = acm.FParty[counterpartyname]
+        #check if counterparty has some value is not then goto below if condition
+        if cpObj is None:
+            #if counterparty is empty look for counterparty by alias
+            counterpartybyalias = FixTradeLib.getPartyByAlias(counterpartyname, 'BB_DEALCODE')
+            if counterpartybyalias:
+                #if counterparty by alias foudn then set the value
+                setValue(mt, 'counterparty_ptynbr.ptyid', counterpartybyalias)
+                counterpartyfound = True
+        else:
+            counterpartyfound= True
+    if not counterpartyfound:
+        if counterpartyname:
+            print(f"Removing {counterpartyname} : Counterparty not present in FA")
+            deleteObject(mt, 'counterparty_ptynbr.ptyid')
+            
+  
+def ValidateAndSetTraderPortfolio(mt):
+    #Get Trader
+    trader = FixTradeLib.getTraderByPrincipal(getValue(mt, 'trader_usrnbr.userid'), 'Bloomberg')
+    #Set Trader and Portfolio
+    try:
+        if trader:
+            setValue(mt, 'trader_usrnbr.userid', trader.Name())
+            trdPortfolioName = trader.add_info('TraderPortfolio')
+            if trdPortfolioName is None or (len(trdPortfolioName) ==0) or trdPortfolioName in ('', ' '):
+                deleteObject(mt, 'prfnbr.prfid')
+            else:
+                setValue(mt, 'prfnbr.prfid', trdPortfolioName)
+        else:
+            deleteObject(mt, 'prfnbr.prfid')
+    except TypeError:
+        print('Unable to get trader information')
+
+
+def ValidateAndSetProductTypeOnTrade(mt):
+    prodType, cat = FixTradeLib.GetProductTypeAndCat(mt)
+    if prodType:
+        setValue(mt, 'OPTKEY3_CHLNBR.ENTRY', prodType)
+    if cat:
+        setValue(mt, 'OPTKEY4_CHLNBR.ENTRY', cat)
+		
+def AdjustExternalId(mt):
+    '''
+    As per JIRA TCSTCSPBDT-434106
+    Regex for matching number-number-numbercharacter-number-number
+    Number should be 1 digit or more and character is optional
+    In regex star represent 0 or more and + represents 1 or more
+    Hypen is compulsary
+    
+    If regex os matched then extract the external ID and set in optional key 
+    else return what ever is coming form BBG as it is
+    '''
+    optionalKey = getValue(mt, "optional_key")
+    reg = re.compile("[0-9]+-[0-9]+-([0-9]+)[a-zA-Z]*-[0-9]+-[0-9]+")
+    m = reg.match(optionalKey)
+    if m:
+        exteralId = m.groups()[0]
+        setValue(mt, 'optional_key', exteralId)
+
+def SetFields(mt):
+    #ValidateAndSetCounterParty(mt)
+    AdjustExternalId(mt)
+    ValidatePartyAndSetCounterParty(mt)
+    ValidateAndSetTraderPortfolio(mt)
+    ValidateAndSetProductTypeOnTrade(mt)
+    setValue(mt, 'OPTKEY2_CHLNBR.ENTRY', 'BBG_FXGO')
+    setValue(mt, 'ACQUIRER_PTYNBR.PTYID', defaults.At('DefaultAcquirer').Text()) 
+    status = FixTradeLib.GetTradeStatus(mt)
+    setValue(mt, 'status', status)
+
+
+def Process(m,mt):
+    operation = getValue(m,'TYPE')
+    if processed == '1':
+        return m
+    
+    #-------------------------Cutomization Start------------------------------
+    mtrans = m.mbf_find_object('TRANSACTION', 'MBFE_BEGINNING')
+    if mtrans:
+        mt = mtrans.mbf_find_object('TRADE', 'MBFE_BEGINNING')
+    SetFields(mt)
+    
+    if getValue(mt, "fas_security_type") == "CASH":
+        deleteObject(mt, 'insaddr.insid')
+        
+    #-------------------------Cutomization End------------------------------
+
+    #if FXSPOT or FXFWD or FXNDF then no need to process just return as it is.
+    if getValue(mt, "FXSPOT") == '1' or getValue(mt, "FXFWD") == '1' or getValue(mt, "NDF") == '1':
+        return m
+
+    if getValue(mt, "FXSWAP") == '1':
+        insert_FXSwap(m, mt)
+    
+    elif getValue(mt, "NDFSWAP") == '1':
+        insert_NDFSwap(m, mt)
+     
+        
+def receiver_modify(m):
+    print("Entering receiver_modify")
+    print("FXGOFixTradeHook :  Received message :")
+    print(m.mbf_object_to_string())
+    # Check for transaction object if present then dont change anything in AMBA hook.
+    # So just return original message as it is.
+    objTrans = getObject(m, 'TRANSACTION')
+    if objTrans:
+        mt = objTrans
+    else:
+        mt = getObject(m, 'TRADE')
+
+    Process(m,mt)
+    return m
+
+...
+
+}
+

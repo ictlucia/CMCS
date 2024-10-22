@@ -1,0 +1,341 @@
+#
+# Front Arena exported extension module.
+# source          ""
+# timestamp (utc) "2023-04-12 10:51:54.8"
+# ***** DO NOT EDIT! *****
+#
+name        "PS_SmartFXOutTransactionData"
+description ""
+
+groups {
+}
+
+decls[FExtensionAttribute] {
+}
+
+clx FCurrencyPair [FExtensionAttribute] {
+  smartFXSpotRate = CreateFxRate(object.Currency1, object.Currency2) :* "simplisticFXSpotRate" [useMarkToMarketPriceToday];
+}
+
+decls[FParameters] {
+}
+
+clx FObject [FParameters] {
+  TransactionDataConfig =
+  CertificateFile=C:\Projects\FADealPostingWebServer\test_cer.crt
+  KeyFile=C:\Projects\FADealPostingWebServer\test_key.key
+  ServerPort=8084
+
+
+}
+
+decls[FPythonCode] {
+}
+
+clx FObject [FPythonCode] {
+  SmartFXInquiryDealMapper
+"""-----------------------------------------------------------------------------------------------------
+MODULE
+    SmartFXInquiryDealMapperBase
+
+DESCRIPTION: This module provides the base class for providing mapping of JSON data to Deal.
+
+-------------------------------------------------------------------------------------------------------"""
+import json, ael, traceback
+import acm, math
+import InterfaceUtils
+
+trade_type_enum = acm.FEnumeration['enum(TradeType)']
+DEALER_CODE_ADD_INFO = 'DealerCode'
+
+
+class SmartFXInquiryDealMapper(object):
+    def __init__(self, json_data):
+        """
+        Initialise member varioables
+        :param json_string: string containing input in JSON format
+        """
+        self.formatter = acm.Get('formats/FullPrecision')
+        self.fxrate_formatter = acm.Get('formats/InstrumentDefintionInitialFxRate')
+        
+        self._data_dict = json_data
+        self._ref = self._data_dict.get('REFF', '')
+        self._deal_date = self._data_dict.get('DEALDATE')
+        self._ccy = self._data_dict.get('CCY')
+        self._ps = self._data_dict.get('PS')
+        
+        self._response_dict = { 
+                                "REFF":self._ref,
+                                "BR":"",
+                                "DEALNO":"",
+                                "TRAD":"",
+                                "DEALDATE":"",
+                                "VDATE":"",
+                                "PS":"",
+                                "CCY":"",
+                                "CCYAMT":"",
+                                "CCYRATE":"",
+                                "CTRCCY":"",
+                                "CTRAMT":"",
+                                "CTRRATE":"",
+                                "CCYBAMT":"",
+                                "CTRBAMT":"",
+                                "CCYBRATE":"",
+                                "CTRBRATE":"",
+                                "CIF":"",
+                                "DEALTEXT":"",
+                                "CUSTNAME":"",
+                                "INTERNALRATE":"",
+                                "CORPSPREADAMT":"",
+                                "BROK":"",
+                                "REFF_EXPIRY_STATUS":"",
+                                "ERROR_CODE":"",
+                                "ERROR_DESC":""
+                                }
+        
+        
+    
+    def get_trader_price(self, trd):
+        cp_price = trd.Price()
+        sales_margin = trd.SalesMargin()
+        trader_price = cp_price - sales_margin
+        return trader_price
+        
+    def format_rate_decimal(self, val):
+        return abs(self.fxrate_formatter.Parse(val))
+        
+    def format_decimal(self, val):
+        return abs(self.formatter.Parse(val))
+        
+    def get_current_spot(self, curr_pair):
+        curr_spot_price = ''
+        if curr_pair:            
+            curr_spot_price_temp = acm.GetCalculatedValueFromString(curr_pair, acm.GetDefaultContext(),"smartFXSpotRate", None).Value()
+            if curr_spot_price_temp:
+                curr_spot_price_temp = curr_spot_price_temp.Number()
+                if not math.isnan(curr_spot_price_temp):
+                    curr_spot_price = self.format_rate_decimal(curr_spot_price_temp)
+        return curr_spot_price
+        
+        
+    def _find_trades(self, found_trades):
+        """
+        This function looks for trade 
+        First search by add info, then by buy/sell and currency. Finally search for matching deal date.
+        :return: None
+        """
+        
+        add_infos = acm.FAdditionalInfo.Select("addInf = '{}' and fieldValue='{}'".format(DEALER_CODE_ADD_INFO, self._ref))
+            
+        if len(add_infos) == 1:
+            #Either the dealcode is unique or the deal is from SmartFX containing unique SmartFXDealId
+            add_info = add_infos[0]
+            trade = add_info.Parent() if add_info.Parent().IsKindOf(acm.FTrade) else None
+            found_trades.append(trade)
+        elif len(add_infos) > 1:
+            ps_operator = '>' if self._ps == 'P' else '<'
+            #Format: YYYY-MM-DD
+            _year, _month, _date = self._deal_date.split('-')
+            date_from_request = acm.Time.DateFromYMD(_year, _month, _date)
+            
+            for add_info in add_infos:
+                add_info_trade = add_info.Parent() if add_info.Parent().IsKindOf(acm.FTrade) else None
+                if add_info_trade:
+                    filtered_trades = acm.FTrade.Select("oid={} and quantity {} 0 and currency='{}'".format(add_info_trade.Oid(), ps_operator, self._ccy))
+                    for trade in filtered_trades:
+                        if acm.Time.DateDifference(acm.Time.AsDate(trade.TradeTime()), date_from_request) == 0:
+                            found_trades.append(trade)
+        
+            
+
+    def process_trade(self):
+        """
+        This function process the json data and creates the trade
+        :return: None
+        """
+
+        trd = None
+        found_trades = list()
+        
+        try:
+            ael.poll()
+            
+            deal_br_spec = acm.FAdditionalInfoSpec['BR']
+            deal_dces_spec = acm.FAdditionalInfoSpec['DealCodeExpiryStat']
+            
+            #trd = acm.FTrade.Select01("optionalKey='{}'".format(self._ref), None)
+            
+            self._find_trades(found_trades)
+            
+            if len(found_trades) > 1:
+                found_trades = [str(trd.Oid()) for trd in found_trades]
+                self._response_dict['ERROR_CODE'] = 'Y'
+                self._response_dict['ERROR_DESC'] = 'Multiple deals {} for request {{REFF:{}, DEALDATE:{}, CCY:{}, PS:{}}} found in FA.'.format(','.join(found_trades), self._ref, self._deal_date, self._ccy, self._ps)
+            elif len(found_trades) == 1:
+                trd = found_trades[0]            
+                  
+                br_code = ''
+                br = trd.AddInfoValue(deal_br_spec) if deal_br_spec else ''
+                if br:
+                    br_code = br.split('-')
+                    if len(br_code) > 1:
+                        br_code = br_code[0].strip()
+                deal_dces_val = trd.AddInfoValue(deal_dces_spec) if deal_dces_spec else ''
+                deal_no = trd.Oid()
+                trader = trd.Trader().Name()
+                curr = trd.Currency().Name()
+                instr = trd.Instrument().Name()
+                trade_time = InterfaceUtils.date_from_datetime(trd.TradeTime(), format_str='%Y-%m-%d')
+                value_day = InterfaceUtils.date_from_datetime(trd.ValueDay(), format_str='%Y-%m-%d')
+                cp_cif = trd.Counterparty().HostId() if trd.Counterparty() else ''
+                cp_name = trd.Counterparty().Id() if trd.Counterparty() else ''
+                broker_code = trd.Broker().Id() if trd.Broker() else ''
+                curr_pair = acm.FCurrencyPair['{}/{}'.format(instr,curr)]
+                first_curr_pair_idr = acm.FCurrencyPair['{}/IDR'.format(instr)]
+                second_curr_pair_idr = acm.FCurrencyPair['{}/IDR'.format(curr)]
+                
+                    
+                ps = '' 
+                if trd.Direction() == 'Buy':
+                    ps = 'P'
+                elif trd.Direction() == 'Sell':
+                    ps = 'S'
+                amt = self.format_decimal(trd.Quantity())
+                
+                cp_price = self.format_decimal(trd.Price())
+                
+                self._response_dict['BR'] = br_code
+                self._response_dict['DEALNO'] = deal_no
+                self._response_dict['TRAD'] = trader
+                self._response_dict['DEALDATE'] = trade_time
+                self._response_dict['VDATE'] = value_day
+                self._response_dict['PS'] = ps
+                self._response_dict['CCY'] = instr
+                self._response_dict['CCYAMT'] = amt
+                self._response_dict['CCYRATE'] = self.format_decimal(self.get_trader_price(trd))                    
+                self._response_dict['CTRCCY'] = curr
+                self._response_dict['CTRRATE'] = cp_price
+                self._response_dict['CCYBAMT'] = abs(trd.Quantity())
+                self._response_dict['CTRBAMT'] = abs(trd.Premium())
+                
+                self._response_dict['CCYBRATE'] = self.get_current_spot(first_curr_pair_idr) if first_curr_pair_idr else ""
+                self._response_dict['CTRBRATE'] = self.get_current_spot(second_curr_pair_idr) if second_curr_pair_idr else ""
+                self._response_dict['INTERNALRATE'] = self.get_current_spot(curr_pair) if curr_pair else ""                    
+                self._response_dict['CIF'] = cp_cif
+                self._response_dict['CUSTNAME'] = cp_name
+                self._response_dict['BROK'] = broker_code
+                self._response_dict['DEALTEXT'] = trd.Text1()
+                self._response_dict['REFF_EXPIRY_STATUS'] = deal_dces_val if deal_dces_val else ''
+                
+                self._response_dict['ERROR_CODE'] = 'N'
+                                    
+            else:
+                self._response_dict['ERROR_CODE'] = 'Y'
+                self._response_dict['ERROR_DESC'] = 'Deal for request {{REFF:{}, DEALDATE:{}, CCY:{}, PS:{}}} not found in FA.'.format(self._ref, self._deal_date, self._ccy, self._ps)
+                
+        except Exception as err:
+            self._response_dict['ERROR_CODE'] = 'Y'
+            self._response_dict['ERROR_DESC'] = 'Error handling deal with request {{REFF:{}, DEALDATE:{}, CCY:{}, PS:{}}} found in FA. {} '.format(self._ref, self._deal_date, self._ccy, self._ps, err)
+            print(traceback.format_exc())
+        return self._response_dict
+
+
+...
+
+  SmartFXInquiryDealServer
+"""--------------------------------------------------------------------------------------------------
+MODULE:
+    SmartFXInquiryDealServer : Module for handing the server functions
+
+DESCRIPTION: This module uses flask and provides functions for handling webserver functions from client.
+-------------------------------------------------------------------------------------------------------"""
+from flask import Flask, request
+from SmartFXInquiryDealMapper import SmartFXInquiryDealMapper
+import traceback
+import json
+
+app = Flask(__name__)
+
+
+@app.route("/", methods=['GET'])
+def welcome():
+    """
+    This function handles the default client request
+    :return: string
+    """
+    return "Welcome to FrontArena webserver for inquiry deal SmartFX deals!"
+
+
+@app.route("/inquiryDeal", methods=['POST'])
+def postdeal():
+    """
+    This function handles the inquiry deal request from client.
+    :return: JSON object
+    """
+    response_dict = dict()
+    try:
+        json_data = request.get_json()
+        deal_inquiry_obj = SmartFXInquiryDealMapper(json_data)
+        response_dict = deal_inquiry_obj.process_trade()
+    except Exception as err:
+        response_dict['ERROR_CODE'] = 'Y'
+        response_dict['ERROR_DESC'] = 'Error occurred {}.'.format(err)
+        print(traceback.format_exc())
+        
+    return json.dumps(response_dict)
+
+
+
+...
+
+  SmartFXInquiryDealServerMain
+"""--------------------------------------------------------------------------------------------------
+MODULE:
+    SmartFXInquiryDealServerMain : Main module for ATS
+
+DESCRIPTION: This module uses gevent to run the webserver in start method.
+             The start never returns and hence work and stop functions are not called.
+-------------------------------------------------------------------------------------------------------"""
+
+from gevent.pywsgi import WSGIServer
+import SmartFXInquiryDealServer, DealPostingUtils
+
+
+def server_routine():
+    """
+    This function starts the gevent WSGI
+    :return: None
+    """
+    try:
+        deal_posting_config = DealPostingUtils.Parameters('TransactionDataConfig')
+        key_file = getattr(deal_posting_config, 'KeyFile', None)
+        server_port = getattr(deal_posting_config, 'ServerPort', None)
+        cert_file = getattr(deal_posting_config, 'CertificateFile', None)
+
+        if not server_port.isdigit():
+            raise Exception('Port should be integer. Supplied {}'.format(server_port))
+
+        bind = ('0.0.0.0', int(server_port))
+        app = SmartFXInquiryDealServer.app
+        g_server = WSGIServer(bind, app, keyfile=key_file, certfile=cert_file)
+        print('Started webserver.', g_server)
+        g_server.serve_forever()
+    except Exception as err:
+        print(err)
+        return False
+
+
+def start():
+    """ ATS start """
+    try:
+        server_routine()
+    except Exception as err:
+        print(err)
+
+
+
+
+...
+
+}
+

@@ -1,0 +1,199 @@
+#
+# Front Arena exported extension module.
+# source          ""
+# timestamp (utc) "2023-05-24 19:06:44.7"
+# ***** DO NOT EDIT! *****
+#
+name        "PS_BPSNostroGL"
+description ""
+
+groups {
+}
+
+decls[FParameters] {
+}
+
+clx FObject [FParameters] {
+  BPSNostroGLParams =
+  acquirer=Acquirer 1
+  counterparty=BPS
+  suspense_account_list=12240
+
+
+}
+
+decls[FPythonCode] {
+}
+
+clx FObject [FPythonCode] {
+  BPSNostroGL
+"""----------------------------------------------------------------------------------------------------
+MODULE:
+    BPS – Nostro GL Records
+
+DESCRIPTION:
+    Create stand alone payments from BPS Nostro GL file
+
+-------------------------------------------------------------------------------------------------------"""
+import acm
+import csv
+import datetime
+import os
+import traceback
+import glob
+import StandaloneSettlement as settl
+
+from FRunScriptGUI import InputFileSelection, DirectorySelection
+import ParametersReader, FRunScriptGUI, FLogger, InterfaceUtils
+
+
+dir_selection = DirectorySelection()
+logLevels = [FLogger.FLogger.INFO, FLogger.FLogger.ERROR, FLogger.FLogger.WARNING, FLogger.FLogger.DEBUG]
+log_file_name = f"BPS_NostroGL_LOG_{acm.Time.DateToday().replace('-', '')}"
+
+account_index           = (54,69)
+curr_index              = (69,72)
+value_day_index         = (72,80)
+debit_or_credit_index   = (80)
+amnt_index              = (81,97)
+ref_text_index          = (98,169)
+
+
+def GetPaths(params):
+    source_folder = params['sourceFolder'].SelectedDirectory().Text()
+    archive_folder = params['archiveFolder'].SelectedDirectory().Text()
+    
+    if not os.path.exists(source_folder):
+        raise ValueError('Source path %s does not exists.' % source_folder)
+    return source_folder, archive_folder
+    
+
+def archive_file(file_path, logger, file_name, archive_folder):
+    
+    try:
+        date_today = acm.Time.DateToday().replace('-', '')
+        logger.LOG('Moving File {0} to Archive folder'.format(file_name))  
+        abs_path = os.path.dirname(file_path)
+        new_file_name =  '{}_{}'.format(file_name, date_today)
+            
+        isExist = os.path.exists(archive_folder)
+        defaultArchivePath = abs_path + os.sep + 'Archive'
+        isdefaultArchivePathExist = os.path.exists(defaultArchivePath)
+        
+        if isExist or isdefaultArchivePathExist:
+            new_path = archive_folder or defaultArchivePath
+            new_file_path = new_path + os.sep + new_file_name            
+            os.rename(file_path, new_file_path) 
+            logger.LOG("File '{0}' moved to {1} folder".format(file_name, new_path))             
+        else:
+            logger.LOG("Creating 'Archive' folder at %s" %abs_path)
+            os.makedirs(defaultArchivePath)
+            new_path = defaultArchivePath + os.sep + new_file_name    
+            os.rename(file_path, new_path) 
+            logger.LOG("File '{0}' moved to {1} folder".format(file_name, new_path))  
+    except Exception as e:
+        logger.ELOG('Error while archiving the file {}'.format(file_path))
+
+    
+def initialize_logging(params, logfile_name, app_name):
+    """
+    Initialize logger
+    :param params: parameters
+    :return: FLogger object
+    """
+    logger = None
+    try:
+        logFolder = params['log_folder']
+        logfolderString = logFolder.SelectedDirectory().AsString()
+        logfile = os.path.join(logfolderString, logfile_name)
+        if logfile == '':
+            logfile = None
+
+        logLevel = params['log_level']
+        level = InterfaceUtils.LogLevelNameToNumber(logLevel)
+        logger = FLogger.FLogger(level=level,
+                                 name=app_name,
+                                 logToPrime=True,
+                                 logToFileAtSpecifiedPath=logfile,
+                                 logToConsole=False)
+    except Exception as err:
+        print('Error in initializing logger {}'.format(err))
+        print(traceback.format_exc())
+    return logger
+        
+
+ael_gui_parameters = {'windowCaption': "BPS Nostro GL"}
+ael_variables = [['sourceFolder', 'Select Source Folder', dir_selection, None, dir_selection, 1, 1, 0],
+                 ['archiveFolder', 'Select Archive Path', dir_selection, None, dir_selection, 0, 1, 0],
+                 ['log_folder', 'Log folder_Logging', dir_selection, None, dir_selection, 0, 1,0],
+                 ['log_level', 'Log level_Logging', 'string', logLevels, FLogger.FLogger.DEBUG, 0, 1, 0]
+                ]
+app_name = 'BPS_Nostro_GL'
+
+
+def ael_main(params):
+    logger = initialize_logging(params, log_file_name, app_name)
+    try:
+        if logger:            
+            
+            sourceFolder, archive_folder = GetPaths(params)
+            logger.LOG('Execution started.')
+            logger.LOG('Processing file(s) from folder {}'.format(sourceFolder))                    
+            
+            csv_files = glob.glob(os.path.join(sourceFolder, "*.*"))
+            if csv_files:
+                nostro_gl_params = ParametersReader.get_params('BPSNostroGLParams')
+                acq = nostro_gl_params['acquirer']
+                cpty = nostro_gl_params['counterparty']
+                nostro_gl = settl.Nostro_GL(acq, cpty)
+                
+                for each_file in csv_files:
+                    file_name = os.path.basename(each_file)
+                    logger.LOG('Started Processing data from file {}'.format(file_name))
+                    with open(each_file, 'r') as file:         
+                        csvreader = csv.reader(file, delimiter=';')
+
+                        for row in csvreader:
+                            if row:
+                                gl_account = row[0][account_index[0]:account_index[1]].strip(' ')
+                                if gl_account not in  nostro_gl_params['suspense_account_list']:
+                                    settlement = None
+                                    nostro_gl.acq_acc = None
+                                    nostro_gl.pay_record      = row
+
+                                    nostro_gl.settl_type      = 'Stand Alone Payment'
+                                    nostro_gl.status          = 'Pending Closure'
+
+                                    nostro_gl.curr            = row[0][curr_index[0]:curr_index[1]].strip(' ')
+                                    nostro_gl.value_day       = datetime.datetime.strptime(row[0][value_day_index[0]:value_day_index[1]].strip(' '), '%Y%m%d').strftime('%Y-%m-%d')
+                                    nostro_gl.debit_or_credit = row[0][debit_or_credit_index].strip(' ')
+                                    amnt                      = row[0][amnt_index[0]:amnt_index[1]].strip(' ')
+                                    nostro_gl.amount          = amnt if nostro_gl.debit_or_credit == 'D' else f'-{amnt}'
+                                    nostro_gl.ref_text        = row[0][ref_text_index[0]:ref_text_index[1]].strip(' ')                                
+                                    for acc in nostro_gl.acq_acc_list:
+                                        if gl_account == acc.Name():
+                                            nostro_gl.acq_acc = acc
+                                            settlement = nostro_gl.generate_standalone_payments()
+                                            
+                                    if settlement:
+                                        logger.LOG('Settlement record created - {}'.format(settlement.Oid()))
+                                    else:
+                                        logger.LOG('GL Account not found - {}'.format(gl_account))
+                                        logger.LOG('Payment record not committed {}'.format(nostro_gl.pay_record))         
+                                                                       
+                    archive_file(each_file, logger, file_name, archive_folder)
+                    logger.LOG('Finished Processing data from file {}'.format(file_name))   
+            else:
+                logger.LOG('File(s) not found at source folder {}'.format(sourceFolder))         
+    except Exception as err:
+        if logger is not None:
+            logger.ELOG(str(err))
+        print(traceback.format_exc())
+        print('Error in ael main. {}'.format(err))
+        
+    logger.LOG('Finished Task BPS - Nostro GL Records')
+
+...
+
+}
+

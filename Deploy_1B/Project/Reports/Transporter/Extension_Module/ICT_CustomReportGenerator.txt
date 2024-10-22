@@ -1,0 +1,1762 @@
+#
+# Front Arena exported extension module.
+# source          ""
+# timestamp (utc) "2024-08-02 06:14:42.5"
+# ***** DO NOT EDIT! *****
+#
+name        "ICT_CustomReportGenerator"
+description ""
+
+groups {
+}
+
+decls[FCommandExtension] {
+}
+
+clx FUiTrdMgrFrame [FCommandExtension] {
+  Category.Reporting.Panel.Reports =
+  ChildOrder=Send Report To Browser;Separator;Send Report To Excel;Separator;Worksheet Report...;Separator;ICT Custom Worksheet Report;Separator;ICT Custom Multiple Worksheet Excel File Report;Separator;ICT Custom Service Sheet Report
+
+
+  Custom Multiple Worksheet Excel File Report... =
+  Category=Category.Reports
+  ContextHelpId=1091
+  description=Generate a report with values from a saved workbook or a trading sheet template.
+  icon=WorksheetReport
+  Panel=Category.Reporting.Panel.Reports
+  ToolTip=Start Worksheet Report
+  Type=MenuButton
+
+
+  Custom Service Sheet Report... =
+  Category=Category.Reports
+  ContextHelpId=1091
+  description=Generate a report with values from a saved workbook or a trading sheet template.
+  icon=WorksheetReport
+  Panel=Category.Reporting.Panel.Reports
+  ToolTip=Start Worksheet Report
+  Type=MenuButton
+
+
+  Custom Worksheet Report... =
+  Category=Category.Reports
+  ContextHelpId=1091
+  description=Generate a report with values from a saved workbook or a trading sheet template.
+  icon=WorksheetReport
+  Panel=Category.Reporting.Panel.Reports
+  ToolTip=Start Worksheet Report
+  Type=MenuButton
+
+
+}
+
+decls[FMenuExtension] {
+}
+
+clx FSessionManagerFrame [FMenuExtension] {
+  Custom Multiple Worksheet Excel File Report =
+  DisplayName=ICT Custom Multiple Worksheet Excel File Report
+  Function=CustomMultipleSheetWorkbookReport.startRunScript
+  MenuType=Application
+  ModuleName=Custom Multiple Worksheet Excel File Report
+  ParentMenu=Tools
+  RibbonPosition=ICT Custom Report Generator
+
+
+  Custom Service Sheet Report =
+  DisplayName=ICT Custom Service Sheet Report
+  Function=CustomServiceSheetReport.startRunScript
+  MenuType=Application
+  ModuleName=Custom Service Sheet Report
+  ParentMenu=Tools
+  RibbonPosition=ICT Custom Report Generator
+
+
+  Custom Worksheet Report =
+  DisplayName=ICT Custom Worksheet Report
+  Function=CustomWorksheetReport.startRunScript
+  MenuType=Application
+  ModuleName=Custom Worksheet Report
+  ParentMenu=Tools
+  RibbonPosition=ICT Custom Report Generator
+
+
+}
+
+clx FUiTrdMgrFrame [FMenuExtension] {
+  Custom Multiple Worksheet Excel File Report =
+  DisplayName=ICT Custom Multiple Worksheet Excel File Report
+  Function=CustomMultipleSheetWorkbookReport.startRunScript
+  MenuType=Application
+  ParentMenu=Reports
+  RibbonPosition=Reports
+
+
+  Custom Service Sheet Report =
+  DisplayName=ICT Custom Service Sheet Report
+  Function=CustomServiceSheetReport.startRunScript
+  MenuType=Application
+  ParentMenu=Reports
+  RibbonPosition=Reports
+
+
+  Custom Worksheet Report =
+  DisplayName=ICT Custom Worksheet Report
+  Function=CustomWorksheetReport.startRunScript
+  MenuType=Application
+  ParentMenu=Reports
+  RibbonPosition=Reports
+
+
+}
+
+decls[FPythonCode] {
+}
+
+clx FObject [FPythonCode] {
+  CustomFReportAPIBase
+
+from builtins import range
+from builtins import object
+import acm
+
+import time
+import threading
+
+import FReportAPIBaseUtils
+import FPrimeXmlUtils
+import FAMBOutput
+import FLogger
+import FMacroGUI
+
+import CustomFReportAPIBaseUtils
+import re
+from FReportAPIBase import FReportBuilder
+
+def get_prime_reports(xml_string):
+    regex = "<PRIMEReport>[\s\S]*?<\/PRIMEReport>"
+    matches = re.findall(regex, xml_string)
+    return matches
+    
+def get_report_names(xml_string):
+    regex = "(?<=<PRIMEReport><Name>)[\s\S]*?(?=<\/Name>)"
+    matches = re.findall(regex, xml_string)
+    return matches
+
+class CustomReportBuilder(FReportBuilder):
+    
+    def __init__( self, params):
+        super().__init__(params)
+        self.multi_sheet_names = []
+        self.current_sheet_index = 0
+
+    @classmethod        
+    def getReportBuilder(cls, params):
+        return CustomReportBuilder(params)
+        
+    
+    def generateReport(self):
+        """generate report"""
+        sheets = FReportAPIBaseUtils.getTradingSheets(self)
+        if self.params.multiThread:
+            thread = acm.FThread()
+            logger.LOG('Multi threaded report creation.')
+            thread.Run(self.performReportCreation, [sheets])
+        else:
+            self.performReportCreation(sheets)
+            
+    def performReportCreation(self, sheets):
+        """perform creation of report(s). """
+
+        queriesForMacroGUI = acm.FArray()       
+        if self.params.useMacroGUI == "True":
+            if self.params.infoManQueriesTrades and self.params.infoManQueriesInstrument:
+                queriesForMacroGUI.AddAll(self.params.infoManQueriesTrades)
+                queriesForMacroGUI.AddAll(self.params.infoManQueriesInstrument)
+            elif self.params.infoManQueriesTrades:
+                queriesForMacroGUI.AddAll(self.params.infoManQueriesTrades)
+            elif self.params.infoManQueriesInstrument:
+                queriesForMacroGUI.AddAll(self.params.infoManQueriesInstrument)
+
+        infoManMacroInfoFromGUI = None
+        if self.params.useMacroGUI == "True":
+            infoManMacroInfoFromGUI = self.useMacroGUI(queriesForMacroGUI)
+
+        for reportNbr in range(self.params.numberOfReports):
+            lastReportTime = time.time()
+            FReportAPIBaseUtils.generateFileName(self, sheets)
+            self.xml_report_writer.reset()
+
+
+            self.reportGrids = self.createReportOutput(sheets, False, infoManMacroInfoFromGUI)
+
+            report_xml_output = self.xml_report_writer.get_xml_output()
+            if report_xml_output.find(FPrimeXmlUtils.XmlTags.PRIME_REPORT_BEGIN) == -1:
+                msg = 'Report ' + self.params.reportName + ' has no content! No report created.'
+                logger.LOG( msg )
+                break
+            
+            if self.params.multipleFiles:
+                self.produce_multiple_output(report_xml_output)
+            else:
+                self.produceOutput( report_xml_output )
+                    
+            self.pollForEvents( reportNbr, lastReportTime )
+
+            for grid in self.reportGrids:
+                grid.Terminate()
+
+            self.reportGrids = None
+
+        return report_xml_output
+        logger.LOG('Report creation finished.')
+
+    def produce_multiple_output(self, reportXml):
+        """write output to difference sources"""
+
+        #Pre processing xml
+        if self.params.preProcessXml:
+            reportXml = self.additionalProcessing(self.params.preProcessXml, reportXml)
+        
+        xml_reports = get_prime_reports(reportXml)
+        self.multi_sheet_names = get_report_names(reportXml)
+        
+        for reportXml in xml_reports:
+            reportXml = "<?xml version='1.0' encoding='UTF-8'?><MultiReport>" + reportXml + "</MultiReport>"
+            outputDir = CustomFReportAPIBaseUtils.createMultipleOutputDir(self, self.multi_sheet_names[self.current_sheet_index])
+            
+            if self.params.xmlToFile:
+                CustomFReportAPIBaseUtils.writeXMLToFile(self, reportXml, outputDir)
+
+            if self.params.htmlToFile or self.params.htmlToPrinter:
+                CustomFReportAPIBaseUtils.writeHTMLToFile(self, reportXml, outputDir)
+
+            if self.params.secondaryOutput:
+                CustomFReportAPIBaseUtils.writeToSecondaryOutput(self, reportXml, outputDir)
+
+            if self.params.xmlToAmb:
+                FAMBOutput.sendXMLToAMB(reportXml, self.params.ambAddress, self.params.ambSender, self.params.ambSubject, self.params.ambXmlMessage)
+
+            self.additionalProcessing(self.params.function)
+            self.current_sheet_index += 1
+
+
+
+...
+
+  CustomFReportAPIBaseUtils
+
+from string import Template
+from builtins import range
+
+import acm
+import webbrowser
+import re
+import os
+import codecs
+import zipfile
+import webbrowser
+import time
+import threading
+
+import FFileUtils
+import FReportUtils
+import FPictures
+import FReportSettings
+import FLogger
+import FReportAPIBaseUtils
+
+
+logger = FLogger.FLogger( 'FAReporting' )
+
+
+def writeHTMLToFile(report_generator, reportXml, outputDir):
+    html = FReportAPIBaseUtils.createHTML(report_generator, reportXml, outputDir)
+    #Special treatment of FStandardTemplateClickable
+    if report_generator.params.printTemplate.find('Clickable') != -1:
+        import FHTMLJavaScript
+        jsPath = os.path.join(outputDir,'portfolio_report.js')
+        FReportUtils.writeToFile(jsPath, FHTMLJavaScript.javaScript)
+        pictures = ['report_plus', 'report_minus', 'report_end']
+        # Decode any pictures included.
+        for pic in pictures:
+            FPictures.decodePicture(pic, outputDir)
+    
+    current_sheet_name = report_generator.multi_sheet_names[report_generator.current_sheet_index]
+    filePath = FReportAPIBaseUtils.getNewFilePath(report_generator, outputDir, '.html')
+    FReportUtils.writeToFile(filePath, html)
+    logger.LOG("Wrote report output to: " + filePath)
+    if report_generator.params.htmlToScreen:
+        t = threading.Thread( target=webbrowser.open, name='OpenWebBrowser', args=(filePath, 0, 1) )
+        t.setDaemon( 1 )
+        t.start()
+        t.join( timeout=1 )     
+
+    if report_generator.params.htmlToPrinter:
+        acm.PrintToDefaultPrinter(html," ", "Page &p of &P  &b At date &d &t &b")
+
+def createMultipleOutputDir(report_generator, sheet_name):
+    if isinstance(report_generator.params.filePath, str):
+        outputDir = report_generator.params.filePath
+    else:
+        outputDir = report_generator.params.filePath.AsString()
+
+    if outputDir == "":
+        #Use current directory by default
+        outputDir = os.path.abspath(outputDir)
+
+    if report_generator.params.createDirectoryWithDate:
+        theDateFormat = report_generator.params.dateFormat
+        if report_generator.params.yearWithCentury == "True":
+            theDateFormat = theDateFormat.replace('y', 'Y')
+        outputDir = os.path.join(outputDir, 'report'+ time.strftime(theDateFormat)+ os.sep )
+
+    outputDir += sheet_name + "\\"  
+    outputDir = FFileUtils.expandEnvironmentVar(outputDir)
+    
+    if report_generator.params.htmlToFile or report_generator.params.secondaryOutput or report_generator.params.xmlToFile:
+         if not os.path.exists(outputDir):
+            try:
+                os.makedirs(outputDir)
+                logger.LOG('Created report output directory:' + outputDir)
+            except:
+                msg = 'Failed to create report directory:' + outputDir
+                logger.ELOG( msg )
+                raise Exception(msg)
+
+    return outputDir
+    
+def writeXMLToFile(report_generator, reportXml, outputDir):
+
+    current_sheet_name = report_generator.multi_sheet_names[report_generator.current_sheet_index]
+    if report_generator.params.compressXmlOutput:
+        filePath = FReportAPIBaseUtils.getNewFilePath(report_generator, outputDir, '.zip')
+        innerFileName = report_generator.params.fileName + ".xml"
+        f = zipfile.ZipFile(filePath,'w',zipfile.ZIP_DEFLATED).writestr( innerFileName, reportXml )
+        logger.LOG("Wrote compressed XML to : " + filePath)
+    else:
+        filePath = FReportAPIBaseUtils.getNewFilePath(report_generator, outputDir + current_sheet_name, '.xml')
+        FReportUtils.writeToFile(filePath, reportXml)
+        logger.LOG("Wrote XML to : " + filePath)
+
+
+def writeToSecondaryOutput(report_generator, reportXml, outputDir):
+    secondOut = FReportUtils.transformXML(reportXml, report_generator.params.secondaryTemplate)
+    
+    current_sheet_name = report_generator.multi_sheet_names[report_generator.current_sheet_index]
+    
+    filePath = FReportAPIBaseUtils.getNewFilePath(report_generator, outputDir, report_generator.params.secondaryFileExtension)
+    if report_generator.params.secondaryTemplate in report_generator.params.getSecondaryTemplateNames('pdf'):
+        foFilePath = filePath.replace(report_generator.params.secondaryFileExtension,".fo")
+        FReportUtils.writeToFile(foFilePath, secondOut)
+        foFilePath = foFilePath.replace(".fo","")
+
+        command = Template(FReportSettings.FOP_BAT)
+        command = command.substitute({'extension':report_generator.params.secondaryFileExtension[1:], 'filename':foFilePath})
+        ret = os.system(command)
+        if ret:
+            logger.ELOG("Output creation ERROR. Check that necessary third party software is installed.\nCommand: " + command)
+        else:
+            logger.LOG("PDF generated to " + filePath)
+    else:
+        useUtf16Output = report_generator.params.secondaryFileExtension == '.xls' and FReportAPIBaseUtils.TemplateHasUtf8Encoding(report_generator.params.secondaryTemplate)
+        useUtf8Bom = False
+        if report_generator.params.useUtf8ByteOrderMark == 1 and FReportAPIBaseUtils.TemplateHasUtf8Encoding(report_generator.params.secondaryTemplate):
+            useUtf8Bom = True
+        FReportUtils.writeToFileBinary(filePath, secondOut, 'wb', useUtf16Output, useUtf8Bom)
+        logger.LOG("Wrote secondary output to: " + filePath)
+
+
+
+
+...
+
+  CustomMultipleSheetExcelReportAPI
+
+import acm
+
+from FReportAPI import FWorksheetReportGuiParameters
+from FReportAPI import FReportParametersBase
+
+from FReportAPI import FWorksheetReportGuiParameters
+from CustomMultipleSheetExcelReportAPIBase import CustomReportBuilder
+
+import FReportSheetSettingsTab
+
+def custom_init_from_advanced_settings_tab( obj, variableDictionary ):
+    falseTrue = ['False','True']
+    obj.includeDefaultData = falseTrue.index(variableDictionary['Include Default Data'])
+    obj.includeFormattedData = falseTrue.index(variableDictionary['Include Formatted Data'])
+    obj.includeFullData = falseTrue.index(variableDictionary['Include Full Data'])
+    obj.includeRawData = falseTrue.index(variableDictionary['Include Raw Data'])
+    obj.includeColorInformation = falseTrue.index(variableDictionary['Include Color Information'])
+    obj.waitForRemote = falseTrue.index(variableDictionary['Wait for Remote Work'])
+    obj.xmlToFile = falseTrue.index(variableDictionary['XML to File'])
+    obj.compressXmlOutput = falseTrue.index(variableDictionary['Compress Output'])
+    obj.xmlToAmb = falseTrue.index(variableDictionary['Send XML File to AMB'])
+    obj.ambAddress = variableDictionary['AMB Address']
+    obj.ambSender  = variableDictionary['AMB Sender Name']
+    obj.ambSubject = variableDictionary['AMB Subject']
+    obj.ambXmlMessage = falseTrue.index(variableDictionary['AMB XML Message'])
+    obj.performanceStrategy = variableDictionary['Performance Strategy']
+
+def custom_init_from_output_settings_tab( obj, variableDictionary ):
+    falseTrue = ['False','True']
+    '''
+    obj.includeRawData = falseTrue.index(variableDictionary['Include Raw Data'])
+    obj.includeFullData = falseTrue.index(variableDictionary['Include Full Data'])
+    obj.includeFormattedData = falseTrue.index(variableDictionary['Include Formatted Data'])
+    obj.includeDefaultData = falseTrue.index(variableDictionary['Include Default Data'])
+    obj.includeColorInformation = falseTrue.index(variableDictionary['Include Color Information'])
+    obj.headerImage = falseTrue.index(variableDictionary['Include header image'])
+    obj.headerImagePath = variableDictionary['Header image path']
+    obj.htmlToFile = falseTrue.index(variableDictionary['HTML to File'])
+    obj.htmlToScreen = falseTrue.index(variableDictionary['HTML to Screen'])
+    obj.htmlToPrinter = falseTrue.index(variableDictionary['HTML to Printer'])
+    obj.xmlToFile = falseTrue.index(variableDictionary['XML to File'])
+    '''
+    
+    obj.filePath = variableDictionary['FilePath']
+    obj.fileName = variableDictionary['FileName']
+    #obj.compressXmlOutput = falseTrue.index(variableDictionary['Compress Output'])
+    obj.createDirectoryWithDate = falseTrue.index(variableDictionary['CreateDirectoryWithDate'])
+    obj.dateFormat = variableDictionary['Date_format']
+    obj.yearWithCentury = variableDictionary['Year with century']
+    
+    
+    obj.fileDateFormat = variableDictionary['File date format']
+    obj.fileDateBeginning = falseTrue.index(variableDictionary['File date beginning'])
+    '''
+    obj.printTemplate = variableDictionary['Print template (XSL)']
+    obj.printStyleSheet = variableDictionary['Print style sheet (CSS)']
+    obj.headerImage = variableDictionary['Include header image']
+    obj.headerImagePath = variableDictionary['Header image path']
+    '''
+    
+    obj.overwriteIfFileExists = falseTrue.index(variableDictionary['OverwriteIfFileExists'])
+    obj.secondaryOutput = falseTrue.index(variableDictionary['SecondaryOutput'])
+    obj.secondaryTemplate = variableDictionary['SecondaryTemplate']
+    obj.secondaryFileExtension = variableDictionary['SecondaryFileExtension']
+    obj.useUtf8ByteOrderMark = falseTrue.index(variableDictionary['Utf8BOM'])
+
+
+def custom_init_from_gui_params( obj, variableDictionary ):
+    falseTrue = ['False','True']
+    obj.workbook = variableDictionary['wbName']
+    
+    '''
+    obj.template = variableDictionary['template']
+    obj.portfolios = variableDictionary['portfolios']
+    obj.tradeFilters = variableDictionary['tradeFilters']
+    obj.storedASQLQueries = variableDictionary['storedASQLQueries']
+    obj.storedASQLQueriesInstrument = variableDictionary['storedASQLQueriesInstrument']
+    obj.infoManQueriesTrades = variableDictionary['infoManQueriesTrades']
+    obj.infoManQueriesInstrument = variableDictionary['infoManQueriesInstrument']
+    obj.macros = variableDictionary['macros']
+    obj.useMacroGUI = variableDictionary['useMacroGUI']
+    obj.grouping = variableDictionary['grouping']
+    obj.timeBuckets = variableDictionary['timeBuckets']
+    obj.verticalScenario = variableDictionary['verticalScenario']
+    obj.trades = variableDictionary['trades']
+    obj.instrumentParts = falseTrue.index(variableDictionary['instrumentParts'])
+    obj.expandTimebucketChildren = falseTrue.index(variableDictionary['expandTimebucketChildren'])
+    obj.clearSheetContent = falseTrue.index(variableDictionary['clearSheetContent'])
+    '''
+    
+    obj.snapshot = falseTrue.index(variableDictionary['snapshot'])
+    obj.multiThread = (not obj.snapshot) and falseTrue.index(variableDictionary['multiThread'])
+    if obj.snapshot:
+        obj.numberOfReports = 1
+    else:
+        obj.numberOfReports = variableDictionary['numberOfReports']
+    obj.updateInterval = variableDictionary['updateInterval']
+    '''
+    obj.macros = variableDictionary['macros']
+    
+    #Add Sheet Content tab -------------------------
+    obj.tradeRowsOnly = falseTrue.index(variableDictionary['tradeRowsOnly'])
+    obj.portfolioRowOnly = falseTrue.index(variableDictionary['portfolioRowOnly'])
+    obj.zeroPositions = falseTrue.index(variableDictionary['zeroPositions'])
+    obj.expiredPositions = falseTrue.index(variableDictionary['expiredPositions'])
+    obj.instrumentRows = falseTrue.index(variableDictionary['instrumentRows'])
+    '''
+    
+    #Settings Tabs
+    obj.sheetSettings = FReportSheetSettingsTab.getSelectedSheetSettings( variableDictionary.get('allSheetSettingsBySheetType' ), variableDictionary )
+    obj.overridePortfolioSheetSettings = variableDictionary['FPortfolioSheet_overrideSheetSettings']
+    obj.overrideTradeSheetSettings = variableDictionary['FTradeSheet_overrideSheetSettings']
+    
+    
+    #Output settings tab ------------------------
+    custom_init_from_output_settings_tab( obj, variableDictionary )
+    
+    #Advanced Settings tab
+    custom_init_from_advanced_settings_tab( obj, variableDictionary )
+    '''
+    #Post processing tab ------------------------
+    init_from_processing_tab( obj, variableDictionary )
+    '''
+    
+class CustomReportParametersBase(FReportParametersBase):
+    def init_from_gui_params( self, params ):
+        custom_init_from_gui_params( self, params )
+class CustomWorksheetReportGuiParameters(CustomReportParametersBase):
+    def __init__( self, **kwds ):
+        CustomReportParametersBase.__init__( self )
+        self.gcInterval = 5000
+        self.maxNrOfFilesInDir = 100
+        self.portfolioReportName = ''
+        self.reportName = ''
+        self.guiParams = None
+        for arg, value in list(kwds.items()):
+            if hasattr( self, arg ):
+                setattr( self, arg, value )
+            else:
+                logger.WLOG( 'Skipping invalid keyword argument < %s >', arg )
+        if self.guiParams:
+            self.init_from_gui_params( self.guiParams )
+    def RunScript(self):
+        report_generator = CustomReportBuilder.getReportBuilder(self)
+        report_generator.generateReport()
+
+...
+
+  CustomMultipleSheetExcelReportAPIBase
+
+from builtins import range
+from builtins import object
+
+import xlsxwriter
+
+import acm
+import time
+import threading
+import FReportAPIBaseUtils
+import FPrimeXmlUtils
+import FAMBOutput
+import FLogger
+import FMacroGUI
+from CustomMultipleSheetExcelReportAPIBaseUtils import *
+import re
+from FReportAPIBase import FReportBuilder
+
+def get_prime_reports(xml_string):
+    regex = "<PRIMEReport>[\s\S]*?<\/PRIMEReport>"
+    matches = re.findall(regex, xml_string)
+    return matches
+    
+def get_report_names(xml_string):
+    regex = "(?<=<PRIMEReport><Name>)[\s\S]*?(?=<\/Name>)"
+    matches = re.findall(regex, xml_string)
+    return matches
+
+def get_sheet_name(in_string):
+    string_list = in_string.split('-')
+    sheet_name = string_list[-1]
+    return sheet_name
+
+class CustomReportBuilder(FReportBuilder):
+    
+    def __init__(self, params):
+        super().__init__(params)
+        self.file_list = []
+        self.report_count = 0
+        self.df_list = []
+    
+    @classmethod
+    def getReportBuilder(self, params):
+        return CustomReportBuilder(params)
+        
+    def generateReport( self ):
+        """generate report"""
+        sheets = FReportAPIBaseUtils.getTradingSheets(self)
+        '''
+        if self.params.multiThread:
+            thread = acm.FThread()
+            logger.LOG('Multi threaded report creation.')
+            thread.Run(self.performReportCreation, [sheets])
+        else:
+            self.performReportCreation(sheets)
+        '''
+        self.performReportCreation(sheets)
+    
+    def performReportCreation(self, sheets):
+        """perform creation of report(s). """
+        queriesForMacroGUI = acm.FArray()
+        '''
+        if self.params.useMacroGUI == "True":
+            if self.params.infoManQueriesTrades and self.params.infoManQueriesInstrument:
+                queriesForMacroGUI.AddAll(self.params.infoManQueriesTrades)
+                queriesForMacroGUI.AddAll(self.params.infoManQueriesInstrument)
+            elif self.params.infoManQueriesTrades:
+                queriesForMacroGUI.AddAll(self.params.infoManQueriesTrades)
+            elif self.params.infoManQueriesInstrument:
+                queriesForMacroGUI.AddAll(self.params.infoManQueriesInstrument)
+        '''
+        infoManMacroInfoFromGUI = None
+        '''
+        if self.params.useMacroGUI == "True":
+            infoManMacroInfoFromGUI = self.useMacroGUI(queriesForMacroGUI)
+        '''
+        
+        for reportNbr in range(self.params.numberOfReports):
+            lastReportTime = time.time()
+            FReportAPIBaseUtils.generateFileName(self, sheets)
+            self.xml_report_writer.reset()
+
+            self.reportGrids = self.createReportOutput(sheets, False, infoManMacroInfoFromGUI)
+            report_xml_output = self.xml_report_writer.get_xml_output()
+            if report_xml_output.find(FPrimeXmlUtils.XmlTags.PRIME_REPORT_BEGIN) == -1:
+                msg = 'Report ' + self.params.reportName + ' has no content! No report created.'
+                logger.LOG( msg )
+                break
+            self.produceMultipleOutput( report_xml_output )
+            self.pollForEvents( reportNbr, lastReportTime )
+            for grid in self.reportGrids:
+                grid.Terminate()
+            self.reportGrids = None
+        #columns, rows = self.getColumnsAndRows(self.file_list[0])
+        #print(columns)
+        #print(rows)
+        
+        return report_xml_output
+        logger.LOG('Report creation finished.')
+    
+    def produceMultipleOutput(self, reportXml):
+        """write output to difference sources"""
+        '''
+        #Pre processing xml
+        if self.params.preProcessXml:
+            reportXml = self.additionalProcessing(self.params.preProcessXml, reportXml)
+        '''
+        
+        xml_report_list = get_prime_reports(reportXml)
+        self.file_list = get_report_names(reportXml)
+        self.report_count = 0 
+        
+        self.generated_file_path_list = []
+        for xml_report in xml_report_list:
+        
+            outputDir = createMultipleOutputDir(self)
+            '''
+            if self.params.xmlToFile:
+                FReportAPIBaseUtils.writeXMLToFile(self, reportXml, outputDir)
+            if self.params.htmlToFile or self.params.htmlToPrinter:
+                FReportAPIBaseUtils.writeHTMLToFile(self, reportXml, outputDir)
+            '''
+            if self.params.secondaryOutput:
+                custom_writeToSecondaryOutput(self, xml_report, outputDir, self.file_list[self.report_count])
+                generated_file_path = custom_getNewFilePath(self, outputDir, self.params.secondaryFileExtension, self.file_list[self.report_count])
+                self.generated_file_path_list.append( generated_file_path )
+            '''
+            if self.params.xmlToAmb:
+                FAMBOutput.sendXMLToAMB(reportXml, self.params.ambAddress, self.params.ambSender, self.params.ambSubject, self.params.ambXmlMessage)
+            '''
+            self.additionalProcessing(self.params.function)
+            
+            self.report_count += 1
+        
+        self.df_list = []
+        for file in self.generated_file_path_list:
+            
+            self.df_list.append(self.getXlsxWriterDataFrame(file))
+            #self.report_count += 1
+        outputDir = createOutputDir(self)
+        #wb_filepath = os.path.join(outputDir, self.params.fileName+'.xlsx')
+        wb_filepath = custom_getNewFilePath2(self, outputDir, '.xlsx')
+        
+        if os.path.exists(wb_filepath):
+            os.remove(wb_filepath)
+        wb_writer = xlsxwriter.Workbook( wb_filepath )
+        
+        count = 0
+        for df in self.df_list:
+            res_sheet_name = get_sheet_name(self.file_list[count])
+            if len(res_sheet_name) > 31:
+                temp_sheet_name = res_sheet_name[:31]
+            else:
+                temp_sheet_name = res_sheet_name
+            worksheet = wb_writer.add_worksheet(temp_sheet_name)
+            
+            row_ind = 0
+            for row in df:
+                col_ind = 0
+                for col in row:
+                    worksheet.write(row_ind, col_ind, col)
+                    col_ind += 1
+                row_ind += 1
+                    
+            count += 1
+        
+        wb_writer.close()
+        logger.LOG("Wrote secondary output to: " + wb_filepath)
+        
+        outputDir = createMultipleOutputDir(self)
+        for file_path in self.generated_file_path_list:
+            #temp_path = os.path.join(outputDir, file + self.params.secondaryFileExtension)
+            temp_path = file_path
+            os.remove(temp_path)
+        os.rmdir(outputDir)
+        
+        
+    def produceOutput(self, reportXml):
+        """write output to difference sources"""
+        '''
+        #Pre processing xml
+        if self.params.preProcessXml:
+            reportXml = self.additionalProcessing(self.params.preProcessXml, reportXml)
+        '''
+        
+        
+        outputDir = createOutputDir(self)
+        '''
+        if self.params.xmlToFile:
+            FReportAPIBaseUtils.writeXMLToFile(self, reportXml, outputDir)
+        if self.params.htmlToFile or self.params.htmlToPrinter:
+            FReportAPIBaseUtils.writeHTMLToFile(self, reportXml, outputDir)
+        '''
+        if self.params.secondaryOutput:
+            FReportAPIBaseUtils.writeToSecondaryOutput(self, xml_report, outputDir)
+        '''
+        if self.params.xmlToAmb:
+            FAMBOutput.sendXMLToAMB(reportXml, self.params.ambAddress, self.params.ambSender, self.params.ambSubject, self.params.ambXmlMessage)
+        '''
+        self.additionalProcessing(self.params.function)
+        
+    
+    
+        
+    def getXlsxWriterDataFrame(self, file_path):
+        outputDir = createMultipleOutputDir(self)
+        #file = open( os.path.join(outputDir, file_name + self.params.secondaryFileExtension) , 'r')
+        file = open( file_path , 'r')
+        contents = file.read().split('\n')[:-1]
+        file.close()
+        
+        #print(contents)
+        report_name = contents[3].split('\t')
+        report_time = contents[5].split('\t')
+        in_columns = contents[8].split('\t')[:-1]
+        #print(contents[9])
+        #print('Col_num: ', len(in_columns))
+        #print(in_columns)
+        rows = [report_name, [''], report_time, [''], in_columns]
+        count = 0
+        for row in contents[9:]:
+            '''
+            temp_dict = {}
+            count=0
+            for i in row.split(',')[:-1]:
+                temp_dict[columns[count]] = i
+                count += 1
+            rows.append(temp_dict)
+            '''
+            temp_row = row.split('\t')[:-1]
+            rows.append(temp_row)
+            #print('Row_num', count,' : ', len(temp_row))
+            #print(temp_row)
+            
+            count += 1
+        
+        return rows
+
+
+
+...
+
+  CustomMultipleSheetExcelReportAPIBaseUtils
+
+import acm
+import FReportAPIBaseUtils
+import webbrowser
+from builtins import range
+import re
+import os
+import threading
+
+from builtins import range
+import re
+import os
+import threading
+import zipfile
+import webbrowser
+import time
+from string import Template
+import acm
+import FFileUtils
+import FReportUtils
+import FPictures
+import FReportSettings
+import FLogger
+import codecs
+
+logger = FLogger.FLogger( 'FAReporting' )
+
+def writeHTMLToFile(report_generator, reportXml, outputDir):
+    html = createHTML(report_generator, reportXml, outputDir)
+    #Special treatment of FStandardTemplateClickable
+    if report_generator.params.printTemplate.find('Clickable') != -1:
+        import FHTMLJavaScript
+        jsPath = os.path.join(outputDir,'portfolio_report.js')
+        FReportUtils.writeToFile(jsPath, FHTMLJavaScript.javaScript)
+        pictures = ['report_plus', 'report_minus', 'report_end']
+        # Decode any pictures included.
+        for pic in pictures:
+            FPictures.decodePicture(pic, outputDir)
+    filePath = getNewFilePath(report_generator, outputDir, '.html')
+    FReportUtils.writeToFile(filePath, html)
+    logger.LOG("Wrote report output to: " + filePath)
+    if report_generator.params.htmlToScreen:
+        t = threading.Thread( target=webbrowser.open, name='OpenWebBrowser', args=(filePath, 0, 1) )
+        t.setDaemon( 1 )
+        t.start()
+        t.join( timeout=1 )
+    if report_generator.params.htmlToPrinter:
+        acm.PrintToDefaultPrinter(html," ", "Page &p of &P  &b At date &d &t &b")
+def custom_getNewFilePath(report_generator, outputDir, ext, sheet_name):
+    #fileName = report_generator.params.fileName
+    fileName = sheet_name
+    if report_generator.params.overwriteIfFileExists:
+        generatedFilePath = os.path.join(outputDir, fileName + ext)
+        report_generator.generatedFilePaths.append(generatedFilePath)
+        return generatedFilePath
+    for i in range(1, int(report_generator.params.maxNrOfFilesInDir) + 1):
+        if i == 1:
+            numbering = ''
+        else:
+            numbering = '_' + str(i)
+        testFile = os.path.join(outputDir, fileName + numbering + ext)
+        if not os.path.exists(testFile):
+            report_generator.generatedFilePaths.append(testFile)
+            return testFile
+    msg = 'Maximum number of files in directory has been exceeded! Please change the setting maxNrOfFilesInDir. Current value: ' + str(report_generator.params.maxNrOfFilesInDir)
+    logger.ELOG( msg )
+    raise Exception(msg)
+
+def custom_getNewFilePath2(report_generator, outputDir, ext):
+    fileName = report_generator.params.fileName
+    # Add date to file name?
+    if report_generator.params.fileDateFormat:
+        theFileDateFormat = report_generator.params.fileDateFormat
+        if report_generator.params.yearWithCentury == "True":
+            theFileDateFormat = theFileDateFormat.replace('y', 'Y')
+        if report_generator.params.fileDateBeginning:
+            fileName = time.strftime(theFileDateFormat) + fileName
+        else:
+            fileName = fileName + time.strftime(theFileDateFormat)
+    if report_generator.params.overwriteIfFileExists:
+        generatedFilePath = os.path.join(outputDir, fileName + ext)
+        report_generator.generatedFilePaths.append(generatedFilePath)
+        return generatedFilePath
+    for i in range(1, int(report_generator.params.maxNrOfFilesInDir) + 1):
+        if i == 1:
+            numbering = ''
+        else:
+            numbering = '_' + str(i)
+        testFile = os.path.join(outputDir, fileName + numbering + ext)
+        if not os.path.exists(testFile):
+            report_generator.generatedFilePaths.append(testFile)
+            return testFile
+    msg = 'Maximum number of files in directory has been exceeded! Please change the setting maxNrOfFilesInDir. Current value: ' + str(report_generator.params.maxNrOfFilesInDir)
+    logger.ELOG( msg )
+    raise Exception(msg)
+
+def custom_writeToSecondaryOutput(report_generator, reportXml, outputDir, sheet_name):
+    secondOut = FReportUtils.transformXML(reportXml, report_generator.params.secondaryTemplate)
+    filePath = custom_getNewFilePath(report_generator, outputDir, report_generator.params.secondaryFileExtension, sheet_name)
+    if report_generator.params.secondaryTemplate in report_generator.params.getSecondaryTemplateNames('pdf'):
+        foFilePath = filePath.replace(report_generator.params.secondaryFileExtension,".fo")
+        FReportUtils.writeToFile(foFilePath, secondOut)
+        foFilePath = foFilePath.replace(".fo","")
+        command = Template(FReportSettings.FOP_BAT)
+        command = command.substitute({'extension':report_generator.params.secondaryFileExtension[1:], 'filename':foFilePath})
+        ret = os.system(command)
+        if ret:
+            logger.ELOG("Output creation ERROR. Check that necessary third party software is installed.\nCommand: " + command)
+        else:
+            logger.LOG("PDF generated to " + filePath)
+    else:
+        useUtf16Output = report_generator.params.secondaryFileExtension == '.xls' and FReportAPIBaseUtils.TemplateHasUtf8Encoding(report_generator.params.secondaryTemplate)
+        useUtf8Bom = False
+        if report_generator.params.useUtf8ByteOrderMark == 1 and FReportAPIBaseUtils.TemplateHasUtf8Encoding(report_generator.params.secondaryTemplate):
+            useUtf8Bom = True
+        FReportUtils.writeToFileBinary(filePath, secondOut, 'wb', useUtf16Output, useUtf8Bom)
+        logger.LOG("Wrote secondary output to: " + filePath)
+        
+def createMultipleOutputDir(report_generator):
+    if isinstance(report_generator.params.filePath, str):
+        outputDir = report_generator.params.filePath
+    else:
+        outputDir = report_generator.params.filePath.AsString()
+    if outputDir == "":
+        #Use current directory by default
+        outputDir = os.path.abspath(outputDir)
+    if report_generator.params.createDirectoryWithDate:
+        theDateFormat = report_generator.params.dateFormat
+        if report_generator.params.yearWithCentury == "True":
+            theDateFormat = theDateFormat.replace('y', 'Y')
+        outputDir = os.path.join(outputDir, 'report'+ time.strftime(theDateFormat)+ os.sep )
+    outputDir += report_generator.params.fileName + '\\'
+    outputDir = FFileUtils.expandEnvironmentVar(outputDir)
+    if report_generator.params.htmlToFile or report_generator.params.secondaryOutput or report_generator.params.xmlToFile:
+         if not os.path.exists(outputDir):
+            try:
+                os.makedirs(outputDir)
+                logger.LOG('Created report output directory:' + outputDir)
+            except:
+                msg = 'Failed to create report directory:' + outputDir
+                logger.ELOG( msg )
+                raise Exception(msg)
+    return outputDir
+    
+def createOutputDir(report_generator):
+    if isinstance(report_generator.params.filePath, str):
+        outputDir = report_generator.params.filePath
+    else:
+        outputDir = report_generator.params.filePath.AsString()
+    if outputDir == "":
+        #Use current directory by default
+        outputDir = os.path.abspath(outputDir)
+    if report_generator.params.createDirectoryWithDate:
+        theDateFormat = report_generator.params.dateFormat
+        if report_generator.params.yearWithCentury == "True":
+            theDateFormat = theDateFormat.replace('y', 'Y')
+        outputDir = os.path.join(outputDir, 'report'+ time.strftime(theDateFormat)+ os.sep )
+    outputDir = FFileUtils.expandEnvironmentVar(outputDir)
+    if report_generator.params.htmlToFile or report_generator.params.secondaryOutput or report_generator.params.xmlToFile:
+         if not os.path.exists(outputDir):
+            try:
+                os.makedirs(outputDir)
+                logger.LOG('Created report output directory:' + outputDir)
+            except:
+                msg = 'Failed to create report directory:' + outputDir
+                logger.ELOG( msg )
+                raise Exception(msg)
+    return outputDir
+
+
+...
+
+  CustomMultipleSheetWorkbookReport
+
+import acm
+
+from builtins import range
+from builtins import object
+import time
+import threading
+import re
+import os
+import zipfile
+import webbrowser
+from string import Template
+import FFileUtils
+import FPictures
+import FLogger
+import codecs
+import FAdvancedSettingsTab
+import FReportSheetSettingsTab
+
+import FPrimeXmlUtils
+import FAMBOutput
+import FMacroGUI
+import FRunScriptGUI
+import FReportUtils
+
+import CustomMultipleSheetExcelReportAPI
+
+
+logger = FLogger.FLogger( 'FAReporting' )
+
+
+def runScriptValue(field):
+    """ Return value on form suitable for displaying in Run Script GUI. """
+    if hasattr(field, 'IsKindOf') and field.IsKindOf('FArray'):
+        return field.AsString().replace(']','').replace('[','').replace('\'','')
+    else:
+        return None
+
+def startRunScript(eii):
+    acm.RunModuleWithParameters("CustomMultipleSheetWorkbookReport", acm.GetDefaultContext())
+
+trueFalse = ['False','True']
+def getDateFormats():
+    return ['%d%m%y', '%y%m%d', '%d%m%y%H%M', '%y%m%d%H%M', '%d%m%y%H%M%S', '%y%m%d%H%M%S']
+def getListFromExtensions(extensions):
+    str = extensions.AsString().replace(']','').replace('[','').replace(' ','')
+    extensionsList = str.split(',')
+    extensionsList.sort()
+    return extensionsList
+def getPrintTemplateNames():
+    ctx = acm.GetDefaultContext()
+    extensions = ctx.GetAllExtensions('FXSLTemplate','FObject',True, True, 'aef reporting', 'print templates')
+    return getListFromExtensions(extensions)
+def getSecondaryTemplateNames(ext = ''):
+    if ext != '':
+        ext = ' ' + ext.replace('.','')
+    ctx = acm.GetDefaultContext()
+    extensions = ctx.GetAllExtensions('FXSLTemplate','FObject',True, True, 'aef reporting', 'secondary templates' + ext)
+    return getListFromExtensions(extensions)
+def getCSSNames():
+    ctx = acm.GetDefaultContext()
+    extensions = ctx.GetAllExtensions('FXSLTemplate','FObject',True, True, 'aef reporting', 'style sheets')
+    return getListFromExtensions(extensions)
+def getWorkbooks():
+    workbooks = [wb for wb in acm.FWorkbook.Select('createUser = ' + str(acm.FUser[acm.UserName()].Oid()))]
+    workbooks.sort()
+    return workbooks
+class WorkbookReport(FRunScriptGUI.AelVariablesHandler):
+    def appendDateToFileNameCB(self,index, fieldValues):
+        self.File_date_beginning.enable( fieldValues[index] != '' )
+        return fieldValues
+
+
+    def secondaryOutputCB(self,index, fieldValues):
+        for i in (1, 2, 3):
+            if (self.ael_variables) and (len(self.ael_variables) >= index+i):
+                self.ael_variables[index + i][FRunScriptGUI.Controls.ENABLED] = (fieldValues[index] == 'True')
+        return fieldValues
+    
+    def setFileExtensionCB(self,index, fieldValues):
+        """ Set file extension depending on which group the template belongs to """
+        secTempl = fieldValues[index]
+        for ext in FReportSettings.FILE_EXTENSIONS:
+            list = getSecondaryTemplateNames(ext)
+            if secTempl in list:
+                fieldValues[index+1] = ext
+        return fieldValues
+
+    def createDirectoryWithDatesCB(self, index, fieldValues):
+        self.Date_format.enable(trueFalse.index(fieldValues[index]))
+        return fieldValues
+        
+    def snapshotCB(self,index, fieldValues):
+        """disable/enable settings after snapsheet toggle"""
+        for idx in range(index + 1, index + 4):
+            self.ael_variables[idx][9] = not (trueFalse.index(fieldValues[index]))
+        return fieldValues
+        
+    def __init__(self):
+        directorySelection=FRunScriptGUI.DirectorySelection()
+        file_selection = FRunScriptGUI.InputFileSelection()
+        vars = [
+                ['wbName', 'Workbook', 'FWorkbook', getWorkbooks(), "", 0, 0, \
+                  'Choose a work book', None, 1],
+                ['snapshot', 'Sheet Snapshot', 'string', trueFalse, 'True', 1, 0, \
+                  'Create a snapshot of a report', self.snapshotCB, 1],
+                ['multiThread', 'Run in background', 'string', trueFalse, 'True', 1, 0, \
+                  'Start the reporting in a separate thread', None, 0],
+                ['numberOfReports', 'Number of Reports', 'int', None, '5', 1, 0, \
+                  'The number of reports that will be created before the script is completed', None, 0],
+                ['updateInterval', 'Update Interval (sec)', 'int', None, '60', 1, 0, \
+                  'The update interval, in seconds, between the reports', None, 0],
+                ['FilePath', 'File Path_Output settings', directorySelection, None, directorySelection, 0, 1, \
+                'The file path to the directory where the report should be put. Environment variables can be specified for Windows (%VAR%) or Unix ($VAR).', None, 1],
+                ['FileName', 'File Name_Output settings', 'string', None, 'Stanley_Test', 0, 0, 'The file name of the output'],
+                ['File date format', 'Format of Date Added to File Name_Output settings', 'string', getDateFormats(), '', 0, 0, 'Format of the date added to the file name. No date is added to the file name if this field is empty. As default, it is appended at the end of the file name. Toggle checkbox Date at Beginning of File Name to insert the date at the beginning of the file name.', self.appendDateToFileNameCB, 1],
+                ['Year with century', 'Year with century_Output settings', 'string', trueFalse, 'False', 1, 0, 'When using dates for filename and directory, year will be with or without century'],
+                ['File date beginning', 'Date at Beginning of File Name_Output settings', 'string', trueFalse, 'False', 1, 0, 'Append date at beginning of file name'],
+                ['CreateDirectoryWithDate', 'Create Directory with Date_Output settings', 'string', trueFalse, 'True', 1, 0, \
+                'Create a directory with the date included in the directory name', self.createDirectoryWithDatesCB, 1],
+                ['Date_format', 'Directory Date Format_Output settings', 'string', getDateFormats(), '%d%m%y', 0, 0, 'Date format', None, 1],
+                ['OverwriteIfFileExists', 'Overwrite if File Exists_Output settings', 'string', trueFalse, 'True', 1, 0, 'If a file with the same name and path already exist, overwrite it?'],
+                ['SecondaryOutput', 'Secondary Output_Output settings', 'string', trueFalse, 'True', 1, 0, 'Is a secondary output wanted?', self.secondaryOutputCB, 0],
+                ['SecondaryTemplate', 'Secondary Template_Output settings','string', None, 'FTABTemplate', 0, 0, \
+                'Choose a secondary output template. Templates must be added to group aef reporting/secondary templates [ext] to be visible here.', None, 0],
+                ['SecondaryFileExtension', 'Secondary File Extension_Output settings', 'string', None, '.txt', 0, 0, \
+                'Which file extension should the secondary output have?', None, 0],
+               
+                ['Utf8BOM', 'Enforce UTF-8 encoded output_Output settings', 'string', trueFalse, 'False', 0, 0, \
+                'Add a Byte Order Mark to UTF-8 encoded output files. Some application, such as Excel, need the Byte Order Mark to be able to open the file correctly.'+\
+                ' Only applicable for templates with UTF-8 encoding.', None, 0]
+                ]
+                
+        FRunScriptGUI.AelVariablesHandler.__init__(self,vars)
+        
+        #add other tabs
+        global allSheetSettingsBySheetType
+        
+        self.extend(FAdvancedSettingsTab.getAelVariables())
+        sheetSettingsVariables, allSheetSettingsBySheetType = FReportSheetSettingsTab.getAelVariables( [ 'FPortfolioSheet', 'FTradeSheet' ],acm.GetDefaultContext(), acm.CreateEBTag())
+        for guiVariables in sheetSettingsVariables:
+            self.extend(guiVariables)
+
+        '''
+                ['SecondaryTemplate', 'Secondary Template_Output settings','string', getSecondaryTemplateNames(), 'FCSVTemplate', 0, 0, \
+                'Choose a secondary output template. Templates must be added to group aef reporting/secondary templates [ext] to be visible here.', self.setFileExtensionCB, 1],
+                ['SecondaryFileExtension', 'Secondary File Extension_Output settings', 'string', FReportSettings.FILE_EXTENSIONS, '.csv', 0, 0, \
+                'Which file extension should the secondary output have?', None, 1],
+        '''
+ael_variables = WorkbookReport()
+ael_variables.LoadDefaultValues(__name__)
+
+def ael_main(dict):
+    params=FReportUtils.adjust_parameters(dict)
+    dict[ 'allSheetSettingsBySheetType' ] = allSheetSettingsBySheetType
+    report_params = CustomMultipleSheetExcelReportAPI.CustomWorksheetReportGuiParameters( guiParams=params )
+    report_params.RunScript()
+    
+
+...
+
+  CustomReportAPI
+
+import acm
+
+from FReportAPI import FWorksheetReportGuiParameters
+from CustomFReportAPIBase import CustomReportBuilder
+
+class CustomWorksheetReportGuiParameters(FWorksheetReportGuiParameters):
+    
+    def __init__(self, **kwds):
+        super().__init__(**kwds)
+        self.multipleFiles = self.guiParams['multipleFiles']
+        
+    def RunScript(self):
+        """ Executes script """
+        report_generator = CustomReportBuilder.getReportBuilder( self )
+        report_generator.generateReport()
+
+
+...
+
+  CustomServiceSheetReport
+
+from __future__ import print_function
+import os
+import acm
+import time
+import FUxCore
+import FRunScriptGUI
+import FReportUtils
+import FFileUtils
+import codecs
+
+def startRunScript(eii):
+    acm.RunModuleWithParameters("CustomServiceSheetReport", acm.GetDefaultContext())
+
+def GetServiceName(varDict):
+    if varDict:
+        return FindServiceName(varDict.At(acm.FSymbol("serviceName")))
+    return None
+
+def GetSheetType(varDict):
+    if varDict:
+        return varDict.At(acm.FSymbol("sheetType"))
+    return None
+
+def GetViewType(varDict):
+    if varDict:
+        return varDict.At(acm.FSymbol("viewType"))
+    return None
+
+def GetUseTemplate(varDict):
+    if varDict:
+        return varDict.At(acm.FSymbol("useTemplate")) != 'False'
+    return None
+
+def GetSheetTemplate(varDict):
+    if varDict:
+        return varDict.At(acm.FSymbol("sheetTemplate"))
+    return None
+
+def GetCalculationEnvironment(varDict):
+    if varDict:
+        return varDict.At(acm.FSymbol("calculationEnvironment"))
+    return None
+
+def GetRowItems(varDict):
+    if varDict:
+        return varDict.At(acm.FSymbol("rowItems"))
+    return acm.FArray()
+
+def GetGrouper(varDict):
+    if varDict:
+        return varDict.At(acm.FSymbol("grouper"))
+    return None
+
+def GetColumns(varDict):
+    if varDict:
+        columns = varDict.At(acm.FSymbol("columns"))
+        if columns and not columns.IsEmpty():
+            return columns
+    return None
+
+def CreateDefinition(varDict):
+    definition = None
+    if GetUseTemplate(varDict):
+        definition = acm.Report.CreatePredefinedServiceSheetReport(GetServiceName(varDict), GetSheetTemplate(varDict))
+        definition.ReportName(GetSheetTemplate(varDict))
+    else:
+        definition = acm.Report.CreateOpenServiceSheetReport(GetServiceName(varDict), GetSheetType(varDict), GetViewType(varDict))
+        definition.RowItems(GetRowItems(varDict))
+        definition.Grouper(GetGrouper(varDict))
+        definition.Columns(GetColumns(varDict))
+        definition.ReportName('')
+    definition.CalculationEnvironment(GetCalculationEnvironment(varDict))
+    return definition
+
+def GetFormattedFilePath(varDict, localTime):
+    filePath = None
+    if varDict:
+        try:
+            filePath = str(varDict.At(acm.FSymbol("filePath")))
+            filePath = FFileUtils.expandEnvironmentVar(filePath)
+            if not os.path.exists(filePath):
+                raise Exception("Invalid directory")
+
+            timeFormat = str(varDict.At(acm.FSymbol("fileDirTimeFormat")))
+            if timeFormat and timeFormat != "":
+                filePath = os.path.join(filePath, time.strftime(timeFormat, localTime), '')
+                if not os.path.exists(filePath):
+                    try:
+                        os.makedirs(filePath)
+                    except:
+                        print("Failed to create directory:", filePath)
+        except Exception as e:
+            print(str(e))
+    return filePath
+
+def GetFormattedFileName(varDict, localTime):
+    fileName = None
+    if varDict:
+        fileName = str(varDict.At(acm.FSymbol("fileName")))
+        timeFormat = str(varDict.At(acm.FSymbol("fileNameTimeFormat")))
+        if timeFormat and timeFormat != "":
+            fileName = fileName + time.strftime(timeFormat, localTime)
+    return fileName
+
+def GetFileNameWithPath(fileName, fileExt, outputDir):
+    try:
+        return FFileUtils.getFilePath(outputDir, fileName, fileExt)
+    except Exception as e:
+        print(str(e))
+    return None
+
+def CreateOutputFileFromXml(xmlFileName, outputName, outputDir, varDict, templateName, css, fileExt, encoding):
+    outputPathAndName = GetFileNameWithPath(outputName, fileExt, outputDir)
+    return TransformXmlFile(xmlFileName, outputPathAndName, outputDir, templateName, css, fileExt, encoding)
+
+def WriteUnicodeReport(transformedReport, outputFileName, fileExt):
+    try:
+        if fileExt == ".xls":
+            with open(outputFileName,"wb") as bomFile:
+                bomFile.write(codecs.BOM_UTF16_LE) #Write utf-16 BOM character
+
+            outputFile = open(outputFileName, "ab+")
+            outputFile.write(transformedReport.encode("utf-16"))
+        else:
+            outputFile = open(outputFileName, "wb")
+            outputFile.write(transformedReport.encode("utf-8"))
+
+        outputFile.close()
+        print('Result written to file:', outputFileName)
+    except Exception as e:
+        print('Failed to create file:', outputFileName)
+        print(str(e))
+
+def WriteLegacyReport(transformedReport, outputFileName, fileExt):
+    try:
+        if fileExt == ".xls":
+            outputFile = open(outputFileName, "wb")
+            outputFile.write(codecs.BOM_UTF16_LE)
+            outputFile.write(transformedReport.decode("utf-8").encode('utf-16-le'))
+        else:
+            outputFile = open(outputFileName, "w", newline="\n")
+            outputFile.write(transformedReport.decode("utf-8"))
+        outputFile.close()
+        print('Result written to file:', outputFileName)
+    except Exception as e:
+        print('Failed to create file:', outputFileName)
+        print(str(e))
+
+
+def TransformXmlFile(xmlFileName, outputFileName, filePath, templateName, css, fileExt, fileEncoding):
+    file = open(xmlFileName, "r", encoding = fileEncoding)
+    reportXml = file.read()
+    file.close()
+    extraParams = acm.FDictionary()
+    extraParams.AtPut('outputDir', filePath)
+    try:
+        transformedStr = FReportUtils.transformXML(reportXml, templateName, css, extraParams)
+
+        if acm.IsUnicodeEnabled():
+            WriteUnicodeReport(transformedStr, outputFileName, fileExt)
+        else:
+            WriteLegacyReport(transformedStr.encode("ISO-8859-1"), outputFileName, fileExt)
+
+    except Exception as e:
+        print('Failed to transform XML file:', outputFileName)
+        print(str(e))
+    return outputFileName
+
+def CreateExtendedOutput(xmlFileName, outputName, outputDir, encoding, varDict):
+    if varDict.At(acm.FSymbol("enableHtmlOutput")) == 'True':
+        CreateOutputFileFromXml(xmlFileName, outputName, outputDir, varDict, 'FStandardTemplate', 'FStandardCSS', '.html', encoding)
+    if varDict.At(acm.FSymbol("enableCsvOutput")) == 'True':
+        CreateOutputFileFromXml(xmlFileName, outputName, outputDir, varDict, 'FCSVTemplate', None, '.csv', encoding)
+    if varDict.At(acm.FSymbol("enableXlsOutput")) == 'True':
+        CreateOutputFileFromXml(xmlFileName, outputName, outputDir, varDict, 'FTABTemplate', None, '.xls', encoding)
+
+class AsyncReport():
+    def __init__(self):
+        self._report = None
+        self._varDict = None
+
+    def ServerUpdate(self, sender, aspect, param):
+        if sender.IsDone():
+            message = sender.StatusMessage()
+            print(message)
+            if message and len(message) > 0:
+                print('Failed to run', sender.StringKey(), ':', message)
+            else:
+                print('Result written to file:', self._xmlFileName)
+                CreateExtendedOutput(self._xmlFileName, self._outputFileName, self._outputDirectory,
+                    sender.Subject().XmlEncoding(), self._varDict)
+            sender.RemoveDependent(self)
+            sender.Destroy()
+
+    def Run(self, varDict):
+        self._varDict = varDict
+        startTime = time.localtime()
+        self._outputDirectory = GetFormattedFilePath(varDict, startTime)
+        self._outputFileName = GetFormattedFileName(varDict, startTime)
+        self._xmlFileName = GetFileNameWithPath(self._outputFileName, '.xml', self._outputDirectory)
+
+        definition = CreateDefinition(varDict)
+        self._report = acm.Report.RunServiceSheetReport(definition, self._xmlFileName, None, False, True)
+        
+        self._report.AddDependent(self)
+        return self._report
+
+
+def CreateAelVariableDictionary( aelVariables ):
+    varDict = acm.FDictionary()
+    varDict.AtPut(acm.FSymbol('serviceName'), aelVariables['serviceName'])
+    varDict.AtPut(acm.FSymbol('useTemplate'), aelVariables['useTemplate'])
+    varDict.AtPut(acm.FSymbol('sheetTemplate'), aelVariables['sheetTemplate'])
+    varDict.AtPut(acm.FSymbol('sheetType'), aelVariables['sheetType'])
+    varDict.AtPut(acm.FSymbol('viewType'), aelVariables['viewType'])
+    varDict.AtPut(acm.FSymbol('rowItems'), aelVariables['rowItems'])
+    varDict.AtPut(acm.FSymbol('grouper'), aelVariables['grouper'])
+    varDict.AtPut(acm.FSymbol('columns'), aelVariables['columns'])
+    varDict.AtPut(acm.FSymbol('calculationEnvironment'), aelVariables['calculationEnvironment'])
+    varDict.AtPut(acm.FSymbol('filePath'), aelVariables['filePath'])
+    varDict.AtPut(acm.FSymbol('fileName'), aelVariables['fileName'])
+    varDict.AtPut(acm.FSymbol('enableHtmlOutput'), aelVariables['enableHtmlOutput'])
+    varDict.AtPut(acm.FSymbol('enableCsvOutput'), aelVariables['enableCsvOutput'])
+    varDict.AtPut(acm.FSymbol('enableXlsOutput'), aelVariables['enableXlsOutput'])
+    varDict.AtPut(acm.FSymbol('fileDirTimeFormat'), aelVariables['fileDirTimeFormat'])
+    varDict.AtPut(acm.FSymbol('fileNameTimeFormat'), aelVariables['fileNameTimeFormat'])
+    return varDict
+
+def ClearInsertedContent(fieldValues):
+    fieldValues[indexOfVar['rowItems']] = ''
+    fieldValues[indexOfVar['grouper']] = ''
+    fieldValues[indexOfVar['columns']] = ''
+
+def GetTypesFinder(fieldValues, locals):
+    serviceOrLabel = fieldValues[indexOfVar['serviceName']]
+    serviceName = FindServiceName(serviceOrLabel)
+    serviceTypesFinder = locals.At('typesFinder')
+    if serviceTypesFinder and serviceTypesFinder.ServiceName() != serviceName:
+        serviceTypesFinder.Destroy()
+        serviceTypesFinder = None
+    if serviceTypesFinder == None:
+        serviceTypesFinder = acm.Report.CreateEnumeratedTypesFinder(serviceName)
+        locals.AtPut('typesFinder', serviceTypesFinder)
+    return serviceTypesFinder
+
+def FindServiceName(serviceOrLabel):
+    for i, rt in enumerate(serviceLabelList):
+        if serviceOrLabel == rt:
+            return serviceNameList[i]
+    return serviceOrLabel
+
+def FindServiceLabel(serviceName):
+    for i, sn in enumerate(serviceNameList):
+        if serviceName == sn:
+            return serviceLabelList[i]
+    return None
+
+def OnServiceNameChanged(index, fieldValues, locals):
+    serviceOrLabel = fieldValues[index]
+
+    if serviceOrLabel == noServiceSelected:
+        locals.AtPut("noServiceSelected", True)
+        for i, var in enumerate(ael_variables):
+            if var[FRunScriptGUI.Controls.NAME] in ['useTemplate', 'sheetTemplate', 'sheetType', 'viewType', 'rowItems', 'grouper', 'columns', 'calculationEnvironment']:
+                ael_variables[i][FRunScriptGUI.Controls.ENABLED] = False
+        return fieldValues
+
+    serviceName = FindServiceName(serviceOrLabel)
+    fieldValues[index] = FindServiceLabel(serviceName)
+    serviceTypesFinder = GetTypesFinder(fieldValues, locals)
+
+    if locals.RemoveKey("noServiceSelected"):
+        ael_variables[indexOfVar['useTemplate']][FRunScriptGUI.Controls.ENABLED] = True
+        useTemplate = fieldValues[indexOfVar['useTemplate']]
+        for i, var in enumerate(ael_variables):
+            if var[FRunScriptGUI.Controls.NAME] in ['sheetTemplate']:
+                ael_variables[i][FRunScriptGUI.Controls.ENABLED] = useTemplate == 'True'
+            elif var[FRunScriptGUI.Controls.NAME] in ['sheetType', 'viewType', 'rowItems', 'grouper', 'columns']:
+                ael_variables[i][FRunScriptGUI.Controls.ENABLED] = useTemplate == 'False'
+        if useTemplate == 'True':
+            sheetTemplate = fieldValues[indexOfVar['sheetTemplate']]
+            serviceTypesFinder.SheetTemplate(sheetTemplate)
+        elif useTemplate == 'False':
+            serviceTypesFinder.SheetType(fieldValues[indexOfVar['sheetType']])
+            serviceTypesFinder.ViewType(fieldValues[indexOfVar['viewType']])
+
+    if noServiceSelected in serviceNameList:
+        serviceNameList.remove(noServiceSelected)
+        serviceLabelList.remove(noServiceSelected)
+
+    if not serviceTypesFinder.IsDone():
+        serviceTypesFinder.Run(0)
+        return serviceTypesFinder
+    elif serviceTypesFinder.StatusMessage() == '':
+        sheetTypes = serviceTypesFinder.SheetTypes()
+        sheetTemplates = serviceTypesFinder.SheetTemplates()
+
+        for i, var in enumerate(ael_variables):
+            if var[FRunScriptGUI.Controls.NAME] == 'sheetTemplate':
+                ael_variables[i][FRunScriptGUI.Controls.VALUES] = sheetTemplates
+                if not fieldValues[i] in sheetTemplates:
+                    fieldValues[i] = ''
+            if var[FRunScriptGUI.Controls.NAME] == 'sheetType':
+                ael_variables[i][FRunScriptGUI.Controls.VALUES] = sheetTypes
+                if not fieldValues[i] in sheetTypes:
+                    fieldValues[i] = ''
+        UpdateCalculationEnvironments(serviceTypesFinder, fieldValues)
+
+    return fieldValues
+
+def OnSheetTypeChanged(index, fieldValues, locals):
+    if fieldValues[indexOfVar['serviceName']] == noServiceSelected:
+        return fieldValues
+
+    sheetType = fieldValues[index]
+    serviceTypesFinder = GetTypesFinder(fieldValues, locals)
+
+    if serviceTypesFinder.IsDone() and serviceTypesFinder.StatusMessage() != '':
+        return fieldValues
+
+    if serviceTypesFinder.SheetType() != sheetType:
+        serviceTypesFinder.ViewType(None)
+        serviceTypesFinder.SheetType(sheetType)
+
+    if not serviceTypesFinder.IsDone():
+        serviceTypesFinder.Run(0)
+        return serviceTypesFinder
+    elif serviceTypesFinder.StatusMessage() == '':
+        viewTypes = serviceTypesFinder.ViewTypes()
+
+        for i, var in enumerate(ael_variables):
+            if var[FRunScriptGUI.Controls.NAME] == 'viewType':
+                ael_variables[i][FRunScriptGUI.Controls.VALUES] = viewTypes
+                if not fieldValues[i] in viewTypes:
+                    fieldValues[i] = ''
+        UpdateCalculationEnvironments(serviceTypesFinder, fieldValues)
+
+    return fieldValues
+
+def OnViewTypeChanged(index, fieldValues, locals):
+    if fieldValues[indexOfVar['serviceName']] == noServiceSelected:
+        return fieldValues
+
+    viewType = fieldValues[index]
+    serviceTypesFinder = GetTypesFinder(fieldValues, locals)
+
+    if serviceTypesFinder.IsDone() and serviceTypesFinder.StatusMessage() != '':
+        return fieldValues
+
+    serviceTypesFinder.ViewType(viewType)
+
+    if not serviceTypesFinder.IsDone():
+        serviceTypesFinder.Run(0)
+        return serviceTypesFinder
+    elif serviceTypesFinder.StatusMessage() == '':
+        UpdateCalculationEnvironments(serviceTypesFinder, fieldValues)
+
+    return fieldValues
+
+def OnUseTemplateChanged(index, fieldValues, locals):
+    if fieldValues[indexOfVar['serviceName']] == noServiceSelected:
+        return fieldValues
+
+    useTemplate = fieldValues[index]
+    serviceTypesFinder = GetTypesFinder(fieldValues, locals)
+
+    if useTemplate == 'True':
+        sheetTemplate = fieldValues[indexOfVar['sheetTemplate']]
+        serviceTypesFinder.SheetTemplate(sheetTemplate)
+    elif useTemplate == 'False':
+        serviceTypesFinder.SheetTemplate(None)
+
+    if not serviceTypesFinder.IsDone():
+        serviceTypesFinder.Run(0)
+        return serviceTypesFinder
+    elif serviceTypesFinder.StatusMessage() == '':
+        sheetTemplateVar = ael_variables[indexOfVar['sheetTemplate']]
+        sheetTemplateVar[FRunScriptGUI.Controls.ENABLED] = useTemplate == 'True'
+        if useTemplate == 'True':
+            sheetTemplateVar[FRunScriptGUI.Controls.VALUES] = serviceTypesFinder.SheetTemplates()
+        elif useTemplate == 'False':
+            fieldValues[indexOfVar['sheetTemplate']] = ''
+
+        for i, var in enumerate(ael_variables):
+            if var[FRunScriptGUI.Controls.NAME] in ['sheetType', 'viewType', 'rowItems', 'grouper', 'columns']:
+                ael_variables[i][FRunScriptGUI.Controls.ENABLED] = useTemplate == 'False'
+                if useTemplate == 'True':
+                    if var[FRunScriptGUI.Controls.NAME] == 'grouper':
+                        ael_variables[i][FRunScriptGUI.Controls.VALUES] = None
+                    else:
+                        ael_variables[i][FRunScriptGUI.Controls.VALUES] = []
+                    fieldValues[i] = ''
+                elif useTemplate == 'False':
+                    if var[FRunScriptGUI.Controls.NAME] == 'sheetType':
+                        ael_variables[i][FRunScriptGUI.Controls.VALUES] = serviceTypesFinder.SheetTypes()
+        UpdateCalculationEnvironments(serviceTypesFinder, fieldValues)
+
+    return fieldValues
+
+def OnSheetTemplateChanged(index, fieldValues, locals):
+    if fieldValues[indexOfVar['serviceName']] == noServiceSelected:
+        return fieldValues
+
+    sheetTemplateName = fieldValues[index]
+    serviceTypesFinder = GetTypesFinder(fieldValues, locals)
+
+    serviceTypesFinder.SheetTemplate(sheetTemplateName)
+
+    if not serviceTypesFinder.IsDone():
+        serviceTypesFinder.Run(0)
+        return serviceTypesFinder
+    elif serviceTypesFinder.StatusMessage() == '':
+        ael_variables[indexOfVar['sheetTemplate']][FRunScriptGUI.Controls.VALUES] = serviceTypesFinder.SheetTemplates()
+        if not sheetTemplateName in serviceTypesFinder.SheetTemplates():
+            fieldValues[index] = ''
+    UpdateCalculationEnvironments(serviceTypesFinder, fieldValues)
+
+    return fieldValues
+
+def UpdateCalculationEnvironments(serviceTypesFinder, fieldValues):
+    environments = serviceTypesFinder.CalculationEnvironments()
+    for i, var in enumerate(ael_variables):
+        if var[FRunScriptGUI.Controls.NAME] == 'calculationEnvironment':
+            ael_variables[i][FRunScriptGUI.Controls.ENABLED] = len(environments) > 1
+            ael_variables[i][FRunScriptGUI.Controls.VALUES] = environments
+            defaultChoice = serviceTypesFinder.DefaultChoiceCalculationEnvironment()
+            if not fieldValues[i] in environments:
+                fieldValues[i] = ''
+            if fieldValues[i] == '':
+                if defaultChoice:
+                    fieldValues[i] = defaultChoice
+                elif len(environments) > 0:
+                    fieldValues[i] = environments[0]
+
+def SelectRowItems(shell, params):
+    return SelectFromDialog(shell, 'RowItems', params)
+
+def SelectGrouper(shell, params):
+    return SelectFromDialog(shell, 'Grouper', params)
+
+def SelectColumns(shell, params):
+    return SelectFromDialog(shell, 'Columns', params)
+
+def SelectFromDialog(shell, what, params):
+    initiallySelected = params.At('selected')
+    locals = params.At('locals')
+    resultDict = acm.FDictionary()
+    resultDict.AtPut('result', initiallySelected)
+    serviceTypesFinder = locals.At('typesFinder')
+    serviceTypesFinder.Run(0)
+
+    if not serviceTypesFinder.IsDone():
+        return None
+    elif serviceTypesFinder.StatusMessage() == '':
+        selected = []
+        if what == 'RowItems':
+            selected = acm.UX().Dialogs().SelectSubset(shell, serviceTypesFinder.AllRowItems(), 'Insert Items', False, initiallySelected)
+        if what == 'Grouper':
+            grouper = acm.UX().Dialogs().SelectObject(shell, 'Grouper', '', serviceTypesFinder.AllGroupers(), None)
+            if grouper:
+                selected = [grouper]
+        if what == 'Columns':
+            selected = acm.UX().Dialogs().SelectSubset(shell, serviceTypesFinder.AllColumns(), 'Select Columns', False, initiallySelected)
+        if selected:
+            resultDict.AtPut('result', selected)
+    return resultDict
+
+def OnEnableHtmlChanged(index, fieldValues, locals):
+    return fieldValues
+
+def OnEnableCsvChanged(index, fieldValues, locals):
+    return fieldValues
+
+def OnEnableXlsChanged(index, fieldValues, locals):
+    return fieldValues
+
+def GetDirTimeFormats():
+    return ['', 'Report %d%m%y', 'Report %y%m%d', 'Report %d%m%y %H%M', 'Report %y%m%d %H%M', 'Report %d%m%y %H%M%S', 'Report %y%m%d %H%M%S',
+            'Report%d%m%Y', 'Report%Y%m%d', 'Report%d%m%Y %H%M', 'Report%Y%m%d %H%M', 'Report%d%m%Y %H%M%S', 'Report%Y%m%d %H%M%S']
+
+def GetNameTimeFormats():
+    return ['', '" %d%m%y"', '" %y%m%d"', '" %d%m%y %H%M"', '" %y%m%d %H%M"', '" %d%m%y %H%M%S"', '" %y%m%d %H%M%S"',
+            '"%d%m%Y"', '"%Y%m%d"', '"%d%m%Y%H%M"', '"%Y%m%d%H%M"', '"%d%m%Y%H%M%S"', '"%Y%m%d%H%M%S"']
+
+def HandleLocals(event, locals):
+    if event == 'clear':
+        serviceTypesFinder = locals.RemoveKey('typesFinder')
+        if serviceTypesFinder:
+            serviceTypesFinder.Destroy()
+
+noServiceSelected = "< Select a service >"
+serviceNameList = [noServiceSelected]
+serviceLabelList = [noServiceSelected]
+for serviceInfo in acm.Hgc.GetServiceInformation().Values():
+    if serviceInfo.At('ServiceSheetReportSupported'):
+        serviceNameList.append(serviceInfo.At('ServiceName'))
+        serviceLabelList.append(serviceInfo.At('Label'))
+
+directorySelection=FRunScriptGUI.DirectorySelection()
+trueFalse = ['False','True']
+ael_variables = [
+['serviceName', 'Service', 'string', serviceLabelList, serviceLabelList[0], True, False, '', OnServiceNameChanged, True],
+['useTemplate', 'Use Template',  'string', trueFalse, 'True', True, False, 'Use sheet contents in template or select below', OnUseTemplateChanged, True],
+['sheetTemplate', 'Sheet Template',  'string', [], None, True, False, '', OnSheetTemplateChanged, True],
+['sheetType', 'Sheet Type',  'string', [], None, True, False, '', OnSheetTypeChanged, True],
+['viewType', 'View Type',  'string', [], None, False, False, '', OnViewTypeChanged, True],
+['rowItems', 'Insert Items', 'string', [], None, False, True, 'Select row items to include in report', None, 1, SelectRowItems],
+['grouper', 'Grouper', 'string', None, None, False, False, 'Select grouper for inserted row items', None, 1, SelectGrouper],
+['columns', 'Columns', 'string', [], None, False, True, 'Select columns to include in report (or leave empty for default)', None, 1, SelectColumns],
+['calculationEnvironment',  'Calculation Environment',  'string', [], None, True, False, '', None, True],
+['filePath', 'File Path', directorySelection, None, directorySelection, False, True, 'The file path to the ouput file directory.', None, True],
+['fileName', 'File Name', 'string', None, "Report", False, False, 'The name of the output file', None, None],
+['fileDirTimeFormat', 'Add Directory with Time', 'string', GetDirTimeFormats(), '', False, False, 'Add directory with formatted time in name', None, None],
+['fileNameTimeFormat', 'Add Time to File Name', 'string', GetNameTimeFormats(), '', False, False, 'Formatting of time appended to file name', None, None],
+['enableHtmlOutput', 'Include HTML output file', 'string', trueFalse, 'False', True, False, 'Create an HTML output file', OnEnableHtmlChanged, True],
+['enableCsvOutput', 'Include CSV output file', 'string', trueFalse, 'False', True, False, 'Create a .csv output file with comma separated values', OnEnableCsvChanged, True],
+['enableXlsOutput', 'Include Excel output file', 'string', trueFalse, 'False', True, False, 'Create an Excel97 .xls output file', OnEnableXlsChanged, True]
+]
+indexOfVar = {}
+for i, var in enumerate(ael_variables):
+    indexOfVar[var[FRunScriptGUI.Controls.NAME]] = i
+
+ael_gui_parameters = {
+    'windowCaption':'Service Sheet Report',
+    'helpFileIndex':1152,
+    'runButtonLabel':'Run Report',
+    'enableCollectiveRun':True,
+    'handleLocals':HandleLocals
+    }
+
+def ael_main(vars):
+    varDict = CreateAelVariableDictionary(vars)
+    report = AsyncReport().Run(varDict)
+    '''
+    startTime = time.localtime()
+    
+    outputDirectory = GetFormattedFilePath(varDict, startTime)
+    outputFileName = GetFormattedFileName(varDict, startTime)
+    xmlFileName = GetFileNameWithPath(outputFileName, '.xml', outputDirectory)
+    
+    definition = CreateDefinition(varDict)
+    report = acm.Report.RunServiceSheetReport(definition, xmlFileName, None, False, True)
+    
+    CreateExtendedOutput(xmlFileName, outputFileName, outputDirectory,
+                    report.Subject().XmlEncoding(), varDict)
+    '''
+    return {'activity': report}
+
+...
+
+  CustomWorksheetReport
+
+from builtins import range
+import acm
+import ael
+
+import CustomReportAPI
+
+import FRunScriptGUI
+import FAddContentTab
+import FPostProcessingTab
+import FAdvancedSettingsTab
+import FOutputSettingsTab
+
+import FReportAPI
+import FReportUtils
+import FReportSheetSettingsTab
+import FMacroGUI
+import FLogger
+import FWorksheetReport
+
+logger = FLogger.FLogger( 'FAReporting' )
+
+falseTrue = ['False','True']
+#multipleFiles = ['False', 'True']
+allSheetSettingsBySheetType = None
+
+def runScriptValue(field):
+    """ Return value on form suitable for displaying in Run Script GUI. """
+    if hasattr(field, 'IsKindOf') and field.IsKindOf('FArray'):
+        return field.AsString().replace(']','').replace('[','').replace('\'','')
+    else:
+        return None
+
+def startRunScript(eii):
+    acm.RunModuleWithParameters("CustomWorksheetReport", acm.GetDefaultContext())
+
+class ICTCustomWorksheetReport(FWorksheetReport.WorksheetReport):
+    def __init__(self):       
+        vars = [
+                 ['wbName', 'Workbook', 'FWorkbook', self.getWorkbooks, "", 0, 0, \
+                  'Choose a work book', self.wbCB, 1],
+                 ['template', 'Trading Sheet Template', 'FTradingSheetTemplate', self.getTemplates, None, 0, 1, 'Choose a trading sheet template', self.wbCB, 1],
+                 ['multipleFiles', 'Multiple Files', 'string', falseTrue, 'False', 1, 0,'Multiple Sheets in different files.', None, 1],
+                 ['instrumentParts', 'Include Instrument Parts', 'string', falseTrue, 'False', 1, 0,'Instrument parts, and if applicable legs for multi leg instruments, will be visible in report.', None, 1],
+                 ['expandTimebucketChildren', 'Expand Sub Time Buckets ', 'string', falseTrue, 'False', 1, 0,'Sub buckets of Time Buckets will be visible in report.', None, 1],
+                 ['snapshot', 'Sheet Snapshot', 'string', falseTrue, 'True', 1, 0, \
+                  'Create a snapshot of a report', self.snapshotCB, 1],
+                 ['multiThread', 'Run in background', 'string', falseTrue, 'True', 1, 0, \
+                  'Start the reporting in a separate thread', None, 0],
+                 ['numberOfReports', 'Number of Reports', 'int', None, '5', 1, 0, \
+                  'The number of reports that will be created before the script is completed', None, 0],
+                 ['updateInterval', 'Update Interval (sec)', 'int', None, '60', 1, 0, \
+                  'The update interval, in seconds, between the reports', None, 0]
+               ]
+                
+        FRunScriptGUI.AelVariablesHandler.__init__(self,vars)        
+        
+        #add other tabs
+        global allSheetSettingsBySheetType
+        
+        self.extend(FAddContentTab.getAelVariablesWithCB(self.on_query_name_changes))
+        self.extend(FOutputSettingsTab.getAelVariables())
+        self.extend(FAdvancedSettingsTab.getAelVariables())
+        self.extend(FPostProcessingTab.getAelVariables())
+        sheetSettingsVariables, allSheetSettingsBySheetType = FReportSheetSettingsTab.getAelVariables( [ 'FPortfolioSheet', 'FTradeSheet' ],acm.GetDefaultContext(), acm.CreateEBTag()) 
+        for guiVariables in sheetSettingsVariables:
+            self.extend(guiVariables) 
+           
+        
+ael_gui_parameters = {
+    'windowCaption':__name__,
+    'helpFileIndex':1132
+    }
+
+ael_variables = ICTCustomWorksheetReport()
+ael_variables.LoadDefaultValues(__name__)
+
+def ael_main(variableDictionary):
+    params=FReportUtils.adjust_parameters(variableDictionary)
+    variableDictionary[ 'allSheetSettingsBySheetType' ] = allSheetSettingsBySheetType
+    report_params = CustomReportAPI.CustomWorksheetReportGuiParameters( guiParams=params )
+    report_params.RunScript()
+
+...
+
+}
+

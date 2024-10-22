@@ -1,0 +1,495 @@
+#
+# Front Arena exported extension module.
+# source          ""
+# timestamp (utc) "2024-04-04 15:27:50"
+# ***** DO NOT EDIT! *****
+#
+name        "PS_PriceCopy"
+description "$Id$"
+
+groups {
+}
+
+decls[FPythonCode] {
+}
+
+clx FObject [FPythonCode] {
+  PS_PriceCopy
+
+"""----------------------------------------------------------------------------
+MODULE
+    PS_PriceCopy - Module to execute Price Copy functionality.
+
+----------------------------------------------------------------------------"""
+
+
+import acm, ael
+from FLogger import FLogger
+import PS_PriceCopyPerform
+import os
+
+logFileName = 'PriceCopy_%s.log' % acm.Time.DateToday().replace('-', '')
+
+log = FLogger.GetLogger('PriceCopy')
+logLevels = [ FLogger.INFO, FLogger.ERROR, FLogger.WARNING, FLogger.DEBUG ]
+
+
+def LogLevelNameToNumber(level):
+    if level == FLogger.INFO:    return 1
+    if level == FLogger.DEBUG:   return 2
+    if level == FLogger.WARNING: return 3
+    if level == FLogger.ERROR:   return 4   
+    return 1
+
+def PickFolder():
+    res = acm.FFileSelection()
+    res.PickDirectory(True)
+    return res
+
+def GetMarketList():
+    return acm.FMarketPlace.Select('').AsArray()
+
+def GetCurrencyPair():
+    return acm.FCurrencyPair.Select('').AsArray()
+
+# ## Tool Tip
+ttCurrencyPair = "Select currency pairs for which the price will be saved in target Market"
+ttSourceMarket  = "Prices will be retrieved from this market."
+ttTargetMarket  = "Prices will be saved in this market."
+ttLogFolder     = "Select where to store the log file"
+ttLogToConsole  = "Whether logging should be done in the Log Console or not."
+
+
+ael_variables = [
+        # [VariableName,
+        #       DisplayName,
+        #       Type, CandidateValues, Default,
+        #       Mandatory, Multiple, Description, InputHook, Enabled]
+        ['currencyPair',
+                'Currency Pairs',
+                'string', GetCurrencyPair, '',
+                2, 1, ttCurrencyPair, None, None],
+        ['sourceMarket',
+                'Source Market',
+                'string', GetMarketList, 'REUTERS',
+                2, 0, ttSourceMarket, None, None],
+        ['targetMarket',
+                'Target Market',
+                'string', GetMarketList, 'EOD',
+                2, 0, ttTargetMarket, None, None],
+        ['logToConsole',
+                'Log to console_Logging',
+                'int', [1, 0], 1,
+                1, 0, ttLogToConsole],
+        ['logfolder',
+                'Log folder_Logging',
+                PickFolder(), None, PickFolder(),
+                0, 1, ttLogFolder, 0, None],
+        ['logLevel',
+                'Log level_Logging',
+                'string', logLevels, FLogger.INFO, 2, 0]
+    ]
+
+
+def ael_main(params):   
+    
+    #logging parametres
+    logLevel     = params['logLevel']
+    logFolder    = params['logfolder']
+    logToConsole = params['logToConsole']
+    log.Reinitialize(level=LogLevelNameToNumber(logLevel), logToConsole=logToConsole)
+    
+    if logFolder:
+        logfolderString = logFolder.SelectedDirectory().AsString()
+        logPath = os.path.join(logfolderString, logFileName)
+        log.Reinitialize(logToFileAtSpecifiedPath=logPath)    
+
+    log.LOG("Execution started")
+    
+    try:
+        PS_PriceCopyPerform.Perform(params)
+    except Exception as e:
+        log.ELOG(f"Error when running Price Copy: {str(e)}")
+  
+    log.LOG("Execution complete")
+
+
+
+...
+
+  PS_PriceCopy_CrossFX
+"""----------------------------------------------------------------------------
+MODULE
+    PS_PriceCopy_CrossFX - Module to derive cross FX rates based on FX rates against a base currency.
+
+----------------------------------------------------------------------------"""
+
+
+import acm, ael
+from FLogger import FLogger
+import PS_PriceCopyPerform
+import os
+
+logFileName = 'PriceCopy_%s.log' % acm.Time.DateToday().replace('-', '')
+
+log = FLogger.GetLogger('PriceCopy')
+logLevels = [ FLogger.INFO, FLogger.ERROR, FLogger.WARNING, FLogger.DEBUG ]
+
+
+def LogLevelNameToNumber(level):
+    if level == FLogger.INFO:    return 1
+    if level == FLogger.DEBUG:   return 2
+    if level == FLogger.WARNING: return 3
+    if level == FLogger.ERROR:   return 4   
+    return 1
+
+def PickFolder():
+    res = acm.FFileSelection()
+    res.PickDirectory(True)
+    return res
+
+def GetMarketList():
+    return acm.FMarketPlace.Select('').AsArray()
+
+def GetCurrencyPair():
+    return acm.FCurrencyPair.Select('').AsArray()
+
+# ## Tool Tip
+ttCurrencyPair = "Select currency pairs for which the price will be saved in target Market"
+ttCrossBase = "Select base currency to use for cross rates. This currency should not be part of the secelted currency pairs."
+ttSourceMarket  = "Prices will be retrieved from this market."
+ttTargetMarket  = "Prices will be saved in this market."
+ttExchangeBidAsk = 'If set to False cross rates will be calculated bid/bid and ask/ask. If set to True cross rates will be calculated bid/ask and ask/bid. Setle, Last, etc. prices are unaffected.'
+ttLogFolder     = "Select where to store the log file"
+ttLogToConsole  = "Whether logging should be done in the Log Console or not."
+
+
+ael_variables = [
+        # [VariableName,
+        #       DisplayName,
+        #       Type, CandidateValues, Default,
+        #       Mandatory, Multiple, Description, InputHook, Enabled]
+        ['currencyPair',
+                'Currency Pairs',
+                'string', GetCurrencyPair, '',
+                2, 1, ttCurrencyPair, None, None],
+        ['crossBase',
+                'Cross base currency',
+                acm.FCurrency, sorted(acm.FCurrency.Select('')), '',
+                2, 0, ttCrossBase, None, None],
+        ['sourceMarket',
+                'Source Market',
+                'string', GetMarketList, 'REUTERS',
+                2, 0, ttSourceMarket, None, None],
+        ['targetMarket',
+                'Target Market',
+                'string', GetMarketList, 'EOD',
+                2, 0, ttTargetMarket, None, None],
+        ['exchangeBidAsk',
+                'Exchange Bid/Ask',
+                'int', [1, 0], 1,
+                1, 0, ttExchangeBidAsk],                
+        ['logToConsole',
+                'Log to console_Logging',
+                'int', [1, 0], 1,
+                1, 0, ttLogToConsole],
+        ['logfolder',
+                'Log folder_Logging',
+                PickFolder(), None, PickFolder(),
+                0, 1, ttLogFolder, 0, None],
+        ['logLevel',
+                'Log level_Logging',
+                'string', logLevels, FLogger.INFO, 2, 0]
+    ]
+
+
+def ael_main(params):   
+    
+    #logging parametres
+    logLevel     = params['logLevel']
+    logFolder    = params['logfolder']
+    logToConsole = params['logToConsole']
+    log.Reinitialize(level=LogLevelNameToNumber(logLevel), logToConsole=logToConsole)
+    
+    if logFolder:
+        logfolderString = logFolder.SelectedDirectory().AsString()
+        logPath = os.path.join(logfolderString, logFileName)
+        log.Reinitialize(logToFileAtSpecifiedPath=logPath)    
+
+    log.LOG("Execution started")
+    
+    try:
+        PS_PriceCopyPerform.PerformCrossRateCopy(params)
+    except Exception as e:
+        log.ELOG(f"Error when running Price Copy: {str(e)}")
+  
+    log.LOG("Execution complete")
+
+...
+
+  PS_PriceCopyPerform
+"""----------------------------------------------------------------------------
+MODULE
+    PS_PriceCopyPerform - Module which create mid rate prices.
+---------------------------------------------------------------------------"""
+
+import acm
+from math import isnan
+
+from FLogger import FLogger
+log = FLogger.GetLogger('PriceCopy')
+
+_TODAY = str(acm.Time.DateToday())
+
+def GetLivePricesFromMarket(market, currencyPair):
+    instrument, currency = currencyPair.split('/')
+    ins = acm.FInstrument[instrument]
+    curr = acm.FCurrency[currency]
+    
+    query = f"market={market.Oid()} and instrument={ins.Oid()} and currency={curr.Oid()}" 
+    livePrices = acm.FPrice.Select(query)
+    if livePrices:
+        return livePrices[0]
+    
+
+def ReadExistingPrice(insOid, currOid, marketOid):
+    """
+    Read a price with given criteria
+    """
+    price = None
+    query = ('instrument={0} and currency={1} and market={2}'.format(insOid, currOid, marketOid))
+    prices = acm.FPrice.Select(query)
+    if len(prices) == 1:
+        price = prices[0]
+        
+    return price
+
+   
+def CopyPrice(price, toMkt, override):
+    existingPrice = ReadExistingPrice(price.Instrument().Oid(), price.Currency().Oid(), toMkt.Oid())
+    bidPrice        = price.Bid()
+    askPrice        = price.Ask()
+    lastPrice       = price.Last()
+    settlePrice     = price.Settle()
+    priceday        = str(price.Day())
+        
+    if (existingPrice is not None):        
+        if override:
+            clonePrice = existingPrice.Clone()
+            clonePrice.Day(priceday)
+            clonePrice.Market(toMkt)
+            clonePrice.Ask(askPrice)
+            clonePrice.Bid(bidPrice)
+            clonePrice.Last(lastPrice)
+            clonePrice.Settle(settlePrice)
+            existingPrice.Apply(clonePrice)
+            existingPrice.Commit()
+            log.LOG(f"Updated price entry : {existingPrice.Instrument().Name()}, {existingPrice.Currency().Name()}, {existingPrice.Market().Name()}, {existingPrice.Day()}, {existingPrice.Bid()}, {existingPrice.Ask()}, {existingPrice.Last()}")
+            
+    else:   
+        newPrice= price.Clone()
+        newPrice.Day(priceday)
+        newPrice.Market(toMkt)
+        newPrice.Ask(askPrice)
+        newPrice.Bid(bidPrice)
+        newPrice.Last(lastPrice)
+        newPrice.Settle(settlePrice)
+        newPrice.Commit()
+        log.LOG(f"New price entry : {newPrice.Instrument().Name()}, {newPrice.Currency().Name()}, {newPrice.Market().Name()}, {newPrice.Day()}, {newPrice.Bid()}, {newPrice.Ask()}, {newPrice.Last()}")
+    
+
+def SavePrices(fromMarket, toMarket, currencyPairList, override=True):    
+    for currencyPair in currencyPairList:
+        price  = GetLivePricesFromMarket(fromMarket, currencyPair)
+        if not price:
+            log.ELOG("No existing price in source market {}".format(fromMarket.Name()))
+            return
+            
+        try:
+            log.LOG("Saving prices started")
+            log.DLOG(f"Processing price : {price.Instrument().Name()}, {price.Currency().Name()}, {price.Market().Name()}, {price.Day()}, {price.Bid()}, {price.Ask()}, {price.Last()}")
+            CopyPrice(price, toMarket, override)
+            
+        except Exception as e:
+            log.ELOG(f"Error when running Price Copy Perform- SavePrices: {str(e)}")
+
+    log.LOG("Saving prices complete")
+
+
+def ValidateMarket(strMarket):
+    market = acm.FMarketPlace[strMarket]
+    if not market:
+        raise RuntimeError('Unable to find Market \'{0}\'.'.format(
+                strMarket))
+                
+    return market
+    
+
+def Perform(params):
+    # Process parameter
+    sourceMarket        = params['sourceMarket']
+    targetMarket        = params['targetMarket']
+    currencyPairList    = params['currencyPair']
+    
+    # Validate
+    fromMarket          = ValidateMarket(sourceMarket)
+    toMarket            = ValidateMarket(targetMarket )
+    
+    SavePrices(fromMarket, toMarket, currencyPairList)
+    
+###########################################Cross rate functions###################################
+#Functions to derive cross rates from a base currency
+
+def getBaseRate(basePrice, inverse, priceType='bid'):
+    if priceType == 'bid':
+        basePriceNum = basePrice.Bid()
+    elif priceType == 'ask':
+        basePriceNum = basePrice.Ask()
+    elif priceType == 'settle':
+        basePriceNum = basePrice.Settle()
+    elif priceType == 'last':
+        basePriceNum = basePrice.Last()
+    elif priceType == 'high':
+        basePriceNum = basePrice.High()
+    elif priceType == 'low':
+        basePriceNum = basePrice.Low()
+    
+    if inverse:
+        return 1.0/basePriceNum
+    else:
+        return basePriceNum
+        
+def getPriceDict(fprice, inverse):
+    priceDict = {
+            'bid' : getBaseRate(fprice, inverse, priceType='bid'),
+            'ask' : getBaseRate(fprice, inverse, priceType='ask'),
+            'last' : getBaseRate(fprice, inverse, priceType='last'),
+            'settle' : getBaseRate(fprice, inverse, priceType='settle'),
+            'last' : getBaseRate(fprice, inverse, priceType='last'),
+            'low' : getBaseRate(fprice, inverse, priceType='low'),
+            'high' : getBaseRate(fprice, inverse, priceType='high')
+        }
+    return priceDict
+
+def getCrossPriceFromBasePrices(fprice, basePricesCurr1, basePricesCurr2, invertBidAskLogic, exchangeBidAsk=False):
+    crossRates = {}
+        
+    for k in basePricesCurr1.keys():
+        if exchangeBidAsk == True:
+            if k == 'bid':
+                if invertBidAskLogic:
+                    crossRates[k] = basePricesCurr1['ask'] / basePricesCurr2[k]
+                else:
+                    crossRates[k] = basePricesCurr1[k] / basePricesCurr2['ask']
+            elif k == 'ask':
+                if invertBidAskLogic:
+                    crossRates[k] = basePricesCurr1['bid'] / basePricesCurr2[k]
+                else:
+                    crossRates[k] = basePricesCurr1[k] / basePricesCurr2['bid']
+            else:
+                crossRates[k] = basePricesCurr1[k] / basePricesCurr2[k]
+        else:
+            crossRates[k] = basePricesCurr1[k] / basePricesCurr2[k]
+    
+    for k in crossRates.keys():
+        if not isnan(crossRates[k]):
+            fprice = setPrice(fprice, k, crossRates[k])
+    
+    return fprice
+    
+def setPrice(FPrice, priceType, priceNum):
+    if priceType == 'bid':
+        basePriceNum = FPrice.Bid(priceNum)
+    elif priceType == 'ask':
+        basePriceNum = FPrice.Ask(priceNum)
+    elif priceType == 'settle':
+        basePriceNum = FPrice.Settle(priceNum)
+    elif priceType == 'last':
+        basePriceNum = FPrice.Last(priceNum)
+    elif priceType == 'high':
+        basePriceNum = FPrice.High(priceNum)
+    elif priceType == 'low':
+        basePriceNum = FPrice.Low(priceNum)
+    return FPrice
+        
+
+def PerformCrossRateCopy(params):
+    # Process parameter
+    sourceMarket        = params['sourceMarket']
+    targetMarket        = params['targetMarket']
+    currencyPairList    = params['currencyPair']
+    baseCurrency        = params['crossBase']
+    exchangeBidAsk      = params['exchangeBidAsk']
+    
+    # Validate
+    fromMarket          = ValidateMarket(sourceMarket)
+    toMarket            = ValidateMarket(targetMarket )
+    
+    for currencyPair in currencyPairList:        
+        curr1, curr2 = currencyPair.split('/')        
+        baseCurrPair1 = '{}/{}'.format(curr1, baseCurrency.Name())
+        baseCurrPair2 = '{}/{}'.format(curr2, baseCurrency.Name())
+        
+        basePriceCurrPair1 = GetLivePricesFromMarket(fromMarket, baseCurrPair1)
+        if not basePriceCurrPair1:
+            baseCurrPair1 = '{}/{}'.format(baseCurrency.Name(), curr1)
+            
+            basePriceCurrPair1 = GetLivePricesFromMarket(fromMarket, baseCurrPair1)
+            if not basePriceCurrPair1:
+                log.ELOG("No existing price in source market {} for currency pair {}".format(fromMarket.Name(), baseCurrPair1))
+    
+        basePriceCurrPair2 = GetLivePricesFromMarket(fromMarket, baseCurrPair2)
+        if not basePriceCurrPair2:
+            baseCurrPair2 = '{}/{}'.format(baseCurrency.Name(), curr2)
+            
+            basePriceCurrPair2 = GetLivePricesFromMarket(fromMarket, baseCurrPair2)
+            if not basePriceCurrPair2:
+                log.ELOG("No existing price in source market {} for currency pair {}".format(fromMarket.Name(), baseCurrPair2))
+                
+        if basePriceCurrPair1 and basePriceCurrPair2:
+            if baseCurrency == basePriceCurrPair1.Currency():
+                inverse1 = False
+            else:
+                inverse1 = True
+                        
+            basePricesCurr1 = getPriceDict(basePriceCurrPair1, inverse1)
+            
+            if baseCurrency == basePriceCurrPair2.Currency():
+                inverse2 = False
+            else:
+                inverse2 = True
+                            
+            basePricesCurr2 = getPriceDict(basePriceCurrPair2, inverse2)
+            
+            if inverse1 == True and inverse2 == True:
+                invertBidAskLogic = True
+            else:
+                invertBidAskLogic = False
+            
+            existingPrice = ReadExistingPrice(acm.FCurrency[curr1].Oid(), acm.FCurrency[curr2].Oid(), toMarket.Oid())
+            
+            if existingPrice:
+                crossPrice = existingPrice.Clone()
+                crossPrice = getCrossPriceFromBasePrices(crossPrice, basePricesCurr1, basePricesCurr2, invertBidAskLogic, exchangeBidAsk=exchangeBidAsk)
+                crossPrice.Day(acm.Time.DateToday())
+                existingPrice.Apply(crossPrice)
+                existingPrice.Commit()
+                log.LOG(f"Updated price entry : {existingPrice.Instrument().Name()}, {existingPrice.Currency().Name()}, {existingPrice.Market().Name()}, {existingPrice.Day()}, {existingPrice.Bid()}, {existingPrice.Ask()}, {existingPrice.Last()}")
+            else:
+                crossPrice = acm.FPrice()
+                crossPrice = getCrossPriceFromBasePrices(crossPrice, basePricesCurr1, basePricesCurr2, invertBidAskLogic, exchangeBidAsk=exchangeBidAsk)
+                crossPrice.Instrument(acm.FCurrency[curr1])
+                crossPrice.Currency(acm.FCurrency[curr2])
+                crossPrice.Day(acm.Time.DateToday())
+                crossPrice.Market(targetMarket)
+                
+                crossPrice.Commit()
+                log.LOG(f"New price entry : {crossPrice.Instrument().Name()}, {crossPrice.Currency().Name()}, {crossPrice.Market().Name()}, {crossPrice.Day()}, {crossPrice.Bid()}, {crossPrice.Ask()}, {crossPrice.Last()}")
+        else:
+            log.ELOG("Missing base rates for currency pair {}. Skipping...".format(currencyPair))
+            
+
+...
+
+}
+

@@ -1,0 +1,1084 @@
+#
+# Front Arena exported extension module.
+# source          ""
+# timestamp (utc) "2024-09-17 10:43:11.9"
+# ***** DO NOT EDIT! *****
+#
+name        "Dual Currency Deposit"
+description ""
+
+groups {
+}
+
+decls[FCustomApplicationDefinition] {
+}
+
+clx FObject [FCustomApplicationDefinition] {
+  Dual Currency Deposit =
+  CreationFunction=
+  HostApplication=
+  HostObjectType=
+  HostPath=
+  Name=DualCurrencyDeposit
+  ObjectTypes=FDealPackage
+  ProfileComponent=DualCurrencyDeposit
+
+
+}
+
+decls[FDealPackageDefinition] {
+}
+
+clx FObject [FDealPackageDefinition] {
+  MDCITradeActionClose =
+  CustomApplication=
+  DefinitionClass=SP_MDCICloseCommand.MDCITradeActionClose
+  Description=
+  DisplayName=Trade Action Close (MDCI)
+  Type=Transient
+
+
+  SP_DualCurrencyDeposit =
+  CustomApplication=Deal Package
+  DefinitionClass=DualCurrencyDepositDefault.DualCurrencyDeposit
+  Description=
+  DisplayName=Dual Currency Deposit
+  ProfileComponent=DualCurrencyDeposit
+  Type=Normal
+
+
+}
+
+decls[FExtensionValue] {
+}
+
+clx FObject [FExtensionValue] {
+  CustomLayout_DualCurrencyDeposit
+hbox(;
+    vbox(;
+        hbox{;
+            ipName;
+            suggestName;
+        };
+        hbox(;
+            space(720);
+        );
+        hbox(;
+            vbox{ ;
+                hbox(;
+                    currency;
+                    altCurrency;
+                );
+                depositCurrency;
+                interestCurrency;
+                cashAmount;            
+                hbox(;
+                    startDate;
+                    startPeriod;
+                );
+                hbox(;
+                    fixingDate;
+                    fixingSource;
+                );
+                hbox(;
+                    endDate;
+                    endPeriod;
+                );
+                hbox(;
+                    depositLegFixedRateValue;
+                    leg_fixedRateBps;
+                    leg_fixedRateRecalc;
+                    leg_fixedRateUnit;
+                );
+                optionPremiumRate;
+                hbox(;
+                    conversionRate;
+                    conversionRateUnit;
+                );
+                legDayCountMethod;
+                leg_fixedCoupon;
+            };
+            vbox(;
+                vbox[Interest;
+                    depositEndInterest;
+                    optionEndInterest;
+                    totalEndInterest;
+                    theorYield;
+                    tradedYield;
+                    hbox(;
+                        fill;
+                        solveInterestCurrency;
+                    );
+                ]; 
+                fill;
+            );
+        );
+    );
+    vbox(;
+    );
+);
+...
+
+  CustomLayout_DualCurrencyDepositAddInfo
+hbox(;
+    vbox[Deposit;
+        depositAddInfo;
+        legAddInfo;
+    ];
+    vbox[Option;
+        optionAddInfo;
+    ];
+);
+    
+...
+
+  CustomLayout_DualCurrencyDepositIdentifiers
+hbox(;
+    vbox[Deposit;
+        depositID;
+    ];
+    vbox[Option;
+        optionID;
+    ];
+);
+...
+
+  CustomLayout_DualCurrencyDepositProperties
+hbox(;
+    hbox[Deposit;
+        vbox(;
+            vbox{;
+                depositProperties_spotBankingDaysOffset;
+                depositProperties_priceDateAdjustmentMethod;
+                depositProperties_ignorePayCalendars;
+            };
+            vbox{;
+                depositProperties_payOffsetMethod;
+                depositProperties_priceFindingChlItem;
+                depositProperties_roundingSpecification;
+                depositProperties_fundingGroup;
+                depositProperties_mtmFromFeed;
+            };
+        );
+        vbox(;
+            vbox[Trade Price Diff Limit;
+                depositProperties_priceDiffLimitAbs;
+                depositProperties_priceDiffLimitRel;
+            ];
+            vbox{;
+                depositProperties_settleCategoryChlItem;
+                depositProperties_settlementCalendar;
+                depositProperties_incomplete;
+                depositProperties_originalCurrency;;
+            };
+        );
+    );
+    hbox[Option;
+        vbox{;
+            optionProperties_spotBankingDaysOffset;
+            optionProperties_payOffsetMethod;
+            optionProperties_priceFindingChlItem;
+            optionProperties_roundingSpecification;
+            optionProperties_fundingGroup;
+            optionProperties_expiryDateTimeProp;
+            optionProperties_mtmFromFeed;
+        };
+        vbox(;
+            vbox[Trade Price Diff Limit;
+                optionProperties_priceDiffLimitAbs;
+                optionProperties_priceDiffLimitRel;
+            ];
+            vbox{;
+                optionProperties_settleCategoryChlItem;
+                optionProperties_settlementCalendar;
+                optionProperties_incomplete;
+                optionProperties_originalCurrency;
+            };
+        );
+    );
+);
+...
+
+  CustomLayout_DualCurrencyDepositTrade
+vbox(;
+    hbox(;
+        vbox{;
+            trades_counterparty;
+            trades_yourRef;
+            trades_trader;
+            trades_settleCategoryChlItem;
+            trades_AddInfo_DealerCode;
+            trades_AddInfo_DocumentType;
+            trades_AddInfo_TransactionPurpose;
+        };
+        vbox{;
+            valueDay;
+            acquireDay;
+            tradeTime;
+            trades_status;
+            trades_optKey1;
+            trades_optKey2;
+            trades_optKey3;
+            trades_optKey4;
+        };
+    );
+    hbox(;
+        vbox[Deposit;
+            depositTrade_portfolio;
+            depositTrade_acquirer;
+            hbox(;
+                depositTrade_salesMargin;
+                depositTrade_salesCoverEnabled;
+            );
+            depositTrade_traderPrice;
+            depositTrade_traderPortfolio;
+            depositTrade_traderAcquirer;
+            depositTrade_payments;
+        ];
+        vbox[Option;
+            optionTrade_portfolio;
+            optionTrade_acquirer;
+            hbox(;
+                optionTrade_salesMargin;
+                optionTrade_salesCoverEnabled;
+            );
+            optionTrade_traderPrice;
+            optionTrade_traderPortfolio;
+            optionTrade_traderAcquirer;
+            optionTrade_payments;
+        ];
+    );  
+);
+...
+
+  CustomLayout_DualCurrencyDepositTradeAddInfo
+hbox(;
+    vbox[Deposit;
+        depositTradeAddInfo;
+    ];
+    vbox[Option;
+        optionTradeAddInfo;
+    ];
+);
+    
+...
+
+  CustomLayout_DualCurrencyDepositTradeIdentifiers
+hbox(;
+    vbox(;
+        vbox[Deposit;
+            depositBackOffice_optionalKey;
+            depositBackOffice_uniqueTradeIdentifier;
+            depositBackOffice_text1;
+            depositBackOffice_text2;
+            depositBackOffice_assinf;
+            depositTradeID_aliases;
+        ];
+    );
+    vbox(;
+        vbox[Option;
+            optionBackOffice_optionalKey;
+            optionBackOffice_uniqueTradeIdentifier;
+            optionBackOffice_text1;
+            optionBackOffice_text2;
+            optionBackOffice_assinf;
+            optionTradeID_aliases;
+        ];
+    );
+);
+...
+
+  CustomPanes_DualCurrencyDeposit
+CustomLayout_DualCurrencyDeposit, General;CustomLayout_DualCurrencyDepositProperties,Properties;CustomLayout_DualCurrencyDepositIdentifiers,Identifiers;CustomLayout_DualCurrencyDepositAddInfo, Add Info;
+...
+
+  CustomPanes_DualCurrencyDepositTrade
+CustomLayout_DualCurrencyDepositTrade, General;CustomLayout_DualCurrencyDepositTradeAddInfo, Add Info;
+...
+
+}
+
+decls[FMenuExtension] {
+}
+
+clx FFrame [FMenuExtension] {
+  SP_DualCurrencyDeposit =
+  DisplayName=Dual Currency Deposit
+  Function=DualCurrencyDepositDefault.Start
+  MenuType=Application
+  ParentMenu=Trading/Structured Products
+  ProfileComponent=DualCurrencyDeposit
+  Standard=Yes
+
+
+}
+
+decls[FPythonCode] {
+}
+
+clx FObject [FPythonCode] {
+  DualCurrencyDepositDefault
+import acm
+
+from DealPackageDevKit import Settings, Object, CalcVal, Action, CurrencyChoices, ReturnDomainDecorator, TradeActions, CorrectCommand, NovateCommand, MirrorCommand
+from SP_MDCICloseCommand import MDCICloseCommand as CloseCommand
+from CompositeAttributes import BuySell
+from CompositeAttributesLib import TradeDefinition, CashFlowInstrumentDefinition, LegDefinition, InstrumentPropertiesDefinition, InstrumentIDDefinition, TradeIDDefinition, TradeBODefinition, AddInfoDefinition, OperationsPanelDefinition
+from  ChoicesExprInstrument import getFixingSources
+from DealPackageUtil import UnDecorate, NoChange, SetNew, SetSave
+
+try:
+    from StructuredProductsCommonAddInfo import SP_CommonAddInfoDealPackageDefinitionWithPreDeal
+except ImportError:
+    from DealPackageDevKit import DealPackageDefinition as SP_CommonAddInfoDealPackageDefinitionWithPreDeal
+
+class DepositTradeDefinition(TradeDefinition):
+    def B2BParams(self):
+        return self.GetMethod('B2BTradeParamsAt')('deposit')
+        
+    def IsShowModeDetail2(self, *args):
+        return self._owner.IsShowModeDetail()
+    
+class OptionTradeDefinition(DepositTradeDefinition):
+    def B2BParams(self):
+        return self.GetMethod('B2BTradeParamsAt')('option')
+
+class CommonTradeDefinition(OptionTradeDefinition):
+
+    def CommonAttributes(self):
+        return ['counterparty', 'yourRef', 'valueDay', 'acquireDay', 'trader', 'settleCategoryChlItem', 'status', 'tradeTime', 'optKey1', 'optKey2', 'optKey3', 'optKey4']
+        
+    def Attributes(self):
+        allAttributes = super().Attributes()
+        attributes = {}
+        for attr in self.CommonAttributes():
+            attributes[attr] = allAttributes[attr]
+        return attributes
+        
+    def AttributeOverrides(self, overrideAccumulator):
+        for attr in self.CommonAttributes():
+            overrideAccumulator({attr: dict(onChanged=self.UniqueCallback('@Synchronize'))})
+            
+    def Synchronize(self, *args):
+        for trade in self.Owner().Trades():
+            if trade != self.Trade():
+                trade = UnDecorate(trade)
+                for attr in self.CommonAttributes():
+                    attr = attr[:1].upper() + attr[1:]
+                    value = getattr(self.Trade(), attr)()
+                    setattr(trade, attr, value)
+
+
+class CommonInstrumentIDDefinition(InstrumentIDDefinition):
+    def GetLayout(self):
+        return self.UniqueLayout(
+                   """
+                   vbox{;
+                        isin;
+                        externalId1;
+                        externalId2;
+                        freeText;
+                        insaddr;
+                        aliases;
+                    };
+                   """
+               )
+
+
+class DualCurrencyDepositCashFlowInstrumentDefinition(CashFlowInstrumentDefinition):
+    def AttributeChanged(self, attributeName, oldValue, newValue, userInputAttributeName):
+        if -1 == attributeName.find('triggerCashFlowUpdate') and not userInputAttributeName:
+            self.RegenerateCashFlowsIfNeeded()
+    
+
+@Settings(GraphApplicable=False, SheetDefaultColumns=['Instrument Type', 'Theoretical Value Pricing',
+                                                      'Portfolio Delta Yield', 'Underlying Forward Price',
+                                                      'Portfolio Volatility', 'Portfolio Delta', 'Portfolio Vega'])
+@TradeActions( correct = CorrectCommand(statusAttr='trades_status', newStatus='FO Confirmed'),
+               novate = NovateCommand(statusAttr='trades_status', nominal='cashAmount_value'),
+               close  = CloseCommand(statusAttr='trades_status', nominal='cashAmount_value'),
+               mirror = MirrorCommand(statusAttr='trades_status', newStatus='Simulated'))
+class DualCurrencyDeposit(SP_CommonAddInfoDealPackageDefinitionWithPreDeal):
+    year_fraction = 1
+    ipName              = Object(   label               = 'Name',
+                                    toolTip             = 'Name of the instrument package.',
+                                    objMapping          = 'InstrumentPackage.Name') 
+
+    suggestName         = Action(   label               = 'Suggest',
+                                    toolTip             = 'Suggests a name for the instrument package, FX Option and Deposit/Loan (according to the logic in suggestname.ttt).',
+                                    action              = '@PerformSuggestName',
+                                    sizeToFit           = True)
+
+    currency            = Object(   label               = 'Curr Pair',
+                                    toolTip             = 'Currency pair of the dual currency deposit.',
+                                    choiceListSource    = '@Currency1Choices',
+                                    objMapping          = 'Currency')
+
+    altCurrency         = Object(   label               = '',
+                                    toolTip             = 'Currency pair of the dual currency deposit (Domestic currency for the FX Option).',
+                                    choiceListSource    = '@Currency2Choices',
+                                    objMapping          = 'AltCurrency'
+                                    )
+
+    depositCurrency     = Object(   label               = 'Deposit Curr',
+                                    toolTip             = 'Currency of the cash amount which is deposited or borrowed.',
+                                    choiceListSource    = '@CurrentCurrencyChoices',
+                                    objMapping          = 'DepositCurrency')
+
+    interestCurrency    = Object(   label               = 'Interest Curr',
+                                    toolTip             = 'Currency in which the interest is paid out if the option is exercised.',
+                                    choiceListSource    = '@CurrentCurrencyChoices',
+                                    objMapping          = 'InterestCurrency')
+
+    cashAmount          = BuySell(  label               = 'Cash Amount',
+                                    toolTip             = 'Cash amount received or paid on start date for the deposit or loan respectively (as a trade Premium payment).',
+                                    buySellLabels       = ['Deposit','Loan','-'],
+                                    choiceListWidth     = 10,
+                                    objMapping          ='CashAmount')
+
+    startDate           = Object(   label               = 'Start',
+                                    toolTip             = 'Start date for the deposit/loan.',
+                                    objMapping          = 'StartDate',
+                                    width               = 11)
+
+    startPeriod         = Object(   label               = '',
+                                    toolTip             = 'Start period relative to the deposit/loan spot date.',
+                                    objMapping          = 'Deposit.LegStartPeriod',
+                                    editable            = False)
+
+    endDate             = Object(   label               = 'Settle',
+                                    toolTip             = 'End date for the deposit/loan and settle date for the FX Option.',
+                                    objMapping          = 'DeliveryDate',
+                                    width               = 11)
+
+    endPeriod           = Object(   label               = '',
+                                    toolTip             = 'End period value relative to the deposit/loan start date.',
+                                    objMapping          = 'Deposit.LegEndPeriod',
+                                    editable            = False)
+
+    fixingDate          = Object(   label               = 'Expiry',
+                                    toolTip             = 'Expiry (fixing) date for the FX Option displayed in local time zone.',
+                                    objMapping          = 'ExpiryDate',
+                                    width               = 11)
+
+    fixingSource        = Object(   label               = '',
+                                    toolTip             = 'Select a cutoff location for the FX Option. Expiry time will be set using the cutoff. Expiry date will be displayed according to the time zone of the cutoff location.',
+                                    objMapping          = 'Option.FixingSource',
+                                    choiceListSource    = getFixingSources(True))
+
+    depositLegFixedRateValue = Object(label = 'Deposit Rate:',
+                                    recreateCalcSpaceOnChange = True,
+                                    objMapping          = 'DepositLegFixedRateValue')
+
+    conversionRate      = Object(   label               = 'Conv Rate',
+                                    toolTip             = 'The conversion rate, that is, the strike of the FX Option.',
+                                    objMapping          = 'ConversionRate',
+                                    onChanged           = '@SetOptionTradePrice',
+                                    formatter           = '@PriceFormatter',
+                                    solverParameter     = True)
+
+    optionPremiumRate   = Object(   label               = 'Option Premium Rate',
+                                    toolTip             = 'The premium rate on the FX Option.',
+                                    objMapping          = 'OptionPremiumRate')
+
+    legDayCountMethod   = Object(   label               = 'Day Count',
+                                    objMapping          = 'Leg.DayCountMethod',
+                                    onChanged           = '@SetYearFraction')
+
+    conversionRateUnit  = Object(   label               = '',
+                                    toolTip             = 'Direction of the conversion rate.',
+                                    objMapping          = 'ConversionRateUnit',
+                                    width               = 13,
+                                    maxWidth            = 13,
+                                    editable            = False)
+
+    tradedYield         = Object(   label               = 'Traded Yield',
+                                    toolTip             = 'Actual yield to be paid or received based on the total interest.',
+                                    objMapping          = 'TradedYield',
+                                    solverTopValue      = 'optionTradePrice')
+
+    theorYield          = Object(   label               = 'Theor Yield',
+                                    toolTip             = 'Theoretical yield that would be paid or received based on the theoretical price of the FX Option.',
+                                    objMapping          = 'TheorYield',
+                                    solverTopValue      = 'conversionRate')
+
+    depositEndInterest  = CalcVal(  label               = 'Deposit',
+                                    toolTip             = 'The interest to be paid or received at end date of the deposit/loan.',
+                                    calcMapping         = 'DepositTrade:FTradeSheet:Standard Calculations Projected Factor',
+                                    calcConfiguration   = '@InterestFactorFilter',
+                                    valuationDetails    = False,
+                                    editable            = False)
+                                    
+    optionEndInterest   = Object(   label               = 'Option',
+                                    toolTip             = 'The premium to be paid or received at settle date of the FX Option.',
+                                    objMapping          = 'OptionEndInterest')
+    
+    optionTheorInterest = Object(   label               = 'Option Theor Interest',
+                                    objMapping          = 'OptionEndInterest',
+                                    editable            = False)
+    
+    totalEndInterest    = Object(   label               = 'Total',
+                                    toolTip             = 'Sum of the interest to be paid or received from the deposit/loan and the FX Option.',
+                                    objMapping          = 'TotalEndInterest',
+                                    editable            = False)
+
+    totalValue          = Object(   label               = 'Total Value',
+                                    objMapping          = 'TotalValue',
+                                    solverTopValue      = 'optionAmount')
+
+    optionAmount        = Object(   label               = 'Option Amount',
+                                    objMapping          = 'OptionAmount',
+                                    solverParameter     = True)
+
+    optionTheorPrice    = CalcVal(  label               = 'Option Theor Price',
+                                    calcMapping         = 'OptionTrade:FTradeSheet:Price Theor')
+
+    optionTradePrice    = Object(   label               = 'Option Trade Price',
+                                    objMapping          = 'OptionTrade.Price',
+                                    solverParameter     = True)
+
+    setOptionTradePrice = Action(   label               = 'Set Price',
+                                    action              = '@SetOptionTradePrice')
+
+    solveInterestCurrency= Action(  label               = 'Solve',
+                                    toolTip             = 'Recalculates FX Option trade amount if Interest Curr is different than Deposit Curr.',
+                                    action              = '@SolveForInterestCurrency',
+                                    enabled             = '@SolveForInteresetCurrencyIsEnabled',
+                                    icon                = 'Calculate',
+                                    sizeToFit           = False)
+    
+    # Ins fields
+    
+    deposit             = DualCurrencyDepositCashFlowInstrumentDefinition( instrument="Deposit" )
+    
+    depositProperties   = InstrumentPropertiesDefinition( instrument="Deposit" )
+    
+    depositID           = CommonInstrumentIDDefinition( instrument="Deposit")
+    
+    depositAddInfo      = AddInfoDefinition( obj='Deposit' )
+
+    optionProperties    = InstrumentPropertiesDefinition( instrument="Option" )
+    
+    optionID            = CommonInstrumentIDDefinition( instrument="Option")
+    
+    optionAddInfo       = AddInfoDefinition( obj='Option' )
+
+    # Trade fields
+    
+    trades              = CommonTradeDefinition(trade='DepositTrade')
+
+    tradeTime           = Object(objMapping = 'Trades.TradeTime',
+                            label = 'Trade Time')
+
+    acquireDay          = Object(objMapping = 'Trades.AcquireDay',
+                            label = 'Acquire Day')
+
+    valueDay       = Object(objMapping = 'Trades.ValueDay',
+                            label = 'Value Day')
+
+    depositTrade        = DepositTradeDefinition(trade='DepositTrade')
+    
+    depositTradeID      = TradeIDDefinition( trade="DepositTrade")
+    
+    depositBackOffice   = TradeBODefinition( trade='DepositTrade' )
+    
+    depositTradeAddInfo = AddInfoDefinition( obj='DepositTrade' )
+    
+    optionTrade         = OptionTradeDefinition(trade='OptionTrade')
+
+    optionTradeID       = TradeIDDefinition( trade="OptionTrade")
+    
+    optionBackOffice    = TradeBODefinition( trade='OptionTrade' )
+    
+    optionTradeAddInfo  = AddInfoDefinition( obj='OptionTrade' )
+
+    # Operations tab
+    operationsPanel     = OperationsPanelDefinition() 
+
+    # Leg fields
+    
+    leg                 = LegDefinition(leg='Leg', trade='DepositTrade')
+    
+    legAddInfo          = AddInfoDefinition( obj='Leg' )
+
+    def AttributeOverrides(self, overrideAccumulator):
+        overrideAccumulator({
+            'trades_optKey3': dict(defaultValue = 'SP'),
+            'trades_optKey4': dict(defaultValue = 'MDCI'),
+        })
+        
+    def AssemblePackage(self):
+        # Create default deposit (same as when opening ins def)
+        depositTrade = acm.DealCapturing().CreateNewCustomTrade('Deposit')
+        self.DealPackage().AddTrade(depositTrade, 'deposit')
+        depositTrade = self.DepositTrade()
+        deposit = depositTrade.Instrument()
+        depositLeg = deposit.FirstEditLeg()
+        depositLeg.RollingPeriod('0d')
+        depositLeg.LegType('Fixed')
+        depositTrade.Quantity = -abs(depositTrade.Quantity())
+        
+        # Create default fx option and set values from deposit
+        optionTrade = acm.DealCapturing().CreateNewCustomTrade('FX Option')
+        self.DealPackage().AddTrade(optionTrade, 'option')
+        optionTrade = self.OptionTrade()
+        option = optionTrade.Instrument()
+        option.StrikeType('Absolute')
+        option.Quotation('Points of UndCurr')
+        option.ContractSize(1.0)
+        option.ForeignCurrency(deposit.Currency())
+        option.PayType('Forward')
+        option.SettlementType('Physical')
+        option.OptionType('Call')
+        option.PayOffsetMethod('Business Days')
+        deposit.LegEndDate(option.DeliveryDate())
+        
+        optionTrade.AmountForeign(depositTrade.CashAmount())
+        optionTrade.FxoPremiumCurr(depositTrade.Currency())
+        self.SetDefaultConversionRate()
+        self.SetYearFraction()
+        
+    def OnInit(self, *args):
+        self._stdCalc = acm.FStandardCalculationsSpaceCollection()
+        self._interestCurrency = None
+        self._cashHandler = acm.FFxCashHandler()
+        self._formatInput = True
+        
+    def OnNew(self):
+        self.SetDefaultInterestCurrency()
+        self.SetOptionTradePrice()
+        self.trades.Synchronize()
+        self.InitCashHandler()
+    
+    def OnOpen(self):
+        self.SetDefaultInterestCurrency()
+        self.InitCashHandler()
+        self.SetYearFraction()
+        
+    def OnCopy(self, originalPackage, aspect):
+        self._interestCurrency = originalPackage.GetAttribute('interestCurrency')
+        if aspect == acm.FSymbol('solving'):
+            self._formatInput = False
+        
+    def OnSave(self, saveConfig):
+        self.SetInstrumentFields()
+        super().OnSave(saveConfig)
+        if saveConfig.InstrumentPackage() == "SaveNew":
+            SetNew(self.Instruments())
+        if saveConfig.InstrumentPackage() == "Save":
+            SetSave(self.Instruments())
+        if saveConfig.DealPackage() == "SaveNew":
+            SetNew(self.Trades())
+        if saveConfig.DealPackage() == "Save":
+            SetSave(self.Trades())
+        
+    def SaveQuestions(self, saveConfig):
+        """ 
+        Use this method to ask questions that should be answered by the user when saving.
+        """
+        questions = acm.FArray()
+        if saveConfig.InstrumentPackage() == 'Save':
+            questions.AddAll(self.Deposit().SaveQuestions())
+            if self.SolveForInteresetCurrencyIsEnabled():
+                qna = acm.FQnA()
+                qna.QuestionId = 'solve'
+                qna.Question = 'Do you want to solve for the interest currency before saving?'
+                qna.AddAnswer('yes', 'Yes', self.SolveForInterestCurrency)
+                qna.AddAnswer('no', 'No', None)
+                qna.AddCancel('Cancel')
+                questions.Add(qna)
+        return questions
+        
+    def Deposit(self):
+        return self.InstrumentAt('deposit')
+        
+    def DepositTrade(self):
+        return self.TradeAt('deposit')
+        
+    def Option(self):
+        return self.InstrumentAt('option')
+            
+    def OptionTrade(self):
+        return self.TradeAt('option')
+        
+    def OptionTheorTrade(self):
+        theorTrade = self.OptionTrade()
+        if self.CurrencyPair() and self.optionTheorPrice:
+            theorTrade = theorTrade.StorageNew()
+            theorTrade.Price(float(self.optionTheorPrice.Value()))
+        return theorTrade
+        
+    def Leg(self):
+        return self.Deposit().FirstEditLeg()
+        
+    def LeadTrade(self):
+        return self.DepositTrade()
+        
+    def Trade(self):
+        return self.LeadTrade()
+        
+    def FormatInput(self):
+        return self._formatInput
+        
+    def HelpFileIndex(self):
+        return 1198
+    
+    def CustomPanes(self):
+        insPanes = self.GetCustomPanesFromExtValue('CustomPanes_DualCurrencyDeposit')
+        tradePanes = self.GetCustomPanesFromExtValue('CustomPanes_DualCurrencyDepositTrade')
+        return [{'Instrument':insPanes}, {'Trade':tradePanes}]
+        
+    def IsShowModeInstrumentDetail(self, *args):    
+        return self.IsShowModeDetail()
+        
+    def IsShowModeTradeDetail(self, *args):
+        return self.IsShowModeDetail2()
+        
+    def CurrencyPair(self):
+        currencyPair = None
+        if self.Currency() and self.AltCurrency():
+            currencyPair = self.Currency().CurrencyPair(self.AltCurrency(), True)
+        return currencyPair
+        
+    def PerformSuggestName(self, *args):
+        self.DealPackage().SuggestName()
+        self.Deposit().Name(self.Deposit().SuggestName())
+        self.Option().Name(self.Option().SuggestName())
+    
+    def YMD(self, date):
+        ymd = acm.Time().DateToYMD(date)
+        y = str(ymd[0])[2:]
+        m = ('0' + str(ymd[1]))[-2:]
+        d = ('0' + str(ymd[2]))[-2:]
+        return y + m + d
+        
+    def SuggestName(self):
+        name = 'DCD/'
+        if self.CurrencyPair():
+            name += self.CurrencyPair().Name()
+            name += '/' 
+        name += self.YMD(self.startDate)
+        name += '/' 
+        name += self.YMD(self.endDate)
+        name += '/'
+        name += str(round(self.tradedYield, 2))
+        return name
+        
+    @ReturnDomainDecorator('FCurrency')
+    def Currency(self, value='*READING*'):
+        if value == '*READING*':
+            return self.Option().ForeignCurrency()
+        self.Option().ForeignCurrency(value)
+        self.OptionTrade().FxoPremiumCurr(value)
+        self.SetDefaultConversionRate()
+        self.CashHandler().Currency1(value)
+        self.AltCurrency(None)
+        self._interestCurrency = value
+        self.UpdateDepositCurrency(value)
+        self.SetOptionTradePrice()
+
+    def DepositLegFixedRateValue(self, value='*READING*'):
+        if value == '*READING*':
+            return self.Leg().FixedRate()
+        self.Leg().FixedRate(value)
+        self.Deposit().PerformRegenerateAllCashFlows()
+
+    @ReturnDomainDecorator('FCurrency')
+    def AltCurrency(self, value='*READING*'):
+        if value == '*READING*':
+            return self.Option().DomesticCurrency()
+        if self.DepositCurrency() == self.Option().DomesticCurrency():
+            self.UpdateDepositCurrency(value)
+        self.Option().DomesticCurrency(value)
+        self.OptionTrade().FxoPremiumCurr(self.Currency())
+        self.SetDefaultConversionRate()
+        self.SetOptionTradePrice()
+        self.CashHandler().Currency2(value)
+        self.InterestCurrency(self.DepositCurrency())
+        self.SetYearFraction()
+
+    def SetDefaultConversionRate(self):
+        currencyPair = self.CurrencyPair()
+        if currencyPair:
+            self.conversionRate = self.Currency().Calculation().FXRate(self._stdCalc, self.AltCurrency())
+
+    def SetYearFraction(self, *rest):
+        option_trade = self.OptionTrade()
+        deposit = self.Deposit()
+        calendar = self.Leg().PayCalendar()
+        startDate = self.Deposit().LegStartDate()
+        endDate = self.Deposit().LegEndDate()
+        try:
+            day_count = self.Leg().DayCountMethod()
+        except:
+            day_count = 'Act/360'
+
+        calendar_info = calendar.CalendarInformation()
+        self.year_fraction = calendar_info.YearsBetween(startDate, endDate, day_count)
+
+    @ReturnDomainDecorator('FCurrency')
+    def DepositCurrency(self, value='*READING*'):
+        if value == '*READING*':
+            return self.Deposit().Currency()
+        elif value != self.Deposit().Currency():            
+            self.Option().FxoChangeCallPut()
+            self._interestCurrency = value
+            self.UpdateDepositCurrency(value)
+            self.SetOptionTradePrice()
+            if self.Option().DomesticCurrency() == self.DepositCurrency():
+                self.Option().OptionType('Put')                
+            else:
+                self.Option().OptionType('Call')
+            
+    def OptionIsDomestic(self):
+        return self.Deposit().Currency() == self.Option().DomesticCurrency()
+            
+    def UpdateDepositCurrency(self, value):
+        self.Deposit().Currency(value)
+        self.DepositTrade().Currency(value)
+        self.OptionTrade().FxoPremiumCurr(value)
+        self.OptionTrade().Currency(value)
+        if self.OptionIsDomestic():
+            self.OptionTrade().AmountDomestic(self.DepositTrade().CashAmount())
+        else:
+            self.OptionTrade().AmountForeign(self.DepositTrade().CashAmount())
+    
+    def OptionAmountFromCurrency(self, currency):
+        if self.Option().DomesticCurrency() == currency:
+            return self.OptionTrade().AmountDomestic()
+        return self.OptionTrade().AmountForeign()
+    
+    def SetDefaultInterestCurrency(self):
+        if self.DepositTrade().CashAmount() == self.OptionAmountFromCurrency(self.Deposit().Currency()):
+            self._interestCurrency = self.Deposit().Currency()
+        else:
+            self._interestCurrency = self.OtherCurrency(self.Deposit().Currency())
+            
+    @ReturnDomainDecorator('FCurrency')
+    def InterestCurrency(self, value='*READING*'):
+        if value == '*READING*':
+            return self._interestCurrency;
+        else:
+            self._interestCurrency = value
+            if self.Deposit().Currency() == value:
+                self.UpdateDepositCurrency(value)
+                self.SetOptionTradePrice()
+            else:
+                self.SolveForInterestCurrency()
+                
+    def SolveForInteresetCurrencyIsEnabled(self, *args):
+        return self.DepositCurrency() and self.InterestCurrency() and self.DepositCurrency() != self.InterestCurrency() and abs(self.totalValue) > 1
+                
+    def SolveForInterestCurrency(self, *args):
+        if self.SolveForInteresetCurrencyIsEnabled():
+            self.totalValue = 0.0
+    
+    @ReturnDomainDecorator('double')
+    def CashAmount(self, value='*READING*'):
+        if value == '*READING*':
+            return self.DepositTrade().CashAmount()
+        self.DepositTrade().CashAmount(value)
+        if self.OptionIsDomestic():
+            self.OptionTrade().AmountDomestic(value)
+        else:
+            self.OptionTrade().AmountForeign(value)
+            
+    def UpdateCashAmount(self):
+        self.CashAmount(self.CashAmount())
+        
+    @ReturnDomainDecorator('date')
+    def StartDate(self, value='*READING*'):
+        if value == '*READING*':
+            return self.Deposit().LegStartDate()
+        self.Deposit().LegStartDate(value)
+        with NoChange(self.Trade()):
+            self.Trade().UpdateDays()
+        self.SetYearFraction()
+
+    @ReturnDomainDecorator('string')
+    def ExpiryDate(self, value='*READING*'):
+        if value == '*READING*':
+            return self.Option().FxoExpiryDate()
+        self.Option().FxoExpiryDate(value)
+        self.Deposit().LegEndDate(self.Option().DeliveryDate())
+        self.SetOptionTradePrice()
+        self.SetYearFraction()
+
+    @ReturnDomainDecorator('date')
+    def DeliveryDate(self, value='*READING*'):
+        if value == '*READING*':
+            return self.Option().DeliveryDate()
+        self.Option().DeliveryDate(value)
+        self.Deposit().LegEndDate(value)
+        self.SetOptionTradePrice()
+        self.SetYearFraction()
+
+    @ReturnDomainDecorator('double')
+    def ConversionRate(self, value='*READING*'):
+        if value == '*READING*':
+            return self.Option().StrikeDomesticPerForeign()
+        self.Option().StrikeDomesticPerForeign(value, self.FormatInput())
+        self.UpdateCashAmount()
+        self.SetOptionTradePrice()
+
+    @ReturnDomainDecorator('string')
+    def ConversionRateUnit(self, value='*READING*'):
+        unit = ''
+        if value == '*READING*' and self.CurrencyPair():
+            unit = self.altCurrency.Name() + ' per ' + self.currency.Name()
+        return unit
+
+    @ReturnDomainDecorator('double')
+    def OptionPremiumRate(self, value='*READING*'):    
+        if value == '*READING*':
+            return self.OptionTrade().ForwardPremium()/ (self.year_fraction * self.CashAmount() *0.01 * -1 )
+        self.OptionTrade().ForwardPremium(self.year_fraction * self.CashAmount() * value * 0.01 * -1 )
+
+    @ReturnDomainDecorator('double')
+    def OptionEndInterest(self, value='*READING*'):
+        if value == '*READING*':
+            return self.OptionTrade().ForwardPremium()            
+        self.OptionTrade().ForwardPremium(value)        
+
+    @ReturnDomainDecorator('double')
+    def TradedYield(self, value='*READING*'):
+        if value == '*READING*':
+            customerInterest = self.TotalEndInterest()
+            return self.YieldFromCoupon(abs(customerInterest), abs(self.CashAmount()))
+        self.solverParameter = 'optionTradePrice'
+        self.solverTopValue = 'tradedYield'
+        self.solverValue = value
+        self.solverAction()
+
+    @ReturnDomainDecorator('double')
+    def TheorYield(self, value='*READING*'):
+        if value == '*READING*':
+            theorInterest = self.TotalTheorEndInterest()
+            return self.YieldFromCoupon(abs(theorInterest), abs(self.CashAmount()))
+        else:
+            self.solverParameter = 'conversionRate'
+            self.solverTopValue = 'theorYield'
+            self.solverValue = value
+            self.solverAction()
+
+    @ReturnDomainDecorator('double')
+    def TotalEndInterest(self, value='*READING*'):
+        if value == '*READING*':
+            return float(self.optionEndInterest) + float(self.depositEndInterest.Value())
+
+    @ReturnDomainDecorator('double')
+    def TotalTheorEndInterest(self, value='*READING*'):
+        if value == '*READING*':
+            return self.optionTheorInterest + float(self.depositEndInterest.Value())
+
+    @ReturnDomainDecorator('double')
+    def TotalValue(self, value='*READING*'):
+        if value == '*READING*':
+            return self.TotalEndInterest() - self.CashAmount() + self.OptionAmount()
+        self.solverParameter = 'optionAmount'
+        self.solverTopValue = 'totalValue'
+        self.solverValue = value
+        self.solverAction()
+
+    @ReturnDomainDecorator('double')
+    def OptionAmount(self, value='*READING*'):
+        isForeign = self.InterestCurrency() == self.Option().DomesticCurrency()
+        if value == '*READING*':
+            return self.OptionTrade().AmountForeign() if isForeign else self.OptionTrade().AmountDomestic()
+        elif isForeign:
+            self.OptionTrade().AmountForeign(value)
+        else:
+            self.OptionTrade().AmountDomestic(value)
+
+    def YieldFromCoupon(self, interest, nominal):
+        years = self.year_fraction
+        if nominal and years:
+            return ( interest / float(nominal) ) * ( 1 / float(years) ) * 100
+        return 0.0
+
+    def SetOptionTradePrice(self, *args):
+        if self.CurrencyPair():
+            try:
+                space = acm.FStandardCalculationsSpaceCollection()
+                self.optionTradePrice = self.OptionTrade().Calculation().TheoreticalPrice(space)                
+            except:
+                pass
+
+    def SetInstrumentFields(self):
+        self.Deposit().ProductTypeChlItem(self.trades_optKey3)
+        self.Option().ProductTypeChlItem(self.trades_optKey3)
+        self.Deposit().CategoryChlItem(self.trades_optKey4)
+        self.Option().CategoryChlItem(self.trades_optKey4)
+
+    def InterestFactorFilter(self, attributeName):
+        context = acm.GetDefaultContext()
+        configColumn = context.GetExtension('FColumnDefinition', 'FTradingSheet', 'Standard Calculations Factor Filter').Value()
+        return acm.Sheet.Column().ConfigurationFromExtensionAttributeValues({configColumn.At('ExtensionAttribute'):"Interest"}, None)
+
+    def CurrentCurrencyChoices(self, attributeName):
+        def Choices():
+            choices = acm.FArray()
+            if self.currency:
+                choices.Add(self.currency)
+            if self.altCurrency:
+                choices.Add(self.altCurrency)
+            return choices
+        return acm.FChoiceListPopulator(Choices)
+
+    def OtherCurrency(self, currency):
+        if currency == self.currency:
+            return self.altCurrency
+        else:
+            return self.currency
+
+    def InitCashHandler(self):
+        self.CashHandler().Currency1(self.currency)
+        self.CashHandler().Currency2(self.altCurrency)
+
+    def CashHandler(self):
+        return self._cashHandler
+
+    def Currency1Choices(self, *args):
+        return self.CashHandler().Currency1Populator()
+
+    def Currency2Choices(self, *args):
+        return self.CashHandler().Currency2Populator()
+
+    def PriceFormatter(self, attributeName, *args):
+        price = self.GetAttribute(attributeName)
+        return self.CashHandler().PriceFormatter(price)
+
+def Start(eii):
+    acm.UX().SessionManager().StartApplication('Deal Package', 'SP_DualCurrencyDeposit')
+    return 
+
+...
+
+  SP_MDCICloseCommand
+import acm
+
+from DealPackageDevKit import CloseCommand
+from DealPackageTradeActionCommands import AsFArray
+from SP_CommonCloseCommand import SP_TradeActionClose, SetCloseAttribute
+
+class MDCICloseCommand(CloseCommand):
+    def Invoke(self, *args):
+        newDp = acm.DealPackage.NewAsDecorator('MDCITradeActionClose', self.DealPackage().GUI(), self.KeyWordArguments())
+        return AsFArray(newDp)
+
+class MDCITradeActionClose(SP_TradeActionClose):
+    def SetB2BFields(self, origDp, close):
+        # Set B2B fields on closing DP
+        if origDp.GetAttribute('depositTrade_salesCoverEnabled') is True:
+            close.SetAttribute('depositTrade_salesCoverEnabled', True)
+            for attrName in ['depositTrade_traderPrice', 'depositTrade_traderAcquirer', 'depositTrade_traderPortfolio']:
+                SetCloseAttribute(origDp, close, attrName)
+        if origDp.GetAttribute('optionTrade_salesCoverEnabled') is True:
+            close.SetAttribute('optionTrade_salesCoverEnabled', True)
+            for attrName in ['optionTrade_traderPrice', 'optionTrade_traderAcquirer', 'optionTrade_traderPortfolio']:
+                SetCloseAttribute(origDp, close, attrName)
+
+...
+
+}
+

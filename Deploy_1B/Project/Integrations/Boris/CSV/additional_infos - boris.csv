@@ -1,0 +1,12 @@
+ADDITIONALINFOSPEC,,,,,,,/ADDITIONALINFOSPEC
+SUBREC_MASK1,SUBREC_MASK2,DATA_TYPE.GRP,DESCRIPTION,DATA_TYPE.TYPE,FIELD_NAME,REC_TYPE,
+1216,32768,Standard,AcquisitionPrice,Double,AcquisitionPrice,Trade,
+,,Standard,Boris Branch Code,String,BR,Trade,
+,,Standard,CostCenter,String,CostCenter,Trade,
+,,Standard,DealNotes,String,DealNotes,Trade,
+1216,32768,Standard,Investment Type,Char,InvestmentType,Trade,
+1216,32768,Standard,Standing Instructions,Char,StandingInstruction,Trade,
+,,Standard,Birth Date,String,DOB,Party,
+,,Standard,Taxpayer Identifier,String,NPWP,Party,
+,,Standard,Standard Industry Code Identifier,String,SIC,Party,
+,,Standard,Ultimate Risk Country Code,String,UCCODE,Party,

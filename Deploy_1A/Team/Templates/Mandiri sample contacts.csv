@@ -1,0 +1,6 @@
+CONTACT,,,,,,,,,,,CONTACTRULE,/CONTACTRULE,/CONTACT
+FULLNAME,PTYNBR.PTYID,COUNTRY,ADDRESS,NETWORK_ALIAS_TYPE.ALIAS_TYPE_NAME,NETWORK_ALIAS_SEQNBR.ALIAS,NETWORK_ALIAS_SEQNBR.PTYNBR.PTYID,CITY,ZIPCODE,ADDRESS2,NETWORK_ALIAS_SEQNBR.TYPE.ALIAS_TYPE_NAME,CONTACT_SEQNBR.PTYNBR.PTYID,,
+AQ1_FULLNAME,Dummy_Acquirer1,,,SWIFT,ACQIIDJAXXX,Dummy_Acquirer1,,,,SWIFT,Dummy_Acquirer1,,
+CL1_FULLNAME,Dummy_Client1,Indonesia,"World Trade Center 6, 2nd Floor",SWIFT,CLNIIDJAXXX,Dummy_Client1,Jakarta,12920,Jalan Jendral Sudirman Kv. No. 29-31,SWIFT,Dummy_Counterparty1,,
+CP1_FULLNAME,Dummy_Counterparty1,Indonesia,"World Trade Center 6, 2nd Floor",SWIFT,CPTIIDJAXXX,Dummy_Counterparty1,Jakarta,12920,Jalan Jendral Sudirman Kv. No. 29-31,SWIFT,Dummy_Counterparty2,,
+CP2_FULLNAME,Dummy_Counterparty2,Indonesia,"World Trade Center 6, 2nd Floor",SWIFT,CPTWIDJAXXX,Dummy_Counterparty2,Jakarta,12920,Jalan Jendral Sudirman Kv. No. 29-31,SWIFT,Dummy_Client1,,

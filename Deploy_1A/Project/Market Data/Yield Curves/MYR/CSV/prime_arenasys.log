@@ -1,0 +1,3 @@
+﻿221219 203201 I 68CC [last log message repeated 1 times]
+221219 203201 I 68CC CSV Upload is waiting for input (click to activate).
+221219 203201 W 68CC UxControlApi Calling ctrl_remove_callback with null MGH_Control

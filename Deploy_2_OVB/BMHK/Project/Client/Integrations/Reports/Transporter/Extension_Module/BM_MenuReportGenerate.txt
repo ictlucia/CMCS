@@ -1,0 +1,573 @@
+#
+# Front Arena exported extension module.
+# source          ""
+# timestamp (utc) "2024-03-26 05:52:15"
+# ***** DO NOT EDIT! *****
+#
+name        "BM_MenuReportGenerate"
+description "$Id$"
+
+groups {
+}
+
+decls[FMenuExtension] {
+}
+
+clx FObject [FMenuExtension] {
+  Commercial Line Utilization =
+  DisplayName=Commercial Line Utilization
+  Function=HKMO11_CommercialLineUtilization.StartApplication
+  MenuType=Application
+  ModuleName=Commercial Line Utilization
+  ParentMenu=Tools
+  RibbonPosition=Reporting Menu 1/Middle Office Report
+
+
+  Country Limit Utilization =
+  DisplayName=Country Limit Utilization
+  Function=HKMO01_CountryLimitUtilization.StartApplication
+  MenuType=Application
+  ModuleName=Country Limit Utilization
+  ParentMenu=Tools
+  RibbonPosition=Reporting Menu 1/Middle Office Report
+
+
+  Credit Limit Monitoring - BK - EF =
+  DisplayName=Credit Limit Monitoring - BK - EF
+  Function=HKMOa02_CreditLimitMonitoring_BK_EF.StartApplication
+  MenuType=Application
+  ModuleName=Credit Limit Monitoring - BK - EF
+  ParentMenu=Tools
+  RibbonPosition=Reporting Menu 1/Middle Office Report
+
+
+  Credit Limit Monitoring - BK - EX =
+  DisplayName=Credit Limit Monitoring - BK - EX
+  Function=HKMOa01_CreditLimitMonitoring_BK_EX.StartApplication
+  MenuType=Application
+  ModuleName=Credit Limit Monitoring - BK - EX
+  ParentMenu=Tools
+  RibbonPosition=Reporting Menu 1/Middle Office Report
+
+
+  Credit Limit Monitoring - Country =
+  DisplayName=Credit Limit Monitoring - Country
+  Function=HKMOa06_CreditLimitMonitoringCountry.StartApplication
+  MenuType=Application
+  ModuleName=Credit Limit Monitoring - Country
+  ParentMenu=Tools
+  RibbonPosition=Reporting Menu 1/Middle Office Report
+
+
+  Credit Limit Monitoring - Issuer =
+  DisplayName=Credit Limit Monitoring - Issuer
+  Function=HKMOa05_CreditLimitMonitoringIssuer.StartApplication
+  MenuType=Application
+  ModuleName=Credit Limit Monitoring - Issuer
+  ParentMenu=Tools
+  RibbonPosition=Reporting Menu 1/Middle Office Report
+
+
+  Credit Limit Monitoring - NBK - EF =
+  DisplayName=Credit Limit Monitoring - NBK - EF
+  Function=HKMOa04_CreditLimitMonitoring_NBK_EF.StartApplication
+  MenuType=Application
+  ModuleName=Credit Limit Monitoring - NBK - EF
+  ParentMenu=Tools
+  RibbonPosition=Reporting Menu 1/Middle Office Report
+
+
+  Credit Limit Monitoring - NBK - EX =
+  DisplayName=Credit Limit Monitoring - NBK - EX
+  Function=HKMOa03_CreditLimitMonitoring_NBK_EX.StartApplication
+  MenuType=Application
+  ModuleName=Credit Limit Monitoring - NBK - EX
+  ParentMenu=Tools
+  RibbonPosition=Reporting Menu 1/Middle Office Report
+
+
+  Daily Cashflow Report - PDN =
+  DisplayName=Daily Cashflow Report - PDN
+  Function=HKO06_DailyCashflowReportPDN.StartApplication
+  MenuType=Application
+  ModuleName=Daily Cashflow Report - PDN
+  ParentMenu=Tools
+  RibbonPosition=Reporting Menu 2/Front Office Report
+
+
+  HKCO01a - ICC - HKMAs Survey on Debt Securities Held =
+  DisplayName=HKCO01a - ICC - HKMAs Survey on Debt Securities Held
+  Function=HKCO01a_ICC_HKMAsSurveyonDebtSecuritiesHeld.StartApplication
+  MenuType=Application
+  ModuleName=HKCO01a - ICC - HKMAs Survey on Debt Securities Held
+  ParentMenu=Tools
+  RibbonPosition=Reporting Menu 2/Middle Office Report
+
+
+  HKCO01b - ICC - HKMAs Survey on Debt Securities Held =
+  DisplayName=HKCO01b - ICC - HKMAs Survey on Debt Securities Held
+  Function=HKCO01b_ICC_HKMAsSurveyonDebtSecuritiesHeld.StartApplication
+  MenuType=Application
+  ModuleName=HKCO01b - ICC - HKMAs Survey on Debt Securities Held
+  ParentMenu=Tools
+  RibbonPosition=Reporting Menu 2/Middle Office Report
+
+
+  HKCO01c - ICC - HKMAs Survey on Debt Securities Held =
+  DisplayName=HKCO01c - ICC - HKMAs Survey on Debt Securities Held
+  Function=HKCO01c_ICC_HKMAsSurveyonDebtSecuritiesHeld.StartApplication
+  MenuType=Application
+  ModuleName=HKCO01c - ICC - HKMAs Survey on Debt Securities Held
+  ParentMenu=Tools
+  RibbonPosition=Reporting Menu 2/Middle Office Report
+
+
+  HKCO01d - ICC - HKMAs Survey on Debt Securities Held =
+  DisplayName=HKCO01d - ICC - HKMAs Survey on Debt Securities Held
+  Function=HKCO01d_ICC_HKMAsSurveyonDebtSecuritiesHeld.StartApplication
+  MenuType=Application
+  ModuleName=HKCO01d - ICC - HKMAs Survey on Debt Securities Held
+  ParentMenu=Tools
+  RibbonPosition=Reporting Menu 2/Middle Office Report
+
+
+  HKCO01e - ICC - HKMAs Survey on Debt Securities Held =
+  DisplayName=HKCO01e - ICC - HKMAs Survey on Debt Securities Held
+  Function=HKCO01e_ICC_HKMAsSurveyonDebtSecuritiesHeld.StartApplication
+  MenuType=Application
+  ModuleName=HKCO01e - ICC - HKMAs Survey on Debt Securities Held
+  ParentMenu=Tools
+  RibbonPosition=Reporting Menu 2/Middle Office Report
+
+
+  HKO03 - Daily Cashflow Report - Cashflow =
+  DisplayName=HKO03 - Daily Cashflow Report - Cashflow
+  Function=HKO03_DailyCashflowReportCashflow.StartApplication
+  MenuType=Application
+  ModuleName=HKO03 - Daily Cashflow Report - Cashflow
+  ParentMenu=Tools
+  RibbonPosition=Reporting Menu 2/Front Office Report
+
+
+  Journal Import =
+  Function=FJournalImportUtil.StartApplication
+  MenuType=Application
+  ModuleName=Journal Import
+  ParentMenu=Tools
+  RibbonPosition=Tools
+
+
+  Liquidity Maintenance Ratio =
+  DisplayName=Liquidity Maintenance Ratio
+  Function=HKO09_LiquidityMaintenanceRatio.StartApplication
+  MenuType=Application
+  ModuleName=Liquidity Maintenance Ratio
+  ParentMenu=Tools
+  RibbonPosition=Reporting Menu 1/Middle Office Report
+
+
+  RISK - HK Asset Monitoring =
+  DisplayName=RISK - HK Asset Monitoring
+  Function=HKMOa09_RISKHKAssetMonitoring.StartApplication
+  MenuType=Application
+  ModuleName=RISK - HK Asset Monitoring
+  ParentMenu=Tools
+  RibbonPosition=Reporting Menu 1/Middle Office Report
+
+
+  Treasury Line Utilization =
+  DisplayName=Treasury Line Utilization
+  Function=HKFO14_Treasury_Line_Utilization.StartApplication
+  MenuType=Application
+  ModuleName=Treasury Line Utilization
+  ParentMenu=Tools
+  RibbonPosition=Reporting Menu 2/Front Office Report
+
+
+}
+
+clx FSessionManagerFrame [FMenuExtension] {
+  Journal Import =
+  Function=FJournalImportUtil.StartApplication
+  MenuType=Application
+  ModuleName=Journal Import
+  ParentMenu=Tools
+  RibbonPosition=Tools
+
+
+}
+
+decls[FPythonCode] {
+}
+
+clx FObject [FPythonCode] {
+  CustodyOutBondUtil
+
+import acm
+import UserProfileUtils as up
+
+def StartApplication(eii):
+    component = 'Back Office'
+    shell = acm.UX.SessionManager().Shell()
+    isallow = up.is_component_in_user_profile(component, 'Operation')
+    if isallow == 1:
+        acm.RunModuleWithParameters("CustodySystemOutBond", acm.GetDefaultContext())
+    else:
+        acm.UX().Dialogs().MessageBoxInformation(shell,"User not have access")
+
+...
+
+  FJournalImportUtil
+
+import acm
+import UserProfileUtils as up
+
+def StartApplication(eii):
+    component = 'BO Journal Upload'
+    shell = acm.UX.SessionManager().Shell()
+    isallow = up.is_component_in_user_profile(component, 'Operation')
+    if isallow == 1:
+        acm.RunModuleWithParameters("FJournalImport", acm.GetDefaultContext())
+    else:
+        acm.UX().Dialogs().MessageBoxInformation(shell,"User not have access")
+
+...
+
+  HKCO01a_ICC_HKMAsSurveyonDebtSecuritiesHeld
+
+import acm
+import UserProfileUtils as up
+
+def StartApplication(eii):
+    component = 'Middle Office'
+    shell = acm.UX.SessionManager().Shell()
+    isallow = up.is_component_in_user_profile(component, 'Operation')
+    if isallow == 1:
+        acm.RunModuleWithParameters("HKCO01a - ICC - HKMAs Survey on Debt Securities Held", acm.GetDefaultContext())
+    else:
+        acm.UX().Dialogs().MessageBoxInformation(shell,"User not have access")
+
+...
+
+  HKCO01b_ICC_HKMAsSurveyonDebtSecuritiesHeld
+
+import acm
+import UserProfileUtils as up
+
+def StartApplication(eii):
+    component = 'Middle Office'
+    shell = acm.UX.SessionManager().Shell()
+    isallow = up.is_component_in_user_profile(component, 'Operation')
+    if isallow == 1:
+        acm.RunModuleWithParameters("HKCO01b - ICC - HKMAs Survey on Debt Securities Held", acm.GetDefaultContext())
+    else:
+        acm.UX().Dialogs().MessageBoxInformation(shell,"User not have access")
+
+...
+
+  HKCO01c_ICC_HKMAsSurveyonDebtSecuritiesHeld
+
+import acm
+import UserProfileUtils as up
+
+def StartApplication(eii):
+    component = 'Middle Office'
+    shell = acm.UX.SessionManager().Shell()
+    isallow = up.is_component_in_user_profile(component, 'Operation')
+    if isallow == 1:
+        acm.RunModuleWithParameters("HKCO01c - ICC - HKMAs Survey on Debt Securities Held", acm.GetDefaultContext())
+    else:
+        acm.UX().Dialogs().MessageBoxInformation(shell,"User not have access")
+
+...
+
+  HKCO01d_ICC_HKMAsSurveyonDebtSecuritiesHeld
+
+import acm
+import UserProfileUtils as up
+
+def StartApplication(eii):
+    component = 'Middle Office'
+    shell = acm.UX.SessionManager().Shell()
+    isallow = up.is_component_in_user_profile(component, 'Operation')
+    if isallow == 1:
+        acm.RunModuleWithParameters("HKCO01d - ICC - HKMAs Survey on Debt Securities Held", acm.GetDefaultContext())
+    else:
+        acm.UX().Dialogs().MessageBoxInformation(shell,"User not have access")
+
+...
+
+  HKCO01e_ICC_HKMAsSurveyonDebtSecuritiesHeld
+
+import acm
+import UserProfileUtils as up
+
+def StartApplication(eii):
+    component = 'Middle Office'
+    shell = acm.UX.SessionManager().Shell()
+    isallow = up.is_component_in_user_profile(component, 'Operation')
+    if isallow == 1:
+        acm.RunModuleWithParameters("HKCO01e -  ICC - HKMAs Survey on Debt Securities Held", acm.GetDefaultContext())
+    else:
+        acm.UX().Dialogs().MessageBoxInformation(shell,"User not have access")
+
+...
+
+  HKFO14_Treasury_Line_Utilization
+
+import acm
+import UserProfileUtils as up
+
+def StartApplication(eii):
+    component = 'Front Office'
+    shell = acm.UX.SessionManager().Shell()
+    isallow = up.is_component_in_user_profile(component, 'Operation')
+    if isallow == 1:
+        acm.RunModuleWithParameters("HKFO14 - Treasury Line Utilization", acm.GetDefaultContext())
+    else:
+        acm.UX().Dialogs().MessageBoxInformation(shell,"User not have access")
+
+...
+
+  HKMO01_CountryLimitUtilization
+
+import acm
+import UserProfileUtils as up
+
+def StartApplication(eii):
+    component = 'Middle Office'
+    shell = acm.UX.SessionManager().Shell()
+    isallow = up.is_component_in_user_profile(component, 'Operation')
+    if isallow == 1:
+        acm.RunModuleWithParameters("HKMO01 - Country Limit Utilization", acm.GetDefaultContext())
+    else:
+        acm.UX().Dialogs().MessageBoxInformation(shell,"User not have access")
+
+...
+
+  HKMO11_CommercialLineUtilization
+
+import acm
+import UserProfileUtils as up
+
+def StartApplication(eii):
+    component = 'Middle Office'
+    shell = acm.UX.SessionManager().Shell()
+    isallow = up.is_component_in_user_profile(component, 'Operation')
+    if isallow == 1:
+        acm.RunModuleWithParameters("HKMO11 - Commercial Line Utilization", acm.GetDefaultContext())
+    else:
+        acm.UX().Dialogs().MessageBoxInformation(shell,"User not have access")
+
+...
+
+  HKMOa01_CreditLimitMonitoring_BK_EX
+
+import acm
+import UserProfileUtils as up
+
+def StartApplication(eii):
+    component = 'Middle Office'
+    shell = acm.UX.SessionManager().Shell()
+    isallow = up.is_component_in_user_profile(component, 'Operation')
+    if isallow == 1:
+        acm.RunModuleWithParameters("HKMOa01 - Credit Limit Monitoring - BK - EX", acm.GetDefaultContext())
+    else:
+        acm.UX().Dialogs().MessageBoxInformation(shell,"User not have access")
+
+...
+
+  HKMOa02_CreditLimitMonitoring_BK_EF
+
+import acm
+import UserProfileUtils as up
+
+def StartApplication(eii):
+    component = 'Middle Office'
+    shell = acm.UX.SessionManager().Shell()
+    isallow = up.is_component_in_user_profile(component, 'Operation')
+    if isallow == 1:
+        acm.RunModuleWithParameters("HKMOa02 - Credit Limit Monitoring - BK - EF", acm.GetDefaultContext())
+    else:
+        acm.UX().Dialogs().MessageBoxInformation(shell,"User not have access")
+
+...
+
+  HKMOa03_Credit Limit Monitoring_NBK_EX
+
+import acm
+import UserProfileUtils as up
+
+def StartApplication(eii):
+    component = 'Middle Office'
+    shell = acm.UX.SessionManager().Shell()
+    isallow = up.is_component_in_user_profile(component, 'Operation')
+    if isallow == 1:
+        acm.RunModuleWithParameters("HKMOa03 - Credit Limit Monitoring - NBK - EX", acm.GetDefaultContext())
+    else:
+        acm.UX().Dialogs().MessageBoxInformation(shell,"User not have access")
+
+...
+
+  HKMOa03_CreditLimitMonitoring_NBK_EX
+
+import acm
+import UserProfileUtils as up
+
+def StartApplication(eii):
+    component = 'Middle Office'
+    shell = acm.UX.SessionManager().Shell()
+    isallow = up.is_component_in_user_profile(component, 'Operation')
+    if isallow == 1:
+        acm.RunModuleWithParameters("HKMOa03 - Credit Limit Monitoring - NBK - EX", acm.GetDefaultContext())
+    else:
+        acm.UX().Dialogs().MessageBoxInformation(shell,"User not have access")
+
+...
+
+  HKMOa04_Credit Limit Monitoring_NBK_EF
+
+import acm
+import UserProfileUtils as up
+
+def StartApplication(eii):
+    component = 'Middle Office'
+    shell = acm.UX.SessionManager().Shell()
+    isallow = up.is_component_in_user_profile(component, 'Operation')
+    if isallow == 1:
+        acm.RunModuleWithParameters("HKMOa04 - Credit Limit Monitoring - NBK - EF", acm.GetDefaultContext())
+    else:
+        acm.UX().Dialogs().MessageBoxInformation(shell,"User not have access")
+
+...
+
+  HKMOa04_CreditLimitMonitoring_NBK_EF
+
+import acm
+import UserProfileUtils as up
+
+def StartApplication(eii):
+    component = 'Middle Office'
+    shell = acm.UX.SessionManager().Shell()
+    isallow = up.is_component_in_user_profile(component, 'Operation')
+    if isallow == 1:
+        acm.RunModuleWithParameters("HKMOa04 - Credit Limit Monitoring - NBK - EF", acm.GetDefaultContext())
+    else:
+        acm.UX().Dialogs().MessageBoxInformation(shell,"User not have access")
+
+...
+
+  HKMOa05_Credit Limit MonitoringIssuer
+
+import acm
+import UserProfileUtils as up
+
+def StartApplication(eii):
+    component = 'Middle Office'
+    shell = acm.UX.SessionManager().Shell()
+    isallow = up.is_component_in_user_profile(component, 'Operation')
+    if isallow == 1:
+        acm.RunModuleWithParameters("HKMOa05 - Credit Limit Monitoring - Issuer", acm.GetDefaultContext())
+    else:
+        acm.UX().Dialogs().MessageBoxInformation(shell,"User not have access")
+
+...
+
+  HKMOa05_CreditLimitMonitoringIssuer
+
+import acm
+import UserProfileUtils as up
+
+def StartApplication(eii):
+    component = 'Middle Office'
+    shell = acm.UX.SessionManager().Shell()
+    isallow = up.is_component_in_user_profile(component, 'Operation')
+    if isallow == 1:
+        acm.RunModuleWithParameters("HKMOa05 - Credit Limit Monitoring - Issuer", acm.GetDefaultContext())
+    else:
+        acm.UX().Dialogs().MessageBoxInformation(shell,"User not have access")
+
+...
+
+  HKMOa06_CreditLimitMonitoringCountry
+
+import acm
+import UserProfileUtils as up
+
+def StartApplication(eii):
+    component = 'Middle Office'
+    shell = acm.UX.SessionManager().Shell()
+    isallow = up.is_component_in_user_profile(component, 'Operation')
+    if isallow == 1:
+        acm.RunModuleWithParameters("HKMOa06 - Credit Limit Monitoring - Country", acm.GetDefaultContext())
+    else:
+        acm.UX().Dialogs().MessageBoxInformation(shell,"User not have access")
+
+...
+
+  HKMOa09_RISKHKAssetMonitoring
+
+import acm
+import UserProfileUtils as up
+
+def StartApplication(eii):
+    component = 'Middle Office'
+    shell = acm.UX.SessionManager().Shell()
+    isallow = up.is_component_in_user_profile(component, 'Operation')
+    if isallow == 1:
+        acm.RunModuleWithParameters("HKMOa09 - RISK - HK Asset Monitoring", acm.GetDefaultContext())
+    else:
+        acm.UX().Dialogs().MessageBoxInformation(shell,"User not have access")
+
+...
+
+  HKO03_DailyCashflowReportCashflow
+
+import acm
+import UserProfileUtils as up
+
+def StartApplication(eii):
+    component = 'Front Office'
+    shell = acm.UX.SessionManager().Shell()
+    isallow = up.is_component_in_user_profile(component, 'Operation')
+    if isallow == 1:
+        acm.RunModuleWithParameters("HKO03 - Daily Cashflow Report - Cashflow", acm.GetDefaultContext())
+    else:
+        acm.UX().Dialogs().MessageBoxInformation(shell,"User not have access")
+
+...
+
+  HKO06_DailyCashflowReportPDN
+
+import acm
+import UserProfileUtils as up
+
+def StartApplication(eii):
+    component = 'Front Office'
+    shell = acm.UX.SessionManager().Shell()
+    isallow = up.is_component_in_user_profile(component, 'Operation')
+    if isallow == 1:
+        acm.RunModuleWithParameters("HKO06 - Daily Cashflow Report - PDN", acm.GetDefaultContext())
+    else:
+        acm.UX().Dialogs().MessageBoxInformation(shell,"User not have access")
+
+...
+
+  HKO09_LiquidityMaintenanceRatio
+
+import acm
+import UserProfileUtils as up
+
+def StartApplication(eii):
+    component = 'Middle Office'
+    shell = acm.UX.SessionManager().Shell()
+    isallow = up.is_component_in_user_profile(component, 'Operation')
+    if isallow == 1:
+        acm.RunModuleWithParameters("HKO09 - Liquidity Maintenance Ratio", acm.GetDefaultContext())
+    else:
+        acm.UX().Dialogs().MessageBoxInformation(shell,"User not have access")
+
+...
+
+}
+

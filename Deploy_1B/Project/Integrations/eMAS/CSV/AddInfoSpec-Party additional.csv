@@ -1,0 +1,10 @@
+ADDITIONALINFOSPEC,,,,,/ADDITIONALINFOSPEC
+DATA_TYPE.GRP,DESCRIPTION,DATA_TYPE.TYPE,FIELD_NAME,REC_TYPE,
+Standard,Data IM,String,Data IM,Party,
+Standard,TOMS,String,TOMS,Party,
+Standard,Bloomberg,String,Bloomberg,Party,
+Standard,Reuters,String,Reuters,Party,
+Standard,Tax ID,String,Tax ID,Party,
+Standard,ID,String,ID,Party,
+Standard,DGT,String,DGT,Party,
+Standard,Data Fund,String,Data Fund,Party,

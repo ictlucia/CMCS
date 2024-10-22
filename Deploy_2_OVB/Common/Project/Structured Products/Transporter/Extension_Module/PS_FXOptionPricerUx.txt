@@ -1,0 +1,384 @@
+#
+# Front Arena exported extension module.
+# source          ""
+# timestamp (utc) "2023-12-08 10:32:05.1"
+# ***** DO NOT EDIT! *****
+#
+name        "PS_FXOptionPricerUx"
+description ""
+
+groups {
+}
+
+decls[FCustomApplicationDefinition] {
+}
+
+clx FObject [FCustomApplicationDefinition] {
+  FX Option Pricer =
+  CreationFunction=FxOptionPricerUx.CreateApplicationInstance
+  HostApplication=
+  HostObjectType=
+  HostPath=
+  Name=FX Option Pricer
+  ObjectTypes=FDealPackage
+  ProfileComponent=FX Option Pricer
+
+
+}
+
+decls[FMenuExtension] {
+}
+
+clx FFrame [FMenuExtension] {
+  FxOptionPricerApplication =
+  DisplayName=FX Option Pricer
+  Function=FxOptionPricerCommands.StartFxOptionPricerApplication
+  MenuType=Application
+  ParentMenu=Trading/Structured Products
+  ProfileComponent=FX Option Pricer
+
+
+}
+
+clx FUxLayoutApplicationFrame [FMenuExtension] {
+  Hedge Strip =
+  CreateFunction=FXStripPricerExtensionPoint.HedgeStripMenuItem
+  DisplayName=Hedge Strip
+  MenuType=Application
+  RibbonPosition=Home/Pricing
+
+
+}
+
+decls[FPythonCode] {
+}
+
+clx FObject [FPythonCode] {
+  FxOptionPricerCommands
+import acm
+
+def StartFxOptionPricerApplication(eii):
+    acm.UX().SessionManager().StartApplication('FX Option Pricer', None)
+    return    
+
+...
+
+  FxOptionPricerUx
+import acm
+import FUxCore
+from DealPackageUx import DealPackageUx
+from UxHelpers import DealPackageHelper
+import DealPackageUxDialogs
+import FxOptionUxCommandItems
+from FxOptionPricerUxDialogs import FxOptionPricerBookmarkDialog
+from CmdWrapper import CmdWrapper
+from FXOptionPricerExtensionPoint import StartApplicationWithBidAskEnabled
+from FXOptionPricerDockedViewsManager import FXOptionPricerDockedViewsManager
+from DealPackageUxControlBase import ReuseAnswers
+
+try:
+    from StructureProductsPreDealUtils import DealPackageUxWithPreDeal
+except ImportError:
+    from DealPackageUx import DealPackageUx as DealPackageUxWithPreDeal
+
+    
+'''*********************************************************************
+*
+* DealPackageUx
+*
+*********************************************************************'''
+
+class FxOptionPricerUx(DealPackageUxWithPreDeal):
+    def __init__(self):
+        if not 'Bookmarks' in globals():
+            global Bookmarks
+            Bookmarks = acm.FOrderedDictionary()
+        DealPackageUx.__init__(self)
+        self._dealPackageDockedViewsManager = FXOptionPricerDockedViewsManager(self)
+        self._gridRegistered = False
+    
+    def HelperClass(self):
+        return DealPackageHelper
+    
+    def DefaultDefinition(self):
+        return 'FX Option'
+
+    def DoOverrideApplicationDefaultSize(self):
+        return 600, 800
+        
+    def DoChangeCreateParameters(self, createParams):
+        createParams.AutoShrink(False)
+        createParams.AdjustPanesWhenResizing(True)
+        createParams.ShowMostRecentlyUsedList(True)
+            
+    def OnSetEntity(self):
+        dp = self.DealPackageHelper().Subject()
+        columns = acm.GetDefaultContext().GetExtension('FParameters', 'FObject', 'FXOptionPricerColumns').Value().GetArray(dp.DefinitionName(), ';')
+        if columns:
+            try:
+                dp.SetAttribute('customCalculations', columns)
+            except:
+                pass
+        self._hasTraits = None
+        self.DealPackagePane().OnSetNewEntity()
+        if self._dockedViewsRegistered:
+            self.DockedViewsManager().OnSetNewEntity() 
+        self.UpdateCaptionAndStatusBar()
+        self.RemoveBrokenBookmarks()
+        self.RebuildCommands()
+        if StartApplicationWithBidAskEnabled() and self.DealPackageHelper().Subject().IsInfant():
+            if 'bidAskMode' in dp.GetAttributes():
+                try:
+                    dp.SetAttribute('bidAskMode', True)
+                except Exception as e:
+                    pass
+                
+    def OnFileNew(self):
+        self.DoFileNew('New Option', 'FX Option Pricer')
+
+    def OpenBookmarkDealpackage(self, dealpackage):
+        try:
+            self.HandleObject(dealpackage)
+        except Exception as e:
+            dialog = DealPackageUxDialogs.DealPackageExceptionDialog(self.Shell(), e)
+            dialog.ShowDealPackageExceptionDialog()
+            return
+        finally:
+            self.OnSetEntity()
+        #OnSetEntity will by default set 'bidAskMode' to True. Reset the correct value
+        self.DealPackageHelper().Subject().SetAttribute('bidAskMode', dealpackage.GetAttribute('bidAskMode'))
+        self.DealPackageHelper().Subject().SetAttribute('bidAskModeVol', dealpackage.GetAttribute('bidAskModeVol'))
+
+    def RemoveBrokenBookmarks(self):
+        for bm in Bookmarks.Keys():
+            dp = Bookmarks.At(bm)
+            try:
+                dp.GetAttribute('instrumentPair')
+            except:
+                #Dealpackage broken, probably because of a reload of python modules. Bookmark unusable delete it.
+                Bookmarks.RemoveKey(bm)
+
+    def OpenBookmarkDialog(self):
+        hasBookmarks = bool(Bookmarks)
+        dealpackage = FxOptionPricerBookmarkDialog(self.Shell(), Bookmarks).ShowDialog()
+        if dealpackage:
+            if isinstance(dealpackage, str):
+                dpCopy = self.DealPackage().Copy()
+                dpCopy.UpdateTime(acm.Time.TimeNow())
+                Bookmarks.AtPut(dealpackage, dpCopy)
+            else:
+                self.OpenBookmarkDealpackage(dealpackage)
+        if hasBookmarks != bool(Bookmarks):
+            self.RebuildCommands()
+            
+    def OnFileSaveNew(self, config = None):
+        with ReuseAnswers(self.DealPackage().GUI()):
+            super().OnFileSaveNew(config)
+
+    def OnFileSave(self, config = None):
+        with ReuseAnswers(self.DealPackage().GUI()):
+            super().OnFileSave(config)
+
+    def OnFileOpen(self):
+        self.DoFileOpen('Select Option', 'FX Option Pricer')
+        
+    def OpenSavedResult(self, result):
+        for r in result:
+            acm.StartApplication('FX Option Pricer', r)
+     
+    def ChangeCallPutCB(self):
+        changeCallPut = FxOptionUxCommandItems.ChangeCallPut()
+        changeCallPut.SetApplication(self)
+        return changeCallPut     
+        
+    def ChangeBidAskCB(self):
+        changeBidAsk = FxOptionUxCommandItems.ChangeBidAsk()
+        changeBidAsk.SetApplication(self)
+        return changeBidAsk
+        
+    def SetTradePriceCB(self):
+        setTradePrice = FxOptionUxCommandItems.SetTradePrice()
+        setTradePrice.SetApplication(self)
+        return setTradePrice
+
+    def RealTimeUpdatesCB(self):
+        realTimeUpdates = FxOptionUxCommandItems.RealTimeUpdates()
+        realTimeUpdates.SetApplication(self)
+        return realTimeUpdates
+
+    def RemoveAllSimulationsCB(self):
+        removeAllSimulations = FxOptionUxCommandItems.RemoveAllSimulations()
+        removeAllSimulations.SetApplication(self)
+        return removeAllSimulations
+
+    def SelectColumnsCB(self):
+        selectColumns = FxOptionUxCommandItems.SelectColumns()
+        selectColumns.SetApplication(self)
+        return selectColumns
+
+    def ChangePremiumCurrencyCB(self):
+        changePremiumCurrency = FxOptionUxCommandItems.ChangePremiumCurrency()
+        changePremiumCurrency.SetApplication(self)
+        return changePremiumCurrency
+
+    def ChangeToFlipSideCB(self):
+        changeToFlipSide = FxOptionUxCommandItems.ChangeToFlipSide()
+        changeToFlipSide.SetApplication(self)
+        return changeToFlipSide
+    
+    def OpenInInsDefCB(self):
+        openInInsDef = FxOptionUxCommandItems.OpenInInsDef()
+        openInInsDef.SetApplication(self)
+        return openInInsDef    
+     
+    def OpenPutInInsDefCB(self):
+        openInInsDef = FxOptionUxCommandItems.OpenPutInInsDef()
+        openInInsDef.SetApplication(self)
+        return openInInsDef     
+        
+    def OpenInVolManCB(self):
+        openInVolMan = FxOptionUxCommandItems.OpenInVolMan()
+        openInVolMan.SetApplication(self)
+        return openInVolMan
+        
+    def RefreshAttrMarketDataCB(self):
+        refreshAttrMarketData = FxOptionUxCommandItems.RefreshAttrMarketData()
+        refreshAttrMarketData.SetApplication(self)
+        return refreshAttrMarketData        
+        
+    def SetSolverParameterCB(self):
+        setSolverParameter = FxOptionUxCommandItems.SetSolverParameter()
+        setSolverParameter.SetApplication(self)
+        return setSolverParameter
+
+    def CreateBookmarkCmdCB(self):
+        saveBookmark = FxOptionUxCommandItems.SaveBookmark()
+        saveBookmark.SetApplication(self)
+        return saveBookmark
+
+    def AddStripLegCB(self):
+        addStripLeg = FxOptionUxCommandItems.AddStripLeg()
+        addStripLeg.SetApplication(self)
+        return addStripLeg
+    
+    def GenerateStripLegsCB(self):
+        generateStripLegs = FxOptionUxCommandItems.GenerateStripLegs()
+        generateStripLegs.SetApplication(self)
+        return generateStripLegs
+    
+    def RemoveStripLegCB(self):
+        removeStripLeg = FxOptionUxCommandItems.RemoveStripLeg()
+        removeStripLeg.SetApplication(self)
+        return removeStripLeg
+        
+    def CreateToggleSlimDetailedCmdCB(self):
+        toggleSlimDetailed = FxOptionUxCommandItems.ToggleSlimDetailedMode()
+        toggleSlimDetailed.SetApplication(self)
+        return toggleSlimDetailed
+ 
+    def RegisterCustomCommands(self):
+        commands = [
+                    ['autoRefreshCalcCommand',  'View', 'Auto Refresh',                 'Auto Refresh Calculations',    '',                 'O',     self.CreateAutoRefreshCmdCB,            False ],
+                    ['refreshCalcCommand',      'View', 'Refresh',                      'Refresh Calculations',         '',                 'H',     self.CreateRefreshCmdCB,                False ],
+                    ['save',                    'View', 'Save',                         'Save',                         '',                 'S',     self.CreateSaveCmdCB,                   False ],
+                    ['saveNew',                 'View', 'Save New',                     'Save New',                     '',                 'N',     self.CreateSaveNewCmdCB,                False ],
+                    ['bookmark',                'View', 'Bookmark',                     'Remember current pricing',     '',                 'K',     self.CreateBookmarkCmdCB,               False ],
+                    ['toggleShowInDetail',      'View', 'Show Mode',                    'Slim/Detail view Mode',        'Ctrl+D',           'D',     self.CreateToggleSlimDetailedCmdCB,     False ],
+                    ['tradeActions',            'View', 'Trade Actions',                'Use available trade actions',  '',                 '',      self.CreateTradeActionsCmdCB,           False ],
+                    ['customActions',           'View', 'Custom Actions',               'Use available custom actions', '',                 '',      self.CreateCustomActionsCmdCB,          False ],
+                    ['togglePanes',             'View', 'Visible Panes',                'Toggle visible panes',         '',                 '',      self.CreateTogglePanesBaseCmdCB,        False ],
+                    ['changeCallPut',           'View', 'Call/Put',                     'Call/Put',                     'F7;Ctrl+Shift+C',  'C',     self.ChangeCallPutCB,                   False],
+                    ['changeBIdAsk',            'View', 'Bid/Ask',                      'Bid/Ask',                      'F11;Ctrl+Shift+B', 'B',     self.ChangeBidAskCB,                    False],
+                    ['updateTradePrice',        'View', 'Update Price',                 'Update Price',                 'F8;Ctrl+Shift+P',  'P',     self.SetTradePriceCB,                   False],
+                    ['realTimeUpdates',         'View', 'Real Time Updates',            'Real Time Updates',            'F12;Ctrl+Shift+R', 'R',     self.RealTimeUpdatesCB,                 False],
+                    ['removeAllSimulations',    'View', 'Remove Simulations',           'Remove Simulations',           'Ctrl+Shift+E',     'E',     self.RemoveAllSimulationsCB,            False],
+                    ['selectColumns',           'View', 'Select Columns',               'Select Columns',               '',                 '',      self.SelectColumnsCB,                   False],
+                    ['changePremiumCurrency',   'View', 'Change Premium Currency',      'Change Premium Currency',      'F9;Ctrl+Shift+U',  'U',     self.ChangePremiumCurrencyCB,           False],
+                    ['changeToFlipSide',        'View', 'Flip',                         'Flip',                         'Ctrl+Shift+F',     'F',     self.ChangeToFlipSideCB,                False],
+                    ['openInsDef',              'View', 'Open Instrument Definition',   'Open Instrument Definition',   '',                 'I',     self.OpenInInsDefCB,                    False],
+                    ['openVolatility',          'View', 'Open Volatility Surface',      'Open Volatility Surface',      '',                 'V',     self.OpenInVolManCB,                    False],
+                    ['refreshCellMarketData',   'View', 'Refresh Cell Market Data',     'Refresh Cell Market Data',     'F5;Ctrl+Shift+M',  'M',     self.RefreshAttrMarketDataCB,           False],
+                    ['addStripLeg',             'View', 'Add new Leg to Strip',         'Add new Leg to Strip',         '',                 '',      self.AddStripLegCB,                     False],
+                    ['removeStripLeg',          'View', 'Remove selected Leg',          'Remove selected Leg',          '',                 '',      self.RemoveStripLegCB,                  False],
+                    ['generateStripLegs',       'View', 'Generate Legs',                'Generate Legs',                '',                 '',      self.GenerateStripLegsCB,               False],
+                    ['quoteRequest',            'View', 'Request Quote',                'Open Quote Request Dialog',    '',                 '',      self.CreateOpenQuoteRequestCmdCB,       False],
+                    ['salesOrder',              'View', 'Sales Order',                  'Open Sales Order Dialog',      '',                 '',      self.CreateOpenSalesOrderCmdCB,         False],
+                    ['setSolverParameter',      'View', 'Set Cell as Solver Parameter', 'Set Cell as Solver Parameter', 'F3;Ctrl+Shift+T',  'T',     self.SetSolverParameterCB,              False]
+                   ]         
+        return commands
+        
+    def DealPackageIsSpread(self):
+        return self.DealPackageHelper().DefinitionName() in ['FXCallPutSpreadDealPackage', 'PMCallPutSpreadDealPackage']
+
+    def CreateDyanamicOpenTradeCommands(self):
+        firstTradeCmdName = 'Long' if self.DealPackageIsSpread() else 'Call'
+        secondTradeCmdName = 'Short' if self.DealPackageIsSpread() else 'Put'
+        return [[firstTradeCmdName, '', firstTradeCmdName, 'Open the Trade in an Instrument Definition Window', '', '', self.OpenInInsDefCB, False],
+                [secondTradeCmdName, '', secondTradeCmdName, 'Open the Trade in an Instrument Definition Window', '', '', self.OpenPutInInsDefCB, False]]
+
+    def CreateDyanamicBookmarksCommands(self):
+        return [[name, '', name, '', '', '', FxOptionUxCommandItems.OpenBookmark(self, Bookmarks.At(name)).Self, False] for name in Bookmarks.Keys()]
+
+    @FUxCore.aux_cb
+    def DynamicOpenTradeCommands(self, notUsed, cd):
+        dealPacakge = self.DealPackageHelper().Subject()
+        if dealPacakge.TradeKeys().Size() > 1:
+            menuBuilder = cd.At('menuBuilder')
+            menuBuilder.RegisterCommands(FUxCore.ConvertCommands(self.CreateDyanamicOpenTradeCommands()))
+
+    @FUxCore.aux_cb
+    def DynamicBookmarksCommands(self, notUsed, cd):
+        menuBuilder = cd.At('menuBuilder')
+        menuBuilder.RegisterCommands(FUxCore.ConvertCommands(self.CreateDyanamicBookmarksCommands()))
+
+    def RegisterCustomDynamicCommands(self, builder):
+        DealPackageUx.RegisterCustomDynamicCommands(self, builder)
+        builder.RegisterDynamicCommand('openInsDef', True, True, self.DynamicOpenTradeCommands, self)
+        builder.RegisterDynamicCommand('bookmark', True, False, self.DynamicBookmarksCommands, self)
+    
+    def GetCurrentCell(self):
+        dataGridView = self.DockedViewsManager().GridProxy().Grid()
+        return dataGridView.CurrentCell
+       
+    def GetCurrentLegNameFromSelectedCell(self):
+        cell = self.GetCurrentCell()
+        return cell.OwningColumn.HeaderCell.Value
+        
+    def GetCurrentViewModelItem(self):
+        viewModelItem = None
+        cell = self.GetCurrentCell()
+        if cell:
+            gridPane = self.DockedViewsManager().GridProxy().GridPane()
+            viewModelItem = gridPane.ViewModel().ViewModelItems()[cell.RowIndex][cell.ColumnIndex]
+        return viewModelItem
+        
+    def GetCurrentMarketDataCellAttrName(self):
+        attrName = None
+        viewModelItem = self.GetCurrentViewModelItem()
+        if viewModelItem and viewModelItem.IsMarketDataAttr():
+            attrName = viewModelItem.GetAttributeName()
+        return attrName
+        
+    def GetCurrentSolverParameterAttrName(self):
+        attrName = None
+        viewModelItem = self.GetCurrentViewModelItem()
+        if viewModelItem and viewModelItem.HasSolverParameter():
+            attrName = viewModelItem.GetAttributeName()
+        return attrName
+        
+'''*********************************************************************
+*
+* CreateApplicationInstance
+*
+*********************************************************************'''
+def CreateApplicationInstance():
+    return FxOptionPricerUx()
+
+def StartFxOptionPricerApplication(eii):
+    acm.UX().SessionManager().StartApplication('FX Option Pricer', None)
+    return    
+
+...
+
+}
+

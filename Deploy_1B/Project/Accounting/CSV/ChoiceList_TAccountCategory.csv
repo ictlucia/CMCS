@@ -1,0 +1,6 @@
+CHOICELIST,,,,/CHOICELIST
+DESCRIPTION,LIST,SORT_ORDER,ENTRY,
+,MASTER,,TAccount Category,
+,TAccount Category,,Balance Sheet,
+,TAccount Category,,Off Balance Sheet,
+,TAccount Category,,Revenue Sheet,

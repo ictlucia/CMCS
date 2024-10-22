@@ -1,0 +1,456 @@
+#
+# Front Arena exported extension module.
+# source          ""
+# timestamp (utc) "2023-11-20 13:53:38.9"
+# ***** DO NOT EDIT! *****
+#
+name        "PS_CustodySystemOutBond"
+description ""
+
+groups {
+}
+
+decls[FParameters] {
+}
+
+clx FObject [FParameters] {
+  CustOutBondParams =
+  logFilename=CUSTODY_OUT_BOND_LOG_{}.txt
+  outputFilename=CUSTODY_OUT_BOND_{}.csv
+  securitiesAccountNo=000911300001
+
+
+}
+
+decls[FPythonCode] {
+}
+
+clx FObject [FPythonCode] {
+  CustodySystemOutBond
+"""----------------------------------------------------------------------------------------------------
+MODULE:
+    CustodySystemOutBond
+
+DESCRIPTION:
+    Entry point to invoke the Custody System Out Bond run task gui.
+
+-------------------------------------------------------------------------------------------------------"""
+import acm, ael, traceback
+import os, csv
+import ParametersReader, FRunScriptGUI
+import FLogger, InterfaceUtils
+from collections import OrderedDict
+import copy
+
+# get value from FPArameter
+custodyParams = ParametersReader.get_params('CustOutBondParams')
+CALC_SPACE_DEAL_SHEET = acm.Calculations().CreateCalculationSpace(acm.GetDefaultContext(), 'FDealSheet')
+
+output_file = custodyParams['outputFilename'].format(
+    acm.Time.TimeNow().replace(' ', '_').replace('-', '').replace(':', '')[:-7])
+
+log_file_name = custodyParams['logFilename'].format(acm.Time.DateToday().replace('-', ''))
+
+def initialize_logging(params, logfile_name, app_name):
+    """
+    Initialize logger
+    :param params: parameters
+    :return: FLogger object
+    """
+    logger = None
+    logfile = None
+    try:
+        logFolder = params['log_folder']
+        logfolderString = logFolder.SelectedDirectory().AsString()
+        if logfolderString:
+            if logfile_name:
+                logfile = os.path.join(logfolderString, logfile_name)
+
+        logLevel = params['log_level']
+        level = InterfaceUtils.LogLevelNameToNumber(logLevel)
+        logger = FLogger.FLogger(level=level,
+                                 name=app_name,
+                                 logToPrime=True,
+                                 logToFileAtSpecifiedPath=logfile,
+                                 logToConsole=False)
+    except Exception as err:
+        print('Error in initializing logger {}'.format(err))
+        print(traceback.format_exc())
+    return logger
+
+
+class CustOutBond(FRunScriptGUI.AelVariablesHandler):
+    COUNTERPARTY_TYPE_KSEI = "KSEI"
+    COUNTERPARTY_TYPE_BIS4 = "BISSSS"
+
+    COUNTERPARTY_CC001 = "CC001"
+
+    DELIVERY_TYPE_DVP = 'Delivery versus Payment'
+    DELIVERY_TYPE_DFP = 'Delivery Free of Payment'
+    
+    ACCOUNT_TYPE_CASH = 'Cash'
+    ACCOUNT_TYPE_SECURITY = 'Security'
+    ACCOUNT_TYPE_CASH_SECURITY = 'Cash and Security'
+
+    INSTRUMENT_CATEGORY_CBIDR = "CBIDR"
+
+    PLACE_OF_SETTLEMENT_KSEIIDJA = "KSEIIDJA"
+    PLACE_OF_SETTLEMENT_BBIJIDJA = "BBIJIDJA"
+    
+    PLACE_OF_SETTLEMENT = 'BIC'
+
+    def __init__(self, cust_out_bond_params):
+        """
+        Init the member variables
+        :param cust_out_bond_params:
+        """
+        logLevels = [FLogger.FLogger.INFO, FLogger.FLogger.ERROR, FLogger.FLogger.WARNING, FLogger.FLogger.DEBUG]
+
+        folderPicker = FRunScriptGUI.DirectorySelection()
+        query = [query.Name() for query in acm.FStoredASQLQuery.Select("subType='FTrade'")]
+        gui_vars = [
+            ['queryName', 'Stored Query Name_Input', 'string', query, None, 1, 0, 'Stored query', None, 1],
+            ['outputFolder', 'Folder Path_Output', folderPicker, None, folderPicker, 1, 1,
+             'The file path where summary result will be generated.', None, 1],
+            ['logToConsole', 'Log to console_Logging', 'int', [1, 0], 1, 1, 0,
+             'Whether logging should be done in the Log Console or not.'],
+            ['log_folder', 'Log folder_Logging', folderPicker, None, folderPicker, 0, 1,
+             'Select where to store the log file',
+             0, None],
+            ['log_level', 'Log level_Logging', 'string', logLevels, FLogger.FLogger.DEBUG, 1, 0]
+        ]
+
+        securities_account_no = cust_out_bond_params["securitiesAccountNo"]
+        self.var_dict = OrderedDict({   "OrderType" : None, "ClientType" : None, "ClientReference" : None,
+                                        "TradeDate" : None, "SettlementDate" : None, "SecuritiesAccountNo" : securities_account_no,
+                                        "IdentificationScheme" : None, "SecuritiesIdentifier" : None,
+                                        "SettlementQuantity" : None, "BuyerSellerType" : None, "BuyerSeller" : None,
+                                        "CounterPartyType" : None, "CounterParty" : None,
+                                        "ReceivingDeliveringCustodianType" : None,
+                                        "ReceivingDeliveringCustodian" : None, "SettlementCurrency" : None,
+                                        "SettlementAmount" : None, "DealCurrency" : None, "DealPrice" : None,
+                                        "Purposeofthetrade" : None, "CancellationReference" : None,
+                                        "ExemptionCode" : None, "ChangeofBeneficiaryIndicator" : None,
+                                        "STTPayableIndicator" : None, "STTAmountPayable" : None,
+                                        "Remarks" : None, "SettlementBasis" : None, "PlaceOfSettlementType" : None,
+                                        "PlaceOfSettlement" : None, "CounterPartyAccount" : None,
+                                        "ReceivingDeliveringCustodianAccount" : None, "BuyerSellerAccount" : None,
+                                        "TransactionType" : None, "RepoRate" : None, "PoolReference" : None,
+                                        "AdditionalESESField" : None, "PlaceOfSafekeeping" : None,
+                                        "AgentAccountInstructing" : None, "RegistrationFlag" : None, "StampDuty" : None,
+                                        "StampDutyAmount" : None, "AACBInternalReference" : None,
+                                        "ReportInformation" : None, "AccruedInterestAmount" : None,
+                                        "AccruedInterestCurrency" : None, "AgentInstructing" : None,
+                                        "BrokerAmount" : None, "BrokerCurrency" : None, "CashAccount" : None,
+                                        "CommonRef" : None, "DealAmount" : None,
+                                        "DeliveryWithoutMatchingInd" : None, "ExCumIndicator" : None,
+                                        "Investor" : None, "InvestorAccount" : None, "InvestorType" : None,
+                                        "IPOIndicator" : None, "Leg" : None, "Npar" : None, "OptOutIndicator" : None,
+                                        "PhysicalTradeInd" : None, "PlaceOfSafekeepingType" : None,
+                                        "PlaceOfTrade" : None, "PlaceOfTradeNarrative" : None, "RepoReference" : None,
+                                        "SecondaryLegReference" : None, "SpecialDelivery" : None,
+                                        "StampDutyCurrency" : None,
+                                        "TaxCapacityPartyInd" : None, "TrackingIndicator" : None,
+                                        "TradeTime" : None, "ReasonCode22F" : None, "TaxOnAccruedInterestAmount" : None,
+                                        "TaxOnAccruedInterestCurrency" : None, "TaxOnCapitalGainAmount" : None,
+                                        "TaxOnCapitalGainCurrency" : None, "WHTOnCommissionAmount" : None,
+                                        "WHTOnCommissionCurrency" : None, "OtherChargesAmount" : None,
+                                        "OtherChargesCurrency" : None, "VATAmount" : None, "VATCurrency" : None,
+                                        "CapitalGainAmount" : None, "CapitalGainCurrency" : None, "LEVYAmount" : None,
+                                        "LEVYCurrency" : None, "FEEAmount" : None, "FEECurrency" : None} )
+
+        self.ctp_no_add_info_spec = acm.FAdditionalInfo['CTPNumber']
+
+        self.var_list = list()
+        self.file_field_names = []
+        self.formatter = acm.Get('formats/FullPrecision')
+        FRunScriptGUI.AelVariablesHandler.__init__(self, gui_vars)
+
+    def get_order_type_and_settlement(self, trd):
+        """
+        Get OrderType
+            a. DVP/RVP:
+                Back Office users will select accounts :
+                For settlement type Security Nominal: Account Type 'Cash and Security'
+                For settlement type Premium: Account Type 'Cash and Security'
+
+                BO users will not select different account type if they want the OrderType in DVP/RVP.
+
+            b. DFP/RFP:
+                Back Office users will select accounts:
+                For settlement type Security Nominal: Account Type 'Security'
+                For settlement type Premium: Account Type 'Cash'
+        :param trd: FTrade
+        :return: string
+        """
+        account_type_security_nomial = ''
+        account_type_premium = ''
+        delivery_type = ''
+        ret_val = ''
+        ret_settlement = None
+        settlement_premium = None
+        settlement_security_nominal = None
+        settlements = trd.Settlements() if trd.Settlements() else []
+        for settlement in settlements:
+            if settlement.Type() == 'Security Nominal':
+                if settlement.CounterpartyAccountRef():
+                    account_type_security_nomial = settlement.CounterpartyAccountRef().AccountType() 
+                    settlement_security_nominal = settlement                
+            elif settlement.Type() == 'Premium':
+                if settlement.CounterpartyAccountRef():
+                    account_type_premium = settlement.CounterpartyAccountRef().AccountType()
+                    settlement_premium = settlement
+
+        trd_direction = trd.Direction().upper()
+        if account_type_security_nomial == CustOutBond.ACCOUNT_TYPE_CASH_SECURITY and account_type_premium == CustOutBond.ACCOUNT_TYPE_CASH_SECURITY:
+            ret_settlement = settlement_premium
+            if trd_direction == 'BUY':
+                ret_val = 'RVP'
+            elif trd_direction == 'SELL':
+                ret_val = 'DVP'
+        elif account_type_security_nomial == CustOutBond.ACCOUNT_TYPE_SECURITY and account_type_premium == CustOutBond.ACCOUNT_TYPE_CASH:
+            ret_settlement = settlement_security_nominal
+            if trd_direction == 'BUY':
+                ret_val = 'RFP'
+            elif trd_direction == 'SELL':
+                ret_val = 'DFP'
+        
+        return ret_val, ret_settlement
+
+    def format_decimal(self, val):
+        """
+        :param val: Value
+        :return: float
+        """
+        return abs(self.formatter.Parse(val))
+
+    def generate_file(self, outputFolder, file_rows, outputFile):
+        """
+        This function generates output file
+        :param outputFolder: string
+        :param file_rows: list
+        :param outputFile: string
+        :return: None
+        """
+        if file_rows:
+            with open(os.path.join(outputFolder, outputFile), 'w', newline='') as csvfile:
+                fieldnames = file_rows[0].keys()
+                writer = csv.DictWriter(csvfile, fieldnames=list(fieldnames))
+                writer.writeheader()
+                for row in file_rows:
+                    writer.writerow(row)
+
+    def set_logger(self, logger):
+        """
+        This function sets the logger
+        :param logger: FLogger
+        :return: None
+        """
+        self._logger = logger
+
+    def get_counterparty_type_and_counterparty(self, trd):
+        """
+        Get counterparty type and counterparty
+        :param trd: FTrade
+        :return: tuple (string, string)
+        """
+        cp_type = CustOutBond.COUNTERPARTY_TYPE_KSEI
+        cp = ''
+        try:
+            cp = trd.Counterparty().AdditionalInfo().Data_IM()
+        except Exception as err:
+            self._logger.LOG('Error in get_counterparty_type_and_counterparty {}'.format(err))
+
+        '''if trd.Counterparty():
+            if trd.Counterparty().IsKindOf(acm.FBroker):
+                cp_type = CustOutBond.COUNTERPARTY_TYPE_KSEI
+                cp = CustOutBond.COUNTERPARTY_CC001
+            elif trd.Counterparty().IsKindOf(acm.FCounterParty):
+                cp_type = CustOutBond.COUNTERPARTY_TYPE_BIS4
+                cp = trd.Counterparty().Swift()'''
+
+        return cp_type, cp
+
+    def get_place_of_settlement(self, trd):
+        """
+        This function returns place of settlement
+        :param trd: FTrade
+        :return: string
+        """
+        '''pos = CustOutBond.PLACE_OF_SETTLEMENT_BBIJIDJA
+        category_item = trd.Instrument().CategoryChlItem()
+        if category_item and category_item.Name() == CustOutBond.INSTRUMENT_CATEGORY_CBIDR:
+            pos = CustOutBond.PLACE_OF_SETTLEMENT_KSEIIDJA'''
+        return CustOutBond.PLACE_OF_SETTLEMENT_KSEIIDJA
+                
+    def get_transaction_type(self, order_type):
+        """
+        This function returns place of settlement
+        :param trd: FTrade
+        :return: string
+        """
+        '''pos = CustOutBond.PLACE_OF_SETTLEMENT_BBIJIDJA
+        category_item = trd.Instrument().CategoryChlItem()
+        if category_item and category_item.Name() == CustOutBond.INSTRUMENT_CATEGORY_CBIDR:
+            pos = CustOutBond.PLACE_OF_SETTLEMENT_KSEIIDJA'''
+        
+        transaction_type = ''
+        if order_type in ['DVP', 'RVP']:
+            transaction_type = 'TRAD'
+        elif order_type in ['DFP', 'RFP']:
+            transaction_type = 'ISSU'
+            
+        return transaction_type
+        
+    def get_accrued_interest(self, trd):
+        try:
+            calc = CALC_SPACE_DEAL_SHEET.CreateCalculation(trd, 'Standard Calculations Quote Conversion Accrued')
+            acc_int = calc.Value().Number()
+            formatter = acm.Get('formats/AbsInstrumentDefinitionNominal')
+            as_formatted_string = formatter.Format(acc_int)
+            return abs(formatter.Parse(as_formatted_string))
+        except Exception as err:
+            return 0
+
+    def map_payment(self, trd, payment_type, payment_curr, tmp_var_dict):
+        """
+        This function updates the incoming dictionary with payments
+        :param trd: FTrade
+        :param payment_name: Name of the payment
+        :param payment_curr: payment currency
+        :param tmp_var_dict: dictionary to update
+        :return: None
+        """
+        for payment in trd.Payments():
+            acm_payment_name = payment_type[:-6]  # Remove text 'Amount'
+            if payment.Type() == acm_payment_name:
+                tmp_var_dict[payment_type] = payment.Amount()
+                tmp_var_dict[payment_curr] = trd.Currency().Name()
+                break
+
+    def generate_bondout_data(self, params):
+        """
+        This function generates recap data
+        :param params: parameters
+        :return:None
+        """
+        self._logger.LOG('Start generate_bondout_data')
+        outputFolder = params['outputFolder'].SelectedDirectory().AsString()
+
+        stored_query_name = params['queryName']
+
+        stored_query = acm.FStoredASQLQuery[stored_query_name]
+        if stored_query:
+            bond_trades = stored_query.Query().Select().Sort()
+            file_row = list()
+
+            for trd in bond_trades:
+                try:
+                    cp_type, cp = self.get_counterparty_type_and_counterparty(trd)
+                    pos = self.get_place_of_settlement(trd)
+                    tmp_var_dict = copy.deepcopy(self.var_dict)
+                    order_type, settlement = self.get_order_type_and_settlement(trd)
+                    tmp_var_dict["OrderType"] = order_type
+                    tmp_var_dict["ClientReference"] = settlement.Oid() if settlement else ''
+                    tmp_var_dict["TradeDate"] = InterfaceUtils.date_from_datetime(trd.TradeTime(),
+                                                                                  format_str='%m/%d/%Y')
+                    tmp_var_dict["SettlementDate"] = InterfaceUtils.date_from_datetime(trd.ValueDay(),
+                                                                                       format_str='%m/%d/%Y')
+                    if trd.Instrument().Isin():
+                        tmp_var_dict["SecuritiesIdentifier"] = trd.Instrument().Isin()
+                        tmp_var_dict["IdentificationScheme"] = 'ISIN'
+                    else:
+                        tmp_var_dict["SecuritiesIdentifier"] = trd.Instrument().Name()
+                        tmp_var_dict["IdentificationScheme"] = 'CDS'
+
+                    tmp_var_dict["SettlementQuantity"] = self.format_decimal(trd.Quantity())
+                    tmp_var_dict['CounterPartyType'] = cp_type
+                    tmp_var_dict['CounterParty'] = cp
+                    tmp_var_dict["SettlementCurrency"] = trd.Currency().Name()
+                    tmp_var_dict["SettlementAmount"] = self.format_decimal(settlement.Amount()) if settlement else ''
+                    tmp_var_dict["DealCurrency"] = trd.Currency().Name()
+                    tmp_var_dict["DealPrice"] = self.format_decimal(trd.Price())
+                    tmp_var_dict["TransactionType"] = self.get_transaction_type(order_type)
+                    tmp_var_dict["DealAmount"] = abs(self.format_decimal(trd.Price()) * trd.Quantity() / 100)
+                    '''if pos == CustOutBond.PLACE_OF_SETTLEMENT_KSEIIDJA and order_type in ['RFP', 'DFP']:
+                        tmp_var_dict["PlaceOfTrade"] = 'EXCH' '''
+                        
+                    if pos == CustOutBond.PLACE_OF_SETTLEMENT_KSEIIDJA and order_type in ['RFP', 'DFP']:
+                        tmp_var_dict["PlaceOfTrade"] = 'OTCO'                    
+
+                    if trd.Status() == 'Void':
+                        tmp_var_dict["Purposeofthetrade"] = 'CANC'
+                    else:
+                        tmp_var_dict["Purposeofthetrade"] = 'NEWM'
+
+                    if trd.Instrument().IsKindOf(acm.FBond):
+                        tmp_var_dict["SettlementBasis"] = 'FAMT'
+                    elif trd.Instrument().IsKindOf(acm.FStock):
+                        tmp_var_dict["SettlementBasis"] = 'Unit'
+
+                    tmp_var_dict["PlaceOfSettlement"] = pos
+                    tmp_var_dict["PlaceOfSettlementType"] = CustOutBond.PLACE_OF_SETTLEMENT
+                    
+                    
+                    tmp_var_dict['AccruedInterestAmount'] = self.get_accrued_interest(trd)
+                    tmp_var_dict['AccruedInterestCurrency'] = trd.Currency().Name()
+
+                    if self.ctp_no_add_info_spec:
+                        tmp_var_dict["CommonRef"] = trd.AddInfoValue(self.ctp_no_add_info_spec)
+
+                    if trd.Fee():
+                        tmp_var_dict["BrokerAmount"] = self.format_decimal(trd.Fee())
+                        tmp_var_dict["BrokerCurrency"] = trd.Currency().Name()
+
+                    self.map_payment(trd, 'TaxOnAccruedInterestAmount', 'TaxOnAccruedInterestCurrency', tmp_var_dict)
+                    self.map_payment(trd, 'TaxOnCapitalGainAmount', 'TaxOnCapitalGainCurrency', tmp_var_dict)
+                    self.map_payment(trd, 'WHTOnCommissionAmount', 'WHTOnCommissionCurrency', tmp_var_dict)
+                    self.map_payment(trd, 'OtherChargesAmount', 'OtherChargesCurrency', tmp_var_dict)
+                    self.map_payment(trd, 'VATAmount', 'VATCurrency', tmp_var_dict)
+                    self.map_payment(trd, 'CapitalGainAmount', 'CapitalGainCurrency', tmp_var_dict)
+                    self.map_payment(trd, 'LEVYAmount', 'LEVYCurrency', tmp_var_dict)
+                    self.map_payment(trd, 'FEEAmount', 'FEECurrency', tmp_var_dict)
+
+                    file_row.append(tmp_var_dict)
+                except Exception as err:
+                    self._logger.ELOG(
+                        'Error occurred during extracting data for Trade {}. Error {}'.format(trd.Oid(), str(err)))
+                    print(traceback.format_exc())
+
+            self.generate_file(outputFolder, file_row, output_file)
+
+        else:
+            self._logger.ELOG('Stored query with name {} not found.'.format(stored_query_name))
+        self._logger.LOG('Finish generate_bondout_data')
+
+
+ael_gui_parameters = {'windowCaption': "Custody System Out Bond"}
+
+ael_variables = CustOutBond(custodyParams)
+ael_variables.LoadDefaultValues(__name__)
+app_name = 'CustOutBond'
+
+
+def ael_main(params):
+    """
+    AEL main function
+    :param params: GUI parameters
+    :return: None
+    """
+    custody_out_bond_logger = None
+    try:
+        custody_out_bond_logger = initialize_logging(params, log_file_name, app_name)
+        if custody_out_bond_logger:
+            custody_out_bond_logger.LOG('Execution started.')
+            ael_variables.set_logger(custody_out_bond_logger)
+            ael_variables.generate_bondout_data(params)
+    except Exception as err:
+        if custody_out_bond_logger is not None:
+            custody_out_bond_logger.ELOG(str(err))
+        print(traceback.format_exc())
+        print('Error in ael main. {}'.format(err))
+
+...
+
+}
+

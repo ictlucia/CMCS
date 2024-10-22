@@ -1,0 +1,259 @@
+#
+# Front Arena exported extension module.
+# source          ""
+# timestamp (utc) "2024-03-26 12:11:31"
+# ***** DO NOT EDIT! *****
+#
+name        "BM_MenuReportGenerate"
+description "$Id$"
+
+groups {
+}
+
+decls[FMenuExtension] {
+}
+
+clx FObject [FMenuExtension] {
+  Add Fill-in Boxes Option in Remittance Activities =
+  DisplayName=Add Fill-in Boxes Option in Remittance Activities
+  Function=DL01_Add FillinBoxesOptioninRemittanceActivities.StartApplication
+  MenuType=Application
+  ModuleName=Add Fill-in Boxes Option in Remittance Activities
+  ParentMenu=Reporting Menu
+  RibbonPosition=Reporting Menu/Front Office Report
+
+
+  Daily Cashflow Report - Cashflow USD1yr =
+  DisplayName=Daily Cashflow Report - Cashflow USD1yr
+  Function=DL07_DailyCashflowReportCashflowUSD1yr.StartApplication
+  MenuType=Application
+  ModuleName=Daily Cashflow Report - Cashflow USD1yr
+  ParentMenu=Reporting Menu
+  RibbonPosition=Reporting Menu/Front Office Report
+
+
+  Daily Cashflow Report - PDN =
+  DisplayName=Daily Cashflow Report - PDN
+  Function=DL09_DailyCashflowReportPDN.StartApplication
+  MenuType=Application
+  ModuleName=Daily Cashflow Report - PDN
+  ParentMenu=Reporting Menu
+  RibbonPosition=Reporting Menu/Front Office Report
+
+
+  Daily Cashflow Report - RPH =
+  DisplayName=Daily Cashflow Report - RPH
+  Function=DL11_DailyCashflowReportRPH.StartApplication
+  MenuType=Application
+  ModuleName=Daily Cashflow Report - RPH
+  ParentMenu=Reporting Menu
+  RibbonPosition=Reporting Menu/Front Office Report
+
+
+  DL10 - Daily Cashflow Report - Pencapaian Daily =
+  DisplayName=DL10 - Daily Cashflow Report - Pencapaian Daily
+  Function=DL10_DailyCashflowReportPencapaianDaily.StartApplication
+  MenuType=Application
+  ModuleName=DL10 - Daily Cashflow Report - Pencapaian Daily
+  ParentMenu=Reporting Menu
+  RibbonPosition=Reporting Menu/Front Office Report
+
+
+  DLFOa01 - Sample Blotter =
+  DisplayName=DLFOa01 - Sample Blotter
+  Function=DLFOa01_Sample_Blotter.StartApplication
+  MenuType=Application
+  ModuleName=DLFOa01 - Sample Blotter
+  ParentMenu=Reporting Menu
+  RibbonPosition=Reporting Menu/Front Office Report
+
+
+  Journal Import =
+  Function=FJournalImportUtil.StartApplication
+  MenuType=Application
+  ModuleName=Journal Import
+  ParentMenu=Tools
+  RibbonPosition=Tools
+
+
+  Minimum Liquidity Ratio =
+  DisplayName=Minimum Liquidity Ratio
+  Function=DL04_MinimumLiquidityRatio.StartApplication
+  MenuType=Application
+  ModuleName=Minimum Liquidity Ratio
+  ParentMenu=Reporting Menu
+  RibbonPosition=Reporting Menu/Front Office Report
+
+
+  Placement & Borrowing Outstanding - Compiles =
+  DisplayName=Placement & Borrowing Outstanding - Compiles
+  Function=DL06_PlacementBorrowingOutstandingCompiles.StartApplication
+  MenuType=Application
+  ModuleName=Placement & Borrowing Outstanding - Compiles
+  ParentMenu=Reporting Menu
+  RibbonPosition=Reporting Menu/Front Office Report
+
+
+}
+
+clx FSessionManagerFrame [FMenuExtension] {
+  Journal Import =
+  Function=FJournalImportUtil.StartApplication
+  MenuType=Application
+  ModuleName=Journal Import
+  ParentMenu=Tools
+  RibbonPosition=Tools
+
+
+}
+
+decls[FPythonCode] {
+}
+
+clx FObject [FPythonCode] {
+  DL01_Add FillinBoxesOptioninRemittanceActivities
+
+import acm
+import UserProfileUtils as up
+
+def StartApplication(eii):
+    component = 'Front Office'
+    shell = acm.UX.SessionManager().Shell()
+    isallow = up.is_component_in_user_profile(component, 'Operation')
+    if isallow == 1:
+        acm.RunModuleWithParameters("DL01 - Add Fill-in Boxes Option in Remittance Activities", acm.GetDefaultContext())
+    else:
+        acm.UX().Dialogs().MessageBoxInformation(shell,"User not have access")
+
+...
+
+  DL04_MinimumLiquidityRatio
+
+import acm
+import UserProfileUtils as up
+
+def StartApplication(eii):
+    component = 'Front Office'
+    shell = acm.UX.SessionManager().Shell()
+    isallow = up.is_component_in_user_profile(component, 'Operation')
+    if isallow == 1:
+        acm.RunModuleWithParameters("DL04 - Minimum Liquidity Ratio", acm.GetDefaultContext())
+    else:
+        acm.UX().Dialogs().MessageBoxInformation(shell,"User not have access")
+
+...
+
+  DL06_PlacementBorrowingOutstandingCompiles
+
+import acm
+import UserProfileUtils as up
+
+def StartApplication(eii):
+    component = 'Front Office'
+    shell = acm.UX.SessionManager().Shell()
+    isallow = up.is_component_in_user_profile(component, 'Operation')
+    if isallow == 1:
+        acm.RunModuleWithParameters("DL06 - Placement & Borrowing Outstanding - Compiles", acm.GetDefaultContext())
+    else:
+        acm.UX().Dialogs().MessageBoxInformation(shell,"User not have access")
+
+...
+
+  DL07_DailyCashflowReportCashflowUSD1yr
+
+import acm
+import UserProfileUtils as up
+
+def StartApplication(eii):
+    component = 'Front Office'
+    shell = acm.UX.SessionManager().Shell()
+    isallow = up.is_component_in_user_profile(component, 'Operation')
+    if isallow == 1:
+        acm.RunModuleWithParameters("DL07 - Daily Cashflow Report - Cashflow USD1yr", acm.GetDefaultContext())
+    else:
+        acm.UX().Dialogs().MessageBoxInformation(shell,"User not have access")
+
+...
+
+  DL09_DailyCashflowReportPDN
+
+import acm
+import UserProfileUtils as up
+
+def StartApplication(eii):
+    component = 'Front Office'
+    shell = acm.UX.SessionManager().Shell()
+    isallow = up.is_component_in_user_profile(component, 'Operation')
+    if isallow == 1:
+        acm.RunModuleWithParameters("DL09 - Daily Cashflow Report - PDN", acm.GetDefaultContext())
+    else:
+        acm.UX().Dialogs().MessageBoxInformation(shell,"User not have access")
+
+...
+
+  DL10_DailyCashflowReportPencapaianDaily
+
+import acm
+import UserProfileUtils as up
+
+def StartApplication(eii):
+    component = 'Front Office'
+    shell = acm.UX.SessionManager().Shell()
+    isallow = up.is_component_in_user_profile(component, 'Operation')
+    if isallow == 1:
+        acm.RunModuleWithParameters("DL10 - Daily Cashflow Report - Pencapaian Daily", acm.GetDefaultContext())
+    else:
+        acm.UX().Dialogs().MessageBoxInformation(shell,"User not have access")
+
+...
+
+  DL11_DailyCashflowReportRPH
+
+import acm
+import UserProfileUtils as up
+
+def StartApplication(eii):
+    component = 'Front Office'
+    shell = acm.UX.SessionManager().Shell()
+    isallow = up.is_component_in_user_profile(component, 'Operation')
+    if isallow == 1:
+        acm.RunModuleWithParameters("DL11 - Daily Cashflow Report - RPH", acm.GetDefaultContext())
+    else:
+        acm.UX().Dialogs().MessageBoxInformation(shell,"User not have access")
+
+...
+
+  DLFOa01_Sample_Blotter
+
+import acm
+import UserProfileUtils as up
+
+def StartApplication(eii):
+    component = 'Front Office'
+    shell = acm.UX.SessionManager().Shell()
+    isallow = up.is_component_in_user_profile(component, 'Operation')
+    if isallow == 1:
+        acm.RunModuleWithParameters("DLFOa01 - Sample Blotter", acm.GetDefaultContext())
+    else:
+        acm.UX().Dialogs().MessageBoxInformation(shell,"User not have access")
+
+...
+
+  FJournalImportUtil
+
+import acm
+import UserProfileUtils as up
+
+def StartApplication(eii):
+    component = 'BO Journal Upload'
+    shell = acm.UX.SessionManager().Shell()
+    isallow = up.is_component_in_user_profile(component, 'Operation')
+    if isallow == 1:
+        acm.RunModuleWithParameters("FJournalImport", acm.GetDefaultContext())
+    else:
+        acm.UX().Dialogs().MessageBoxInformation(shell,"User not have access")
+
+...
+
+}
+

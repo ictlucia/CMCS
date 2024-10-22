@@ -1,0 +1,23 @@
+#
+# Front Arena exported extension module.
+# source          ""
+# timestamp (utc) "2024-02-09 15:02:04.3"
+# ***** DO NOT EDIT! *****
+#
+name        "PS_OVBEXIMBILLBookRateParams"
+description ""
+
+groups {
+}
+
+decls[FParameters] {
+}
+
+clx FObject [FParameters] {
+  BookRateParams =
+  baseCurrencies=['USD']
+  logFilename=EXIMBILL_BOOKRATE_LOG_{}.txt
+
+
+}
+

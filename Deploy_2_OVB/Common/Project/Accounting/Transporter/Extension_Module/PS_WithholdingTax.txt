@@ -1,0 +1,896 @@
+#
+# Front Arena exported extension module.
+# source          ""
+# timestamp (utc) "2024-09-16 07:29:31.8"
+# ***** DO NOT EDIT! *****
+#
+name        "PS_WithholdingTax"
+description ""
+
+groups {
+}
+
+decls[FPythonCode] {
+}
+
+clx FObject [FPythonCode] {
+  FValidationWHTPayments
+
+import acm
+import ael
+
+import WHT_Payments
+
+PAYMENT_TYPE = WHT_Payments.PAYMENT_TYPE_NAME
+TODAY = acm.Time.DateToday()
+
+def get_addinfo(obj, addInfoName):
+    '''
+        Get addinfo value on object.
+    '''
+    for ai in obj.additional_infos():
+        if ai.addinf_specnbr.field_name == addInfoName:
+            return(ai.value)
+
+def createPayment(trade, pay_day, amount, payment_curr):
+    if amount == 0:
+        return
+    try:
+        payment = ael.Payment.new(trade)
+        payment.type = PAYMENT_TYPE
+        payment.amount = amount
+        payment.curr = payment_curr
+        payment.ptynbr = trade.counterparty_ptynbr
+        payment.payday = ael_date = ael.date(pay_day)
+        payment.valid_from = ael.date(TODAY)
+    except Exception as e:
+        print(str(e))
+        print('Error while creating broker fee for new trade %s' % (trade.pp()))
+        raise e
+
+def findToDeletePayments(trade, instrument, pay_day):
+    if trade.add_info('ManualWHT') == 'Yes':
+        return
+    deal_package_links = ael.DealPackageTrdLink.select(f'trdnbr = {trade.trdnbr}')
+    payments = ael.Payment.select(f'trdnbr = {trade.trdnbr}')
+    for deal_package_link in deal_package_links:
+        deal_package = deal_package_link.deal_package_seqnbr
+        if deal_package is None:
+            continue
+        ins_package = deal_package.ins_package_seqnbr
+        definition = ins_package.definition
+        if definition in ( 'Market Linked Deposit Deal' , 'Market Linked Deposit IR'):
+            payments = ael.Payments.select(f'trdnbr = {trade.trdnbr}')
+            payments = filter(lambda x: x.type == PAYMENT_TYPE, payments)
+            payments = filter(lambda x: x.payday == pay_day, payments)
+            payments = list(payments)
+        else:
+            payments = filter(lambda x: x.type == PAYMENT_TYPE, payments)
+            payments = list(payments)
+    else:
+        payments = filter(lambda x: x.type == PAYMENT_TYPE, payments)
+        payments = list(payments)
+    return payments
+
+def add_to_list(to_delete_payments, transaction_list):
+    if to_delete_payments is None:
+        return
+    for to_delete_payment in to_delete_payments:
+        transaction_list.append((to_delete_payment, 'Delete'))
+
+def validate_transaction(transaction_list, *rest):
+    for (e, op) in transaction_list.copy():
+        if e.record_type == 'Trade':
+            if get_addinfo(e, 'ManualWHT') == 'Yes':
+                continue
+            
+            orig = e.original()
+            
+            if e.status != 'FO Confirmed' or (orig and orig.status == 'FO Confirmed'):
+                continue
+            
+            ins = e.insaddr
+            ins_type = ins.instype
+            if ins_type in ['Bond', 'Bill', 'FRN', 'Zero Bond']:
+                to_delete_payments = processFixedIncome(e)
+                if to_delete_payments:
+                    add_to_list(to_delete_payments, transaction_list)
+            else:
+                deal_package_links = ael.DealPackageTrdLink.select(f'trdnbr = {e.trdnbr}')
+                if not deal_package_links:
+                    continue
+                for deal_package_link in deal_package_links:
+                    deal_package = deal_package_link.deal_package_seqnbr
+                    if deal_package is None:
+                        continue
+                    ins_package = deal_package.ins_package_seqnbr
+                    definition = ins_package.definition
+                    if definition == 'SP_DepositSwap':
+                        to_delete_payments = processMDS(e)
+                        if to_delete_payments:
+                            add_to_list(to_delete_payments, transaction_list)
+                    elif definition == 'SP_DualCurrencyDeposit':
+                        to_delete_payments = processDCI(e)
+                        if to_delete_payments:
+                            add_to_list(to_delete_payments, transaction_list)
+                    elif definition == 'SP_MarketLinkedDepositIR':
+                        to_delete_payments = processMMLD_IR(e)
+                        if to_delete_payments:
+                            add_to_list(to_delete_payments, transaction_list)
+    return transaction_list
+
+def validate_entity(entity, operation):
+    return
+
+def processFixedIncome(trd):
+    try:
+        trade = acm.Ael.AelToFObject(trd)
+        if trade.Bought():
+            capital_gain = WHT_Payments.getCapitalGainAmount(trade)
+            if capital_gain is None: # if no Acquisition Price, WHT is 0
+                return 0
+            interest = WHT_Payments.getInterestEarned(trade)
+            if capital_gain < 0:
+                if abs(capital_gain) > abs(interest):
+                    return 0
+                interest_tax = WHT_Payments.getInterestEarnedTax(trade, interest + capital_gain)
+                amount = interest_tax
+            else:
+                capital_gain_tax = WHT_Payments.getCapitalGainTaxAmount(trade, capital_gain)
+                interest_tax = WHT_Payments.getInterestEarnedTax(trade, interest)
+                amount = capital_gain_tax + interest_tax
+            ins = trd.insaddr
+            curr = trd.curr
+            to_delete_payments = findToDeletePayments(trd, ins, TODAY)
+            createPayment(trd, trade.ValueDay(), amount, curr)
+            return to_delete_payments
+        return
+    except Exception as e:
+        print(e)
+        return
+
+def isFxSwapFarLeg(from_deal_package_links, trd):
+    for from_deal_package_link in from_deal_package_links:
+        process_trd_temp = from_deal_package_link.trdnbr
+        if process_trd_temp.trdnbr == trd.trdnbr:
+            continue
+        process_ins_temp = process_trd_temp.insaddr
+        if process_ins_temp.instype == 'Curr':
+            if process_trd_temp.value_day > trd.value_day:
+                return False
+            return True
+    return False
+
+def processMDS(trd):
+    process_trd = None
+    process_ins = None
+    ins = trd.insaddr
+    if ins.instype == 'Curr':
+        deal_package_links = ael.DealPackageTrdLink.select(f'trdnbr = {trd.trdnbr}')
+        for deal_package_link in deal_package_links:
+            deal_package = deal_package_link.deal_package_seqnbr
+            from_deal_package_links = ael.DealPackageTrdLink.select(f'deal_package_seqnbr = {deal_package.seqnbr}')
+            if isFxSwapFarLeg(from_deal_package_links, trd):
+                process_trd = trd
+                process_ins = ins
+    if process_trd is None:
+        return 0
+    trade = acm.Ael.AelToFObject(process_trd)
+    amount = WHT_Payments.getMDSAmount(trade, trade.Instrument())
+    if trade.Quantity() < 0:
+        curr = trd.insaddr
+    else:       
+        curr = trd.curr
+    value_date = trd.value_day
+    to_delete_payments = findToDeletePayments(trd, ins, value_date)
+    createPayment(trd, value_date, amount, curr)
+    return to_delete_payments
+
+def processDCI(trd):
+    ins = trd.insaddr
+    if ins.instype != 'Option':
+        return
+
+    trade = acm.Ael.AelToFObject(trd)
+    instrument = trade.Instrument()
+    amount = WHT_Payments.getDCIAmount(trade, instrument, TODAY)
+    curr = trd.curr
+    settle_date = instrument.DeliveryDate()
+    to_delete_payments = findToDeletePayments(trd, ins, settle_date)
+    createPayment(trd, settle_date, amount, curr)
+    return to_delete_payments
+
+def processMMLD_IR(trd):
+    process_trd = None
+    process_ins = None
+    ins = trd.insaddr
+    if ins.instype != 'Swap':
+        deal_package_links = ael.DealPackageTrdLink.select(f'trdnbr = {trd.trdnbr}')
+        for deal_package_link in deal_package_links:
+            deal_package = deal_package_link.deal_package_seqnbr
+            from_deal_package_links = ael.DealPackageTrdLink.select(f'deal_package_seqnbr = {deal_package.seqnbr}')
+            for from_deal_package_link in from_deal_package_links:
+                process_trd_temp = from_deal_package_link.trdnbr
+                process_ins_temp = process_trd_temp.insaddr
+                if process_ins_temp.instype == 'Swap':
+                    process_trd = process_trd_temp
+                    process_ins = process_ins_temp
+                    break
+            if process_trd is not None:
+                break
+        if process_trd is None:
+            return
+    else:
+        process_trd = trd
+        process_ins = ins
+
+    trade = acm.Ael.AelToFObject(process_trd)
+    amount = WHT_Payments.getMMLD_IR_Amount(trade, trade.Instrument(), TODAY)
+    curr = process_trd.curr
+    to_delete_payments = findToDeletePayments(trd, ins, TODAY)
+    createPayment(trd, TODAY, amount, curr)
+    return to_delete_payments
+
+...
+
+  FXRate
+import acm
+
+base_currency_name = 'USD'
+
+def fxRate(instrument, currency, market, day, historical=True):
+
+    if isinstance(instrument, str):
+        instrument_name = instrument
+        instrument = acm.FCurrency[instrument_name]
+    if instrument is None:
+        raise Exception('instrument % not found' % instrument_name)
+
+    if isinstance(currency, str):
+        curr_name = currency
+        currency = acm.FCurrency[curr_name]
+    if currency is None:
+        raise Exception('Currency %s not found' % curr_name)
+
+    if isinstance(market, str):
+        market_name = market
+        market = acm.FParty[market_name]
+    if market is None:
+        raise Exception('Market %s not found' % market_name)
+
+    if instrument == currency:
+        return [acm.DenominatedValue(1, acm.FX.CreateFxRate(currency, instrument), 'FX Rate', day)]
+        
+    if instrument.Name() == 'IDR':
+        instrument, currency = currency, instrument
+
+    price = None
+    if historical:
+        price_filter = acm.Filter.SimpleAndQuery(acm.FPrice, ['Instrument.Name', 'Currency.Name', 'Market.Name', 'Day'], \
+                                                        ['EQUAL', 'EQUAL','EQUAL','LESS_EQUAL'], \
+                                                        [instrument.Name(), currency.Name(), market.Name(), day])
+        price_collection  = price_filter.Select()
+        if price_collection:
+            price = price_collection.SortByProperty('Day', True).Last()
+    else: 
+        query = f"instrument={instrument.Oid()} and market={market.Oid()} and currency={currency.Oid()} and day={day} and historical={historical}"
+        price = acm.FPrice.Select01(query, None)
+
+    if price and price.Settle():
+        rate = acm.DenominatedValue(price.Settle(), acm.FX.CreateFxRate(currency, instrument), 'FX Rate', price.Day())
+        inverse_rate = acm.DenominatedValue(1/price.Settle(), acm.FX.CreateFxRate(instrument, currency), 'FX Rate', price.Day())
+        return [rate, inverse_rate]
+
+    if currency.Name() != base_currency_name and instrument.Name() != base_currency_name:
+        base_instrument_rates = fxRate(base_currency_name, instrument, market, day, historical)
+        if base_instrument_rates is None: return
+        base_currency_rates = fxRate(base_currency_name, currency, market, day, historical)
+        if base_currency_rates is None: return
+        return (base_instrument_rates[0] * base_currency_rates[1], base_instrument_rates[1] * base_currency_rates[0])
+
+...
+
+  WHT_Conversion_Runscript
+
+from collections import namedtuple
+
+import acm
+import FRunScriptGUI
+from FLogger import FLogger
+from ACMPyUtils import Transaction
+from WHT_Payments import PAYMENT_TYPE_NAME
+import FXRate
+
+TAX_CONVERSION_MARKET = 'Tax FX Rate'
+TAX_CONVERSION_TEXT = 'Tax Conversion'
+
+logger = FLogger.GetLogger(__name__)
+
+class WHTPaymentConversion(FRunScriptGUI.AelVariablesHandler):
+
+    GUI_PARAMETERS = {
+        'runButtonLabel':   '&&Run',
+        'hideExtraControls': False,
+        'windowCaption' : 'Withholding Tax Payments Conversion'
+        }
+    LOG_LEVELS = {
+        '1. Normal': 1,
+        '2. Warnings/Errors': 3,
+        '3. Debug': 2
+        }
+
+    def __init__(self):
+        FRunScriptGUI.AelVariablesHandler.__init__(self, self._GetVariableDefinitions())
+
+    @staticmethod
+    def GetParameters(params):
+        params['ConversionDate'] = acm.Time.AsDate(params['ConversionDate'])
+        paramClass = namedtuple('RuleParameters', list(params.keys()))
+        return paramClass(**params)
+
+    @classmethod
+    def GetLoggingLevel(cls, logLevel):
+        return cls.LOG_LEVELS.get(logLevel, 1)
+        
+    def _GetVariableDefinitions(self):
+        logLevels = sorted(self.LOG_LEVELS)
+
+        tt_TradeQueries = 'Select the insert item query or queries containing trades to check.'
+        tt_LogLevel = 'Select the verbosity of logging output by the compliance engine task.'
+        tt_ReportDate = 'Select date or enter a date in ISO format YYYY-MM-DD'
+        
+        return (('TradeQueries', 'Trade query_General', 'FStoredASQLQuery', self.TradesSelection(), None, True, True, tt_TradeQueries, None, True),
+                ('ConversionDate', 'Conversion Date_General', 'string', ['Today', 'Yesterday'], 'Today', True, False, tt_ReportDate, None, True),
+                ('LogLevel', 'Logging Level_Logging', 'string', logLevels, logLevels[0], 2, 0, tt_LogLevel),)
+
+    @staticmethod
+    def TradesSelection():
+        return acm.FStoredASQLQuery.Select("subType='FTrade'").SortByProperty('Name')
+
+def WithholdingTaxPaymentConversion(params):
+    trade_set = set()
+    for query_folder in params.TradeQueries:
+        if not query_folder: continue
+        trades = query_folder.Query().Select()
+        trade_set.update(trades)
+    if not trade_set:
+        logger.LOG('No trades found for processing')
+        return
+    report_date = params.ConversionDate
+
+    processed = 0
+    for trade in trade_set:
+        logger.LOG('Processing trade %i' % trade.Oid())
+        payments = trade.Payments()
+        report_date_payments = [payment for payment in payments if acm.Time.DateDifference(payment.PayDay(), report_date) == 0 and payment.Type() == PAYMENT_TYPE_NAME]
+        conversion_payments = [payment for payment in report_date_payments if payment.Text() == TAX_CONVERSION_TEXT]
+        report_date_payments = [payment for payment in report_date_payments if payment.Text() != TAX_CONVERSION_TEXT]
+        for payment in conversion_payments:
+            payment.Delete()
+        if len(report_date_payments) == 0:
+            logger.LOG('No payments of type %s found on trade %i for report date %s' % (PAYMENT_TYPE_NAME, trade.Oid(), report_date))
+            continue
+        for payment in report_date_payments:
+            amount = payment.Amount()
+            currency = payment.Currency()
+            if currency.Name() == 'IDR': continue
+            rates = FXRate.fxRate(currency, 'IDR', TAX_CONVERSION_MARKET, report_date)
+            if rates is None:
+                logger.WLOG('Cannot find fx conversion rate for trade %i in market "%s"' % (trade.Oid(), TAX_CONVERSION_MARKET))
+                continue
+            reverse = payment.Clone()
+            reverse.Amount(-amount)
+            reverse.Text(TAX_CONVERSION_TEXT)
+            found = False
+            for rate in rates:
+                unit_as_string = rate.Unit().AsString()
+                if unit_as_string[:3] == currency.Name() and unit_as_string[-3:] == 'IDR':
+                    found = True
+                    break
+            if found is False:
+                logger.WLOG('Cannot find fx conversion rate for trade %i in market "%s"' % (trade.Oid(), TAX_CONVERSION_MARKET))
+            new_payment = payment.Clone()
+            new_payment.Currency('IDR')
+            new_payment.Amount(amount / rate.Number())
+            new_payment.Text(TAX_CONVERSION_TEXT)
+            try:
+                with Transaction():
+                    new_payment.Commit()
+                    reverse.Commit()
+                logger.LOG('Successfully converted payment for trade %i' % trade.Oid())
+                processed += 1
+            except Exception as err:
+                logger.ELOG('Cannot commit Conversion payments for trade %i' % trade.Oid())
+                logger.ELOG(str(err))
+    logger.info(f'Processed {processed} trade payments')
+
+ael_variables = WHTPaymentConversion()
+ael_gui_parameters = ael_variables.GUI_PARAMETERS
+
+def ael_main(params):
+    options = WHTPaymentConversion.GetParameters(params)
+    logger.Reinitialize(level=WHTPaymentConversion.GetLoggingLevel(options.LogLevel))
+    logger.info(f'Converting Payments for date {options.ConversionDate}')
+    WithholdingTaxPaymentConversion(options)
+    logger.info('Complete')
+
+...
+
+  WHT_Payments
+
+from collections import namedtuple
+
+import acm
+import FRunScriptGUI
+from FLogger import FLogger
+from ACMPyUtils import Transaction
+
+logger = FLogger.GetLogger(__name__)
+
+PAYMENT_TYPE_NAME = 'WHT'
+WHT_HIERARCHY = 'Withholding Tax'
+calc_space = acm.FCalculationMethods().CreateStandardCalculationsSpaceCollection()
+
+def _getDefaultWHTRates():
+    hierarchy = acm.FHierarchy[WHT_HIERARCHY]
+    tree = acm.FHierarchyTree()
+    tree.Hierarchy(hierarchy)
+    root = tree.RootNode()
+    rates = dict()
+    h_ins_types = tree.Children(root)
+    if h_ins_types is None:
+        return rates
+    for h_ins_type in h_ins_types:
+        ins_type = tree.DataValueFromColumnName(h_ins_type, 'Instrument Type').DataValue() if tree.DataValueFromColumnName(h_ins_type, 'Instrument Type') else None
+        if ins_type is not None:
+            rate = tree.DataValueFromColumnName(h_ins_type, 'Withholding Tax Rate').DataValue() if tree.DataValueFromColumnName(h_ins_type, 'Withholding Tax Rate') else 0
+            rates[ins_type] = rate
+    return rates
+
+DEFAULT_WHT_RATES = _getDefaultWHTRates()
+
+class WHTPaymentGeneratorRunscript(FRunScriptGUI.AelVariablesHandler):
+
+    GUI_PARAMETERS = {
+        'runButtonLabel':   '&&Run',
+        'hideExtraControls': False,
+        'windowCaption' : 'Withholding Tax Payments'
+        }
+    LOG_LEVELS = {
+        '1. Normal': 1,
+        '2. Warnings/Errors': 3,
+        '3. Debug': 2
+        }
+
+    def __init__(self):
+        FRunScriptGUI.AelVariablesHandler.__init__(self, self._GetVariableDefinitions())
+
+    @staticmethod
+    def GetParameters(params):
+        params['GenerationDate'] = acm.Time.AsDate(params['GenerationDate'])
+        paramClass = namedtuple('RuleParameters', list(params.keys()))
+        return paramClass(**params)
+
+    @classmethod
+    def GetLoggingLevel(cls, logLevel):
+        return cls.LOG_LEVELS.get(logLevel, 1)
+        
+    def _GetVariableDefinitions(self):
+        logLevels = sorted(self.LOG_LEVELS)
+        
+        tt_TradeQueries = 'Select the insert item query or queries containing trades to check.'
+        tt_LogLevel = 'Select the verbosity of logging output by the compliance engine task.'
+        tt_ReportDate = 'Select date or enter a date in ISO format YYYY-MM-DD'
+        
+        return (('TradeQueries', 'Trade query_General', 'FStoredASQLQuery', self.TradesSelection(), None, True, True, tt_TradeQueries, None, True),
+                ('GenerationDate', 'Generate Date_General', 'string', ['Today', 'Yesterday'], 'Today', True, False, tt_ReportDate, None, True),
+                ('LogLevel', 'Logging Level_Logging', 'string', logLevels, logLevels[0], 2, 0, tt_LogLevel),)
+
+    @staticmethod
+    def TradesSelection():
+        return acm.FStoredASQLQuery.Select("subType='FTrade'").SortByProperty('Name')
+
+def ProcessPayment(trade, instrument, pay_day, report_date, amount, currency):
+    if amount == 0:
+        return 0
+    payment, old_payments = FindAndCreatePayments(trade, instrument, pay_day, report_date, currency)
+    with Transaction():
+        for old_payment in old_payments:
+            old_payment.Delete()
+        if amount == 0:
+            return 0
+        payment.Amount(amount)
+        payment.Commit()
+        return 1
+
+def FindAndCreatePayments(trade, instrument, pay_day, report_date, currency):
+    deal_package = trade.DealPackage()
+    if deal_package:
+        payments = trade.Payments()
+        payments = filter(lambda x: x.Type() == PAYMENT_TYPE_NAME, payments)
+        if deal_package.InstrumentPackage().DefinitionDisplayName() in ( 'Market Linked Deposit Deal' , 'Market Linked Deposit IR'): 
+            payments = filter(lambda x: x.PayDay() == pay_day, payments)
+        payments = list(payments)
+    else:
+        payments = trade.Payments()
+        payments = filter(lambda x: x.Type() == PAYMENT_TYPE_NAME, payments)
+        if trade.OptKey4() and trade.OptKey4().Name() in ['BLT']:
+            payments = filter(lambda x: x.PayDay() == pay_day, payments)
+        payments = list(payments)
+
+    payment = acm.FPayment()
+    payment.Trade(trade)
+    payment.Currency(currency)
+    payment.Type(PAYMENT_TYPE_NAME)
+    payment.PayDay(pay_day)
+    payment.ValidFrom(report_date)
+    payment.Party(trade.Counterparty())
+    return payment, payments
+
+def getRateHierarchy(ins_type_name):
+    try:
+        rate_str = DEFAULT_WHT_RATES[ins_type_name]
+        rate = float(rate_str)
+    except IndexError:
+        logger.WLOG('Cannot find Withholding Tax Rate for trade. Setting to 0%')
+        rate = 0
+    except ValueError as err:
+        logger.ELOG('Error converting %s to float' % rate)
+        raise
+    return rate
+
+def WithholdingTaxPaymentGenerator(params):
+    trade_set = set()
+    for query_folder in params.TradeQueries:
+        if not query_folder: continue
+        trades = query_folder.Query().Select()
+        trade_set.update(trades)
+    if not trade_set:
+        logger.LOG('No trades found for processing')
+        return
+    report_date = params.GenerationDate
+
+    processed = 0
+    for trade in trade_set:
+        logger.LOG('Processing trade %i' % trade.Oid())
+        if trade.AdditionalInfo().ManualWHT() is True:
+            logger.LOG('Trade %i is set to manual WHT calculation. No further processing will occur.' % trade.Oid())
+            continue
+        instrument = trade.Instrument()
+        ins_type = instrument.InsType()
+        if ins_type == 'Deposit':
+            processed += ProcessDeposit(trade, instrument, report_date)
+        elif instrument.AdditionalInfo().StructureType() == 'Market Linked Deposit Deal':
+            processed += ProcessMMLD(trade, instrument, report_date)
+        elif trade.OptKey4() and trade.OptKey4().Name() == 'MLDR':
+            processed += processMMLD_IR(trade, instrument, report_date)
+        else:
+            logger.DLOG('Trade %i does not attracted WHT payment' % trade.Oid())
+    logger.info(f'Processed {processed} payments')
+
+######################################## WHT BLT ###########################################################
+def getRate(trade, ins_type_name):
+    counterparty = trade.Counterparty()
+    rate = counterparty.AdditionalInfo().TaxTreatyRate() if hasattr(counterparty.AdditionalInfo(), 'TaxTreatyRate') else None
+    if rate is None:
+        return getRateHierarchy(ins_type_name)
+    return rate
+
+def getBilateralDepositAmount(trade, cashflow):
+    rate = getRate(trade, 'Bilateral Loan')
+    try:
+        rate = float(rate) / 100
+    except ValueErorr:
+        logger.ELOG('Error converting %s to float' % rate)
+        raise
+    calc_space = acm.FCalculationMethods().CreateStandardCalculationsSpaceCollection()
+    projected = cashflow.Calculation().Projected(calc_space, trade)
+    try:
+        val = float(projected.Number()) / (1 - rate)
+    except ValueError as err:
+        logger.ELOG('Cannot convert projected value for trade %i to float' % trade.Oid())
+        return 0
+    return acm.Math().RoundTo(val * rate, 2)
+
+def GetCashflowFromResets(leg, report_date):
+    resets = leg.Resets()
+    resets = [reset for reset in resets if acm.Time.DateDifference(reset.FixingDate(), report_date) == 0]
+    len_resets = len(resets)
+    if len_resets == 0:
+        logger.LOG('No resets are due for fixing on %s' % report_date)
+        return None
+    reset = resets[0]
+    cashflow = reset.CashFlow()
+    cf_resets = cashflow.Resets()
+    last_reset = cf_resets.SortByProperty('FixingDate').Last()
+    if last_reset != reset:
+        logger.WLOG('Reset is not final reset of cashflow')
+        return None
+    if reset.IsFixed() is False:
+        logger.WLOG('Reset has not been fixed')
+        return None
+    return reset.CashFlow()
+
+def GetCashflow(leg, report_date):
+    if leg.IsFixedLeg() is True:
+        cashflow = leg.GetCurrentCashFlow(report_date)
+        if cashflow is None:
+            logger.LOG('There is no cashflow that %s falls into' % report_date)
+            return None
+        if acm.Time.DateDifference(cashflow.StartDate(), report_date) == 0:
+            return cashflow
+        logger.LOG('No Fixed cashflow starts on %s' % report_date)
+        return None
+    if leg.IsFloatLeg() is True:
+        return GetCashflowFromResets(leg, report_date)
+
+def GetPayDate(leg, cashflow):
+    if leg.IsFixedLeg() is True:
+        return cashflow.PayDate()
+    if leg.IsFloatLeg() is True:
+        return cashflow.PayDate()
+    return None
+
+def ProcessDeposit(trade, instrument, report_date):
+    category = trade.OptKey4()
+    if not category:
+        logger.DLOG('Trade does not have Category set')
+        return 0
+    if category.Name() not in ['BLT', 'MDS']:
+        logger.DLOG('Trade Category is not BLT nor MDS')
+        return 0
+    leg = instrument.FirstLeg()
+    cashflow = GetCashflow(leg, report_date)
+    if cashflow is None:
+        logger.DLOG('Trade does not need new WHT payment')
+        return 0
+    pay_day = GetPayDate(leg, cashflow)
+    if pay_day is None:
+        logger.DLOG('Trade does not need new WHT payment')
+        return 0
+    amount = getBilateralDepositAmount(trade, cashflow)
+    currency = instrument.Currency()
+    return ProcessPayment(trade, instrument, pay_day, report_date, abs(amount), currency)
+
+######################################## WHT MMLD ###########################################################
+def ProcessMMLD(trade, instrument, report_date):
+    if instrument.InsType() != 'Option':
+        deal_package = trade.DealPackage()
+        trade = None
+        instrument = None
+        for dp_trade in deal_package.Trades():
+            if dp_trade.Instrument().InsType() == 'Option':
+                trade = dp_trade
+                instrument = trade.Instrument()
+                break
+        if trade is None:
+            logger.WLOG('Cannot find option for deal package %i' % deal_package.Oid())
+            return 0
+    if instrument.InsType() != 'Option':
+        logger.LOG('Trade %i is not an MMLD option' % trade.Oid())
+        return 0
+    amount, currency = getMMLDAmount(trade, instrument, report_date)
+    if currency is None:
+        return 0
+    return ProcessPayment(trade, instrument, report_date, report_date, -amount, currency)
+
+def getMMLDAmount(trade, instrument, report_date):
+    mmld_payment = None
+    for payment in trade.Payments():
+        if payment.Type() == 'MMLD Payment':
+            if acm.Time.DateDifference(payment.PayDay(), report_date) == 0:
+                mmld_payment = payment
+                break
+    if mmld_payment is None:
+        return 0, None
+    amount = mmld_payment.Amount()
+    currency = mmld_payment.Currency()
+    rate = getRateHierarchy('MMLD')
+
+    return acm.Math().RoundTo(rate / 100 * amount, 2), currency
+
+######################################## WHT MMLD IR ################################################################
+def processMMLD_IR(trade, instrument, report_date):
+    if instrument.InsType() != 'Swap':
+        deal_package = trade.DealPackage()
+        trade = None
+        instrument = None
+        for dp_trade in deal_package.Trades():
+            if dp_trade.Instrument().InsType() == 'Swap':
+                trade = dp_trade
+                instrument = trade.Instrument()
+                break
+        if trade is None:
+            logger.WLOG('Cannot find swap for deal package %i' % deal_package.Oid())
+            return 0
+    if instrument.InsType() != 'Swap':
+        logger.LOG('Trade %i is not an MMLD_IR swap' % trade.Oid())
+        return 0
+
+    amount = getMMLD_IR_Amount(trade, instrument, report_date)
+    currency = trade.Currency()
+    return ProcessPayment(trade, instrument, report_date, report_date, -amount, currency)
+
+def getMMLD_IR_Amount (trade, instrument, report_date):
+    resetEvents = []
+    
+    cashflows = instrument.PayLeg().CashFlows()
+    for cashflow in cashflows:
+        if acm.Time.DateDifference(cashflow.PayDate(), report_date) == 0:
+            cashflow_pay_date = cashflow
+            resetEvents.extend(cashflow.Resets())
+    if not resetEvents:
+        logger.DLOG('Instrument "%s" has no MLD Expiry Dates' % instrument.Name())
+        return 0
+    
+    len_resertEvents  = len(resetEvents) / 2
+    
+    if len_resertEvents == 0:
+        logger.LOG('Report date %s is not a cashflow pay date for trade %i.' % (report_date, trade.Oid()))
+        return 0
+    
+    legs = instrument.Legs()
+    for leg in legs:
+        if leg.LegType() == 'Range Accrual':
+            range_accrual_leg = leg
+            break
+    cieling = range_accrual_leg.Strike()
+    floor = range_accrual_leg.Strike2()
+    matched_events = [event for event in resetEvents if event.FixingValue() >= floor and event.FixingValue() <= cieling]
+    len_matched_events = len(matched_events) / 2
+
+    if len_matched_events == 0:
+        logger.LOG('There are no fixings that fall withing Ceiling and Floor for trade %i.' % trade.Oid())
+        return 0
+    
+    yld = instrument.AdditionalInfo().Sp_MLDMaxYield()
+    
+    try:
+        yld = float(yld) /100
+    except ValueError as err:
+        logger.ELOG('Error converting %s to float' % yld)
+        raise
+    notional = trade.Nominal()
+    
+    rate = getRateHierarchy('MMLD IR') /100
+    dayCount = float(range_accrual_leg.DayCountMethod()[-3:])
+    cashflowPeriod = acm.Time.DateDifference(cashflow.StartDate() , cashflow.EndDate())
+    
+    return acm.Math().RoundTo(rate * notional * (len_matched_events/len_resertEvents) * yld *  (cashflowPeriod/dayCount) , 2)
+
+######################################## WHT DCI ###########################################################
+def getDCIAmount(trade, instrument, report_date):
+    taxRate = getRateHierarchy('DCI')
+    interest_amount = trade.ForwardPremium()
+
+    amount = acm.Math().RoundTo(-interest_amount * (taxRate / 100), 2)
+    return amount
+
+
+######################################## WHT MDS ################################################################
+def istradeNearOrFarLeg(trade):
+    deal_package = trade.DealPackage()
+    if deal_package is None:
+        deal_package = trade.Original().DealPackage()
+    deal_package_trades = deal_package.Trades()
+    fx_forward_trades = [ forward_trade for forward_trade in deal_package_trades if forward_trade.Instrument().InsType() == 'Curr']
+    
+    fx_near_leg = None
+    fx_far_leg = None
+    
+    if fx_forward_trades[0].ValueDay() < fx_forward_trades[1].ValueDay():
+        fx_near_leg = fx_forward_trades[0]
+        fx_far_leg = fx_forward_trades[1]
+    else:
+        fx_far_leg = fx_forward_trades[0]
+        fx_near_leg = fx_forward_trades[1]
+    
+    return (fx_near_leg, fx_far_leg)
+    
+def getMDSAmount(trade, instrument):
+    fx_near_leg, fx_far_leg = istradeNearOrFarLeg(trade)
+
+    rate = getRateHierarchy('MDS') / 100
+    if fx_far_leg.Quantity() < 0:
+        amount = -(fx_far_leg.Quantity() + fx_near_leg.Quantity()) * rate
+    else:
+        amount = -(fx_far_leg.Premium() + fx_near_leg.Premium()) * rate 
+
+    return acm.Math().RoundTo(amount, 2)
+
+
+######################################## WHT Fixed Income ##################################################
+def getCapitalGainAmount(trade):
+    acquisitionPrice = trade.AdditionalInfo().AcquisitionPrice()
+    if acquisitionPrice:
+        capitalGain = (trade.Price() - acquisitionPrice) / 100 * trade.Nominal() 
+        return capitalGain
+    logger.WLOG('Acquisition price is missing for trade %i' % trade.Oid())
+    return None
+
+def getTaxRate(trade):
+    taxRate = 0, 0
+    counterparty = trade.Counterparty()
+    country_of_risk = counterparty.RiskCountry()
+    country_of_risk_name = None
+    if country_of_risk:
+        country_of_risk_name = country_of_risk.Name()
+    if country_of_risk_name is None:
+        print('WARNING: Party %s has no country of risk' % counterparty.Name())
+    elif country_of_risk_name == "Indonesia":
+        domesticCapitalGainTaxRate = getRateHierarchy('Fixed Income Capital Gain')
+        domesticInterestEarnedTaxRate = getRateHierarchy('Fixed Income Interest Earned')
+        return (domesticCapitalGainTaxRate, domesticInterestEarnedTaxRate)
+    
+    foreignCapitalGainTaxRate = counterparty.AdditionalInfo().WHTCapitalGainTax()
+    foreignInterestEarnedTaxRate = counterparty.AdditionalInfo().WHTIntEarnedTax()
+    if foreignCapitalGainTaxRate and foreignInterestEarnedTaxRate:
+        return (foreignCapitalGainTaxRate, foreignInterestEarnedTaxRate)
+    if country_of_risk_name:
+        print("WARNING: Party %s is foreign but the tax rate is missing in the  Party add info" % counterparty.Name())
+    return taxRate
+
+def getCapitalGainTaxAmount(trade, capitalGain):
+    capitalGainTax = 0
+    taxRate, _ = getTaxRate(trade)
+    capitalGainTax = capitalGain * (taxRate / 100)
+    return capitalGainTax
+
+def getHoldingInterest(trade):
+    acquisitionDate = trade.AdditionalInfo().AcquisitionDate()
+    if acquisitionDate is None:
+        logger.WLOG("Additional Info Acqusition Date missing for trade %i" % trade.Oid())
+        return 0
+
+    lastCoupon = getLastCouponCashflow(trade)
+    if lastCoupon is None:
+        return 0
+    try:
+        accrued_interest = trade.Instrument().Calculation().AccruedInterest(calc_space, None, lastCoupon, acquisitionDate)
+        accrued_interest_value = accrued_interest.Value().Number()
+    except Exception as e:
+        logger.ELOG('Cannot calculate accrued interest for trade %i' % trade.Oid())
+        return 0
+    holding_interest = accrued_interest_value * trade.Quantity()
+    return holding_interest
+
+def getInterestEarned(trade):
+    accruedInterest = acm.FBusinessLogicDecorator.WrapObject(trade).AccruedInterest()
+    holdingInterest = getHoldingInterest(trade)
+    return accruedInterest - holdingInterest
+
+def getInterestEarnedTax(trade, interestEarned):
+    _, taxRate = getTaxRate(trade)
+    interestEarnedTax = interestEarned * (taxRate/100)
+
+    return interestEarnedTax
+
+def getLastCouponCashflow(trade):
+    acquisitionDate = trade.AdditionalInfo().AcquisitionDate()
+    if acquisitionDate is None:
+        return
+    leg = trade.Instrument().MainLeg()
+    acquisitionCashFlow = leg.GetCurrentCashFlow(acquisitionDate)
+    if acquisitionCashFlow is None:
+        logger.WLOG("No cashflow for trade %i on acquisition date %s" % (trade.Oid(), acquisitionDate))
+        return
+    currentCashFlow = leg.GetCurrentCashFlow(acm.Time.DateToday())
+    if acquisitionCashFlow != currentCashFlow:
+        logger.LOG("Acquisition date is not in current cashflow for trade %i with acquisition date %s" % (trade.Oid(), acquisitionDate))
+        return
+    return currentCashFlow
+
+ael_variables = WHTPaymentGeneratorRunscript()
+ael_gui_parameters = ael_variables.GUI_PARAMETERS
+
+def ael_main(params):
+    options = WHTPaymentGeneratorRunscript.GetParameters(params)
+    logger.Reinitialize(level=WHTPaymentGeneratorRunscript.GetLoggingLevel(options.LogLevel))
+    logger.info(f'Generating Payments for date {options.GenerationDate}')
+    WithholdingTaxPaymentGenerator(options)
+    logger.info('Complete')
+
+...
+
+}
+

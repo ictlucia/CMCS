@@ -1,0 +1,4 @@
+CHOICELIST,,,/CHOICELIST
+LIST,ENTRY,DESCRIPTION,
+EMASRelAmtStatus,Released,Released,
+MASTER,EMASRelAmtStatus,EMASRelAmtStatus,

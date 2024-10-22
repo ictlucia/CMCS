@@ -1,0 +1,1643 @@
+#
+# Front Arena exported extension module.
+# source          ""
+# timestamp (utc) "2024-01-08 11:05:06.6"
+# ***** DO NOT EDIT! *****
+#
+name        "TS3022230_ComplianceLogging"
+description ""
+
+groups {
+}
+
+decls[FPythonCode] {
+}
+
+clx FObject [FPythonCode] {
+  FCalculationsProvider
+""" Compiled: 2023-11-13 18:16:38 """
+
+#__src_file__ = "extensions/AMUtils/etc/FCalculationsProvider.py"
+"""--------------------------------------------------------------------------
+MODULE
+    FCalculationsProvider
+
+    (c) Copyright 2018,2022 FIS Group/Fidelity Information Services Front Arena AB. All rights reserved.
+
+DESCRIPTION
+    
+-----------------------------------------------------------------------------"""
+import acm
+
+from FObservable import Observable
+from FGrouperUtils import GetGrouper
+from contextlib import contextmanager
+from collections import defaultdict, deque
+from FLogger import FLogger
+
+logger = FLogger.GetLogger(__name__)
+logger.Reinitialize(level=2, logCategory='compliance', acmLoggingToFile=True, logOnce=True)
+
+differential = acm.GetFunction('differential', 3)
+
+NAN = acm.Math.NotANumber()
+NONE = object()
+
+
+# Notification constants
+INSERT = 'Insert'
+UPDATE = 'Update'
+REMOVE = 'Remove'
+
+
+def CallAsync(fun, *args):
+    acm.AsynchronousCall(fun, args)
+    
+def SizeOf(grouper):
+    if not grouper:
+        return 0
+    if grouper.IsKindOf(acm.FChainedGrouper):
+        count = 0
+        for _ in grouper.Groupers():
+            count += 1
+        return count
+    return 1
+    
+def IsIterable(something):
+    try:
+        iter(something)
+        return not isinstance(something, (str, acm._pyClass('FSymbol')))
+    except TypeError:
+        return False
+        
+def Flatten(something, index=[]):
+    if IsIterable(something):
+        for idx, elem in enumerate(something):
+            clone = index.copy()
+            clone.append(idx)
+            yield from Flatten(elem, clone)
+    else:
+        yield something, index
+
+
+class CalculationError(RuntimeError):
+    
+    @classmethod
+    def Create(cls, error):
+        if str(error).startswith('Invalid Column'):
+            return MissingColumnError(error)
+        return MissingNodeError(error)
+        
+        
+class MissingNodeError(CalculationError): 
+    pass
+    
+
+class MissingColumnError(CalculationError): 
+    pass
+           
+
+class SpaceParams(object):
+    # CalculationGrid
+    
+    def Id(self):
+        return ''
+
+    def SheetClass(self):
+        return 'FPortfolioSheet'
+
+    def Context(self):
+        return acm.GetDefaultContext()   
+
+    def CalculationEnvironment(self):
+        return None    
+
+    def GridConfiguration(self):
+        return None           
+    
+    def IsSimulationEnabled(self):
+        # not supported when IsDistributed is True
+        return False
+
+    def IsDistributed(self):
+        return False
+        
+            
+class ColumnParams(SpaceParams):
+    # CalculationGridColumn
+
+    def ColumnId(self):
+        raise NotImplementedError
+        
+    def CalculationConfiguration(self):
+        return None
+        
+    def Projection(self):
+        return []
+
+            
+class TreeParams(ColumnParams):
+    # CalculationGridTree
+
+    def Entity(self):
+        raise NotImplementedError
+        
+    def Grouper(self):
+        return acm.FDefaultGrouper()
+            
+    def SubLevel(self):
+        return SizeOf(self.Grouper())
+
+
+class PortfolioTreeParams(TreeParams):
+    #PortfolioGridTree
+
+    def SheetClass(self):
+        return 'FPortfolioSheet'
+
+    def HideZeroPositions(self):
+        return True
+
+    def HideExpiredPositions(self):
+        return True
+        
+        
+class CashTreeParams(PortfolioTreeParams):
+
+    def Grouper(self):
+        return GetGrouper('Cash/Asset', acm.FPortfolioSheet)
+        
+    def ValuesPerCurrency(self):
+        return False
+            
+            
+class Visitor(object):
+
+    def __init__(self, node):
+        self._node = node
+        
+    def SubNodesAt(self, level):
+        targetNodes = []
+        if level == 0:
+            targetNodes.append(self._node)
+        else:
+            parentDepth = self._node.Depth()
+            compoundPortfolioDepths = deque([parentDepth, ])
+            iterator = self._node.Iterator().FirstChild()
+            while iterator and iterator.Tree().Depth() != 1:
+                if not iterator.Tree().Item().IsKindOf(acm.FInstrumentAndTrades):
+                    # Skip projected risk rows from iteration
+                    iterator = iterator.NextSibling()
+                    continue
+                depth = iterator.Tree().Depth()
+                rowTreeItem = iterator.Tree().Item()
+                
+                # Adjust depth for compound portfolios
+                if (rowTreeItem.IsKindOf(acm.FPortfolioInstrumentAndTrades) and
+                    rowTreeItem.Portfolio().IsKindOf(acm.FCompoundPortfolio)):
+                    compoundPortfolioDepths.append(parentDepth)
+                    parentDepth = depth
+                elif depth <= parentDepth and compoundPortfolioDepths:
+                    parentDepth = compoundPortfolioDepths.pop()
+
+                targetDepth = parentDepth + level
+                if depth > targetDepth:
+                    iterator = self._ParentNextSibling(iterator)
+                elif depth == targetDepth:
+                    targetNodes.append(iterator.Tree())
+                    iterator = iterator.NextSibling() or self._ParentNextSibling(iterator)
+                else:
+                    iterator = (iterator.FirstChild() or iterator.NextSibling()
+                                or self._ParentNextSibling(iterator))
+        return targetNodes
+
+    def _ParentNextSibling(self, nodeIter):
+        parent = nodeIter.Parent()
+        if parent and parent.Tree() != self._node:
+            return parent.NextSibling() or self._ParentNextSibling(parent)
+        return None
+        
+
+class ItemCache(object):
+
+    def __init__(self):
+        self._dict = defaultdict(dict)
+
+    def __getitem__(self, key):
+        try:
+            try:
+                space, obj, grouper = key
+            except (TypeError, ValueError):
+                raise KeyError
+            else:
+                return self._dict[space][(obj, grouper)]
+        except KeyError:
+            raise KeyError('[{0}]'.format(key))
+        
+    def __setitem__(self, key, value):
+        space, obj, grouper = key
+        self._dict[space][(obj, grouper)] = value
+        
+    def get(self, key, value=None):
+        try:
+            return self.__getitem__(key)
+        except KeyError:
+            return value
+            
+    def clear(self):
+        self._dict.clear()
+        
+    def remove(self, space):
+        if self._dict.get(space):
+            del self._dict[space]
+            
+    def __repr__(self):
+        return str(self._dict)
+        
+        
+class SpaceCollection(object):
+
+    _acmSpacesCounter = defaultdict(int)
+    _spaceCollections = dict()
+    _spaces = dict()
+    
+    @classmethod
+    def GetSpace(cls, spaceParams):
+        acmSpace = cls._GetCollection(spaceParams).GetSpace(spaceParams.SheetClass(),
+                                                            spaceParams.Context(),
+                                                            spaceParams.GridConfiguration(),
+                                                            spaceParams.IsDistributed())
+        if acmSpace not in cls._spaces:
+            cls._spaces[acmSpace] = Space(acmSpace)
+        space = cls._spaces[acmSpace]
+        cls._acmSpacesCounter[acmSpace] += 1
+        logger.debug(cls._spaces)
+        return space
+
+    @classmethod
+    def Refresh(cls):
+        logger.debug('SpaceCollection refresh')
+        for space in cls._spaces.values():
+            space.Refresh()
+                            
+    @classmethod
+    def Remove(cls, space):
+        acmSpace = space._acmSpace
+        if acmSpace in cls._acmSpacesCounter:
+            cls._acmSpacesCounter[acmSpace] -= 1
+        if not cls._acmSpacesCounter.get(acmSpace) and space in cls._spaces:
+            del cls._spaces[acmSpace]
+            space.Dismantle()
+                
+    @classmethod
+    def Clear(cls):
+        for collection in cls._spaceCollections.values():
+            collection.Clear()
+        cls._spaceCollections.clear()
+        for space in cls._spaces.values():
+            space.Clear()
+        cls._spaces.clear()
+        
+    @classmethod
+    def _GetCollection(cls, params):
+        environment = params.CalculationEnvironment()
+        simulMode = params.IsSimulationEnabled()
+        key = (environment,
+               params.IsSimulationEnabled())
+        if key not in cls._spaceCollections:
+            spaceCollection = acm.Calculations().CreateCalculationSpaceCollection(environment)
+            cls._spaceCollections[key] = spaceCollection
+        return cls._spaceCollections[key]
+
+
+class Node:
+
+    @classmethod
+    def Create(cls, acmNode):
+        if acmNode.Item().IsKindOf(acm.FInstrumentAndTrades):
+            return PortfolioNode(acmNode)
+        return cls(acmNode)
+        
+    def __init__(self, acmNode):
+        self._acmNode = acmNode
+        
+    def Inject(self, obj):
+        raise NotImplementedError
+        
+    def Withdraw(self, obj):
+        raise NotImplementedError
+        
+    def Objects(self):
+        raise NotImplementedError
+        
+        
+class PortfolioNode(Node):
+
+    def Inject(self, obj):
+        iat = self._acmNode.Item()
+        trades = [trd for trd in obj if iat.Portfolio().IsSatisfiedBy(trd)]
+        iat.Trades().AddAll(trades)
+        logger.debug(f'Inject {[trd.Oid() for trd in trades]} into {iat} -> {[trd.Oid() for trd in iat.Trades()]}')
+        
+    def Withdraw(self, obj):
+        self.Objects().RemoveAll(obj)
+        
+    def Objects(self):
+        return self._acmNode.Item().Trades()
+
+        
+class ItemHandler(object):
+
+    _itemCache = ItemCache()
+    
+    def __init__(self, space):
+        self._space = space
+        
+    def InsertItem(self, obj, grouper=None):
+        itemKey = self._CreateItemKey(obj, grouper)
+        node = self._itemCache.get(itemKey)
+        if not node:
+            node = self._space._acmSpace.InsertItem(obj)
+            if grouper:
+                node.ApplyGrouper(grouper)
+            self._itemCache[itemKey] = node
+            logger.debug('Inserting {0} in cache'.format(node))
+        else:
+            logger.debug('Node {0} found in cache'.format(node))
+            
+        self._space.Refresh()
+        return node
+        
+    def Inject(self, node, obj):
+        node.Inject(obj)
+        self._space.Refresh()
+        logger.debug('Injection done')
+        
+    def Withdraw(self, node, obj):
+        node.Withdraw(obj)
+        self._space.Refresh()
+        
+    def Clear(self, _space):
+        self._itemCache.remove(self._space)
+        
+    def _CreateItemKey(self, obj, grouper):
+        #TODO: when grouper is None use obj only
+        return (self._space,
+                self._ObjKey(obj),
+                grouper)
+
+    @classmethod
+    def _ObjKey(cls, obj):
+        # FASQLQuery does not have a reliable hash.
+        # Use the SQL query hash instead.
+        try:
+            if obj.Class() is acm.FASQLPortfolio:
+                return cls._SQL(obj.QueryCopy())
+            elif obj.Class() is acm.FASQLQueryFolder:
+                return cls._SQL(obj.Query())
+            elif obj.Class() is acm.FASQLQuery:
+                return cls._SQL(obj)
+            return obj
+        except AttributeError:
+            pass
+
+    @staticmethod
+    def _SQL(query):
+        queryResult = query.Select_Triggered()
+        return ''.join(str(s.SQL()) for s in queryResult.SubResults())
+        
+          
+
+class Space(object):
+
+    def __init__(self, acmSpace, itemHandlerType=ItemHandler):
+        self._acmSpace = acmSpace
+        self._itemHandler = itemHandlerType(self)
+        self._isRefreshing = False
+
+    def InsertItem(self, obj, grouper=None):
+        return self._itemHandler.InsertItem(obj, grouper)
+        
+    def Inject(self, node, obj):
+        self._itemHandler.Inject(node, obj)
+        
+    def Withdraw(self, node, obj):
+        self._itemHandler.Withdraw(node, obj)
+
+    def CreateCalculation(self, node, columnId, config=None):
+        return self._acmSpace.CreateCalculation(node, columnId, config)
+        
+    def Clear(self):
+        self._acmSpace.Clear()
+        self._itemHandler.Clear(self._space)
+        
+    def Dismantle(self):
+        pass
+
+    def Refresh(self):
+        with self._ReentrantGuard():
+            self._acmSpace.Refresh()
+        
+    def SubNodesAt(self, node, level):
+        return Visitor(node).SubNodesAt(level)
+                
+    @contextmanager
+    def _ReentrantGuard(self):
+        if not self._isRefreshing:
+            self._isRefreshing = True
+            try:
+                yield
+            except Exception as err:
+                logger.error(err, exc_info=True)
+            finally:
+                self._isRefreshing = False
+        else:
+            logger.debug('Refresh re-entrance blocked')
+            yield
+        
+    def __hash__(self):
+        return hash(self._acmSpace)
+        
+    def __eq__(self, other):
+        if isinstance(other, self.__class__):
+            return self._acmSpace == other._acmSpace
+        return False
+        
+    def __ne__(self, other):
+        return not self.__eq__(other)
+        
+    def __getattr__(self, attr):
+        if '_acmSpace' not in self.__dict__:
+            raise AttributeError('{0} object has no attribute {1}'
+                                 ''.format(self.__class__.__name__, '_acmSpace'))    
+        return getattr(self._acmSpace, attr)
+    
+    
+class ICalculation(Observable):
+
+    @classmethod
+    def Create(cls, space, node, columnId, calculationConfig=None, gridConfig=None, projection=[]):
+        if gridConfig and (buckets := gridConfig.ParamDict().At('BuildTimeBuckets')):
+            return TimeBucketsCalculation(buckets, space, node, columnId, calculationConfig, projection)
+        return Calculation(space, node, columnId, calculationConfig, projection)
+
+    def Node(self):
+        raise NotImplementedError
+        
+    def NodeId(self):
+        raise NotImplementedError
+        
+    def Values(self):
+        raise NotImplementedError
+        
+    def Object(self, obj=NONE):
+        raise NotImplementedError
+        
+    def IsMissing(self, missing=NONE):
+        raise NotImplementedError
+        
+    def ServerUpdate(self, _sender, aspect, param):
+        CallAsync(self.Changed, aspect, self)
+        
+
+class NoCalculation(ICalculation):
+
+    def __init__(self, node):
+        super().__init__()
+        self._node = node
+        
+    def Values(self):
+        return [NoValue()]
+            
+    def Node(self):
+        return self._node
+        
+    def NodeId(self):
+        return self._node.StringKey()
+        
+    def Object(self, obj=NONE):
+        return None
+
+    def IsMissing(self, missing=NONE):
+        return True
+            
+
+class Calculation(ICalculation):
+
+    def __init__(self, space, node, columnId, config=None, projection=[]):
+        super().__init__()
+        self._space = space
+        self._node = node
+        self._columnId = columnId
+        self._config = config
+        self._projection = projection
+        self._calculation = None
+        self._baseCalculation = None
+        self._missing = False
+        self._object = None
+        
+    def Node(self):
+        return self._node
+        
+    def NodeId(self):
+        return self._node.StringKey()
+        
+    def Values(self):
+        values = []
+        
+        try:
+            values = self._ValuesImpl()
+        except Exception as e:
+            # Calculation failed. The row is not present in this calculation space.
+            # It may be deleted or belong to a different calculation space or sheet.
+            strError = 'Calculation failed. The row'
+            if not str(e).startswith(strError):
+                raise(e)
+
+        return self._GetAll(values) if not self._projection else self._GetProjected(values)
+        
+    # Scenario stuff
+    def BaseValue(self):
+        return self._BaseCalculation().Value()
+
+    def RelativeValue(self):
+        value = self._Calculation().ValueAtAsVariant(self._projection)
+        return self.Differential(value, self.BaseValue())
+        
+    def RelativePercentValue(self):
+        value = self._Calculation().ValueAtAsVariant(self._projection)
+        return 100 * self.Differential(value, self.BaseValue(), isRelative=True)
+        
+    def Delete(self):
+        if self._calculation:
+            self._calculation.RemoveDependent(self)
+            self._calculation = None
+        self._baseCalculation = None
+        
+    def IsMissing(self, missing=NONE):
+        if missing is NONE:
+            return bool(self._missing)
+        self._missing = missing
+        
+    def Object(self, obj=NONE):
+        if obj is NONE:
+            return self._object
+        self._object = obj
+
+    @staticmethod
+    def Differential(x, y, isRelative=False):
+        try:
+            if isRelative:
+                return differential(x, y, y)
+            return differential(x, y)
+        except TypeError:
+            return float('nan')
+        except RuntimeError:
+            return float('nan')
+            
+    def _ValuesImpl(self):
+        # always returns a single value if projection exists and there is no error 
+        return self._Calculation().ValueAtAsVariant(self._projection)
+        
+    def _GetProjected(self, values):
+        # values must be a single value
+        return [CalculatedValue(values, self._ProjectionCoordiates())]
+        
+    def _GetAll(self, values):
+        # single or multiple values depending on column and configuration
+        return [CalculatedValue(value, coordinates) for value, coordinates in Flatten(values)]
+            
+    def _Calculation(self):
+        if self._calculation is None:
+            self._calculation = self._space.CreateCalculation(self._node, 
+                                                              self._columnId, 
+                                                              self._config)
+            self._calculation.AddDependent(self)
+        return self._calculation
+        
+    def _BaseCalculation(self):
+        if self._baseCalculation is None:
+            baseconfig = acm.Sheet.Column().ConfigurationWithoutScenario(self._config)            
+            self._baseCalculation = self._space.CreateCalculation(self._node, 
+                                                                  self._columnId, 
+                                                                  baseconfig)
+        return self._baseCalculation
+        
+    def _ProjectionCoordiates(self):
+        if not self._projection:
+            return []
+            
+        proj = self._projection[-1] if IsIterable(self._projection) else self._projection
+        return proj.Coordinates()
+
+
+class CalculatedValue:
+
+    def __init__(self, value, coordinates=[]):
+        self._value = value
+        self._coordinates = list(coordinates)
+        
+    def Value(self, value=NONE):
+        if value is NONE:
+            return self._value
+        self._value = value
+        
+    def AsNumber(self):
+        try:
+            return float(self._value)
+        except (TypeError, ValueError):
+            return NAN
+        
+    def Coordinates(self):
+        return self._coordinates
+        
+    def __add__(self, other):
+        self._Check('+', other)
+        return self.AsNumber() + other
+        
+    def __radd__(self, other):
+        self._Check('+', other)
+        return other + self.AsNumber()
+        
+    def __mul__(self, other):
+        self._Check('*', other)
+        return self.AsNumber() * other
+        
+    def __rmul__(self, other):
+        self._Check('*', other)
+        return other * self.AsNumber()
+        
+    def __truediv__(self, other):
+        self._Check('/', other)
+        return self.AsNumber() / other
+        
+    def __rtruediv__(self, other):
+        self._Check('/', other)
+        return other / self.AsNumber()
+        
+    def _Check(self, operand, other):
+        if isinstance(other, type(self)) and not other.Coordinates() == self.Coordinates():
+            raise TypeError(f'unsupported opperand type {operand} between coordinates '
+                            f'{self.Coordinates()} and {other.Coordinates()}')
+                            
+                            
+class NoValue(CalculatedValue):
+
+    def __init__(self):
+        super().__init__(float('nan'))
+
+    
+class TimeBucketsCalculation(Calculation):
+
+    def __init__(self, buckets, space, node, columnId, config=None, projection=[]):
+        super().__init__(space, node, columnId, config, projection)
+        self.buckets = buckets
+        
+    def _GetProjected(self, values):
+        return self._GetAll(values)
+        
+    def _GetAll(self, values):
+        # single or multiple values depending on column and configuration
+        return [CalculatedValue(value, self._GetLabel(coordinates)) for value, coordinates in Flatten(values)]
+        
+    def _GetLabel(self, coordinates):
+        return [self.buckets.NameAt(coordinates[0])]
+
+    def _ValuesImpl(self):
+        # IMPORTANT! Always call Value on the wrapped 
+        # calculation otherwise its dirty state will
+        # remain and updates will no longer be received.
+        super()._ValuesImpl()
+        return [self._CalculateValue(n) for n in self._BucketNodes()]
+        
+    def _BucketNodes(self):
+        bucketDefinitionIter = self._node.Iterator().FirstChild()
+        bucketIter = bucketDefinitionIter.FirstChild()
+        while bucketIter:
+            yield bucketIter.Tree()
+            bucketIter = bucketIter.NextSibling()
+            
+    def _CalculateValue(self, node):
+        return self._space.CalculateValue(node, 
+                                          self._columnId, 
+                                          self._config,
+                                          True,
+                                          self._projection)
+        
+        
+class CalculationGrid(Observable):
+
+    @classmethod
+    def Create(cls, params):
+        if isinstance(params, CashTreeParams):
+            return CashGridTree(params)
+        if isinstance(params, PortfolioTreeParams):
+            return PortfolioGridTree(params)
+        elif isinstance(params, TreeParams):
+            return CalculationGridTree(params)
+        elif isinstance(params, ColumnParams):
+            return CalculationGridColumn(params)
+        elif isinstance(params, SpaceParams):
+            return cls(params)
+        raise ValueError(params)
+        
+    def __init__(self, spaceParams):
+        super().__init__()
+        self._params = spaceParams
+        self._space = SpaceCollection.GetSpace(spaceParams)
+        self._calculations = defaultdict(dict)
+        self._insertedNodes = set()
+        
+    def Id(self):
+        return self._params.Id()
+        
+    def InsertItem(self, obj, grouper=None):
+        node = self._space.InsertItem(obj, grouper)
+        self._StartObserving(node)
+        return node
+        
+    def Inject(self, node, obj):
+        self._space.Inject(node, obj)
+        
+    def Withdraw(self, node, obj):
+        self._space.Withdraw(node, obj)
+        
+    def Refresh(self):
+        self._space.Refresh()
+
+    def GetCalculation(self, node, columnId, config=None, projection=[]):
+        return self._GetOrCreateCalculation(node, columnId, config, projection)
+        
+    def HasCalculations(self, node=None):
+        return bool(self._calculations) if node is None else node in self._calculations
+        
+    def Delete(self):
+        self._StopObserving()
+        for node in list(self._calculations.keys()):
+            self._RemoveNode(node)
+        self._calculations.clear()
+        if self._space:
+            SpaceCollection.Remove(self._space)
+            self._space = None
+            
+    def ServerUpdate(self, _sender, aspect, param):
+        try:
+            if str(aspect) == 'Remove' and param:
+                CallAsync(self._HandleRemove, param)
+            elif str(aspect) == 'Insert' and param:
+                CallAsync(self._HandleInsert, param)
+        except Exception as err:
+            logger.error(err)
+
+    def Update(self, _sender, _aspect, param):
+        try:
+            CallAsync(self._HandleUpdate, param)
+        except Exception as err:
+            logger.error(err)
+                   
+    def _HandleInsert(self, param):
+        logger.debug('HandleInsert with param {0}'.format(param))
+        self.Changed(INSERT, param)
+
+    def _HandleUpdate(self, param):
+        logger.debug('HandleUpdate with param {0}'.format(param))
+        self.Changed(UPDATE, param)
+        
+    def _HandleRemove(self, param):
+        logger.debug('HandleRemove with param {0}'.format(param))
+        if self.HasCalculations(param):
+            self.Changed(REMOVE, param)
+            self._RemoveNode(param)
+            
+    def __getattr__(self, attr):
+        if '_space' not in self.__dict__:
+            raise AttributeError('{0} object has no attribute {1}'
+                                 ''.format(self.__class__.__name__, '_space'))
+        return getattr(self._space, attr)
+        
+    def _StartObserving(self, node):
+        if node not in self._insertedNodes:
+            self._insertedNodes.add(node)
+            node.AddDependent(self)
+            logger.debug('Start observing node {0}'.format(node))
+
+    def _StopObserving(self):
+        while self._insertedNodes:
+            node = self._insertedNodes.pop()
+            node.RemoveDependent(self)
+            logger.debug('Stop observing node {0}'.format(node))
+
+    def _RemoveNode(self, node):
+        if self.HasCalculations(node):
+            logger.debug('Removing node {0} from calculation cache'
+                         ''.format(node.StringKey()))
+            for calc in self._calculations[node].values():
+                calc.Delete()
+                calc.RemoveObserver(self)
+            del self._calculations[node]
+            
+    def _GetOrCreateCalculation(self, node, columnId, config, projection):
+        calcKey = self._GetCalcKey(columnId, config, projection)
+        if not self.HasCalculations(node):
+            logger.debug('Adding node {0} to calculation cache'.format(node.StringKey()))
+            calculation = ICalculation.Create(self._space, node, columnId, config, 
+                                              self._params.GridConfiguration(), projection)
+            self._calculations[node][calcKey] = calculation
+            calculation.AddObserver(self)
+        elif calcKey not in self._calculations[node]:
+            logger.debug('Adding columnId {0} config {1} and projection {2} to node {3} '
+                         'in calculation cache'.format(columnId, config, projection, node.StringKey()))
+            calculation = ICalculation.Create(self._space, node, columnId, config, 
+                                              self._params.GridConfiguration(), projection)
+            self._calculations[node][calcKey] = calculation
+            calculation.AddObserver(self)
+        return self._calculations[node][calcKey]
+        
+    @staticmethod
+    def _GetCalcKey(columnId, config, projection):
+        projection = tuple(projection) if IsIterable(projection) else projection
+        return (columnId, config, projection)
+            
+      
+class CalculationGridColumn(Observable):
+
+    def __init__(self, columnParams):
+        super().__init__()
+        self._grid = CalculationGrid(columnParams)
+        self._columnId = columnParams.ColumnId()
+        self._config = columnParams.CalculationConfiguration()
+        self._projection = columnParams.Projection()
+        self._grid.AddObserver(self)
+        
+    def Id(self):
+        return self._grid.Id()
+        
+    def InsertItem(self, obj, grouper=None):
+        return self._grid.InsertItem(obj, grouper)
+        
+    def Inject(self, node, obj):
+        self._grid.Inject(node, obj)
+        
+    def Withdraw(self, node, obj):
+        self._grid.Withdraw(node, obj)
+        
+    def Refresh(self):
+        self._grid.Refresh()
+        
+    def GetCalculation(self, node):
+        return self._grid.GetCalculation(node, self._columnId, self._config, self._projection)
+        
+    def HasCalculation(self, node):
+        return self._grid.HasCalculations(node)
+                
+    def Delete(self):
+        self._grid.RemoveObserver(self)
+        self._grid.Delete()
+        
+    def Update(self, sender, aspect, param):
+        self.Changed(aspect, param)
+        
+
+class CalculationGridTree(Observable):
+
+    @classmethod
+    def Create(cls, params):
+        if isinstance(params, CashTreeParams):
+            return CashGridTree(params)
+        if isinstance(params, PortfolioTreeParams):
+            return PortfolioGridTree(params)
+        elif isinstance(params, TreeParams):
+            return CalculationGridTree(params)
+        raise ValueError(params)
+
+    def __init__(self, treeParams):
+        super().__init__()
+        self._grid = CalculationGridColumn(treeParams)
+        self._entity = treeParams.Entity()
+        self._grouper = treeParams.Grouper()
+        self._level = treeParams.SubLevel()
+        self._topNode = None
+        self._grid.AddObserver(self)
+        
+    def Id(self):
+        return self._grid.Id()
+        
+    def Refresh(self):
+        self._grid.Refresh()
+        
+    def Calculations(self):
+        return [self._grid.GetCalculation(node) for node in self._TargetNodes()]
+        
+    def GetCalculation(self, node):
+        nodes = [n for n in self._TargetNodes() if n.StringKey() == node.StringKey()]
+        try:
+            return self._grid.GetCalculation(nodes[0])
+        except IndexError:
+            logger.debug(f'Node "{node.StringKey()}" not found')
+        return NoCalculation(node)
+            
+    def Grouper(self):
+        return self._grouper
+        
+    def Level(self):
+        return self._level
+        
+    def Delete(self):
+        self._grid.RemoveObserver(self)
+        self._grid.Delete()
+                
+    def HasCalculations(self):
+        return any(self._grid.HasCalculation(node) for node in self._TargetNodes())
+        
+    def Update(self, sender, aspect, param):
+        logger.debug(f'Received {param} {aspect} from {sender} on GridTree')
+        # Update calculation
+        if aspect == UPDATE:
+            self.Changed(aspect, param)
+            return
+        # Insert node
+        targetNodes = self._TargetNodes()
+        paramInTargetNodes = param in targetNodes
+        logger.debug(f'{param} in {targetNodes} returned {paramInTargetNodes}')
+        if paramInTargetNodes:
+            # Create calculation and send notification
+            calc = self._grid.GetCalculation(param)
+            calc.Object(Node.Create(param).Objects())
+            self.Changed(aspect, calc)
+            return
+        # Remove node
+        if aspect == REMOVE:
+            # Get calculation for removed node and send notification
+            calc = self._grid.GetCalculation(param)
+            calc.IsMissing(True)
+            self.Changed(aspect, calc)
+            if param == self._topNode:
+                self._topNode = None
+            return
+            
+    def _TopNode(self):
+        if self._topNode is None:
+            self._topNode = self._grid.InsertItem(self._entity, self._grouper)
+        return self._topNode
+        
+    def _TargetNodes(self):
+        return self._SubNodesAt(self._level)
+        
+    def _SubNodesAt(self, level):
+        return Visitor(self._TopNode()).SubNodesAt(level)
+
+
+class PortfolioGridTree(CalculationGridTree):
+
+    def __init__(self, portfolioTreeParams):
+        super().__init__(portfolioTreeParams)
+        self._hideZeroPositions = portfolioTreeParams.HideZeroPositions()
+        self._hideExpiredPositions = portfolioTreeParams.HideExpiredPositions()
+               
+    @contextmanager
+    def Simulate(self, trades):
+        try:
+            self._Inject(trades)
+            yield self._Simulation(trades)
+        finally:
+            self._Withdraw(trades)
+            
+    def _Simulation(self, trades):
+        if not trades:
+            return self.Calculations()
+            
+        simulation = []
+        for node in self._TargetNodes():
+            if intersection := node.Item().Trades().Intersection(trades):
+                calc = self._grid.GetCalculation(node)
+                calc.Object(intersection)
+                simulation.append(calc)
+        return simulation
+    
+    def _Inject(self, trades):
+        node = Node.Create(self._TopNode())
+        self._grid.Inject(node, trades)
+
+    def _Withdraw(self, trades):
+        node = Node.Create(self._TopNode())
+        self._grid.Withdraw(node, trades)
+
+    def _TargetNodes(self):
+        fun = lambda n: not(self._hideExpiredPositions and self._IsExpired(n))
+        return list(filter(fun, super()._TargetNodes()))
+        
+    @classmethod
+    def _IsExpired(cls, node):
+        return (node.Item().IsExpired() or 
+                cls._AreSubNodesExpiredFor(node))
+
+    @staticmethod
+    def _AreSubNodesExpiredFor(node):
+        iterator = node.Iterator().FirstChild()
+        if iterator:
+            expired = False
+            while iterator:
+                item = iterator.Tree().Item()
+                if item.IsKindOf(acm.FInstrumentAndTrades):
+                    if not item.IsExpired(): return False
+                    else: expired = True
+                iterator = iterator.NextSibling()
+            return expired
+        else: # No sub nodes
+            return False
+            
+            
+class CashGridTree(PortfolioGridTree):
+
+    def __init__(self, cashTreeParams):
+        super().__init__(cashTreeParams)
+        self._valuesPerCurrency = cashTreeParams.ValuesPerCurrency()
+
+    def _TargetNodes(self):
+        return self._CurrencyNodes() if self._valuesPerCurrency else [self._CashNode()]
+        
+    def _CashNode(self):
+        child = self._TopNode().Iterator().FirstChild()
+        while child:
+            node = child.Tree()
+            if self.IsCashNode(node):
+                return node
+            child = child.NextSibling()
+        raise Exception('Cash node not found')
+    
+    def _CurrencyNodes(self):
+        child = self._CashNode().Iterator().FirstChild()
+        while child:
+            yield child.Tree()
+            child = child.NextSibling()
+            
+    @staticmethod
+    def IsCashNode(node):
+        return str(node.Item().Grouping().GroupingValue()) == 'Cash'
+        
+
+class RefreshScheduler(object):
+
+    def __init__(self, frequency=5):
+        self._frequency = frequency
+        self._spaces = set()
+        self._timer = None
+        
+    def HasSpaces(self):
+        return bool(self._spaces)
+                
+    def Destroy(self):
+        if self._timer:
+            self._FlushTimer()
+        self._spaces.clear()            
+        
+    def Add(self, space):
+        if self._timer is None:
+            self._InitTimer()
+        self._spaces.add(space)
+        logger.debug(f'Added {space} to scheduler')
+        
+    def Remove(self, space):
+        if space in self._spaces:
+            self._spaces.remove(space)
+            logger.debug(f'Removed {space} from scheduler')
+        if not self._spaces:
+            self._FlushTimer()
+            
+    @contextmanager
+    def Halted(self):
+        self._FlushTimer()
+        logger.debug('Scheduler stopped')
+        try:
+            yield
+        finally:
+            self._InitTimer()
+            logger.debug('Scheduler started')
+
+    def _InitTimer(self):
+        self._timer = acm.Time.Timer().CreatePeriodicTimerEvent(
+            self._frequency, self._OnTimer, None)
+
+    def _FlushTimer(self):
+        acm.Time.Timer().RemoveTimerEvent(self._timer)
+        self._timer = None
+
+    def _OnTimer(self, *args):
+        logger.debug('OnTimer called')
+        for space in self._spaces:
+            logger.debug(f'Processing {space}')
+            space.Refresh()
+
+...
+
+  FComplianceRulesUtils
+""" Compiled: 2023-11-13 18:16:45 """
+
+#__src_file__ = "extensions/ComplianceRules/etc/FComplianceRulesUtils.py"
+"""--------------------------------------------------------------------------
+MODULE
+    FComplianceRulesUtils
+
+    (c) Copyright 2018,2022 FIS Group/Fidelity Information Services Front Arena AB. All rights reserved.
+
+DESCRIPTION
+    Utility functions for compliance rules
+-----------------------------------------------------------------------------"""
+import acm
+import time
+
+import FUxCore
+import DealPackageUtil
+
+from typing import Union
+from collections import Counter
+
+from ACMPyUtils import Transaction
+from FObservable import Observable
+from FAssetManagementUtils import GetLogger, GetFunction
+from FSheetUtils import SimulateCell, SheetContents
+from DisplayCurrencyParameterization import DisplayCurrencyParameterizationDialog
+
+logger = GetLogger('Rules:')
+logger.Reinitialize(level=2, logCategory='compliance', acmLoggingToFile=True, logOnce=True)
+
+
+def GetInterface(rule):
+    interface = rule.Definition().Class().Interface()
+    try:
+        return GetFunction(interface)
+    except Exception as e:
+        raise Exception('Could not find an interface for rule {0}. {1}'.format(rule.Name(), e))
+
+def AsWhatIfConfig(obj: acm.FObject) -> acm.FWhatIfConfiguration:
+
+    def AsKey(obj):
+        return ObjectName(obj)
+        
+    params = acm.FWhatIfParameters()
+    if IsDictionary(obj):
+        for key in obj:
+            params.Set(key, obj[key])
+    elif obj:
+        params.Set(AsKey(obj), obj)
+        
+    config = acm.FWhatIfConfiguration()
+    config.Parameters(params)
+    return config
+    
+    
+class TradeDiaryEntry:
+
+    def __init__(self, userName, utc, notes):
+        self.userName = userName
+        self.utc = utc
+        self.notes = notes
+        
+    def UserName(self):
+        return self.userName
+        
+    def Time(self, utc=False):
+        return acm.Time.UtcToLocal(self.utc) if not utc else self.utc
+        
+    def Notes(self):
+        return self.notes
+        
+    def NotesAsString(self):
+        return '\n'.join(self.notes)
+        
+    
+def GetTradeDiaryName(trd):
+    if trd and trd.Originator().Oid() > 0:
+        return f'TradeDiary_{trd.Originator().StringKey()}'
+    return ''
+    
+def GetTradeDiary(trd):
+    return acm.FTradeDiary[GetTradeDiaryName(trd)]
+    
+def GetTradeDiaryFromAlertNotes(notes):
+    if start := notes.find(':') + 1:
+        end = notes[start:].find('potentially')
+        targets = notes[start:start+end].split(',')
+        oid = int(targets[0].strip() or 0)
+        return GetTradeDiary(acm.FTrade[oid])
+        
+def GetTradeDiaryEntries(tradeDiary):
+    return tradeDiary.FromArchive('entries') or acm.FArray()
+    
+def AddTradeDiaryEntry(tradeDiary, notes):
+    entries = tradeDiary.Entries()
+    entries.Add((acm.UserName(), acm.Time.TimeNow(), notes))
+    tradeDiary.ToArchive('entries', entries)
+    
+def GetLastTradeDiaryEntry(tradeDiary):
+    entries = tradeDiary.Entries()
+    return TradeDiaryEntry(*entries.Last()) if entries else None
+        
+def GetLastTradeDiaryEntryNotes(tradeDiary):
+    lastEntry = tradeDiary.LastEntry()
+    return lastEntry.Notes() if lastEntry else acm.FArray()
+    
+def GetLastTradeDiaryEntryNotesAsString(tradeDiary):
+    lastEntry = tradeDiary.LastEntry()
+    return lastEntry.NotesAsString() if lastEntry else ''
+
+def GetRuleResultIcon(result):
+    state = result.State()  
+    if state == 'Compliant':
+        return 'FAlertReceded'
+    elif state == 'Breached':
+        return 'FAlertActive'
+    elif state == 'Error':
+        return 'FAlertError'
+    return 'FAlertNone'
+    
+def GetRuleResultTooltip(result):
+    return str(result.State())
+
+def StringFilterByName(array, name):
+    if len(name) == 0: return array
+
+    filteredList = []
+    for object in array:
+        #Use object's name when possible
+        string = str(object.Name()) if hasattr(object, "Name") else str(object)
+
+        if string.lower().startswith(name.lower()):
+            filteredList.append(object)
+    return filteredList
+    
+def IsLeading(thresholdValue):
+    group = acm.FThresholdValueGroup(thresholdValue)
+    return group.Lead() is thresholdValue
+    
+def WaitFor(block, timeout=1000):
+    start = time.time()
+    while not block():
+        if time.time() - start >= timeout:
+            print('timeOut')
+            return False
+        acm.PollAllEvents()
+    return True
+    
+def IsEmpty(collection):
+    return len(collection) == 0
+        
+def First(collection):
+    for elem in collection:
+        return elem
+        
+def IsString(obj):
+    return type(obj) in (str, acm._pyClass('FString'), acm._pyClass('FSymbol'))
+        
+def IsIterable(obj):
+    return hasattr(obj, '__iter__') and not IsString(obj)
+
+def IsDictionary(obj):
+    return (isinstance(obj, dict) or 
+            isinstance(obj, acm._pyClass(acm.FDictionary)))
+        
+def ObjectName(obj: Union[acm.FObject, acm.FArray, acm.FSet]):
+    if IsIterable(obj):
+        if not IsEmpty(obj):
+            return DealPackageUtil.ObjectName(First(obj), plural=True)
+        return type(obj).__name__
+    return DealPackageUtil.ObjectName(obj)
+
+
+# ********************************* Applied rules *********************************
+def GetAppliedRules(entity):   
+    return acm.FAppliedRule.Select('targetId = {0} and targetType = "{1}" and inactive=false'.format(entity.Oid(), entity.RecordType()))
+    
+def GetParam(ar, name):
+    param = ar.GetParameter(name)
+    if (name in ('columnParameters', 'relativeToColumnParameters') and
+        param and param.Class() in (acm.FColumnCreatorConfiguration, 
+                                    acm.FCalculationConfiguration)):
+        #backwards compatibility
+        param = param.ParamDict().At('columnParameters')
+    return param
+        
+def _AllOwnerPortfolios(portfolio):
+    portfolios = []
+    for link in portfolio.MemberLinks():
+        if link.OwnerPortfolio():
+            portfolios.extend(_AllOwnerPortfolios(link.OwnerPortfolio()))
+        portfolios.append(portfolio)
+    return portfolios
+
+def AllPortfoliosForTrades(trades):
+    portfolios = {trade.Portfolio() for trade in trades}
+    compoundPortfolios = set()
+    for p in portfolios:
+        compoundPortfolios.update(_AllOwnerPortfolios(p))
+    portfolios.update(compoundPortfolios)
+    return portfolios
+
+# *************************** Column parameters ****************************
+CreateDict = acm.GetFunction('createDictionary', 4)
+CreatePair = acm.GetFunction('createPair', 2)
+KwargDefault = object()
+
+def ColumnParamsFrom(creatorConfig):
+    return creatorConfig.ParamDict().At('columnParameters') if creatorConfig else None
+    
+def LiveColumnParams(columnId):
+    template = acm.Sheet.Column().GetCreatorTemplate(columnId, acm.GetDefaultContext())
+    return template.LiveColumnDefinition().Parameters()
+        
+def ColumnParamsDialog(shell, creator, initialParamDict=KwargDefault):
+    initialParamDict = ColumnParamsFrom(creator.Configuration()) if initialParamDict is KwargDefault else initialParamDict
+    templateParams = LiveColumnParams(creator.OriginalColumnId())
+    d = CreateDict(['columnParameterNamesAndInitialValues', 'columnParameters', 'sheetClassName', 'enableLabelInput'], 
+                   [initialParamDict, templateParams, 'FPortfolioSheet', False])
+    
+    columParamsDict = acm.FDictionary()
+    columParamsDict.JoinWithSymbolicKeys(d)
+    dlg = DisplayCurrencyParameterizationDialog(columParamsDict)
+    return acm.UX().Dialogs().ShowCustomDialogModal(shell, dlg.CreateLayout(), dlg)
+
+def Merge(creatorConfig, columnParams):
+    config = creatorConfig or acm.Sheet.Column().CreatorConfigurationFromColumnParameterDefinitionNamesAndValues(acm.FDictionary())
+    params1 = config.ParamDict().At('columnParameters')
+    params2 = columnParams or acm.FDictionary()
+    d = acm.FDictionary()
+    d.JoinWithSymbolicKeys(params1)        
+    d.JoinWithSymbolicKeys(params2)
+    return acm.Sheet.Column().CreatorConfigurationFromColumnParameterDefinitionNamesAndValues(d, config)
+
+def ColumnParamsAndValues(creator, config=None):
+        
+    def AsPair(columnParam):
+        name = ColumnParamDef(columnParam).DisplayName()
+        value = columnParamsDict.At(columnParam.Name())
+        return CreatePair(name, value)
+    
+    if columnParamsDict := ColumnParamsFrom(creator.Configuration() if creator and config is None else config):
+        paramsAndValues = acm.FArray().AddAll([AsPair(p) for p in LiveColumnParams(creator.OriginalColumnId())])
+        return paramsAndValues.Filter(lambda p: p.Second() is not None)
+    return []
+    
+def ColumnParamDef(paramName):
+    try:
+        paramDef = acm.GetDefaultContext().GetExtension(
+            'FColumnParameterDefinition', 
+            'FObject', paramName).Value()
+        paramDef.Validate()
+        return paramDef
+    except Exception as err:
+        logger.error(err)
+
+
+# ********************************* Alerts *********************************
+def GetAlert(appliedRule, threshold, subject): 
+    query = ('appliedRule = {0} and threshold = {1}' 
+             ' and subjectId = {2} and subjectType = "{3}"').format(appliedRule.Oid(), 
+                                               threshold.Oid(), 
+                                               subject.Oid(),
+                                               subject.RecordType())
+    return acm.FAlert.Select01(query, '')
+
+def GetLastAlertDiaryEntry(alert):
+    entries = []
+    #get alert diary entries
+    try:
+        entries.append(alert.GetDiaryEntries()[-1])
+    except IndexError:
+        pass
+
+    #get breach diary entries
+    for breach in alert.Breaches():
+        try:
+            entries.append(alert.GetDiaryEntries(breach)[-1])
+        except IndexError:
+            pass
+            
+    lastEntries = sorted(entries, key=lambda e:e.Time())
+    
+    if lastEntries:
+        return lastEntries[-1]
+        
+def GetLastAlertDiaryEntryNotes(alert):
+    lastEntry = alert.LastDiaryEntry()
+    return lastEntry.Notes() if lastEntry else acm.FArray()
+    
+def GetLastAlertDiaryEntryNotesAsString(alert):
+    return '\n'.join(alert.LastDiaryEntryNotes())
+    
+def GetLastBreachDiaryEntryNotesAsString(breach):
+    entries = breach.Alert().GetDiaryEntries(breach)
+    lastEntry = entries.Last() if entries else None
+    return '\n'.join(lastEntry.Notes() if lastEntry else ())
+    
+
+checkedValues = dict()
+
+def GetCheckedValue(alert):
+    return checkedValues.get(alert)
+    
+def SetCheckedValue(alert, value):
+    checkedValues[alert] = value
+    alert.Changed()
+
+# ********************************* RuleValue ******************************
+def CreateRuleValue(appliedRule):
+    pass
+    
+def IsInception(dateTime):
+    return acm.Time.DateTimeToTime(dateTime) == 0
+
+
+class AlertSheetDialog(FUxCore.LayoutDialog):
+
+    class DefaultSettings(object):
+    
+        def __init__(self, settings):
+            self._settings = settings
+    
+        def Caption(self):
+            try:
+                return self._settings.Caption()
+            except AttributeError:
+                return 'Compliance Check Result'
+                
+        def Columns(self):
+            try:
+                return self._settings.Columns()
+            except AttributeError:        
+                return '_defaultColumnsAlertSheet'
+            
+        def SheetType(self):
+            return 'FAlertSheet'
+
+        def __getattr__(self, attr):
+            return getattr(self._settings, attr)     
+            
+            
+    def __init__(self, alerts, settings=None):
+        self._alerts = alerts
+        settings = AlertSheetDialog.DefaultSettings(settings)
+        self._contents = SheetContents(settings)
+        self._sheet = None
+                        
+    def HandleApply(self):
+        return 1
+
+    def HandleCreate(self, dlg, layout):
+        dlg.Caption(self._contents.Caption())
+        sheetCtrl = layout.GetControl('sheet')
+        self._sheet = sheetCtrl.GetCustomControl()
+        self._InsertAlertsAndSimValue()
+            
+    def _InsertAlertsAndSimValue(self):
+        try:
+            for alert, cValue in self._alerts:
+                self._sheet.InsertObject(alert, 'IOAP_LAST')
+                SimulateCell(self._sheet, alert, 'Checked Value', float(cValue))
+        except (TypeError, ValueError):
+            for alert in self._alerts:
+                self._sheet.InsertObject(alert, 'IOAP_LAST')
+                        
+    def CreateLayout(self):
+        b = acm.FUxLayoutBuilder()
+        b.BeginVertBox('None')
+        b.  AddCustom('sheet', 'sheet.FAlertSheet', 1000, 250, -1, -1, self._contents.ForControl())
+        b.  BeginHorzBox('None')
+        b.    AddFill()
+        b.    AddButton('ok', 'Close')
+        b.  EndBox()
+        b.EndBox()
+        return b
+      
+  
+class AsyncComplianceChecker(object):
+    """ Class that will check a list of applied rules asynchronously and call the given method when all results 
+        have been returned. The method will be called with a list of all FRuleResults and one list with all errors. """
+    
+    def __init__(self, appliedRules, continueWithFunc, objects=None):
+        self._appliedRules = appliedRules
+        self._objects = objects or []
+        self._continueWithFunc = continueWithFunc
+        self._resultsList = []
+        self._errors = []
+        
+    def Check(self):
+        if self._appliedRules:
+            acm.AsyncTask.WhenAll([ar.WhatIf(AsWhatIfConfig(self._objects)) 
+                                   for ar in self._appliedRules]).ContinueWith(self._OnResultReturned)
+        else: # Immediately call ContinueWith-function if there are no applied rules.
+            self._CallContinueWithFunction()
+
+    def _OnResultReturned(self, asyncTask):
+        try:
+            for task in asyncTask.Result():
+                results = task.Result()
+                if not results.IsKindOf(acm.ERuleError):
+                    self._resultsList.append(results)
+                else:
+                    self._errors.append(results.Message()) 
+            self._CallContinueWithFunction()
+        except Exception as err:
+            logger.error(err)
+    
+    def _CallContinueWithFunction(self):
+        try:
+            self._continueWithFunc(self._resultsList, self._errors)
+        except Exception as e:
+            logger.error('Exception when calling ContinueWith-function: {0}'.format(e))
+            
+            
+class Tracker(Observable):
+
+    class RuleTask(Observable):
+    
+        def __init__(self, ar, task):
+            super().__init__()
+            self.ar = ar
+            self.task = task
+            self.task.AddDependent(self)
+            self.t = self.InitialTime()
+                                    
+        def ServerUpdate(self, sender, aspect, param):
+            if self.task.IsCompleted():
+                self.task.RemoveDependent(self)
+                self.t = self.FinalTime()
+                self.Changed(aspect)
+                
+        def Status(self):
+            if self.task.IsFaulted():
+                return 'Error'
+            if self.task.IsCompleted():
+                return 'Ready'
+            if self.task.IsStarted():
+                return 'Working'
+                
+        def Details(self):
+            return  f'{self.ar.StringKey()} {self.Status()} took {self.t:.4f} sec(s)'
+            
+        def InitialTime(self):
+            return (time.time() if self.task.IsStarted() and 
+                    not self.task.IsCompleted() else 0)
+                    
+        def FinalTime(self):
+            return time.time() - self.t
+                
+        def __getattr__(self, name):
+            return getattr(self.task, name)
+                        
+
+    def __init__(self, tasksByRule):
+        super().__init__()
+        
+        self.tasks = [self.RuleTask(ar, t) for ar in tasksByRule
+                      for t in tasksByRule[ar]]
+                      
+        for t in self.tasks:
+            t.AddObserver(self)
+        
+        self.completed = len([t for t in self.tasks if t.IsCompleted()])
+        self.t = time.time()
+
+    def Status(self):
+        all = [t.Status() for t in self.tasks]
+        if 'Wroking' in all:
+            return 'Working'
+        counter = Counter(all)
+        if v := counter.most_common(1):
+            return v[0][0]
+        return 'Finished'
+	
+    def Total(self):
+        return len(self.tasks)
+        
+    def Completed(self):
+        return self.completed
+        
+    def IsDone(self):
+        return self.Completed() == self.Total()
+
+    def Progress(self):
+        return self.Completed() / self.Total()
+        
+    def ProgressText(self):
+        text = f'{self.Completed()}/{self.Total()} task(s) completed'
+        return text if self.Completed() else self.Status()
+        
+    def LogSummary(self):
+        self.t = time.time() - self.t
+        logger.debug(f'Total time {self.t:.4f} sec(s)')
+        for t in self.tasks:
+            logger.debug(t.Details())
+
+    def Update(self, sender, aspect, param):
+        self.completed += 1
+        self.Changed(aspect)
+        sender.RemoveObserver(self)            
+
+        if self.IsDone():
+            self.LogSummary()
+            self.tasks.clear()
+
+...
+
+}
+

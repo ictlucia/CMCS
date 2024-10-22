@@ -1,0 +1,216 @@
+#
+# Front Arena exported extension module.
+# source          ""
+# timestamp (utc) "2024-06-19 03:08:59"
+# ***** DO NOT EDIT! *****
+#
+name        "PS_BorisOutReconData"
+description "$Id$"
+
+groups {
+}
+
+decls[FParameters] {
+}
+
+clx FObject [FParameters] {
+  ReconDataParams =
+  reconLogFilename=BORIS_OUT_RECON_LOG_{}.txt
+  reconOutputFilename=BORIS_OUT_RECON_DATA_{}.csv
+
+
+}
+
+decls[FPythonCode] {
+}
+
+clx FObject [FPythonCode] {
+  BorisOutReconData
+"""----------------------------------------------------------------------------------------------------
+MODULE:
+    BorisOutReconData
+
+DESCRIPTION:
+    Entry point to invoke the Boris out recon data run task gui.
+
+-------------------------------------------------------------------------------------------------------"""
+import acm, ael, traceback, ast
+from datetime import datetime
+import ParametersReader
+import BorisUtils
+from InterfaceUtils import time_from_datetime, date_from_datetime
+
+# get value from FPArameter
+BorisParams = ParametersReader.get_params('ReconDataParams')
+
+outputFile = BorisParams['reconOutputFilename'].format(acm.Time.TimeNow().replace(' ', '_').replace('-', '')
+                                                       .replace(':', '')[:-7])
+log_file_name = BorisParams['reconLogFilename'].format(acm.Time.DateToday().replace('-', ''))
+
+
+class ReconData(BorisUtils.ExportData):
+    def __init__(self):
+        """
+        Initialized member variable
+        """
+        boris_config = BorisUtils.Parameters('BorisInConfig')
+        self._port_mapper = ast.literal_eval(getattr(boris_config,'PortfolioMapper'))
+        query = [query.Name() for query in acm.FStoredASQLQuery.Select("subType='FTrade'")]
+        query.sort()
+        super(ReconData, self).__init__(query)
+        
+    def map_portfolio(self, portfolio_id):
+        ret_val = ''
+        for item_key, item_val in self._port_mapper.items():
+            if item_val == portfolio_id:
+                ret_val = item_key
+                break
+        
+        return ret_val
+
+    def get_tax_amt_percentage(self, trd):
+        """
+        This function find tax and percentage tax
+        :param trd: FTrade
+        :return: tuple
+        """
+        tax_amt = ''
+        tax_percentage = ''
+        for payment in trd.Payments():
+            if payment.Type().upper() == 'WHT':
+                tax_amt = abs(payment.Amount())
+                tax_percentage = payment.Text()
+                tax_percentage = tax_percentage.split('%')[0].strip()
+                break
+        return tax_amt, tax_percentage
+        
+    def verind_value(self,TradeStatus):
+        if TradeStatus in ['FO Confirmed','BO Confirmed','BO-BO Confirmed']:
+            return ('0')
+        else:
+            return ('1')
+
+    def generate_recon_data(self, params):
+        """
+        This function generates reconciliation data
+        :param params: Parameters
+        :return:
+        """
+        self._logger.LOG('Start generateCustomerData')
+        outputFolder = params['outputFolder'].SelectedDirectory().AsString()
+
+        stored_query_name = params['queryName']
+
+        stored_query = acm.FStoredASQLQuery[stored_query_name]
+        if stored_query:
+            bond_trades_boris = stored_query.Query().Select().Sort()
+            file_row = list()
+
+            ctp_number_spec = acm.FAdditionalInfoSpec['CTPNumber']
+            br_spec = acm.FAdditionalInfoSpec['BR']
+            investment_type_spec = acm.FAdditionalInfoSpec['InvestmentType']
+            cost_center_spec = acm.FAdditionalInfoSpec['CostCenter']
+            stand_instr_spec = acm.FAdditionalInfoSpec['StandingInstruction']
+            acq_price_spec = acm.FAdditionalInfoSpec['AcquisitionPrice']
+            acq_date_spec = acm.FAdditionalInfoSpec['AcquisitionDate']
+
+            for trd in bond_trades_boris:
+                tax_amt, tax_percent = self.get_tax_amt_percentage(trd)
+                fedealno = trd.OptionalKey() if trd.OptionalKey() else ''  # BORIS Unique ID / Blank if it's not from BORIS
+                dealno = trd.Oid()  # FIS Unique ID
+                br = trd.AddInfoValue(br_spec)  # Brach code
+                #seq = trd.VersionId()  # Sequence Number
+                seq = '000'
+                cno = trd.Counterparty().HostId()  if trd.Counterparty() else '' # trade counterparty alias
+                secsacct = ''  # Safekeeping Account. ToDo: Mapping
+                ps = 'P' if trd.Quantity() > 0 else 'S'  # Purchase/Sale Indicator
+                invtype = trd.AddInfoValue(investment_type_spec)  # Investment type
+                port = self.map_portfolio(trd.PortfolioId())  # FULL NAME / Customer Full Name 1 / NCHAR(70) done
+                trad = trd.TraderId()  # ADDITIONAL FULL NAME / Customer Full Name 2 / NCHAR(70) done
+                secid = trd.Instrument().Name()  # Security Identifier
+                isincode = trd.Instrument().Isin()  # ISIN
+                origqty = abs(trd.Quantity())  # Trade quantity**
+                price_8 = abs(trd.Price())  # Trade price**
+                settdate = date_from_datetime(trd.ValueDay(), format_str='%Y-%m-%d 12:00:00')  # Settlement date
+                cost = trd.AddInfoValue(cost_center_spec)  # Cost Center.
+                dealdate = date_from_datetime(trd.TradeTime(),
+                                              format_str='%Y-%m-%d 12:00:00')
+                dealtime = time_from_datetime(trd.TradeTime(),
+                                              format_str='%I:%M:%S')
+                dealtext = trd.Text1()  # Deal Text.
+                #verind = acm.FEnumeration['enum(TradeStatus)'].Enumeration(trd.Status())  # Verify Indicator
+                verind = self.verind_value(trd.Status())
+                standinstr = trd.AddInfoValue(stand_instr_spec)  # Standing Instructions.
+                settccy = trd.Currency().Name()  # Settlement Currency
+                ctpno = trd.AddInfoValue(ctp_number_spec)
+                source = trd.OptKey2().Name() if trd.OptKey2() else ''
+                tax = tax_amt  # tax
+                total_tax = ''  # totaltax. ToDo: Mapping
+                netproceed = abs(trd.Premium())  # netproceed
+                custodian = ''  # custodian ToDo: Mapping
+                acqprice = trd.AddInfoValue(acq_price_spec)  # acqprice
+                tax_percentage = tax_percent  # taxpercentage
+                #acqdate = date_from_datetime(trd.AcquireDay(), format_str='%d-%m-%Y  12:00:00 AM')  # acqdate
+                acqdatevalue = trd.AddInfoValue(acq_date_spec)
+                acqdate = date_from_datetime(acqdatevalue, format_str = '%Y-%m-%d 12:00:00') if acqdatevalue else ""
+                fo_input = ''  # ToDo: Mapping
+                bo_verified = ''  # ToDo: Mapping
+                bo_authorized = ''  # ToDo: Mapping
+                bo_reversed = ''  # ToDo: Mapping
+                fo_reversed = ''  # ToDo: Mapping
+                verified_status = ''  # ToDo: Mapping
+                authorized_status = ''  # ToDo: Mapping
+                reversed_unreversed_status = ''  # ToDo: Mapping
+                last_updated = datetime.fromtimestamp(trd.UpdateTime()).strftime(
+                    '%Y-%m-%d %H:%M:%S')  # Last Updated DATETIME
+
+                row = dealno, fedealno, br, seq, cno, secsacct, ps, invtype, port, trad, secid, isincode, origqty, \
+                      price_8, settdate, cost, dealdate, dealtime, dealtext, verind, standinstr, settccy, ctpno, \
+                      source, tax, total_tax, netproceed, custodian, acqprice, tax_percentage, acqdate, fo_input, \
+                      bo_verified, bo_authorized, bo_reversed, fo_reversed, verified_status, authorized_status, \
+                      reversed_unreversed_status, last_updated
+
+                row_list = ['"{}"'.format(row_item) if row_item is not None else '""' for row_item in row]
+                row_data = ';'.join(row_list)
+                # format of row_data = "'fedealno'";"'dealno'"...
+
+                file_row.append(row_data + '\n')
+
+            BorisUtils.generateFile(outputFolder, file_row, self._logger, outputFile)
+        else:
+            self._logger.ELOG('Stored query with name {} not found.'.format(stored_query_name))
+        self._logger.LOG('Finish generateReconData')
+
+
+ael_gui_parameters = {'windowCaption': "Boris Out Recon Data"}
+
+ael_variables = ReconData()
+ael_variables.LoadDefaultValues(__name__)
+app_name = 'BorisOutReconData'
+
+
+def ael_main(params):
+    """
+    AEL main function
+    :param params: GUI parameters
+    :return: None
+    """
+    recon_data_logger = None
+    try:
+        recon_data_logger = BorisUtils.initialize_logging(params, log_file_name, app_name)
+        if recon_data_logger:
+            recon_data_logger.LOG('Execution started.')
+            ael_variables.set_logger(recon_data_logger)
+            ael_variables.generate_recon_data(params)
+
+    except Exception as err:
+        if recon_data_logger is not None:
+            recon_data_logger.ELOG(str(err))
+        print(traceback.format_exc())
+        print('Error in ael main. {}'.format(err))
+
+
+...
+
+}
+

@@ -1,0 +1,935 @@
+#
+# Front Arena exported extension module.
+# source          ""
+# timestamp (utc) "2024-04-15 11:38:39.5"
+# ***** DO NOT EDIT! *****
+#
+name        "PS_Documentum"
+description ""
+
+groups {
+}
+
+decls[FParameters] {
+}
+
+clx FObject [FParameters] {
+  DocumentViewerParams =
+  AUTH_PASS=P@ssw0rd.1
+  AUTH_USER=admin_ntcs
+  BASE_URL=https://10.243.249.22:443/dctm-rest/repositories/MANDIRI_UAT_REPO
+  #BASIC_TEXT_EXTENSIONS=txt;xml;log;rtf;html;pdf
+  CERT_PATH=
+  DOCUMENTUM_EXT={'docx':'msw8', 'doc':'msw8', 'xlsx':'excel8book', 'xls':'excel8book'}
+  DOWNLOAD_DIRECTORY=c:\temp
+  FONT=Consolas
+  FONT_SIZE=8
+  MAX_PREVIEW_LENGTH=999
+  ROBJECT_TYPE=ct_ntcs_doc
+
+
+}
+
+decls[FPythonCode] {
+}
+
+clx FObject [FPythonCode] {
+  DocumentumParamHandler
+
+from builtins import str
+from builtins import object
+
+import acm
+
+
+class FParameterManager( object ):
+    """base class for retrieving FParameter values"""
+    PARAMS      = {}
+    
+    @classmethod
+    def get_parameter_values( cls, name ):
+        """get values from FParameter by name"""
+        values = {}
+        template = None
+        p = acm.GetDefaultContext().GetExtension( 'FParameters', 'FObject', name )
+        try:
+            template = p.Value()
+        except AttributeError as e:
+            acm.Log( "FParameters < %s > not defined." % name )
+        if template:
+            for k in template.Keys():
+                k = str(k)
+                value = str( template.At(k) )
+                values[ str(k) ] = value
+        return values
+    
+    @classmethod
+    def get_param( cls, name ):
+        """return parameter value""" 
+        return cls.PARAMS.get( name )
+
+class DocumentViewerParams( FParameterManager ):
+    PARAMS = FParameterManager.get_parameter_values( 'DocumentViewerParams' )    
+
+...
+
+  DocumentumRequestHandler
+import requests
+import json
+import ael
+import csv
+import os
+from DocumentumParamHandler import DocumentViewerParams
+
+
+base_url = DocumentViewerParams.get_param('BASE_URL')
+cert_path =DocumentViewerParams.get_param('CERT_PATH')
+if len(cert_path) == 0:
+    cert_path = False
+auth_user=DocumentViewerParams.get_param('AUTH_USER')
+auth_pass=DocumentViewerParams.get_param('AUTH_PASS')
+download_path = DocumentViewerParams.get_param('DOWNLOAD_DIRECTORY')
+robject_type = DocumentViewerParams.get_param('ROBJECT_TYPE')
+documentum_ext = eval(DocumentViewerParams.get_param('DOCUMENTUM_EXT'))
+
+
+def getDocumentumExtIfDifferent(fileExt):
+    global documentum_ext
+    if documentum_ext and (fileExt in documentum_ext.keys()):
+        fileExt = documentum_ext[fileExt]
+    return fileExt        
+
+
+def UploadFile(folderObjectId, filePath, fileType, cifNumber, documentType):
+    objIdResp = None
+    try:
+        #cert_path = r'C:\Users\Administrator\Desktop\Team\Shital\TestingOnMandiriEnv_10-243-244.58\10.243.249.22.documentum.crt'
+        global base_url
+        global cert_path
+        global auth_user
+        global auth_pass
+        global robject_type
+        global documentum_ext
+        
+        docfileType = getDocumentumExtIfDifferent(fileType)
+        upload_file_url = f'{base_url}/folders/{folderObjectId}/documents?format={docfileType}'
+        print(f'UploadFile Update url - {upload_file_url}')   
+        upload_files_src = [ ('content',(os.path.basename(filePath), open(filePath, 'rb'), f'application/{docfileType}')) ]
+        properties = '{"properties": {"r_object_type":"'+robject_type+'", "object_name":"Contoh file","cif_number":"'+cifNumber+'","document_type":"KTP"}}'
+        upload_file_json ={'properties':f'{properties}'}
+        response = requests.post(upload_file_url, data=upload_file_json, files=upload_files_src, auth = (auth_user, auth_pass), verify=cert_path)
+
+        if response :
+            print(f"Response status code : {response.status_code} ")
+            if(response.status_code == 201):
+                jsonResp = response.json()
+                if 'properties' in jsonResp.keys():
+                    propResp = jsonResp['properties']
+                    if 'r_object_id' in propResp.keys():
+                        objIdResp = propResp['r_object_id']
+                        print(f"uploaded object Id: {objIdResp}")
+            else:
+                print(f'Error : {response.content}')
+    except Exception as ex: 
+        print(f'Failed to upload file with error : {ex}')
+    
+    print(f"Created object id : {objIdResp} for file {filePath}")
+    return objIdResp
+
+
+def GetFileContent(fileObjectId, fileType, documentType):
+    global base_url
+    global cert_path
+    global auth_user
+    global auth_pass
+    global documentum_ext
+    
+    fileContent = None
+    try:
+        docfileType = getDocumentumExtIfDifferent(fileType)
+        upload_file_url = f'{base_url}/objects/{fileObjectId}/content-media?format={docfileType}&modifier&page=0'
+        print(f'GetFileContent Update url - {upload_file_url}')
+        #tmp hardcoded as per mandiri provided documents for refernce
+        headers = {'Content-type': 'application/vnd.emc.documentum+json'}
+        response = requests.get(upload_file_url, auth = (auth_user, auth_pass), verify=cert_path)
+        
+        if response :
+            print(f"Response status code : {response.status_code} ")
+            if response.status_code == 200:
+                print(f"File content : {response.content}")
+                try:
+                    fileContent = response.content.decode('UTF-8')
+                except:
+                    fileContent = None
+                
+            else:
+                print(f'Error : {response.content}')
+    except Exception as ex: 
+        print(f'Failed to get file data with error : {ex}')
+    
+    #print(f"File content recevied :{fileContent}")
+    return fileContent
+    
+
+def DownloadFile(fileObjectId, fileType, documentType):
+    #fileData = GetFileContent(baseUrl, fileObjectId, fileType, documentType)
+    global base_url
+    global cert_path
+    global auth_user
+    global auth_pass
+    global download_path
+    global documentum_ext
+    
+    file_path = None
+    try:
+        docfileType = getDocumentumExtIfDifferent(fileType)
+        upload_file_url = f'{base_url}/objects/{fileObjectId}/content-media?format={docfileType}&modifier&page=0'
+        print(f'DownloadFile Update url - {upload_file_url}')
+        file_path = os.path.join(download_path, '.'.join((fileObjectId, fileType)))
+        print(f"Downloading file - {file_path}")
+        with requests.get(upload_file_url, auth = (auth_user, auth_pass), verify=cert_path) as response:
+            response.raise_for_status()
+            with open(file_path, 'wb') as out_file:
+                for chunk in response.iter_content(chunk_size=1024*1024):  # 1MB chunks
+                    out_file.write(chunk)
+            print(f'Download finished successfully : {file_path}')
+            return file_path
+    except Exception as ex:
+        file_path = None
+        print(f'Download failed with error: {ex}')
+    
+    return file_path
+    
+
+def DeleteFile(folderObjectId):
+    global base_url
+    isFileDeleted = False
+    try:
+        upload_file_url = f'{base_url}/documents/{folderObjectId}'
+        print(f'DeleteFile Update url - {upload_file_url}') 
+        #tmp hardcoded as per mandiri provided documents for refernce
+        #headers = {'Content-type': 'application/vnd.emc.documentum+json'}
+        response = requests.delete(upload_file_url, auth = (auth_user, auth_pass), verify=cert_path)
+        if response :
+            print(f"Response status code : {response.status_code} ")
+            if response.status_code == 204:
+                print(f"Sucessfully deleted document with object id : {folderObjectId}")
+                print(f'{response.status_code} : {response.content}')
+                isFileDeleted = True
+            else:
+                print(f"Failed to delete document with object id : {folderObjectId}")
+                print(f'Error code : {response.status_code} {response.content}')
+    except Exception as ex:
+        print(f"Failed to delete document with object id : {folderObjectId}")
+        print(f'Error : {ex}')
+    
+    return isFileDeleted
+
+
+...
+
+  DocumentumTextObject_Handler
+
+import acm
+import datetime, InterfaceUtils
+import ParametersReader, FRunScriptGUI, FLogger
+
+'''
+This module will be used by both Documentum and MBox interface 
+'''
+
+def get_textobject(name, type ):
+    return acm.FCustomTextObject.Select(f'subType="{type}" and name="{name}"')
+    
+
+def set_textobject(name, type, text ):
+    txt_objects = get_textobject( name, type )
+
+    if txt_objects: 
+        if text:
+            txt_object = txt_objects[0] 
+            existing_txt = txt_object.Text()
+            if not (existing_txt.find(text) > -1) : 
+                to_c = txt_object.Clone()
+                to_c.Text = f'{existing_txt};{text}'
+                txt_object.Apply(to_c)
+                txt_object.Commit() 
+            else:
+                print("set_textobject : text already present")   
+    else:
+        if text:
+            texobj = acm.FCustomTextObject()
+            texobj.Name(name)
+            texobj.SubType(type)
+            texobj.Text(text)
+            texobj.Commit()
+
+
+def get_list(doc_string):
+    if doc_string:
+        docs = doc_string.split(";")
+        return docs
+    else:
+        return []
+
+
+def remove_textobject(name, type, text ):
+    txt_objects = get_textobject( name, type )
+    remove_document = False
+    if txt_objects: 
+        try:
+            if text:
+                txt_object = txt_objects[0] 
+                existing_txt = txt_object.Text()
+                if existing_txt.find(text) > -1 : 
+                    trade_docs = existing_txt.split( ';' )
+                    trade_docs.remove(text)
+                    if(len(trade_docs) > 0):
+                        updated_docs = ';'.join( trade_docs )
+                        to_c = txt_object.Clone()
+                        to_c.Text = updated_docs
+                        txt_object.Apply(to_c)
+                        txt_object.Commit()
+                    else:
+                        print("Info - deleting text object as no document listed")
+                        txt_objects[0].Delete()
+                    remove_document = True
+                else:
+                    print("set_textobject : document not found on trade")
+        except Exception as e: 
+            remove_document = False
+    return remove_document
+
+
+class DocumentString_Handler(object):
+    
+    @classmethod
+    def GetTextObjectName(cls, trade, type):
+        return f'Trade_{str(trade.Oid())}_{type}'
+    
+    
+    @classmethod
+    def GetDocumentIds(cls, trade, type):
+        text_object = get_textobject( DocumentString_Handler.GetTextObjectName(trade, type), type )
+        docs = None
+        if text_object:
+            docs = text_object[0].Text()
+        return get_list(docs)
+    
+    @classmethod
+    def GetDocumentsForTrade(cls, trade, types):
+        dicTypeDoc = dict()
+        for type in types:
+            #print(f"GetDocumentsForTrade - getting document for type: {type}")
+            doclist = DocumentString_Handler.GetDocumentIds(trade, type)
+            dicTypeDoc[type]=doclist
+        return dicTypeDoc
+    
+    
+    @classmethod
+    def AddDocumentId(cls, trade, type, text):
+        #print(f"AddDocumentId called for document : {trade.Oid()}, {type},  {text}")
+        set_textobject( DocumentString_Handler.GetTextObjectName(trade, type), type, text )
+    
+    
+    @classmethod
+    def RemoveDocumentId(cls, trade, type, text):
+        #print(f"RemoveDocumentId called for document : {trade.Oid()}, {type},  {text}")
+        return remove_textobject( DocumentString_Handler.GetTextObjectName(trade, type), type, text )
+    
+  
+    @classmethod
+    def GetDocumentIdFromObjectId(cls, file_type, doct_type, objectId):
+        return f"{file_type}_{doct_type}_{objectId}"
+        
+
+    @classmethod
+    def GetObjectIdFromDocumentId(cls, document_id):
+        str_list = document_id.split('_')
+        if len(str_list) > 1:
+            return str_list[-1]
+        else:
+            return None
+    
+    @classmethod
+    def GetFileTypeFromDocumentId(cls, document_id):
+        str_list = document_id.split('_')
+        if len(str_list) > 1:
+            return str_list[-2]
+        else:
+            return None
+
+...
+
+  FDocumentViewerPanel
+"""-------------------------------------------------------------------------------------------------------
+MODULE
+
+    FDocumentViewerPanel - FAUX panel for viewing and adding document paths to a trade. 
+
+    (c) Copyright 2009 by SunGard FRONT ARENA. All rights reserved.
+
+DESCRIPTION    
+    FDocumentViewerPanel - a FAUX panel on the insdef for viewing and adding document paths  
+    associated to a trade.
+-------------------------------------------------------------------------------------------------------"""
+
+from builtins import str
+from builtins import object
+
+import os
+import pathlib
+
+import acm
+import ael
+import FUxCore
+import FLogger
+import DocumentumRequestHandler
+from DocumentumParamHandler import DocumentViewerParams
+from DocumentumTextObject_Handler import DocumentString_Handler
+
+
+logger = FLogger.FLogger( 'Document Viewer' )
+
+class Events(object):
+    CONTENTS_CHANGED            = 'ContentsChanged'
+    ON_DESTROY                  = 'OnDestroy'    
+
+
+class ControlInfo(object):
+    ADD                         = 'add_ctrl'
+    ADD_LABEL                   = 'Upload'
+    OPEN                        = 'open_ctrl'
+    OPEN_LABEL                  = 'Show Content'
+    REMOVE                      = 'remove_ctrl'
+    REMOVE_LABEL                = 'Delete'
+    '''
+    DETAILS                     = 'details_ctrl'
+    SHOW_DETAILS_LABEL          = 'Show Path'
+    '''
+    HIDE_DETAILS_LABEL          = 'Hide Path'
+    DOC_LIST                    = 'doc_list_ctrl'
+    DOC_LIST_LABEL              = 'Doc List'
+    DOC_TEXT                    = 'doc_text_ctrl'
+    DOC_TEXT_LABEL              = 'DocText'
+    ACTIVATE                    = 'Activate'
+    ETCHED_IN                   = 'EtchedIn'
+    CHANGED                     = 'Changed'
+    SELECTION_CHANGED           = 'SelectionChanged'
+    TEXT_FONT                   = DocumentViewerParams.get_param( 'FONT' )
+    TEXT_FONT_SIZE              = DocumentViewerParams.get_param( 'FONT_SIZE' )
+    TEXT_MAX_LENGTH             = DocumentViewerParams.get_param( 'MAX_PREVIEW_LENGTH' )
+    
+    '''
+    UPLOAD                      = 'upload_ctrl'
+    UPLOAD_LABEL                = 'Upload...'
+    '''
+    DOWNLOAD                    = 'download_ctrl'
+    DOWNLOAD_LABEL              = 'Download...'
+    DOC_TYPE                    = 'docType_ctrl'
+    DOCTYPE_LABEL                = 'Document Type'
+    
+
+   
+class Document( object ):
+    
+    def __init__( self, fullname ):
+        self.fullname = fullname
+        self.shortname = os.path.basename( self.fullname )
+    
+    def get_shortname( self ):
+        return self.shortname
+    
+    def get_fullname( self ):
+        return self.fullname
+        
+
+class DocumentManager( object ):
+    
+    @classmethod
+    def RemoveDocument( cls, trade, document_id, document_type ):
+        modified_documents = False
+        if document_id  and document_type:
+            obj_id = DocumentString_Handler.GetObjectIdFromDocumentId(document_id)
+            remove_doc = DocumentString_Handler.RemoveDocumentId( trade, document_type, document_id )
+            if remove_doc:
+                modified_documents = DocumentumRequestHandler.DeleteFile(obj_id)
+            else:
+                print("failed to remove the document as unable to clear document trade link")
+        return modified_documents
+    
+
+    @classmethod
+    #def AddDocument( cls, new_doc, trade ):
+    def AddDocument(cls, trade, folderId, doc_file, file_type, cif_number, document_type):
+        modified_documents = False
+        if trade and trade.IsKindOf( acm.FTrade ): 
+            file_obj_id = DocumentumRequestHandler.UploadFile(folderId, doc_file, file_type, cif_number, document_type)
+            if file_obj_id: 
+                filename = pathlib.Path(doc_file).stem
+                new_doc = DocumentString_Handler.GetDocumentIdFromObjectId(filename, file_type, file_obj_id)
+                DocumentString_Handler.AddDocumentId( trade, document_type, new_doc )
+                modified_documents = True
+        return modified_documents
+        
+    
+    @classmethod
+    def AddDocumentObjectId( cls, new_doc, trade ):
+        modified_documents = False
+        if trade and trade.IsKindOf( acm.FTrade ): 
+            trade_docs = DocumentStringManager.GetDocumentString( trade )
+            if trade_docs:
+                trade_docs = trade_docs.split( ';' )
+                trade_docs = [ d for d in trade_docs if d ]
+            else:
+                trade_docs = []
+            if new_doc and new_doc != "." and not new_doc in trade_docs:
+                trade_docs.append( new_doc )
+                new_trade_docs = ";".join( trade_docs )
+                DocumentStringManager.SetDocumentString( trade, new_trade_docs )
+                modified_documents = True
+        return modified_documents
+    
+    @classmethod
+    def GetDisplayedDocument( cls, trade, display_name, details_visible ):
+        documents = [ Document( fullname ) for fullname in DocumentStringManager.GetDocumentList( trade ) ]
+        filtered_doc = None
+        if documents:
+            if details_visible:
+                filtered_documents = [ doc for doc in documents if doc.get_fullname() == display_name ]
+            else:
+                filtered_documents = [ doc for doc in documents if doc.get_shortname() == display_name ]
+            if filtered_documents:
+                filtered_doc = filtered_documents[ 0 ]
+        return filtered_doc
+        
+    @classmethod
+    def GetDisplayNames( cls, trade, details_visible ):
+        documents = [ Document( fullname ) for fullname in DocumentStringManager.GetDocumentList( trade ) ]
+        if details_visible:
+           doc_list = [ d.get_fullname() for d in documents ]
+        else:
+           doc_list = [ d.get_shortname() for d in documents ]
+        return doc_list
+    
+    @classmethod
+    def GetDocumentText( cls, file_obj_id, file_Type, document_type ):
+        text = None
+        etext = DocumentumRequestHandler.GetFileContent(file_obj_id, file_Type, document_type)
+        if etext :
+            text=etext
+        return text
+   
+    '''
+    @classmethod
+    def OpenDocument( cls, trade, display_name, details_visible ):
+        displayed_document = DocumentManager.GetDisplayedDocument( trade, display_name, details_visible )
+        fullname = displayed_document.get_fullname()
+        if os.path.isfile( fullname ):
+            base_dir = DocumentViewerParams.get_param( 'BASE_DIRECTORY' )
+            os.chdir( base_dir )
+            os.startfile( fullname )
+        else:
+            logger.ELOG( "Can't open document < %s >", fullname )
+    '''
+    
+    @classmethod
+    def IsBasicTextExtension( cls, ext ):
+        ext = ext.lower()
+        extensions = DocumentViewerParams.get_param( 'BASIC_TEXT_EXTENSIONS' )
+        extensions = extensions.split( ';' )
+        extensions = [ e.lower() for e in extensions ]
+        ext = ext.replace( '.', '' )
+        if ext in extensions:
+            return True
+        return False
+    
+class FDocumentViewerPanel( FUxCore.LayoutPanel ):
+    
+    DOC_CACHE = {} # { filename : ( modified time, text ) }
+    
+    def __init__( self ):
+        self.doc_list_ctrl = None
+        self.open_ctrl = None
+        self.remove_ctrl = None
+        self.add_ctrl = None
+        self.parent = None
+        self.bindings = None
+        self.layout = None
+        self.details_visible = False
+        self.data = []
+        #self.file_selection_ctrl = None
+        #elf.InitDataBindings()
+        
+        self.upload_ctrl = None
+        self.download_ctrl = None
+        self.docType_ctrl = None
+        self.docTyptes = None
+    
+    def ServerUpdate( self, sender, aspect_symbol, parameter ):
+        try:
+            if aspect_symbol.AsString() == Events.CONTENTS_CHANGED:
+                self.UpdatePanel()
+            elif aspect_symbol.AsString() == Events.ON_DESTROY: 
+                pass
+        except Exception as err:
+            logger.ELOG( "Error updating Document Viewer panel: %s", str( err ) )
+    
+    def OnDocumentChanged( self, custom_dlg, cd ):
+        trade = custom_dlg.parent.CurrentObject()
+        '''
+        doc = custom_dlg.doc_list_ctrl.GetData()
+        text = DocumentManager.GetDocumentText( trade, doc, self.details_visible )
+        if text:
+            custom_dlg.doc_text_ctrl.SetData( text )
+        else:
+            custom_dlg.doc_text_ctrl.SetData( "No text available." )
+        '''
+                    
+    def OnOpenClicked( self, custom_dlg, cd ):
+        current_object = self.parent.CurrentObject()
+        if current_object and current_object.IsKindOf( acm.FTrade ):
+            trade = current_object
+            selected = custom_dlg.doc_list_ctrl.GetSelectedItem()
+            
+            if selected is None:
+                return
+            
+            existing = list(selected.GetData())
+            if existing:
+                doc_id = existing[0]
+                doc_type = existing[1]
+                file_obj_id = DocumentString_Handler.GetObjectIdFromDocumentId(doc_id)
+                file_type= DocumentString_Handler.GetFileTypeFromDocumentId(doc_id)
+                text = DocumentManager.GetDocumentText( file_obj_id, file_type , doc_type )
+                if text:
+                    custom_dlg.doc_text_ctrl.SetData( text )
+                else:
+                    war_str = f"{doc_id} : Text can not be displayed. Please download the file and open using appropriate application."
+                    custom_dlg.doc_text_ctrl.SetData(war_str)
+    '''
+    def OnDetailsClicked( self, custom_dlg, cd ):
+        if self.details_visible == False:
+            self.details_visible = True
+            self.details_ctrl.Label( ControlInfo.SHOW_DETAILS_LABEL )
+        else:
+            self.details_visible = False
+            self.details_ctrl.Label( ControlInfo.HIDE_DETAILS_LABEL )
+        self.UpdatePanel()
+    '''
+    
+    def OnRemoveClicked( self, custom_dlg, cd ):
+        current_object = self.parent.CurrentObject()
+        if current_object and current_object.IsKindOf( acm.FTrade ):
+            trade = current_object
+            selected = custom_dlg.doc_list_ctrl.GetSelectedItem()
+            
+            if selected is None:
+                return
+                
+            existing = list(selected.GetData())
+            #if existing in self.data: self.data.remove(existing)
+            if existing:
+                doc_id = existing[0]
+                doc_type = existing[1]
+                modified_documents = DocumentManager.RemoveDocument(trade, doc_id, doc_type )
+                if modified_documents == False:
+                    print(f"Failed to delete document on documentum server with doc id : {doc_id}")
+                self.UpdatePanel()
+    
+    
+    def OnAddClicked( self, custom_dlg, cd ):
+        current_object = self.parent.CurrentObject()
+        if current_object and current_object.IsKindOf( acm.FTrade ):
+            
+            document_type = self.docType_ctrl.GetData()
+            print(f"Selected doc type :{document_type}")
+            folderId = self.__getFolderId(document_type)
+            print(f"Selected folder ID :{folderId}")
+            
+            fs = acm.FFileSelection()
+            fs.FileFilter = ("Documents (*.pdf;*.docx;*.doc;*.jpeg;*.jpg;*.png;*.csv;*.xlsx;*.xls)|*.pdf;*.docx;*.doc;*.jpeg;*.jpg;*.png;*.csv;*.xlsx;*.xls|")
+            fs.PickExistingFile = True
+            
+            shell = acm.UX().SessionManager().Shell()
+            result = acm.UX().Dialogs().BrowseForFile( shell, fs )
+            if not result:
+                return # Dialog was canceled
+            doc_file = str( fs.SelectedFile() )
+            doc_file = os.path.normpath( doc_file )
+            file_type = pathlib.Path(doc_file).suffix[1:]
+            
+            trade = current_object
+            cif_number = None
+            if trade.Counterparty() :
+                cif_number = trade.Counterparty().HostId()
+           
+            if cif_number is None:
+                print("CIF number is not specified for counterparty")
+                
+            print(f"Current object : {trade.Oid()}")
+            modified_documents = DocumentManager.AddDocument(trade, folderId, doc_file, file_type, cif_number, document_type)
+            #modified_documents = DocumentManager.AddDocument(folder_object_id, file_path, file_type, cif_number, document_type)
+            # new_doc, trade )
+            self.UpdatePanel()
+            #self.PopulateData()
+    
+    '''
+    def OnUploadClicked(self, custom_dlg, cd):
+        doc_object_id = '12345567'
+        doc_type      = 'Deal_Ticket'
+        trade = custom_dlg.parent.CurrentObject()
+        modified_documents = DocumentManager.AddDocumentObjectId( doc_object_id, trade )
+        self.UpdatePanel()
+    '''
+    
+    def OnDownloadClicked(self, custom_dlg, cd):
+        current_object = self.parent.CurrentObject()
+        if current_object and current_object.IsKindOf( acm.FTrade ):
+            trade = current_object
+            selected = custom_dlg.doc_list_ctrl.GetSelectedItem()
+            
+            if selected is None:
+                return
+            
+            existing = list(selected.GetData())
+            if existing:
+                doc_id = existing[0]
+                doc_type = existing[1]
+                file_obj_id = DocumentString_Handler.GetObjectIdFromDocumentId(doc_id)
+                file_type= DocumentString_Handler.GetFileTypeFromDocumentId(doc_id)
+                file_path = DocumentumRequestHandler.DownloadFile( file_obj_id, file_type , doc_type )
+                if file_path:
+                    print(f"sucessfully downloaded file : {file_path}")
+                else:
+                    print(f"Failed to download file with file id : {file_obj_id}")
+    
+    def ClearControls( self ):
+        self.doc_list_ctrl.Clear()
+        self.doc_text_ctrl.Clear()
+        
+    def UpdateDocListControl(self):
+        if self.data:
+            #self.doc_list_ctrl.Clear()
+            self.doc_list_ctrl.RemoveAllItems()
+            listRoot = self.doc_list_ctrl.GetRootItem()
+            for item in sorted(self.data):
+                listChild = listRoot.AddChild()
+                listChild.SetData(item)
+                listChild.Label(item[0])
+                listChild.Label(item[1], 1)
+                #listChild.Label(item[2], 2)
+        
+    def UpdatePanel( self ):
+        print("***************UpdatePanel************")
+        self.PopulateDocumentData()
+        
+        current_object = self.parent.CurrentObject()
+        if current_object and current_object.IsKindOf( acm.FTrade ):
+            self.ClearControls()
+            #trade_docs = DocumentManager.GetDisplayNames( current_object, self.details_visible )
+            if self.data:
+                #self.doc_list_ctrl.Populate( trade_docs )
+                '''
+                self.doc_list_ctrl.RemoveAllItems()
+                listRoot = self.doc_list_ctrl.GetRootItem()
+                for item in sorted(self.data):
+                    listChild = listRoot.AddChild()
+                    listChild.SetData(item)
+                    listChild.Label(item[0])
+                    listChild.Label(item[1], 1)
+                    listChild.Label(item[2], 2)
+                '''
+                self.UpdateDocListControl()
+        else:
+            self.ClearControls()
+        
+                    
+    def HandleCreate(self):
+        #self.master_pane = creationInfo.AddTabControlPane('listPane')
+        
+        self.layout = self.SetLayout( self.CreateLayout() )
+        self.parent = self.Owner()
+        self.parent.AddDependent( self )
+        self.InitControls( self.layout )
+        #self.UpdatePanel()
+        
+        
+    def AddColumns(self, control, column_data):
+        for a in range(control.ColumnCount()):
+            control.RemoveColumn(0)
+        for name, width in column_data:
+            control.AddColumn(name, width)
+        control.ShowColumnHeaders()
+        
+
+    def PopulateDocumentData(self):        
+        current_object = self.parent.CurrentObject()
+        if current_object and current_object.IsKindOf( acm.FTrade ):
+            trade = current_object
+            print(f"current trade Object : {trade.Oid()}")
+            self.data.clear()
+            doc_types = self.docTyptes.keys()
+            documents = DocumentString_Handler.GetDocumentsForTrade(trade, doc_types )
+            print(f"Documents for trade {trade.Oid()}: {documents}")
+            #documents ={'type1': ['a11', 'a22', 'a33'], 'type2': ['b11', 'b22', 'b33']}
+            if documents:
+                for type in documents.keys():
+                    docs = documents[type]
+                    for doc in docs:
+                        #lst = [doc, type, '']
+                        lst = [doc, type]
+                        self.data.append(lst)
+        else:
+            self.data.clear()
+        
+        '''
+        self.doc_list_ctrl.RemoveAllItems()
+        listRoot = self.doc_list_ctrl.GetRootItem()
+        for item in sorted(self.data):
+            listChild = listRoot.AddChild()
+            listChild.SetData(item)
+            listChild.Label(item[0])
+            listChild.Label(item[1], 1)
+            listChild.Label(item[2], 2)
+        '''
+
+        
+    def HandleDestroy( self ):
+        FDocumentViewerPanel.DOC_CACHE.clear()
+    
+    def getChoicesDict(self, listName):
+        dicTypeFolder = dict()
+        query = 'name = '
+        query += listName
+    
+        collection = acm.FChoiceList.Select(query)
+        if collection.Size() >= 1 :
+            list = collection.At(0)
+            if(list is not None):
+                dicTypeFolder = {lst.Name(): lst.Description() for lst in list.Choices()}
+        return dicTypeFolder
+    
+    def __populateDocumentTypes(self):
+        self.docType_ctrl.Clear()
+        #docTyptes = ['abc', 'def', 'hij', 'klm']
+        self.docTyptes = self.getChoicesDict('DocumentumDocType')
+        for type in self.docTyptes.keys():
+            self.docType_ctrl.AddItem(type)
+    
+    
+    def __getFolderId(self, type):
+        if self.docTyptes and (type in self.docTyptes.keys()):
+            return self.docTyptes[type]
+        else:
+            return None
+    
+    
+    def InitControls( self, layout ):
+        print("**************InitControls called******************")
+        self.doc_list_ctrl = self.layout.GetControl( ControlInfo.DOC_LIST )
+        self.doc_list_ctrl.AddCallback( ControlInfo.CHANGED, self.OnDocumentChanged, self )
+        self.open_ctrl = self.layout.GetControl( ControlInfo.OPEN )
+        #self.open_ctrl.Checked( True )
+        self.open_ctrl.AddCallback( ControlInfo.ACTIVATE, self.OnOpenClicked, self )
+        self.remove_ctrl = self.layout.GetControl( ControlInfo.REMOVE )
+        self.remove_ctrl.AddCallback( ControlInfo.ACTIVATE, self.OnRemoveClicked, self )
+        '''
+        self.details_ctrl = self.layout.GetControl( ControlInfo.DETAILS )
+        self.details_ctrl.AddCallback( ControlInfo.ACTIVATE, self.OnDetailsClicked, self )
+        '''
+        self.add_ctrl = self.layout.GetControl( ControlInfo.ADD )
+        self.add_ctrl.AddCallback( ControlInfo.ACTIVATE, self.OnAddClicked, self )
+        self.doc_text_ctrl = self.layout.GetControl( ControlInfo.DOC_TEXT  )
+        self.doc_text_ctrl.SetFont( ControlInfo.TEXT_FONT, ControlInfo.TEXT_FONT_SIZE, False, False )
+        self.doc_text_ctrl.MaxTextLength( ControlInfo.TEXT_MAX_LENGTH )
+        self.doc_text_ctrl.Editable(False)
+        
+        '''
+        self.upload_ctrl = self.layout.GetControl( ControlInfo.UPLOAD )
+        self.upload_ctrl.AddCallback( ControlInfo.ACTIVATE, self.OnUploadClicked, self )
+        '''
+        
+        self.download_ctrl = self.layout.GetControl( ControlInfo.DOWNLOAD )
+        self.download_ctrl.AddCallback( ControlInfo.ACTIVATE, self.OnDownloadClicked, self )
+        
+        self.docType_ctrl=self.layout.GetControl( ControlInfo.DOC_TYPE )
+        #self.AddColumns(self.doc_list_ctrl, [('Object ID', 120), ('Type', 120), ('File Path', 120)])
+        self.AddColumns(self.doc_list_ctrl, [('Object ID', 120), ('Type', 120)])
+        self.__populateDocumentTypes()
+        self.UpdatePanel()
+    
+    #def InitDataBindings( self ):
+    #    self.bindings = acm.FUxDataBindings()
+    #    self.bindings.AddDependent( self )
+    #    self.file_selection_ctrl = self.bindings.AddBinder( ControlInfo.OPEN, acm.GetDomain( 'FFileSelection' ), None )
+        
+    def CreateLayout( self ):
+        b = acm.FUxLayoutBuilder()
+        b.BeginVertBox()
+        b.  BeginHorzBox( ControlInfo.ETCHED_IN, 'Trade Documents' )
+        b.    BeginVertBox()
+        b.      AddList( ControlInfo.DOC_LIST ) #, 5, -1, 50, -1 )
+        b.      AddOption( ControlInfo.DOC_TYPE, ControlInfo.DOCTYPE_LABEL )
+        b.      BeginHorzBox()
+        b.        AddFill()
+        b.        AddButton( ControlInfo.ADD, ControlInfo.ADD_LABEL )
+        b.        AddButton( ControlInfo.REMOVE, ControlInfo.REMOVE_LABEL )
+        b.        AddButton( ControlInfo.OPEN, ControlInfo.OPEN_LABEL )
+        b.        AddButton( ControlInfo.DOWNLOAD, ControlInfo.DOWNLOAD_LABEL )
+        #b.        AddButton( ControlInfo.DETAILS, ControlInfo.SHOW_DETAILS_LABEL )
+        #b.        AddButton( ControlInfo.UPLOAD, ControlInfo.UPLOAD_LABEL )
+        b.      EndBox()
+        b.    EndBox()
+        b.  EndBox()
+        b.  BeginHorzBox( ControlInfo.ETCHED_IN, 'Preview' )
+        b.    AddText( ControlInfo.DOC_TEXT, 500, 500, -1, -1 )
+        b.  EndBox()
+        b.EndBox()
+        
+        return b
+
+def OnCreate( eii ):
+    """called from UIEventHandler when insdef is opened"""
+    basicApp = eii.ExtensionObject()
+    doc_panel = FDocumentViewerPanel()
+    show_initially = False
+    basicApp.CreateCustomDockWindow( doc_panel, 'document_panel', 'Document Viewer Panel', 'Right', "", False, show_initially )
+    
+
+def OnSave( eii ):
+    """called from UIEventHandler when insdef is opened"""
+    print("On Save Called*************")
+
+
+def GetTradeDocumentText( doc ):
+    return None
+    '''
+        text = None
+        if doc and os.path.isfile( doc ):
+            ext = os.path.splitext( doc )[-1]
+            if DocumentManager.IsBasicTextExtension( ext ):
+                with open( doc, 'r' ) as file:
+                    text = file.read()
+            else:
+                text = 'File extension not supported.'
+        elif doc and not os.path.isfile( doc ):
+            text = 'File does not exist.'
+        return text
+    '''
+
+...
+
+}
+
+decls[FUIEventHandlers] {
+}
+
+clx CInsDefAppFrame [FUIEventHandlers] {
+  DocumentViewerPanelDockWindow =
+  ContentsChanged=
+  OnCreate=FDocumentViewerPanel.OnCreate
+
+
+}
+

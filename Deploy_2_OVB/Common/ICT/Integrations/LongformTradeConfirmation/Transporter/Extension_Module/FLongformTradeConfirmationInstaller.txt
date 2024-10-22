@@ -1,0 +1,1717 @@
+#
+# Front Arena exported extension module.
+# source          ""
+# timestamp (utc) "2024-02-16 07:28:53.4"
+# ***** DO NOT EDIT! *****
+#
+name        "FLongformTradeConfirmationInstaller"
+description ""
+
+groups {
+}
+
+decls[FParameters] {
+}
+
+clx FObject [FParameters] {
+  FLongformTradeConfirmationInstallerConfig =
+  version=1.0.7.0-0.5.263
+
+
+  FLongformTradeConfirmationInstallerNotifyConfig =
+  LogLevel=INFO #INFO, DEBUG, ERROR, WARN
+  NotificationLevel=TRACK #TRACK, DEBUG, WARNING, ERROR, SUCCESS
+  NotificationMedia=OFF #OFF, PRIME_LOG, PRIME_LOG_TRANSIENT
+  NotifyUser=
+
+
+}
+
+decls[FPythonCode] {
+}
+
+clx FObject [FPythonCode] {
+  FInstallerUtilities
+"""----------------------------------------------------------------------------------------------------
+MODULE:
+    FInstallerUtilities
+
+DESCRIPTION:
+    Utility module containing helper function for installer module.
+
+VERSION: 1.0.7.0-0.5.263
+
+
+RESTRICTIONS/LIMITATIONS:
+    1. Any modifications to the script/encrypted module/clear text code within the core is not supported.
+    2. This module is not customizable.
+    3. The component may not work as expected with any modifications done to this module at user end.
+-------------------------------------------------------------------------------------------------------"""
+import string
+import os
+import sys
+import acm
+import amb
+import ael
+import FRunScriptGUI
+import FANotification
+
+modules_to_install = ['FLongformTradeConfirmation', 'FIntegrationUtils']
+skip_modules_to_downgrade = {'FIntegrationUtils': False}
+BASE_VERSION_TO_SKIP = ''
+INSTALLER_VERSION = ''
+STANDARD_MODULES = ['FLongformTradeConfirmation', 'IntegrationUtils']
+
+DATA_PREP_FILES = {'FLongformTradeConfirmation': ['FLongformTradeConfirmationOut_DataPrep']}
+
+VERSION_FPARAMETERS_FILES = {
+    'FLongformTradeConfirmation': ('FLongFormConfirmationOut_Config', 'version'),
+    'FIntegrationUtils': ('FIntegrationUtilsConfig', 'FINTEGRATIONUTILS_VERSION')}
+
+
+class NotifyParameters(object):
+    """ Class to read FParameters"""
+
+    def __init__(self, *names):
+        self.get_data(*names)
+
+    def get_data(self, *names):
+        """ Read the FParameters from the Extension Editor"""
+        for fparam in names:
+            ext_context = acm.GetDefaultContext()
+            param_object = ext_context.GetExtension('FParameters',
+                                                    'FObject', fparam)
+            if param_object:
+                try:
+                    template = param_object.Value()
+                except AttributeError as error:
+                    raise Exception("Unable to get content of FParameter %s."
+                                    "Exception : %s" % (fparam, error))
+                for k in template.Keys():
+                    k = str(k)
+                    setattr(self, k, str(template.At(k)).split('#')[0].strip())
+
+
+def get_installed_modules_list(parent_context, sub_context):
+    """ Get list on currently installed modules
+    :param parent_context: parent context of the sub context
+    :param sub_context: sub context in which modules will be installed
+    :return:
+    """
+    installed_modules = []
+    target_context = get_context_to_install(parent_context, sub_context)
+    if target_context:
+        for module in STANDARD_MODULES:
+            if target_context.GetModule(module):
+                installed_modules.append(module)
+    return installed_modules
+
+
+def get_installed_module_version(target_context):
+    """ Get version number for installed modules.
+    :param parent_context: parent context of the sub context
+    :param sub_context: sub context in which modules are installed
+    :return: dict of module and version number
+    """
+    version_info_dict = get_module_version(target_context)
+
+    return version_info_dict
+
+
+def connect_amb(amb_address):
+    """ Connect to AMB
+    :param amb_address: AMB connection string (Host:Port)
+    :return: bool: True if connected else False
+    """
+    is_connected = False
+    try:
+        amb.mb_init(amb_address)
+        is_connected = True
+        notifier.INFO("Connected to AMB '%s'." % amb_address)
+    except Exception as error:
+        notifier.WARN("Could not connect to AMB '%s'. %s" % (amb_address, str(error)))
+        notifier.INFO("Trying unicode connection.")
+        try:
+            if hasattr(amb, 'mb_enable_unicode'):
+                amb.mb_enable_unicode()
+                amb.mb_init(amb_address)
+                is_connected = True
+                notifier.INFO("Connected to unicode AMB '%s'." % amb_address)
+            else:
+                notifier.ERROR("Could not connect to unicode AMB, because 'amb' has no attribute 'mb_enable_unicode'.")
+        except Exception as error:
+            notifier.ERROR("Could not connect to unicode AMB '%s'. %s" % (amb_address, str(error)))
+    return is_connected
+
+
+def read_module_info_from_txt(module_path, module, default_version):
+    """ Get module version information from new modules txt files.
+    :param module_path: Path to module file txt
+    :param module: module name
+    :param default_version: version of the installer to fall back if unable to read version info
+    :return: dict of module name and version string
+    """
+    file_import_path = module_path
+    try:
+        fh = open(file_import_path, 'r', encoding="latin-1")
+    except:
+        fh = open(file_import_path, 'r')
+    file_input = fh.read()
+    fh.close()
+
+    return read_version(file_input, module, default_version)
+
+
+def get_new_module_version(base_dir, modules_to_install):
+    """ Get module version for module to be installed.
+    :param base_dir: path where modules are present
+    :param modules_to_install: list of selected modules to install
+    :return: dict of module and version
+    """
+    new_module_version_info = dict()
+
+    ext_context = acm.GetDefaultContext()
+    ext_context_image = ext_context.StorageImage()
+    installer_config = ext_context_image.GetExtension('FParameters', 'FObject',
+                                                      'FLongformTradeConfirmationInstallerConfig')
+    INSTALLER_VERSION = installer_config.Value().At('version')
+
+    if modules_to_install:
+        module_path = get_module_path(base_dir, modules_to_install)
+        new_module_version_info.update(read_module_info_from_txt(module_path, modules_to_install, INSTALLER_VERSION))
+
+    return new_module_version_info
+
+
+def check_version_compatibility(module_path, modules_to_install, parent_context, sub_context):
+    """ Check version compatibility
+    :param module_path: path to directory where modules are present
+    :param modules_to_install: list of modules selected to be installed
+    :param parent_context: parent context of the sub context
+    :param sub_context: sub context in which modules will be installed
+    :return: bool; True if compatible version else False
+    :retunr: error_msg: Error message to show
+    """
+    error_msg = None
+    compatible = True
+    is_longform_present = get_installed_modules_list(parent_context, sub_context)
+
+    if is_longform_present:
+        target_context = get_context_to_install(parent_context, sub_context)
+        existing_module_version_info = get_installed_module_version(target_context)
+        new_module_version_info = get_new_module_version(module_path, modules_to_install)
+
+        compatible, error_msg = version_comparator(existing_module_version_info, new_module_version_info)
+
+    return compatible, error_msg
+
+
+def comparator(existing, new, module, error_list):
+    """ Compare new and existing version for given module.
+    :param existing: existing version for the module
+    :param new: existing version for the module
+    :param module: module to check version
+    :param is_base_package: True if module is base package
+    :return: bool; True is version are compatible else False
+    """
+    is_compatible = False
+    message_log = ''
+    new_framework, new_base, new_solution = new
+    existing_framework, existing_base, existing_solution = existing
+
+    if new == existing:
+        is_compatible = True
+        notifier.INFO("Reloading module %s version %s " % (module, get_version_as_string(new)))
+    else:
+        existing_version_as_string = get_version_as_string(existing)
+        new_version_as_string = get_version_as_string(new)
+
+        upgrade = "%s module will be upgraded from %s to %s version" % (
+            module, existing_version_as_string, new_version_as_string)
+
+        if existing_version_as_string == '0.0.0':
+            upgrade = None
+
+        downgrade = "You are downgrading package <%s> from %s to %s which is NOT RECOMMENDED." \
+                    "If you want to install anyway then check override incompatible package" % (
+                        module, existing_version_as_string,
+                        new_version_as_string)
+
+        skip_downgrade = "You already have a newer version {} of <{}>. Version present in installer {} will be " \
+                         "skipped.".format(existing_version_as_string, module, new_version_as_string)
+
+        if new_framework < existing_framework:
+            if skip_modules_to_downgrade.get(module) is not None:
+                notifier.INFO(skip_downgrade)
+                skip_modules_to_downgrade[module] = True
+                is_compatible = True
+            else:
+                # notifier.WARN(downgrade)
+                message_log = downgrade
+        elif new_framework == existing_framework:
+            if new_base < existing_base:
+                if skip_modules_to_downgrade.get(module) is not None:
+                    notifier.INFO(skip_downgrade)
+                    skip_modules_to_downgrade[module] = True
+                    is_compatible = True
+                else:
+                    # notifier.WARN(downgrade)
+                    message_log = downgrade
+            elif new_base > existing_base:
+                if upgrade:
+                    notifier.INFO(upgrade)
+                is_compatible = True
+            elif new_solution < existing_solution:
+                if skip_modules_to_downgrade.get(module) is not None:
+                    notifier.INFO(skip_downgrade)
+                    skip_modules_to_downgrade[module] = True
+                    is_compatible = True
+                else:
+                    # notifier.WARN(downgrade)
+                    message_log = downgrade
+            else:
+                if upgrade:
+                    notifier.INFO(upgrade)
+                is_compatible = True
+        else:
+            if existing != new and upgrade:
+                notifier.INFO(upgrade)
+            is_compatible = True
+
+    error_list.append(message_log)
+    return is_compatible
+
+
+def version_comparator(existing_module_version_info, new_module_version_info):
+    """ Compare existing version with new version for modules
+    :param existing_module_version_info: existing module version dict
+    :param new_module_version_info: new module version dict
+    :return: bool; True if compatible version else False
+    """
+    error_msg = []
+    is_compatible = True
+    # existing_modules = existing_module_version_info.keys()
+    # new_modules = new_module_version_info.keys()
+    # if existing_modules != new_modules:
+    #     error_msg = "Please check an overridden custom module in the Extension Editor. Either the existing module is " \
+    #                 "not correct or not deleted properly. Suggest you to clean up any stale modules."
+    #     return False, error_msg
+
+    for module, version_info in new_module_version_info.items():
+        new_version = get_version_number(version_info)
+        existing_version = get_version_number(existing_module_version_info.get(module))
+        is_compatible &= comparator(existing_version, new_version, module, error_msg)
+
+    return is_compatible, '\n'.join(error_msg)
+
+
+def FInstallerLogger(name='', fparam_name=''):
+    """ Create FLongformTradeConfirmation installer logger
+    :param name: Name of the logger
+    :param fparam_name: parameters used to create logger
+    :return: None
+    """
+    notifier = None
+    log_params = NotifyParameters(fparam_name)
+    log_level = str(getattr(log_params, 'LogLevel', ''))
+    notify_level = str(getattr(log_params, 'NotificationLevel', ''))
+    notification_media = str(getattr(log_params, 'NotificationMedia', ''))
+    smtp_server = str(getattr(log_params, 'SMTPServer', ''))
+    user_email = str(getattr(log_params, 'UserEmails', ''))
+    prime_user = str(getattr(log_params, 'NotifyUser', ''))
+    if not prime_user:
+        prime_user = [acm.FUser[acm.UserName()].Name()]
+    try:
+        notifier = FANotification.FANotification(name=name, logging_level=log_level,
+                                                 notification_media=notification_media, notify_level=notify_level,
+                                                 message_broker=None, user=prime_user, user_emails=user_email,
+                                                 smtp_server=smtp_server)
+    except Exception as e:
+        ael.log("ERROR : Exception in creating logger for FLongform Installer, cannot proceed further : <%s>" % str(e))
+    return notifier
+
+
+notifier = FInstallerLogger('LngFrmInstaller', 'FLongformTradeConfirmationInstallerNotifyConfig')
+
+
+def get_standard_name(module_name):
+    """ Get standard name of the module by removing anything after '_'character e.g version number
+    :param module_name: name of the module to remove unwanted character from
+    :return: clean name expected by installer
+    """
+    module_standard_name = module_name
+    if module_name:
+        module_name_list = module_name.split('_')
+        if len(module_name_list) > 0:
+            module_standard_name = module_name_list[0]
+    return module_standard_name
+
+
+def get_contexts():
+    """ Get all Contexts
+    :return: List of Contexts.
+    """
+    context = acm.FExtensionContext.Select('')
+    return context
+
+
+class InstallerBase(FRunScriptGUI.AelVariablesHandler):
+    def __init__(self):
+        dir_selection = FRunScriptGUI.DirectorySelection()
+        vars = [
+            ['import_and_data_prep', 'Import and Run Data Preparation scripts_Install packages', 'int', [0, 1],
+             1, 0, 0,
+             "Import packages and execute data preparation scripts.", self.import_and_data_prep_cb, 1],
+            ['data_prep_only', 'Run data Preparation script only_Install Packages', 'int', [0, 1], 0, 0, 0,
+             "Execute data preparation scripts.", self.data_prep_only_cb, 1],
+            ['base_path', 'Installer Path_Install Packages', dir_selection, None, dir_selection, 1, 1,
+             'Path where the Longform trade confirmation package is available.', self.base_path_cb, 1],
+            ['context', 'Context_Install Packages', 'string', get_contexts(), acm.GetDefaultContext().Name(),
+             1, 0, "Select the Context in which you want to install the LongformTradeConfirmation package.",
+             self.context_cb, 1],
+            # ['sub_context', 'Group_Install Packages', 'string', None, 'LongformTradeConfirmation', 0, 0,
+            #  "[Optional]Enter name of the group into which the Longform package will be installed (create if it does "
+            #  "not exist).",
+            #  self.sub_context_cb, 1],
+            ['module_location', 'Insert module after_Install Packages', 'string', self.get_modules(),
+             'Default', 0, 0,
+             "Enter module name after which the Longform package will be placed in the Extension Editor.",
+             lambda x, y: None, 1],
+            ['create_channel',
+             'Create AMB Channels & Override FParameter in Selected Customization module_Configuration', 'int', [0, 1],
+             1, 0, 0,
+             "Create communication channels in the AMB if they do not already exist. "
+             "Also override the FParameter in selected customization module.",
+             self.create_channel_cb, 1],
+            ['custom_module', 'Customization Module_Configuration', 'string', [], '', 1, 0,
+             "Name of the Custom module created to store the Longform Trade Confirmation parameters.",
+             self.custom_module_cb, 1],
+            ['amb_connection', 'AMB Host:Port_Configuration', 'string', None, 'localhost:9100', 0, 0,
+             "Enter AMB connection details", 0, 1],
+            ['amb_receiver', 'AMB Receiver Channel_Configuration', 'string', None, 'FLF_OUT_MSG_READER', 0, 0,
+             "Enter AMB receiver channel name", 0, 1],
+            ['amba_sender_source', 'AMBA Sender Source_Configuration', 'string', None, 'BO', 0, 0,
+             "Enter AMBA sender source", 0, 1],
+            ['amb_docx_pdf_reader_writer', 'AMB Docx-Pdf Conversion Channel_Configuration', 'string', None, 'FLF_DOCX_READER_WRITER', 0, 0,
+             "Enter AMB Doc-Pdf Conversion Channel", 0, 1],
+            ['override_version_compatibility',
+             'Install anyway (Override Version Compatibility - NOT RECOMMENDED)_Configuration', 'int', [0, 1],
+             0, 0, 0, "Import packages irrespective of version compatibility.", None, 1],
+            ['create_operation_components',
+             'Create Operation components_Configuration', 'int', [0, 1],
+             0, 0, 0, "Operations objects enable access control and approval flow.", None, 1],
+
+            ['save_report_as_pdf',
+             ' Report As PDF_Configuration', 'int',
+             [0, 1], 0, 0, 0, "Generate reports as PDF format", None, 1],
+
+            ['routing_reports',
+             'Default Transport Types_Configuration', 'int',
+             [0, 1], 1, 0, 0, "transport types of generated reports", None, 0],
+
+            ['routing_folder',
+             ' File(Folder)_Configuration', 'int',
+             [0, 1], 1, 1, 0, "Routing of generated reports at specific folder", self.file_chk_box_callback, 1],
+
+            ['routing_reports_folder_path',
+             '  Save to Specific Folder_Configuration', 'string', None, '', 0, 0, "Enter folder location", 0, 1],
+
+            ['routing_email',
+             ' Email_Configuration', 'int',
+             [0, 1], 0, 0, 0, "Routing of generated reports via Email", self.email_chk_box_callback, 1],
+
+            ['routing_email_smtp_server',
+             ' SMTP Host_Configuration', 'string', None, 'localhost', 0, 0, "Enter smtp server address", 0, 1],
+
+            ['routing_print',
+             ' Mail(Print)_Configuration', 'int',
+             [0, 1], 0, 0, 0, "Routing of generated reports via Print", None, 1],
+
+            ['routing_fax',
+             ' Fax_Configuration', 'int',
+             [0, 1], 0, 0, 0, "Routing of generated reports via FAX", None, 1],
+
+
+        ]
+
+        FRunScriptGUI.AelVariablesHandler.__init__(self, vars)
+
+    def email_chk_box_callback(self, index, field_values):
+        """Callback trigger when "Email" checkbox state is changed
+        :param index: index of the UI element
+        :param field_values: List of fields values
+        :return: field_values; Updated field values
+        """
+        if str(field_values[index]) == '1':
+            self.ael_variables[getattr(self, 'routing_email_smtp_server').sequenceNumber][5] = 1
+        else:
+            self.ael_variables[getattr(self, 'routing_email_smtp_server').sequenceNumber][5] = 0
+        return field_values
+
+    def file_chk_box_callback(self, index, field_values):
+        """Callback trigger when "File(Folder)" checkbox state is changed.
+        :param index: index of the UI element
+        :param field_values: List of fields values
+        :return: field_values; Updated field values
+        """
+        if str(field_values[index]) == '1':
+            self.ael_variables[getattr(self, 'routing_reports_folder_path').sequenceNumber][5] = 1 # Make mandatory
+        else:
+            self.ael_variables[getattr(self, 'routing_reports_folder_path').sequenceNumber][5] = 0
+        return field_values
+
+    def import_and_data_prep_cb(self, index, field_values):
+        """ Call back for import_and_data_prep1. Populate and enable other fields.
+        :param index: index of the UI element
+        :param field_values: List of fields values
+        :return: field_values; Updated field values
+        """
+        if str(field_values[index]) == '1':
+            field_values[self.ael_variables.base_path.sequenceNumber] = ''
+            field_values[self.ael_variables.import_and_data_prep.sequenceNumber] = 1
+            field_values[self.ael_variables.data_prep_only.sequenceNumber] = 0
+            self.ael_variables[getattr(self, 'base_path').sequenceNumber][9] = True
+            self.ael_variables[getattr(self, 'base_path').sequenceNumber][5] = 1  # Make Mandatory
+            self.ael_variables[getattr(self, 'routing_reports_folder_path').sequenceNumber][5] = 1
+        else:
+            field_values[self.ael_variables.data_prep_only.sequenceNumber] = 1
+            self.ael_variables[getattr(self, 'base_path').sequenceNumber][9] = False
+            self.ael_variables[getattr(self, 'module_location').sequenceNumber][9] = False
+
+        self.ael_variables[getattr(self, 'context').sequenceNumber][9] = True
+
+        return field_values
+
+    def data_prep_only_cb(self, index, field_values):
+        if str(field_values[index]) == '1':
+            field_values[self.ael_variables.import_and_data_prep.sequenceNumber] = 0
+            field_values[self.ael_variables.data_prep_only.sequenceNumber] = 1
+            self.ael_variables[getattr(self, 'base_path').sequenceNumber][9] = False
+            self.ael_variables[getattr(self, 'base_path').sequenceNumber][5] = 0  # Make Non Mandatory
+            self.ael_variables[getattr(self, 'context').sequenceNumber][9] = False
+            self.ael_variables[getattr(self, 'module_location').sequenceNumber][9] = False
+            self.ael_variables[getattr(self, 'custom_module').sequenceNumber][9] = False
+            self.ael_variables[getattr(self, 'custom_module').sequenceNumber][5] = 0  # Make Non Mandatory
+            self.ael_variables[getattr(self, 'create_channel').sequenceNumber][9] = False
+            self.ael_variables[getattr(self, 'amb_connection').sequenceNumber][9] = False
+            self.ael_variables[getattr(self, 'amb_receiver').sequenceNumber][9] = False
+            self.ael_variables[getattr(self, 'amba_sender_source').sequenceNumber][9] = False
+            self.ael_variables[getattr(self, 'amb_docx_pdf_reader_writer').sequenceNumber][9] = False
+            self.ael_variables[getattr(self, 'routing_reports_folder_path').sequenceNumber][5] = 0
+            self.ael_variables[getattr(self, 'routing_email_smtp_server').sequenceNumber][5] = 0
+
+        else:
+            field_values[self.ael_variables.import_and_data_prep.sequenceNumber] = 1
+            self.ael_variables[getattr(self, 'base_path').sequenceNumber][9] = True
+            self.ael_variables[getattr(self, 'module_location').sequenceNumber][9] = True
+
+        self.ael_variables[getattr(self, 'context').sequenceNumber][9] = True
+
+        return field_values
+
+    def create_channel_cb(self, index, field_values):
+        if str(field_values[index]) != '1':
+            self.ael_variables[getattr(self, 'amb_connection').sequenceNumber][9] = False
+            self.ael_variables[getattr(self, 'amb_receiver').sequenceNumber][9] = False
+            self.ael_variables[getattr(self, 'amba_sender_source').sequenceNumber][9] = False
+            self.ael_variables[getattr(self, 'amb_docx_pdf_reader_writer').sequenceNumber][9] = False
+            self.ael_variables[getattr(self, 'custom_module').sequenceNumber][9] = False
+
+        else:
+            self.ael_variables[getattr(self, 'amb_connection').sequenceNumber][9] = True
+            self.ael_variables[getattr(self, 'amb_receiver').sequenceNumber][9] = True
+            self.ael_variables[getattr(self, 'amba_sender_source').sequenceNumber][9] = True
+            self.ael_variables[getattr(self, 'amb_docx_pdf_reader_writer').sequenceNumber][9] = True
+            self.ael_variables[getattr(self, 'custom_module').sequenceNumber][9] = True
+
+        return field_values
+
+    def custom_module_cb(self, index, field_values):
+        """ call back for selection of custom module. Populate parameters on GUI
+        :param index: index of the UI element
+        :param field_values: List of fields values
+        :return: field_values; Updated field values
+        """
+
+        # sub_context = field_values[self.ael_variables.sub_context.sequenceNumber]
+        # context = get_sub_context(sub_context)
+
+        context = acm.GetDefaultContext()
+
+        if context:
+            fparameter = context.GetExtension('FParameters', 'FObject', 'FLongFormAMBConfig')
+            if fparameter:
+                field_values[self.ael_variables.amb_connection.sequenceNumber] = fparameter.Value().At('AMBAddress')
+                field_values[self.ael_variables.amba_sender_source.sequenceNumber] = fparameter.Value().At(
+                    'AMBASenderSource')
+
+        return field_values
+
+    def context_cb(self, index, field_values):
+        """ Callback for context selection. Populate the Custom Module based on selected context
+        :param index: index of the UI element
+        :param field_values: List of fields values
+        :return: field_values; Updated field values
+        """
+
+        default_conf_module = ''
+        selected_context = field_values[index]
+
+        modules = self.get_modules(selected_context)
+        if modules:
+            default_conf_module = self.get_default_module(selected_context)
+            field_values[getattr(self, 'custom_module').sequenceNumber] = default_conf_module
+            self.ael_variables[getattr(self, 'custom_module').sequenceNumber][3] = modules
+        # self.sub_context_cb(getattr(self, 'sub_context').sequenceNumber, field_values)
+
+        return field_values
+
+    def sub_context_cb(self, index, field_values):
+        """ Call back for sub_context selection.
+        :param index: index of the UI element
+        :param field_values: List of fields values
+        :return: field_values; Updated field values
+        """
+        sub_context_name = field_values[index]
+        if sub_context_name:
+            custom_module = []
+            context = get_sub_context(sub_context_name)
+            if context:
+                for each_context in acm.FExtensionContext.Select(''):
+                    if sub_context_name in [str(md.Name()).strip('+') for md in each_context.Modules()]:
+                        parent_context = each_context.Name()
+                        # Set the corresponding context on GUI
+                        field_values[self.ael_variables.context.sequenceNumber] = parent_context
+
+                for module in context.Modules():
+                    if module.Name() not in STANDARD_MODULES:
+                        custom_module.append(module.Name())
+                if len(custom_module) > 1:
+                    custom_module = [m for m in custom_module if m not in STANDARD_MODULES]
+                if custom_module:
+                    field_values[self.ael_variables.custom_module.sequenceNumber] = custom_module[0]
+
+        return field_values
+
+    def base_path_cb(self, index, field_values):
+        """ CallBack for Base dir selection. Populate module list field.
+        :param index: index of the UI element
+        :param field_values: List of fields values
+        :return: field_values; Updated field values
+        """
+        files = []
+        try:
+            if field_values[index] and os.path.isdir(field_values[index]):
+                # self.sub_context_cb(self.ael_variables.sub_context.sequenceNumber, field_values)
+                self.custom_module_cb(self.ael_variables.custom_module.sequenceNumber, field_values)
+
+                # Get files from directory and populate in field Modules to Install
+
+                # Enable fields
+                self.ael_variables[getattr(self, 'context').sequenceNumber][9] = True
+                # self.ael_variables[getattr(self, 'sub_context').sequenceNumber][9] = True
+                self.ael_variables[getattr(self, 'module_location').sequenceNumber][9] = True
+                self.ael_variables[getattr(self, 'custom_module').sequenceNumber][9] = True
+                self.ael_variables[getattr(self, 'create_channel').sequenceNumber][9] = True
+                self.ael_variables[getattr(self, 'amb_connection').sequenceNumber][9] = True
+                self.ael_variables[getattr(self, 'amb_receiver').sequenceNumber][9] = True
+                self.ael_variables[getattr(self, 'amba_sender_source').sequenceNumber][9] = True
+                self.ael_variables[getattr(self, 'amb_docx_pdf_reader_writer').sequenceNumber][9] = True
+
+                self.ael_variables[getattr(self, 'save_report_as_pdf').sequenceNumber][9] = True
+                self.ael_variables[getattr(self, 'routing_folder').sequenceNumber][9] = True
+                self.ael_variables[getattr(self, 'routing_reports_folder_path').sequenceNumber][9] = True
+                self.ael_variables[getattr(self, 'routing_email').sequenceNumber][9] = True
+                self.ael_variables[getattr(self, 'routing_email_smtp_server').sequenceNumber][9] = True
+
+                self.ael_variables[getattr(self, 'routing_print').sequenceNumber][9] = True
+    
+                self.ael_variables[getattr(self, 'routing_fax').sequenceNumber][9] = True
+
+
+                # set modules
+                selected_context = field_values[getattr(self, 'context').sequenceNumber]
+                modules = self.get_modules(selected_context)
+                if modules:
+                    default_conf_module = self.get_default_module(selected_context)
+                    if not field_values[getattr(self, 'custom_module').sequenceNumber]:
+                        field_values[getattr(self, 'custom_module').sequenceNumber] = default_conf_module
+                    self.ael_variables[getattr(self, 'custom_module').sequenceNumber][3] = modules
+
+                custom_module = []
+                # context = get_sub_context(sub_context_name)
+                context = acm.GetDefaultContext()
+                if context:
+                    # for each_context in acm.FExtensionContext.Select(''):
+                    #     if sub_context_name in [str(md.Name()).strip('+') for md in each_context.Modules()]:
+                    #         parent_context = each_context.Name()
+                    #         # Set the corresponding context on GUI
+                    #         field_values[self.ael_variables.context.sequenceNumber] = parent_context
+
+                    for module in context.Modules():
+                        if module.Name() not in STANDARD_MODULES:
+                            custom_module.append(module)
+                    self.ael_variables[getattr(self, 'custom_module').sequenceNumber][3] = custom_module
+                    # if len(custom_module) > 1:
+                    #     custom_module = [m for m in custom_module if m not in STANDARD_MODULES]
+                    if custom_module:
+                        field_values[self.ael_variables.custom_module.sequenceNumber] = custom_module[0]
+
+            elif field_values[index] and not os.path.isdir(field_values[index]):
+                log_str = "Directory <%s> does not exist. Select correct directory for Longform Trade Confirmation package" % str(
+                    field_values[index])
+                notifier.ERROR(log_str)
+                try:
+                    ael.sendmessage(acm.UserName(), 'Longform Trade Confirmation installer Info', log_str)
+                except Exception as e:
+                    pass
+            else:
+                # Disable fields
+                # self.ael_variables[getattr(self, 'module_to_install').sequenceNumber][9] = False
+                self.ael_variables[getattr(self, 'context').sequenceNumber][9] = False
+                # self.ael_variables[getattr(self, 'sub_context').sequenceNumber][9] = False
+                self.ael_variables[getattr(self, 'module_location').sequenceNumber][9] = False
+                self.ael_variables[getattr(self, 'custom_module').sequenceNumber][9] = False
+                self.ael_variables[getattr(self, 'create_channel').sequenceNumber][9] = False
+                self.ael_variables[getattr(self, 'amb_connection').sequenceNumber][9] = False
+                self.ael_variables[getattr(self, 'amb_receiver').sequenceNumber][9] = False
+                self.ael_variables[getattr(self, 'amba_sender_source').sequenceNumber][9] = False
+                self.ael_variables[getattr(self, 'amb_docx_pdf_reader_writer').sequenceNumber][9] = False
+                self.ael_variables[getattr(self, 'routing_folder').sequenceNumber][9] = False
+                self.ael_variables[getattr(self, 'save_report_as_pdf').sequenceNumber][9] = False
+                self.ael_variables[getattr(self, 'routing_reports_folder_path').sequenceNumber][9] = False
+                self.ael_variables[getattr(self, 'routing_email').sequenceNumber][9] = False
+                self.ael_variables[getattr(self, 'routing_email_smtp_server').sequenceNumber][9] = False
+                self.ael_variables[getattr(self, 'routing_print').sequenceNumber][9] = False
+                self.ael_variables[getattr(self, 'routing_fax').sequenceNumber][9] = False
+
+        except Exception as error:
+            notifier.ERROR(str(error), exc_info=1)
+
+        return field_values
+
+    def get_modules(self, context_name=None, module_name=None):
+        """
+        Get list of modules in the Context
+        :param context_name: Name of the Context
+        :param module_name: Name of the module to get
+        :return: Module list or module
+        """
+        module_names = []
+        try:
+            context = acm.GetDefaultContext()
+            if context_name:
+                context = acm.FExtensionContext[context_name]
+
+            if module_name:
+                default_module = context.GetModule(module_name)
+                if default_module:
+                    return default_module.Name()
+
+            module_names = context.Modules()
+        except Exception as e:
+            # notifier.ERROR(str(e), exc_info=1)
+            pass
+        return module_names
+
+    def get_default_module(self, context):
+        """
+        Get acm default module from the Context
+        :param context: Name of the Context
+        :return: module
+        """
+        default_module = ''
+        if context:
+            try:
+                acm_context = acm.FExtensionContext[context]
+                acm_default_module = acm_context.GetModule('%org')
+                if acm_default_module:
+                    default_module = acm_default_module.Name()
+            except Exception as e:
+                notifier.ERROR('Exception in getting default module from context <%s>' % context, exc_info=1)
+        return default_module
+
+
+def get_acm_version():
+    """returns the acm version that the code is being executed in"""
+    version = ".".join(acm.ShortVersion().strip(string.ascii_letters).split(".")[0:2])
+    version = version.replace('Python', '')
+    return float(version)
+
+
+def get_version_path():
+    """get the path of the file with the version that the code is being executed upon"""
+    
+    version_path = 'Python27'
+    version = get_acm_version()
+    if version >= 2019.4 and version < 2021.4:
+        version_path = 'Python37'
+    elif version >= 2021.4:
+        version_path = 'Python39'
+    return version_path
+
+
+def read_version(file_input, module, default_version):
+    """ Read module version information from file
+    :param file_input: file contents.
+    :param module: module name
+    :param default_version: default version if unable to read version from file
+    :return: str; version as string
+    """
+    mod = acm.ImportExtensionModule(file_input)
+    if mod:
+        version = get_module_version(mod)
+    else:
+        version = {module: default_version}
+
+    return version
+
+
+def get_module_version(target_context):
+    """ Extract module version from FParameter.
+    :param target_context: context or module to get FParameter from
+    :return: dict of module and version number.
+    """
+    version_info_dict = dict()
+    try:
+        for fparam, (extension_name, variable_name) in VERSION_FPARAMETERS_FILES.items():
+            fparameter = target_context.GetExtension('FParameters', 'FObject', extension_name)
+            if fparameter:
+                version_info_dict[fparam] = fparameter.Value().At(variable_name)
+    except Exception as e:
+        notifier.ERROR("Error in get_module_version. {}".format(str(e)))
+
+    return version_info_dict
+
+
+def is_amb_already_connected(amb_connection):
+    """ Check if AMB is already connected.
+    :param amb_connection: AMB connection string
+    :return: is_already_connected: True if already connected, else False
+    """
+    is_already_connected = True
+    try:
+        amb.mb_queue_init_reader('INVALID_CHANNEL_NAME', mb_queue_init_writer_cb, None)
+        notifier.DEBUG("AMB <%s> is already connected" % amb_connection)
+    except Exception as error:
+        if str(error) == 'Not Connected':
+            is_already_connected = False
+            notifier.DEBUG("AMB <%s> not connected" % amb_connection)
+    return is_already_connected
+
+
+def mb_queue_init_writer_cb(channel, event, arg):
+    pass
+
+
+def is_channel_present(channel_name):
+    """ Check if channel is present in the AMB
+    :param channel_name: Name of the channel to check into DB
+    :return: bool: True if present else False
+    """
+    channel_exists = False
+    try:
+        amb.mb_queue_init_writer(channel_name, mb_queue_init_writer_cb)
+        channel_exists = True
+        notifier.INFO("Channel <%s> found in AMB" % channel_name)
+    except Exception as error:
+        notifier.INFO("Channel <%s> not found in AMB" % channel_name)
+        notifier.DEBUG(str(error))
+    return channel_exists
+
+
+def create_channel_in_amb_db(channel_name):
+    """ Create channels in the AMB
+    :param channel_name: name of the channel to be created
+    :return: True if created else False
+    """
+    channel_created = False
+    try:
+        amb.mb_add_system(channel_name)
+        notifier.INFO("Channel <%s> successfully inserted into AMB system table." % channel_name)
+        channel_created = True
+    except Exception as e:
+        notifier.INFO("Error while creating the channel: <%s>. Error: <%s>" % channel_name, str(e))
+
+    return channel_created
+
+
+def create_amb_channels(amb_connection, channels):
+    """ Create AMB channels into AMB
+    :param amb_connection:
+    :param channels:
+    :return: None
+    """
+    is_connected = is_amb_already_connected(amb_connection)
+    if not is_connected:
+        is_connected = connect_amb(amb_connection)
+    if is_connected:
+        for channel in channels:
+            channel_present = is_channel_present(channel)
+            if not channel_present:
+                notifier.INFO("Channel named <%s> is not present, hence creating channel" % channel)
+                is_channel_created = create_channel_in_amb_db(channel)
+                if is_channel_created:
+                    notifier.INFO("<%s> Channel created in AMB" % channel)
+                else:
+                    notifier.INFO("Unable to create <%s> Channel in AMB" % channel)
+            else:
+                notifier.INFO("<%s> Channel is already present in AMB" % channel)
+
+
+def get_module(user_custom_module, context):
+    """ Get user custom module
+    :param user_custom_module: Name of the user custom module
+    :param context: name of the Context to search custom module
+    :return: user custom module
+    """
+    user_module = context.GetModule(user_custom_module)
+    if not user_module:
+        notifier.DEBUG(
+            "Module <%s> not present in the Context <%s>. Checking in Default Context" % (user_custom_module,
+                                                                                          context.Name()))
+        context = acm.GetDefaultContext()
+        user_module = context.GetModule(user_custom_module)
+    return user_module
+
+
+def custom_module_creator(custom_module_name, context):
+    """ Create custom module into provided Context
+    :param custom_module_name: Name of the module to create
+    :param context: Context to create module into
+    :return: None
+    """
+    notifier.DEBUG("Creating custom module <%s>" % custom_module_name)
+
+    try:
+        acm.BeginTransaction()
+        module = context.AddModule(custom_module_name)
+        module.Commit()
+        context.Commit()
+        acm.CommitTransaction()
+        notifier.DEBUG("Created custom module <%s>" % custom_module_name)
+    except Exception as e:
+        acm.AbortTransaction()
+        notifier.ERROR("Unable to create custom module <%s>" % custom_module_name, exc_info=1)
+
+
+def create_user_custom_module(user_custom_module, context_to_install):
+    """ Create user custom module
+    :param user_custom_module: Name of the custom module
+    :param context_to_install: Context to install custom module
+    :return: custom module
+    """
+    custom_module_creator(user_custom_module, context_to_install)
+    notifier.INFO("Created custom module <%s> in Context <%s>" % (user_custom_module, context_to_install.Name()))
+    return get_module(user_custom_module, context_to_install)
+
+
+def _commit_fparams_changes(module, fparameter, context, fparam_name):
+    """ Add/update fparameter into module.
+
+    :param module: module to save fparameter object into
+    :param fparameter: fparameter object to commit
+    :param context: context to add module into
+    :return:
+    """
+    try:
+        acm.BeginTransaction()
+        module_image = module.StorageImage()
+        module_image.AddExtension(fparameter)
+        module_image.Commit()
+        context.Commit()
+        acm.CommitTransaction()
+    except Exception as e:
+        acm.AbortTransaction()
+        notifier.ERROR("Unable to override FParameter for <%s>: <%s>" % (fparam_name, str(e)), exc_info=1)
+
+
+def override_fparams(user_module, context_to_install, fparameter):
+    """ Set/override FParameters for LongformTradeConfirmation
+    :param user_module: Name of the user module to save FParameters into
+    :param context_to_install: Context of the user module
+    :param amb_connection: AMB connection string(Host:Port)
+    :param amba_sender_source: AMBA sender source
+    :return: None
+    """
+    notifier.DEBUG("Overriding FLongFormAMBConfig FParameters")
+    updated = False
+    context_to_install_image = context_to_install.StorageImage()
+    amb_fparameter = context_to_install_image.GetExtension('FParameters', 'FObject', 'FLongFormAMBConfig')
+    confirmation_out_fparameter = context_to_install_image.GetExtension('FParameters', 'FObject', 'FLongFormConfirmationOut_Config')
+    amb_connection = fparameter.get('amb_connection', '')
+    amba_sender_source = fparameter.get('amba_sender_source', '')
+    amb_receiver = fparameter.get('amb_receiver', '')
+    amb_docx_pdf_reader_writer = fparameter.get('amb_docx_pdf_reader_writer', '')
+    save_report_as_pdf = fparameter.get('save_report_as_pdf', '')
+    file_folder_path = fparameter.get('file_folder_path', '')
+    smtp_host = fparameter.get('smtp_host', '')
+    transport_types = fparameter.get('transport_types', '[]')
+
+    if amb_fparameter:
+            if amb_connection and (amb_connection != amb_fparameter.Value().At('AMBAddress')):
+                amb_fparameter.Value().AtPut('AMBAddress', amb_connection)
+                updated = True
+                notifier.DEBUG("Updated AMBAddress parameter")
+            if amba_sender_source and (amba_sender_source != amb_fparameter.Value().At('AMBASenderSource')):
+                amb_fparameter.Value().AtPut('AMBASenderSource', amba_sender_source)
+                notifier.DEBUG("Updated AMBASenderSource parameter")
+                updated = True
+            if amb_receiver and (amb_receiver != amb_fparameter.Value().At('FLFConfirmationOut_AMBReceiver')):
+                amb_fparameter.Value().AtPut('FLFConfirmationOut_AMBReceiver', amb_receiver)
+                notifier.DEBUG("Updated FLFConfirmationOut_AMBReceiver parameter")
+                updated = True
+            if amb_docx_pdf_reader_writer and (amb_docx_pdf_reader_writer != amb_fparameter.Value().At('FLF_Docx_Pdf_Reader_Writer')):
+                amb_fparameter.Value().AtPut('FLF_Docx_Pdf_Reader_Writer', amb_docx_pdf_reader_writer)
+                notifier.DEBUG("Updated amb_docx_pdf_reader_writer parameter")
+                updated = True
+    else:
+            notifier.DEBUG("Extension FLongFormAMBConfig not found, cannot override FParameters.")
+
+    if updated:
+        _commit_fparams_changes(user_module, amb_fparameter, context_to_install_image, 'FLongFormAMBConfig')
+    updated = False
+    if confirmation_out_fparameter:
+            if file_folder_path and (file_folder_path != confirmation_out_fparameter.Value().At('LongformPath')):
+                confirmation_out_fparameter.Value().AtPut('LongformPath', file_folder_path)
+                updated = True
+                notifier.DEBUG("Updated LongformPath parameter")
+            if smtp_host and (smtp_host != str(confirmation_out_fparameter.Value().At('SMTPServer'))):
+                confirmation_out_fparameter.Value().AtPut('SMTPServer', smtp_host)
+                updated = True
+                notifier.DEBUG("Updated SMTPServer parameter")
+
+            if transport_types:
+                old_rm = (str(confirmation_out_fparameter.Value().At('DefaultTransportTypes'))) if confirmation_out_fparameter.Value().At('DefaultTransportTypes') else '[]'
+                if transport_types != old_rm:
+                    confirmation_out_fparameter.Value().AtPut('DefaultTransportTypes', transport_types)
+                    updated = True
+                    notifier.DEBUG("Updated routing_method parameter")
+
+            if save_report_as_pdf:
+                old_rm = int(str(confirmation_out_fparameter.Value().At('ReportAsPDF'))) if confirmation_out_fparameter.Value().At('ReportAsPDF') else 0
+                if save_report_as_pdf != old_rm:
+                    confirmation_out_fparameter.Value().AtPut('ReportAsPDF', save_report_as_pdf)
+                    updated = True
+                    notifier.DEBUG("Updated ReportAsPDF parameter")
+
+    if updated:
+        _commit_fparams_changes(user_module, confirmation_out_fparameter, context_to_install_image, 'FLongFormConfirmationOut_Config')
+
+
+def store_in_custom_module(user_custom_module, context_to_install, fparameter={}):
+    """ Store FParameters in user custom modules
+    :param user_custom_module: Name of the user module to save FParameters into
+    :param context_to_install: Context of the user module
+    :param amb_connection: AMB connection details
+    :param amba_sender_source: AMBA sender source
+    :param amb_receiver: AMB receiver
+    :param amb_receiver_subject: AMB receiver subject
+    :param ack_nak_subject: AckNak subject
+    :return: None
+    """
+    notifier.INFO("Store parameters in custom module <%s>" % user_custom_module)
+    user_module = get_module(user_custom_module, context_to_install)
+
+    if not user_module:
+        notifier.DEBUG("custom module <%s> not present, creating custom module" % user_custom_module)
+        user_module = create_user_custom_module(user_custom_module, context_to_install)
+        notifier.INFO("Created custom module <%s>" % user_custom_module)
+
+    notifier.DEBUG("Override FParameters in custom module <%s>" % user_custom_module)
+    override_fparams(user_module, context_to_install, fparameter)
+    notifier.INFO("Done overriding FParameters in custom module <%s>" % user_custom_module)
+
+
+def should_install_package(parent_context, sub_context=None):
+    """It verifies if the package is already installed and is in some other context or group.
+    This returns True if the already installed package is present in specified context, group
+    Else it will return False
+    """
+    ret_val = True
+    for ltc_default_module in STANDARD_MODULES:
+        module_in_context = []
+        for each_context in acm.FExtensionContext.Select(''):
+            if ltc_default_module in [md.Name() for md in each_context.Modules()]:
+                module_in_context.append(each_context.Name())
+
+        if len(module_in_context) > 1:
+            notifier.ERROR(
+                "Longform package is already installed in multiple Contexts. Please delete existing package.")
+            ret_val = False
+        elif module_in_context:
+            notifier.INFO("Package already present in database.")
+            if sub_context:
+                pass # Not applicable to Longform for now. Keeping code for future requirement.
+                # sub_extension_name = '+' + sub_context
+                # if sub_context not in module_in_context and sub_extension_name not in module_in_context:
+                #     notifier.ERROR(
+                #         "Longform package is already installed in Context <%s>. Please specify the correct Context or delete existing package from database" %
+                #         module_in_context[0])
+                #     ret_val = False
+                # else:
+                #     acm_sub_context = acm.FExtensionContext[sub_context]
+                #     if not acm_sub_context:
+                #         acm_sub_context = acm.FExtensionContext[sub_extension_name]
+                #     if acm_sub_context:
+                #         notifier.DEBUG(
+                #             "Group <%s> is already present in database, importing FLongformTradeConfirmation packages "
+                #             "within it." % sub_context)
+            else:
+                if parent_context not in module_in_context:
+                    notifier.ERROR(
+                        "Package %s is already installed in Context <%s>. Please specify the correct context or "
+                        "delete existing package from database." % (ltc_default_module, module_in_context[0]))
+                    ret_val = False
+    return ret_val
+
+
+def move_module_to_location(context, to_move, to_location, is_sub_context=True):
+    """ Move module below the provided module
+    :param context: Context to move modules in
+    :param to_move: module to move
+    :param to_location: name of the module to move module after
+    :return: None
+    """
+    context = acm.FExtensionContext[context]
+    context_image = context.StorageImage()
+
+    module_names = context_image.ModuleNames()
+
+    if is_sub_context:
+        index_from = module_names.IndexOfFirstEqual("+" + to_move)
+    else:
+        index_from = module_names.IndexOfFirstEqual(to_move)
+    if index_from == -1:
+        notifier.INFO("Module <%s> not in the Context. Please check imported module" % to_move)
+        return
+
+    index_to = module_names.IndexOfFirstEqual(to_location)
+    if index_to == -1:
+        index_to = module_names.IndexOfFirstEqual("+" + to_location)
+
+    if index_to == -1:
+        notifier.INFO("Module <%s> not in the Context. Inserting module after Default location" % to_location)
+        to_location = 'Default'
+        index_to = module_names.IndexOfFirstEqual(to_location)
+        if index_to == -1:
+            notifier.INFO("Aborting as module <%s> is not in Context" % to_location)
+            return
+
+    offset = index_to - index_from + 1
+    initial_offset = offset
+    increment = 1 if offset > 0 else -1
+
+    try:
+        while offset:
+            if not (context_image.MoveModule('+' + to_move, increment) or context_image.MoveModule(to_move, increment)):
+                notifier.DEBUG("Move Module failed. Please check name of the module is correct.")
+                break
+            offset -= increment
+
+        if offset != initial_offset:
+            context_image.Commit()
+            notifier.INFO("Module is moved to desired location.")
+        else:
+            notifier.DEBUG("Module NOT moved to desired location.")
+    except Exception as e:
+        notifier.ERROR("Failed to move the module <%s>." % str(e))
+
+
+def install_longform_module(variables_dictionary):
+    skip_modules_to_downgrade['FIntegrationUtils'] = False
+    import_and_data_prep = variables_dictionary.get("import_and_data_prep")
+    run_data_prep_only = variables_dictionary.get("data_prep_only")
+
+    base_dir = str(variables_dictionary.get("base_path"))
+
+    parent_context = variables_dictionary.get("context")
+    # sub_context = variables_dictionary.get("sub_context")
+    module_location = variables_dictionary.get("module_location")
+    user_custom_module = variables_dictionary.get("custom_module")
+    create_channel = variables_dictionary.get("create_channel")
+    amb_connection = variables_dictionary.get("amb_connection")
+    amba_sender_source = variables_dictionary.get("amba_sender_source")
+    amb_receiver = variables_dictionary.get("amb_receiver")
+    amb_docx_pdf_reader_writer = variables_dictionary.get("amb_docx_pdf_reader_writer")
+    save_report_as_pdf = variables_dictionary.get("save_report_as_pdf")
+    create_operation_components = True if variables_dictionary.get("create_operation_components") else False
+    smtp_host = ''
+    file_folder_path = ""
+    transport_types = []
+
+    if variables_dictionary.get("routing_folder", 0):
+        transport_types.append('File')
+        file_folder_path = variables_dictionary.get("routing_reports_folder_path")
+
+    if variables_dictionary.get("routing_email", 0):
+        transport_types.append('Email')
+        smtp_host = variables_dictionary.get("routing_email_smtp_server", '')
+        #routing_method = routing_method | (1 << 1)  # setting 1st bit ( 1<<nth)
+
+    if variables_dictionary.get("routing_print", 0):
+        transport_types.append('Mail')
+        #routing_method = routing_method | (1 << 2)  # setting 2nd bit ( 1<<nth)
+
+    if variables_dictionary.get("routing_fax", 0):
+        transport_types.append('Fax')
+        #routing_method = routing_method | (1 << 3) # setting 3rd bit ( 1<<nth)
+        
+    module_path= set()
+    if import_and_data_prep:
+        override_version_compatibility = variables_dictionary.get("override_version_compatibility")
+        error_flag = True
+        base_folders = set()
+        version_path = get_version_path()
+        integration_utils = 'FIntegrationUtils'
+        if base_dir:
+            base_dir_path = os.path.expandvars(base_dir)
+            if os.path.isdir(base_dir_path):
+                for dir_path in os.listdir(base_dir_path):
+                    if os.path.isdir(os.path.join(base_dir_path, dir_path)):
+                        base_folders.add(dir_path)
+                                
+                if {version_path, 'FLongformTradeConfirmation_DataPrep',integration_utils}.issubset(base_folders):#Version folder is present
+                    for folder in base_folders:
+                        if folder == version_path:
+                            if {'FLongformTradeConfirmation.txt'}.issubset(
+                                    set(os.listdir(os.path.join(base_dir_path, version_path)))):
+                                error_flag = False
+                                module_path.add(os.path.join(base_dir_path, version_path))
+                        if folder == integration_utils:
+                            if {'FIntegrationUtils.txt'}.issubset(
+                                    set(os.listdir(os.path.join(base_dir_path, integration_utils)))):
+                                error_flag = False
+                                module_path.add(os.path.join(base_dir_path, integration_utils))
+                elif {'FLongformTradeConfirmation.txt', 'FIntegrationUtils.txt'}.issubset(  #Version folder is not present
+                        set(os.listdir(base_dir_path))):
+                    error_flag = False
+                    module_path.add(base_dir_path)   
+
+                if error_flag:
+                    notifier.ERROR('The folder structure is unexpected!')
+
+                # parent_context = acm.GetDefaultContext().Name()
+                sub_context = None
+                error_msg = None
+                if not override_version_compatibility:
+                    notifier.DEBUG("Checking version compatibility.")
+                    for path in module_path:
+                        if path.endswith(integration_utils):
+                            is_compatible_version, error_msg = check_version_compatibility(path, modules_to_install[1],
+                                                                                   parent_context,
+                                                                                   sub_context)
+                        else:
+                            is_compatible_version, error_msg = check_version_compatibility(path, modules_to_install[0],
+                                                                                   parent_context,
+                                                                                   sub_context)
+                    
+                    if is_compatible_version:
+                        notifier.DEBUG("Version compatibility check successful. It is safe to install packages.")
+                else:
+                    is_compatible_version = True
+                    notifier.WARN(
+                        "Overriding version check. Some features may cease to function. NOT RECOMMENDED")
+
+                if is_compatible_version:
+                    if should_install_package(parent_context, sub_context):
+                        default_context = acm.GetDefaultContext()
+                        if default_context.Name() != parent_context:
+                            notifier.WARN(
+                                "FLongformInstaller Context differs from selected Context <%s> to install Longform"
+                                "package. This may fail to run DataPrep. It is recommended to have FLongformInstaller"
+                                "module within the same Context where you want to install Longform package" %
+                                parent_context)
+                            
+                        for path in module_path:
+                            if path.endswith(integration_utils):
+                                install_modules_into_ADS(path, modules_to_install[1], parent_context, sub_context)    
+                            else:
+                                install_modules_into_ADS(path, modules_to_install[0], parent_context, sub_context)
+                        
+                        
+                        notifier.DEBUG("Done installing FLongformTradeConfirmation module.")
+                        if sub_context and module_location:
+                            notifier.DEBUG("Moving group to location after module <%s>" % module_location)
+                            move_module_to_location(parent_context, sub_context, module_location)
+                        elif module_location:
+                            for module in STANDARD_MODULES:
+                                move_module_to_location(acm.GetDefaultContext().Name(), module,
+                                                        module_location, is_sub_context=False)
+
+                        if user_custom_module and create_channel:
+                            notifier.DEBUG("Overriding FParameters into user custom module <%s>" % user_custom_module)
+                            context_to_install = get_context_to_install(parent_context, sub_context)
+                            fparameter = {'amb_connection': amb_connection,
+                                          'amba_sender_source': amba_sender_source,
+                                          'amb_receiver': amb_receiver,
+                                          'amb_docx_pdf_reader_writer': amb_docx_pdf_reader_writer,
+                                          'file_folder_path': file_folder_path,
+                                          'smtp_host': smtp_host,
+                                          'transport_types': str(transport_types),
+                                          'save_report_as_pdf': save_report_as_pdf
+                                          }
+                            store_in_custom_module(user_custom_module, context_to_install, fparameter)
+
+                        if create_channel and amb_connection:
+                            notifier.DEBUG("Creating Channels in AMB.")
+                            create_amb_channels(amb_connection, [amba_sender_source, amb_receiver, amb_docx_pdf_reader_writer, 'FLF_PDF_READER_WRITER'])
+
+                        notifier.DEBUG("Executing data preparation scripts.")
+                        run_data_preparation_scripts(modules_to_install, parent_context, create_operation_components)
+                        notifier.INFO("Installation completed.")
+                else:
+                    if error_msg:
+                        notifier.ERROR(error_msg)
+                        ael.sendmessage(acm.UserName(), 'LongformTradeConfirmationInstaller Info', error_msg)
+                    else:
+                        notifier.ERROR(
+                            "Versions are incompatible. Not installing package(s). If you still want to install then "
+                            "select checkbox <Install anyway> on Configuration window.")
+                        try:
+                            ael.sendmessage(acm.UserName(), 'FLongformTradeConfirmationInstaller Info',
+                                            'Versions are incompatible, check log for more info. If you still want to '
+                                            'install then select checkbox <Install anyway> on Configuration window.')
+                        except Exception as e:
+                            pass
+
+                # install_modules_into_ADS(base_dir, modules_to_install, parent_context)
+                # run_data_preparation_scripts(modules_to_install, None)
+            else:
+                log_str = '<{}> is not a valid folder path!'.format(base_dir_path)
+                notifier.ERROR(log_str)
+                ael.sendmessage(acm.UserName(), 'Longform Trade Confirmation installer Info', log_str)
+
+    elif run_data_prep_only:
+        notifier.DEBUG("Executing Data Preparation scripts")
+        all_contexts = get_contexts()
+        data_prep_context_name = ''
+        for context in all_contexts:
+            if 'FLongformTradeConfirmation' in context.ModuleNames():
+                data_prep_context_name = context.Name()
+        run_data_preparation_scripts(modules_to_install, data_prep_context_name, create_operation_components)
+        notifier.INFO("Installation Completed")
+
+
+def run_data_prep(file, context, create_operations):
+    """ Run data preparation file.
+    :param file: Name of the Data prep file
+    :param context: name of the context to run data prep into
+    :return: None
+    """
+    try:
+        import FIntegrationUtils
+        utils_obj = FIntegrationUtils.FIntegrationUtils()
+        data_prep_object = utils_obj.import_module_from_string(str(file))
+        if data_prep_object:
+            data_prep_object.run_data_prep(context, create_operations)
+            notifier.DEBUG("Data Prep <%s> successfully ran" % str(file))
+        else:
+            notifier.INFO("Data Prep <%s> not found" % str(file))
+    except Exception as e:
+        notifier.ERROR("Exception while executing Data Prep : <%s>" % str(file), exc_info=1)
+
+
+def run_data_prep_initial(modules_to_install, context, create_operations):
+    """ Run initial Data prep files
+    :param modules_to_install: list of modules to install
+    :param file_number: list of data prep files to install
+    :param context: name of the context
+    :return: None
+    """
+    notifier.INFO("Executing initial data preparation script")
+    ran_data_prep_list = []
+
+    ext_context = acm.GetDefaultContext()
+    ext_context_image = ext_context.StorageImage()
+
+    data_prep_file_list = []
+    for module in modules_to_install:
+        for prp_file in DATA_PREP_FILES.get(get_standard_name(module), []):
+            if ext_context.GetExtension('FPythonCode', 'FObject', prp_file):
+                data_prep_file_list.append(ext_context.GetExtension('FPythonCode', 'FObject', prp_file))
+
+    for file in data_prep_file_list:
+        file_name = str(file.Name())
+        run_data_prep(file_name, context, create_operations)
+        notifier.INFO("Ran initial data prep file : <%s>" % file_name)
+        if 'Out' not in file_name and file_name not in ran_data_prep_list:
+            ran_data_prep_list.append(file_name[:-1])
+
+    notifier.INFO("Initial Data preparation script ran successfully")
+
+
+def run_data_preparation_scripts(modules_to_install, context, create_operations):
+    """ Run data preparation scripts
+    :param modules_to_install: list of modules to install
+    :param import_and_data_prep: boolean to decide install or run data prep
+    :return: None
+    """
+    notifier.INFO("Data preparation scripts")
+    run_data_prep_initial(modules_to_install, context, create_operations)
+    notifier.INFO("Completed executing data preparation scripts.")
+
+
+def get_sub_context(name):
+    """
+    Get acm group
+    :param name: Name of the Context
+    :return: context
+    """
+    sub_context = None
+    sub_context = acm.FExtensionContext[name]
+    if not sub_context:
+        sub_context = acm.FExtensionContext["+" + name]
+    return sub_context
+
+
+def __create_sub_context(parent_context, sub_context):
+    """ Create Context to install Swift packages into
+    :param parent_context: name of the parent Context
+    :param sub_context: name of the child Context
+    :return: child_context; name of the Context to use for installation."""
+    child_context = None
+    try:
+        par_context = acm.FExtensionContext[parent_context]
+        par_context_img = par_context.StorageImage()
+        child_context = get_sub_context(sub_context)
+        if not child_context:
+            child_context = acm.FExtensionContext()
+            name = "+" + sub_context
+            child_context.Name(name)
+            child_context.Description("LongformTradeConfirmation modules")
+            child_context.Commit()
+        if child_context:
+            par_context_img.AddContext(child_context)
+        par_context_img.Commit()
+        notifier.INFO("Created group <%s>" % child_context.Name())
+    except Exception as e:
+        notifier.ERROR("Unable to create group <%s> in <%s>" % (parent_context, sub_context), exc_info=1)
+
+    return child_context
+
+
+def get_context_to_install(parent_context, sub_context=None, create_context=False):
+    """ Get or create Context to install packages into
+    :param parent_context: name of the parent Context
+    :param sub_context: name of the child Context
+    :param create_context: boolean to decide to create context if not present
+    :return: target_context; name of the Context to use for installation.
+    """
+    target_context = acm.FExtensionContext[parent_context]
+    if sub_context:
+        target_context = get_sub_context(sub_context)
+        if target_context:
+            notifier.INFO("Installing LongformTradeConfirmation packages within Context <%s>" % target_context.Name())
+        else:
+            if create_context:
+                notifier.INFO(
+                    "Creating group <%s> in Context <%s> to install LongformTradeConfirmation packages" % (
+                        sub_context, parent_context))
+                target_context = __create_sub_context(parent_context, sub_context)
+                notifier.DEBUG("Context <%s> is created" % target_context.Name())
+
+    if not target_context:
+        notifier.INFO("Unable to get or create Context name <%s>. Taking Default Context" % sub_context)
+        target_context = acm.GetDefaultContext()
+    return target_context
+
+
+def get_txt_files(module_path):
+    """ Get all .txt files from the location
+    :param module_path: location to check .txt files
+    :return: files: list of names of .txt files
+    """
+    files = []
+    for file in os.listdir(module_path):
+        if file.endswith(".txt"):
+            files.append(file)
+    return files
+
+
+def get_version_number(version):
+    """ Convert version string into list of integers to compare.
+    :param version: version as string A.B.C
+    :return: list of version number integers.
+    """
+    ret_val = [0, 0, 0]
+    if version:
+        version = version.Text().strip('\'')
+        version_info = version.split('-')[0].split('.')[0:3]
+        ret_val = list(map(int, version_info))
+    return ret_val
+
+
+def get_version_as_string(version_as_list):
+    """ Convert version list to version string.
+    :param version_as_list: version number as integers in a list
+    :return: version as formatted string A.B.C
+    """
+    return ".".join(map(str, version_as_list))
+
+
+def import_to_extension_editor(install_path, module_name, context):
+    """ Imports module to Extension Editor.
+    :param install_path: Path to the location where module txt is stored
+    :param module_name: Name of the module to import into the Extension Editor
+    :param context: Context to import module into.
+    :return: None
+    """
+    file_path = install_path
+
+    if os.path.isfile(file_path):
+        try:
+            fh = open(file_path, 'r', encoding="latin-1")
+        except:
+            fh = open(file_path, 'r')
+        file_input = fh.read()
+        fh.close()
+
+        notifier.DEBUG("Importing <%s> in Extension Editor" % file_path)
+        notifier.DEBUG("File length: <%s>, module_name: <%s> install_path: <%s>" % (str(len(file_input)), module_name,
+                                                                                    install_path))
+        try:
+            acm.BeginTransaction()
+            data = acm.ImportExtensionModule(file_input)
+            em = acm.FExtensionModule[data.Name()]
+            try:
+                if em:
+                    em = em.StorageImage()
+                    notifier.DEBUG("Overriding existing module <%s> in Extension Editor with new module" % module_name)
+                else:
+                    em = acm.FExtensionModule()
+                em.Apply(data)
+                em.Commit()
+                acm.CommitTransaction()
+            except Exception as e:
+                notifier.ERROR("Error in importing <%s> module from path <%s>" % (module_name, install_path),
+                               exc_info=1)
+                sys.exit(1)
+
+            acm.BeginTransaction()
+            context_image = context.StorageImage()
+            context_image.AddModule(data.Name())
+            context_image.Commit()
+            acm.CommitTransaction()
+            notifier.INFO("Done importing file :: <%s>" % str(file_path))
+
+        except Exception as e:
+            acm.AbortTransaction()
+            notifier.ERROR(
+                "Error in importing <%s> module from path <%s>. Aborting transaction" % (module_name, install_path),
+                exc_info=1)
+    else:
+        notifier.INFO("File <%s> does not exists." % str(file_path))
+
+
+def import_module_txt(file, module_file_path, context_to_install, parent_context):
+    """ Import module txt files into ADS
+    :param module_path: path of the txt file
+    :param context_to_install: Context to install module into
+    :param parent_context: parent context for context_to_install
+    :return: None
+    """
+
+    notifier.DEBUG("Importing <%s> into Extension Editor" % module_file_path)
+
+    # for file in get_txt_files(module_path):
+    #     notifier.DEBUG("Importing <%s>" % file)
+    #     import_to_extension_editor(module_path, file, context_to_install)
+
+    import_to_extension_editor(module_file_path, file, context_to_install)
+
+
+def get_module_path(base_dir_path, module_name):
+    """ Get module path to install
+    :param base_dir_path: path of module txt files
+    :param module_name: name of the module to get path .
+    :return: module_path: Module full path
+    """
+    module_path = ''
+    try:
+        if base_dir_path and module_name:
+            m_path = os.path.join(base_dir_path, "{}.txt".format(module_name))
+            if os.path.isfile(m_path):
+                module_path = m_path
+            else:
+                notifier.ERROR("Module <%s> could not be found in provided path <%s>" % (module_name, base_dir_path))
+    except Exception as e:
+        notifier.ERROR("Module <%s> could not be found in provided path <%s>: %s" % (module_name, base_dir_path, e))
+
+    return module_path
+
+
+def install_modules_into_ADS(module_path, modules_to_install, context, sub_context=None):
+    """ Install modules into ADS
+    :param module_path: directory path where solution module resides
+    :param modules_to_install: list of modules to install
+    :param context: name of the Context to install module into
+    :param sub_context: name of the group to install module into
+    :return: None
+    """
+    context_to_install = get_context_to_install(context, sub_context, True)
+
+    if modules_to_install:
+        skip_downgrade = skip_modules_to_downgrade.get(modules_to_install, False)
+        if skip_downgrade:
+            notifier.INFO("Skipping module <%s>." % modules_to_install)
+        else:
+            notifier.INFO("Importing module <%s> into ADS." % modules_to_install)
+            module_file_path = get_module_path(module_path, modules_to_install)
+            notifier.DEBUG(
+                "Importing <%s> from <%s> in Context <%s>" % (modules_to_install, module_file_path, context_to_install.Name()))
+            import_module_txt(modules_to_install, module_file_path, context_to_install, context)
+            notifier.INFO("Done importing module <%s> into ADS." % modules_to_install)
+
+
+...
+
+  FLongformTradeConfirmationInstaller
+"""----------------------------------------------------------------------------------------------------
+MODULE:
+    FLongformTradeConfirmationInstaller
+
+DESCRIPTION:
+    Entry point to invoke the FLongformTradeConfirmation Installer.
+
+VERSION: 1.0.7.0-0.5.263
+
+
+RESTRICTIONS/LIMITATIONS:
+    1. Any modifications to the script/encrypted module/clear text code within the core is not supported.
+    2. This module is not customizable.
+    3. The component may not work as expected with any modifications done to this module at user end.
+-------------------------------------------------------------------------------------------------------"""
+from FInstallerUtilities import InstallerBase, install_longform_module
+
+
+def ael_main(variables_dictionary):
+    install_longform_module(variables_dictionary)
+
+
+# Call LongformTradeConfirmation Installer Task GUI
+
+ael_gui_parameters = {'windowCaption': "LongformTradeConfirmation Installer"}
+
+ael_variables = InstallerBase()
+ael_variables.LoadDefaultValues(__name__)
+
+
+...
+
+  FLongformTradeConfirmationOut_DataPrep
+"""----------------------------------------------------------------------------
+MODULE:
+    FLongFormConfirmationOut_DataPrep
+
+DESCRIPTION:
+    Data preparation script for FLongFormConfirmationOut
+        Script performs following tasks:
+        A. creates Longform confirmation out state chart
+        B. create archive tasks
+        C. create operation permissions
+
+VERSION: 1.0.7.0-0.5.263
+
+RESTRICTIONS/LIMITATIONS:
+	1. Any modifications to the script/encrypted module/clear text code within the core is not supported.
+	2. This module is not customizable.
+	3. The component may not work as expected with any modifications done to this module at user end.
+----------------------------------------------------------------------------"""
+import acm
+import FLongFormConfirmationOutSC
+from FLongFormConfig import NOTIFIER, CONFIG_PARAM_OBJ
+import FIntegrationUtils
+
+
+CREATE_OPERATIONS_FOR_ALL_STATES = False
+
+
+class FLongFormConfirmationOutDataPrep(object):
+    def __init__(self, create_operations):
+        self.create_operations = create_operations
+        self.sc_name = getattr(CONFIG_PARAM_OBJ, 'StateChart', None)
+        sc_dict = FLongFormConfirmationOutSC.define_state_transition()
+        self.sc_dict, self.states_to_control = FLongFormConfirmationOutSC.get_dict_and_states_to_control(sc_dict)
+
+    def create_state_chart(self):
+        """
+        This function creates the state chart and renames the older version.
+        The older statechart is saved with a version appended to it.
+        @return:
+        """
+        NOTIFIER.INFO("Creating State Charts.")
+        rename_version = '1'  # Change the version only if the state chart has changed from previous one.
+        rename_state_chart_name = "{}_{}".format(self.sc_name, rename_version)
+        existing_sc = acm.FStateChart[self.sc_name]
+        if acm.FStateChart[rename_state_chart_name] is None and existing_sc is not None:
+            NOTIFIER.INFO("Renaming existing state chart {} to {}.".format(self.sc_name, rename_state_chart_name))
+            existing_sc.Name(rename_state_chart_name)
+            existing_sc.Commit()
+
+        FLongFormConfirmationOutSC.create_longform_conf_sc(self.sc_name, self.sc_dict)
+        NOTIFIER.INFO("Chart creation completed.")
+
+    def create_archive_task(self, states):
+        NOTIFIER.INFO("Creating Archiving tasks.")
+        FIntegrationUtils.FIntegrationUtils().create_business_process_archive_task(states, self.sc_name)
+        NOTIFIER.INFO("Creation of Archiving tasks completed")
+
+    def create_operation_permissions_for_states(self):
+        if self.create_operations:
+            state_chart_states = []
+            if CREATE_OPERATIONS_FOR_ALL_STATES:
+                state_chart_states = FIntegrationUtils.FIntegrationUtils(). \
+                    get_state_chart_states(self.sc_name)
+            else:
+                state_chart_states = self.states_to_control
+            NOTIFIER.INFO("Creating operation permissions.")
+
+            for state in state_chart_states:
+                operation_name = 'BPR_' + self.sc_name + '_' + state
+                NOTIFIER.INFO("Creating operation {}.".format(operation_name))
+                FIntegrationUtils.FManageOperation.add_operation(operation_name)
+
+            # This is a special case for checking auto approval flow
+            operation_name = "BPR_{}_{}_{}".format(self.sc_name, 'Edited', 'Approved')
+            NOTIFIER.INFO("Creating operation {}.".format(operation_name))
+            FIntegrationUtils.FManageOperation.add_operation(operation_name)
+
+            NOTIFIER.INFO("Creation of operation permissions completed")
+
+    def create_operation_permissions_for_templates(self):
+        if self.create_operations:
+            config_object = FIntegrationUtils.Parameters('FLongFormConfirmationOut_Config')
+            permission_ops_obj_name = getattr(config_object, 'TemplateAndReportAccessOpsName',
+                                              'TemplateAndReportPermission')
+            NOTIFIER.INFO("Creating operation permissions for template creation.")
+            NOTIFIER.INFO("Creating operation {}.".format(permission_ops_obj_name))
+            FIntegrationUtils.FManageOperation.add_operation(permission_ops_obj_name)
+            NOTIFIER.INFO("Creation operation permissions for template complete.")
+
+
+def run_data_prep(context='', create_operations=False):
+    try:
+        NOTIFIER.INFO("-" * 100)
+        NOTIFIER.INFO("Running Data Prep for FLongformTradeConfirmationOut")
+        dp_obj = FLongFormConfirmationOutDataPrep(create_operations)
+        NOTIFIER.INFO("\nStep-1")
+        dp_obj.create_state_chart()
+        NOTIFIER.INFO("\nStep-2")
+        dp_obj.create_archive_task('Delivered')
+        NOTIFIER.INFO("\nStep-3")
+        dp_obj.create_operation_permissions_for_states()
+        NOTIFIER.INFO("\nStep-4")
+        dp_obj.create_operation_permissions_for_templates()
+
+        NOTIFIER.INFO("FLongFormConfirmationOut_DataPrep is successfully executed.")
+        NOTIFIER.INFO("-" * 100)
+    except Exception as e:
+        NOTIFIER.ERROR("Exception in running FLongformTradeConfirmationOut DataPrep:%r" % e, exc_info=True)
+
+
+
+...
+
+}
+

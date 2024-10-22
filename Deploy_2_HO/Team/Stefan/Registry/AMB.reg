@@ -1,0 +1,5 @@
+Windows Registry Editor Version 5.00
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Front\Front Arena\AMB\FA_INSTANCE_NAME]
+"db_unicode"="1"
+"Unicode"="1"

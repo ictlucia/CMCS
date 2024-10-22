@@ -1,0 +1,7 @@
+CHOICELIST,,,,/CHOICELIST
+LIST,SORT_ORDER,ENTRY,DESCRIPTION,
+MASTER,,Tax Settlement Type,Tax Settlement Type,
+Tax Settlement Type,,TMS TaxFIForeign,TMS TaxFIForeign,
+Tax Settlement Type,1,TMS TaxBilateralLoan,TMS TaxBilateralLoan,
+Tax Settlement Type,2,TMS TaxDerivative,TMS TaxDerivative,
+Tax Settlement Type,3,TMS TaxFIDomestic,TMS TaxFIDomestic,

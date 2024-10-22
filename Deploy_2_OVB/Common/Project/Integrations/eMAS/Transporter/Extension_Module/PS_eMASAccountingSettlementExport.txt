@@ -1,0 +1,2484 @@
+#
+# Front Arena exported extension module.
+# source          ""
+# timestamp (utc) "2024-04-23 11:31:08.9"
+# ***** DO NOT EDIT! *****
+#
+name        "PS_eMASAccountingSettlementExport"
+description ""
+
+groups {
+}
+
+decls[FMenuExtension] {
+}
+
+clx FSettlementSheet [FMenuExtension] {
+  eMAS_InquireSettlement =
+  CreateFunction=eMAS_AccountingSettlementExportUtils.inquire_settlement
+  DisplayName=Send eMAS Settlement Inquiry
+  MenuType=GridRowHeader
+
+
+}
+
+decls[FParameters] {
+}
+
+clx FObject [FParameters] {
+  eMASAccountingSettlementExportParams =
+  AccountingInstruction=Value Day (Real-Time)
+  ApiKey=638f2361-cd12-4fad-bfc9-d0c14aabf2f9
+  BranchNumber=10
+  ChannelId=154
+  ClientIP=10.243.235.113
+  ControlUnitIdentification=NTC
+  DefaultTellerId=9925504
+  generalPostingUrl=/gateway/CoreBankGeneralPosting/1.0/generalPosting
+  SETL_PREFIX=9912001
+  SettlementFilter=eMASAccountingSettlementExport
+  SuccessTradeStatus=BO-BO Confirmed
+  SuspenseAccount=ALL AKUN SUSPEND TRANSAKSI TREASURY
+  Timeout=30
+  TRADE_PREFIX=9912002
+  TradeFilter=eMASAccountingSettlementExport
+  Url=/gateway/CoreBankFundTransferOverBookingManyToManyList/1.0/fundTransferOverbookingMTMList
+
+
+  eMASAccountInquiryParams =
+  ApiKey=638f2361-cd12-4fad-bfc9-d0c14aabf2f9
+  BranchNumber=10
+  ChannelId=154
+  Timeout=30
+  Url=/gateway/CoreBankAccountInquiry/1.0/accountInquiry
+
+
+  eMASTransactionStatusInquiryRequestParams =
+  ApiKey=638f2361-cd12-4fad-bfc9-d0c14aabf2f9
+  ChannelId=154
+  Timeout=30
+  Url=/gateway/CoreBankTransactionStatusInquiry/1.0/transactionStatusInquiry
+
+
+}
+
+decls[FPythonCode] {
+}
+
+clx FObject [FPythonCode] {
+  eMAS_AccountingSettlementExportAPI
+"""----------------------------------------------------------------------------------------------------
+MODULE:
+    eMAS_AccountingSettlementExportAPI
+
+DESCRIPTION:
+    API to be used to invoke the eMAS Accounting Settlement Export.
+-------------------------------------------------------------------------------------------------------"""
+import eMAS_AccountingSettlementExportUtils, eMAS_CommonUtils
+from eMAS_FundTransferOverbookingManyToManyListRequest import FundTransferOverbookingManyToManyListRequest
+from eMAS_TransactionStatusInquiryRequest import TransactionStatusInquiryRequest
+from eMAS_TransactionMTMListRequestObject_9341 import TransactionMTMListRequestObject_9341_Posting
+from eMAS_TransactionMTMListRequestObject_9342 import TransactionMTMListRequestObject_9342_Posting
+from eMAS_TransactionMTMListRequestObject_4054 import Posting4054Request
+
+SETTLEMENT_NACK = "Not Acknowledged"
+SETTLEMENT_ACK = "Acknowledged"
+
+
+def create_accounting_settlement_export_posting_request(settlement, message_sender, message_version, channel_id,
+                                                        teller_id, journal_sequence, control_unit_identification,
+                                                        GL_account_no, client_ip, accounting_instruction, tracking_id_counter):
+    """ This function creates accounting export object in the form of FundTransferOverbookingManyToManyListRequest"""
+    main_obj = None
+    transcode = eMAS_AccountingSettlementExportUtils.get_trans_code(settlement)
+    time_ref = eMAS_CommonUtils.get_emas_time_stamp()
+    
+    account_obj = settlement.CounterpartyAccountRef()
+    eMAS_system = getattr(account_obj.AdditionalInfo(),'EMASSystem', None)
+    if eMAS_system:
+        channel_id = eMAS_CommonUtils.get_emas_system_channel_id(eMAS_system())
+        if not channel_id:
+            raise Exception(" Error - No channel id found for {} .".format(eMAS_system()))
+                        
+    # yyyymmDDCCCxxxx. CCC is channelId(pad 0); x is randomNumber
+    extern_id_or_tracking_id = "{}{:03}{:08}".format(eMAS_CommonUtils.get_current_time("%Y%m%d"), int(channel_id),
+                                                     tracking_id_counter)
+    debit_credit_curr = settlement.Currency().Name()
+    amount = abs(settlement.Amount())
+    formatted_amount = format(amount, '.2f') # formatted to avoid scientific representation of float
+    ref_number = "{}{}".format(eMAS_AccountingSettlementExportUtils.TRADE_PREFIX, settlement.Trade().Oid() if settlement.Trade() else settlement.Oid())
+
+    if transcode in [eMAS_AccountingSettlementExportUtils.TRANS_CODE_9341,
+                     eMAS_AccountingSettlementExportUtils.TRANS_CODE_9342]:
+        CASA_account_no = settlement.CounterpartyAccount()
+
+        main_obj = FundTransferOverbookingManyToManyListRequest(refNumber=ref_number, requestTime=time_ref)
+        if transcode == eMAS_AccountingSettlementExportUtils.TRANS_CODE_9341:
+            list_obj = TransactionMTMListRequestObject_9341_Posting()
+            list_obj.set_creditAccountGL(GL_account_no)
+            list_obj.set_creditAmountGL(formatted_amount)
+            list_obj.set_debitAccountCASA(CASA_account_no)
+            list_obj.set_debitAmountCASA(formatted_amount)
+        else:
+            list_obj = TransactionMTMListRequestObject_9342_Posting()
+            list_obj.set_debitAccountGL(GL_account_no)
+            list_obj.set_debitAmountGL(formatted_amount)
+            list_obj.set_creditAccountCASA(CASA_account_no)
+            list_obj.set_creditAmountCASA(formatted_amount)
+
+        list_obj.set_soaHeader_channelId(channel_id)
+        list_obj.populate_property_list(externalId=extern_id_or_tracking_id, tellerId=teller_id,
+                                        journalSequence=str(journal_sequence), timestamp=time_ref)
+        list_obj.set_remarks(settlement_id=settlement.Oid(), trade_id=settlement.Trade().Oid() if settlement.Trade() else settlement.Oid(),
+                             cp_name=settlement.Counterparty().Name(), accounting_instr=accounting_instruction)
+        list_obj.set_currency(debit_credit_curr, debit_credit_curr)
+        list_obj.set_rate(ibtBuyRate='1', ibtSellRate='1', ttBuyRate='1', ttSellRate='1')
+        list_obj.set_details(valueDate=settlement.ValueDay())
+
+        main_obj.add_object_to_mtm_list_request(list_obj)
+    elif transcode == eMAS_AccountingSettlementExportUtils.TRANS_CODE_4054:
+        MULT_FACTOR = 100
+        DEFAULT_RATE = '10000000'
+        formatted_amount = format(amount * MULT_FACTOR, '.2f') # formatted to avoid scientific representation of float
+        customer_cif = settlement.Counterparty().HostId() if settlement.Counterparty() else ''
+        # GL_account_no = settlement.AcquirerAccount()
+        Loan_account_no = settlement.CounterpartyAccount()
+        main_obj = Posting4054Request()
+        # soaHeader
+        main_obj.set_attribute('messageSender', message_sender)
+        main_obj.set_attribute('messageVersion', message_version)
+        main_obj.set_attribute('messageTimeStamp', time_ref)
+        main_obj.set_attribute('initiatedTimeStamp', time_ref)
+        main_obj.set_attribute('trackingID', extern_id_or_tracking_id)
+        main_obj.set_attribute('channelId', channel_id)
+
+        # messageHeader
+        main_obj.set_attribute('tellerId', teller_id)
+        main_obj.set_attribute('journalSequence', str(journal_sequence))
+        main_obj.set_attribute('controlUnitIdentification', control_unit_identification)
+        main_obj.set_attribute('tellerId', teller_id)
+        main_obj.set_attribute('clientIp', client_ip)
+
+        # payload
+        main_obj.set_attribute('TLBTPN', 'Remark')
+        main_obj.set_attribute('TLBDS1', Loan_account_no)
+        main_obj.set_attribute('TLBDS3', GL_account_no)
+        main_obj.set_attribute('TLBPNM', customer_cif)
+
+        main_obj.set_attribute('TLBF01', GL_account_no)
+        main_obj.set_attribute('TLBF02', formatted_amount)
+        main_obj.set_attribute('TLBF05', DEFAULT_RATE)
+        main_obj.set_attribute('TLBF06', DEFAULT_RATE)
+        main_obj.set_attribute('TLBF07', DEFAULT_RATE)
+        main_obj.set_attribute('TLBF08', DEFAULT_RATE)
+        main_obj.set_attribute('TLBF15', Loan_account_no)
+        main_obj.set_attribute('TLBF16', formatted_amount)
+        main_obj.set_attribute('TLBF19', '')
+        main_obj.set_attribute('TLBF29', ref_number)
+
+        main_obj.set_attribute('TLCUR1', debit_credit_curr)
+        main_obj.set_attribute('TLCUR2', debit_credit_curr)
+
+    return main_obj
+
+
+def create_transaction_status_inquiry_request(settlement, message_version, channel_id, teller_id, journal_sequence, tracking_id_counter):
+    """ This function creates transaction status inquiry object"""
+    account_obj = settlement.CounterpartyAccountRef()
+    eMAS_system = getattr(account_obj.AdditionalInfo(),'EMASSystem', None)
+    if eMAS_system:
+        channel_id = eMAS_CommonUtils.get_emas_system_channel_id(eMAS_system())
+        if not channel_id:
+            raise Exception(" Error - No channel id found for {} .".format(eMAS_system()))
+            
+    extern_id_or_tracking_id = "{}{:03}{:08}".format(eMAS_CommonUtils.get_current_time("%Y%m%d"), int(channel_id),tracking_id_counter)
+    time_ref = eMAS_CommonUtils.get_emas_time_stamp()
+    inquiry_teller_id = settlement.AddInfoValue(eMAS_CommonUtils.ADD_INFO_SPEC_INQ_SETTLEMENT_TELLER_ID)
+    inquiry_seq_num = settlement.AddInfoValue(eMAS_CommonUtils.ADD_INFO_SPEC_INQ_SETTLEMENT_SEQ_NUM)
+    main_obj = None
+    if inquiry_teller_id and inquiry_seq_num:
+        main_obj = TransactionStatusInquiryRequest()
+
+        # soaHeader
+        main_obj.set_soa_header(message_version, extern_id_or_tracking_id, time_ref)
+
+        # messageHeader
+        main_obj.set_message_header(teller_id, str(journal_sequence))
+
+        # payLoad
+        main_obj.set_payload(channel_id, inquiry_teller_id, inquiry_seq_num, settlement.Currency().Name())
+
+    return main_obj
+
+...
+
+  eMAS_AccountingSettlementExportProcessor
+"""----------------------------------------------------------------------------------------------------
+MODULE:
+    eMAS_AccountingSettlementExportProcessor
+
+DESCRIPTION:
+    Module to process the accounting settlement export flow.
+
+-------------------------------------------------------------------------------------------------------"""
+import acm, traceback
+from collections import defaultdict
+import ParametersReader
+import eMAS_CommonUtils, eMAS_ProcessorBase, eMAS_AccountingSettlementExportUtils
+from eMAS_AccountingSettlementExportAPI import create_transaction_status_inquiry_request, \
+    create_accounting_settlement_export_posting_request, SETTLEMENT_ACK, SETTLEMENT_NACK
+from eMAS_TransactionStatusInquiryRequest import TransactionStatusInquiryResponse
+from eMAS_FundTransferOverbookingManyToManyListResponse import TransactionMTMListResponseObjectBase
+from eMAS_TransactionMTMListRequestObject_4054 import Posting4054Request
+
+from eMAS_AccountInquiryAPI import create_account_inquiry_request, capture_account_inquiry_response
+
+eMASAccntSetlExport = ParametersReader.get_params('eMASAccountingSettlementExportParams')
+eMASAccntInquiry = ParametersReader.get_params('eMASAccountInquiryParams')
+eMASTransStatInquiry = ParametersReader.get_params('eMASTransactionStatusInquiryRequestParams')
+client_ip = eMAS_CommonUtils.get_local_ip()
+soaParams = ParametersReader.get_params('SoaParams')
+
+MODULE_NAME = "AccountingSettlementExport"
+ACCOUNT_STATUS_ACTIVE = '1'
+
+# +-----------------------+--------+-------------------------------------------------------------------------------+
+# | parameter             | Values | Description                                                                   |
+# +-----------------------+--------+-------------------------------------------------------------------------------+
+# |                       | Y      | OriginalJournalSequence value is already posted in eMAS                       |
+# +-----------------------+--------+-------------------------------------------------------------------------------+
+# | successfulTransaction | N      | OriginalJournalSequence value that is already posted in eMAS but got reversed |
+# +-----------------------+--------+-------------------------------------------------------------------------------+
+# |                       | W      | OriginalJournalSequence value has not been posted in eMAS                     |
+# +-----------------------+--------+-------------------------------------------------------------------------------+
+TRANS_STATUS_RESPONSE_CODE = defaultdict(lambda: ['', False])
+TRANS_STATUS_RESPONSE_CODE['Y'] = ['OriginalJournalSequence value is already posted in eMAS', True]
+TRANS_STATUS_RESPONSE_CODE['N'] = ['OriginalJournalSequence value that is already posted in eMAS but got reversed',
+                                   False]
+TRANS_STATUS_RESPONSE_CODE['W'] = ['OriginalJournalSequence value has not been posted in eMAS', False]
+
+
+class AccountingSettlementExportProcessor(eMAS_ProcessorBase.eMASProcessorBase):
+    def __init__(self):
+        """
+        Initializes the member variables
+        """
+        eMAS_api_key = eMASAccntSetlExport['ApiKey']
+        eMAS_url = eMASAccntSetlExport['Url']
+        timeout = eMASAccntSetlExport['Timeout']
+        default_tellerd_id = eMASAccntSetlExport['DefaultTellerId']
+        general_posting_url = eMASAccntSetlExport['generalPostingUrl']
+
+        super(AccountingSettlementExportProcessor, self).__init__(default_tellerd_id, MODULE_NAME, eMAS_api_key, eMAS_url,
+                                                                  timeout)
+
+        self._channel_id = eMASAccntSetlExport['ChannelId']
+        self._message_version = eMASAccntSetlExport['MessageVersion']
+        self._message_sender = eMASAccntSetlExport['MessageSender']
+        self._control_unit_identification = eMASAccntSetlExport['ControlUnitIdentification']
+        self._gl_account = eMASAccntSetlExport['SuspenseAccount']
+        self._client_ip = eMASAccntSetlExport['ClientIP']
+        if not self._client_ip:
+            self._client_ip = client_ip    
+        self._accounting_instruction = eMASAccntSetlExport['AccountingInstruction']
+        combined_eMAS_url = soaParams['API_BASE_URL'] + general_posting_url
+        self._general_posting_connection_object = eMAS_CommonUtils.ConnectionObject(url=combined_eMAS_url, api_key=eMAS_api_key, timeout=timeout)
+
+    def process(self, settlement):
+        """
+        This function processes the hold amount inquiry flow
+        :param trade: FTrade
+        :return: None
+        """
+        inquiry_result = ''
+        
+        settlement_diary_text = ''
+        request_timed_out = False
+        settlement_status = SETTLEMENT_NACK
+        account_inquiry_obj = None
+
+        try:
+            log_string = 'Settlement - {}. AccountingSettlementExport request with tellerId {} and journalSequence {} .'.format(
+            settlement.Oid(), self._tellerId, self._journalSeqNo)
+            gl_account = acm.FTAccount.Select("name = {}".format(self._gl_account))
+            if len(gl_account) != 1:
+                raise Exception("Either no or multiple accounts with name {}.".format(self._gl_account))
+
+            gl_account = gl_account[0]
+
+            if eMAS_AccountingSettlementExportUtils.is_account_inquiry_needed(settlement):
+                account_inquiry_obj = AccountInquiryProcessor()
+                inquiry_result = account_inquiry_obj.process(settlement)
+            if not inquiry_result:  # Empty string means success
+                # recalculate the counters and tellerid since inquiry request must have updated it.
+                if account_inquiry_obj:
+                    self._tellerId = account_inquiry_obj._tellerId
+                    self._journalSeqNo = account_inquiry_obj._journalSeqNo
+
+                main_obj = create_accounting_settlement_export_posting_request(
+                    settlement=settlement, message_sender=self._message_sender, message_version=self._message_version,
+                    channel_id=self._channel_id, journal_sequence=self._journalSeqNo, teller_id=self._tellerId,
+                    control_unit_identification=self._control_unit_identification, GL_account_no=gl_account.Number(),
+                    client_ip=self._client_ip, accounting_instruction=self._accounting_instruction, tracking_id_counter=self._tracking_id_counter)
+
+                if main_obj:
+                    try:
+                        temp_journalSeqNo = self._journalSeqNo
+                        temp_teller_id=self._tellerId
+                        json_obj = main_obj.get_json_object()
+                        log_string += '\nAccounting settlement export Request json_obj: {}'.format(json_obj)
+                        if isinstance(main_obj, Posting4054Request):
+                            response_object = self._general_posting_connection_object.post_request(json_obj)
+                        else:                            
+                            response_object = self._connection_object.post_request(json_obj)
+                        log_string += '\nAccounting settlement export response_object: {}'.format(response_object)
+                        if response_object.status_code == eMAS_CommonUtils.HTTP_CODE_SUCCESS:
+                            response_json = response_object.json()
+                            log_string += f'\nAccounting settlement export response_json: {response_json}'
+                            if response_json:
+                                general_posting_response_obj = eMAS_CommonUtils.get_general_posting_response(
+                                    response_json)
+                                
+                                if general_posting_response_obj:
+                                    if general_posting_response_obj.get_attribute_value(
+                                            "responseCode") == eMAS_CommonUtils.RESPONSE_CODE_SUCCESS:
+                                        settlement_status = SETTLEMENT_ACK
+                                        log_string += '\nAccounting settlement export successful for settlement id {}'.format(
+                                            settlement.Oid())
+                                    else:
+                                        # response_message = general_posting_response_obj.get_attribute_value("responseMessage")
+                                        # log_string += "\nError in AccountingSettlementExportProcessor.process for Settlement {} - {}".format(
+                                        #     settlement.Oid(), response_message)
+                                        # settlement_diary_text = response_message
+
+                                        exception_code = general_posting_response_obj.get_attribute_value(
+                                            "exceptionCode")
+                                        
+                                        if exception_code:
+                                            error_description = general_posting_response_obj.get_attribute_value(
+                                                "exceptionDescription")
+                                            if not error_description:
+                                                error_description = general_posting_response_obj.get_attribute_value(
+                                                    "responseMessage")
+                                            log_string += "\nError in AccountingSettlementExportProcessor.process for Settlement {} - {}".format(
+                                                settlement.Oid(), error_description)
+                                            settlement_diary_text = error_description
+
+                                            if exception_code == eMAS_CommonUtils.EXCEPTION_CODE_TELLER_ID_IN_USE:
+                                                self.assign_new_tellerId()
+                                else:
+                                    response_obj = TransactionMTMListResponseObjectBase(json_object=response_json)
+                                    if response_obj.get_attribute_value(
+                                            "responseCode") == eMAS_CommonUtils.RESPONSE_CODE_SUCCESS:
+                                        settlement_status = SETTLEMENT_ACK
+                                        log_string += '\nAccounting settlement export successful for settlement id {}'.format(
+                                            settlement.Oid())
+                                    else:
+                                        response_message = response_obj.get_attribute_value("responseMessage")
+                                        log_string += "\nError in AccountingSettlementExportProcessor.process for Settlement {} - {}".format(
+                                            settlement.Oid(), response_message)
+                                        settlement_diary_text = response_message
+                            else:
+                                log_string += '\nIn AccountingSettlementExportProcessor.process, failed to get a response for settlement id {}'.format(
+                                    settlement.Oid())
+                        elif response_object.status_code == eMAS_CommonUtils.HTTP_CODE_TIMEOUT:
+                            request_timed_out = True
+                            settlement_diary_text = 'The accounting settlement export request timed out'
+                            log_string += '\nRequest timedout in AccountingSettlementExportProcessor.process while sending request for settlement id {}'.format(
+                                settlement.Oid())
+
+                        else:
+                            log_string += '\nAccountingSettlementExportProcessor.process Server return code {}. {} '.format(
+                                response_object.status_code, response_object.reason)
+                            settlement_diary_text = 'Accounting settlement export request receive a response code {}'.format(
+                                response_object.status_code)
+
+                    except eMAS_CommonUtils.REQUEST_TIMEOUT_EXCEPTION:
+                        request_timed_out = True
+                        settlement_diary_text = 'Did not receive any response as Accounting settlement export request timed out.'
+                        log_string += '\nThe request Accounting settlement export did not receive any response for settlement id {}'.format(
+                            settlement.Oid())
+
+                    except Exception as err:
+                        log_string += str(err)
+                        settlement_diary_text = 'Technical Error in AccountingSettlementExport : ' + str(err)
+                        log_string += '\nError in AccountingSettlementExportProcessor.process while sending request for settlement id {}'.format(
+                            settlement.Oid())
+                    # Save the original journalSeqNo and tellerId, used in case of transaction inquiry
+                    self._save_settlement_counter(settlement, temp_journalSeqNo, temp_teller_id)  
+                    self.save_counters()
+                else:
+                    log_string = 'Could not create accounting settlement export request object for settlement {}. Check if the account type is CASA/Loan'.format(
+                        settlement.Oid())
+            else:
+                log_string += inquiry_result
+                settlement_diary_text = inquiry_result
+
+            print(log_string)
+
+            if request_timed_out:
+                settlement_status, settlement_diary_text = TransactionStatusInquiryProcessor().process(settlement)
+
+        except Exception as err:
+            print('Error in AccountingSettlementExportProcessor.process {}'.format(err))
+            settlement_diary_text = 'General Technical Error in AccountingSettlementExport'
+            print(traceback.format_exc())
+
+        eMAS_CommonUtils.save_settlement_status(settlement, settlement_status, settlement_diary_text)
+
+    def _save_settlement_counter(self, settlement, temp_journalSeqNo, temp_teller_id):
+        settlement.AddInfoValue(eMAS_CommonUtils.ADD_INFO_SPEC_INQ_SETTLEMENT_TELLER_ID, temp_teller_id)
+        settlement.AddInfoValue(eMAS_CommonUtils.ADD_INFO_SPEC_INQ_SETTLEMENT_SEQ_NUM, temp_journalSeqNo)
+        settlement.Commit()
+
+
+class AccountInquiryProcessor(eMAS_ProcessorBase.eMASProcessorBase):
+    ACCOUNT_STATUS_NOT_SET = "AccountStatusNotSet"
+
+    def __init__(self):
+        """
+        Initializes the member variables
+        """
+        eMAS_api_key = eMASAccntInquiry['ApiKey']
+        eMAS_url = eMASAccntInquiry['Url']
+        timeout = eMASAccntInquiry['Timeout']
+        default_tellerd_id = eMASAccntSetlExport['DefaultTellerId']
+        # Use same TellerId and module name, since this inquiry is a part accouting export
+        super(AccountInquiryProcessor, self).__init__(default_tellerd_id, MODULE_NAME, eMAS_api_key, eMAS_url, timeout)
+
+        self._channel_id = eMASAccntInquiry['ChannelId']
+        self._branch_code_add_info_spec = acm.FAdditionalInfoSpec['BranchCode']
+
+    def _process_account(self, account_inq_obj, party):
+        """
+        This function processes the hold amount inquiry flow
+        :param account_inq_obj: FAccount
+        :param party: FParty
+        :return: tuple
+        """
+        account_status = AccountInquiryProcessor.ACCOUNT_STATUS_NOT_SET
+        available_balance = None
+        branch_no = party.AddInfoValue(self._branch_code_add_info_spec)
+        main_obj = create_account_inquiry_request(channel_id=self._channel_id, journal_sequence=self._journalSeqNo,
+                                                  teller_id=self._tellerId, account_object=account_inq_obj,
+                                                  branch_number=branch_no, tracking_id_counter=self._tracking_id_counter)
+        log_string = 'AccountInquiry for Account {}'.format(account_inq_obj.Name())
+        error_description = ''
+        if main_obj:
+            try:
+                json_obj = main_obj.get_json_object()
+                log_string += "\njson_obj request - {}".format(json_obj)
+                response_object = self._connection_object.post_request(json_obj)
+                log_string += "\nresponse_object - {}".format(response_object)
+                if response_object.status_code == eMAS_CommonUtils.HTTP_CODE_SUCCESS:
+                    response_json = response_object.json()
+                    log_string += "\nresponse_json - {}".format(response_json)
+                    if response_json:
+                        general_posting_response_obj = eMAS_CommonUtils.get_general_posting_response(response_json)
+                        log_string += "\nResponse - {}".format(general_posting_response_obj)
+                        if general_posting_response_obj:
+                            exception_code = general_posting_response_obj.get_attribute_value("exceptionCode")
+                            error_description = general_posting_response_obj.get_attribute_value(
+                                "exceptionDescription")
+                            if not error_description:
+                                error_description = general_posting_response_obj.get_attribute_value("responseMessage")
+                            log_string += "\nError - {}".format(error_description)
+                            if exception_code == eMAS_CommonUtils.EXCEPTION_CODE_TELLER_ID_IN_USE:
+                                self.assign_new_tellerId()
+                        else:
+                            response_obj = capture_account_inquiry_response(response_json)
+                            if response_obj.get_attribute_value(
+                                    "responseCode") == eMAS_CommonUtils.RESPONSE_CODE_SUCCESS:
+                                account_status = response_obj.get_attribute_value("accountStatus")
+                                available_balance = response_obj.get_attribute_value("availableBalance")
+                                log_string += '\nAccount details are received.'
+                            else:
+                                exception_code = response_obj.get_attribute_value("exceptionCode")
+                                if exception_code:
+                                    error_description = response_obj.get_attribute_value("exceptionDescription")
+                                    if not error_description:
+                                        error_description = response_obj.get_attribute_value("responseMessage")
+                                    log_string += "\nError - {} {}".format(exception_code, error_description)
+                                else:
+                                    exception_val = response_obj.get_attribute_value("Exception")
+                                    log_string += "\nError - {}".format(exception_val)
+                    else:
+                        log_string += '\nFailed to get a account inquiry response.'
+                elif response_object.status_code == eMAS_CommonUtils.HTTP_CODE_TIMEOUT:
+                    log_string += '\nThe account inquiry request timed out.'
+                else:
+                    log_string += '\nFor account inquiry request, server returned code {}.'.format(
+                        response_object.status_code)
+                    error_description += f"Status code received - {response_object.status_code}"
+            except eMAS_CommonUtils.REQUEST_TIMEOUT_EXCEPTION:
+                log_string += '\nDid not receive any response for account inquiry as the request timed.'
+                print(traceback.format_exc())
+            except Exception:
+                raise
+            finally:
+                self.save_counters()
+        else:
+            log_string += '\nError while creating account inquiry request object.'
+
+        print(log_string)
+        return account_status, available_balance, error_description
+
+    def process(self, settlement):
+        """
+        This function processes the account inquiry flow
+        :param settlement: FSettlement
+        :return: string
+        """
+        ret_val = ''
+
+        try:
+            cp_account_inq_obj = settlement.CounterpartyAccountRef()
+            cp_account_status, cp_available_balance, error_msg = self._process_account(cp_account_inq_obj,
+                                                                            settlement.Counterparty())
+
+            if cp_account_status != AccountInquiryProcessor.ACCOUNT_STATUS_NOT_SET:
+                if cp_account_status == ACCOUNT_STATUS_ACTIVE:
+                    if settlement.Amount() > 0:
+                        if float(cp_available_balance) < settlement.Amount():
+                            ret_val += ' Counterparty account balance is not adequate.'
+                else:
+                    ret_val += ' Counterparty account is not active.'
+            else:
+                ret_val += f'\nCould not inquire account status : {error_msg}'
+        except Exception as err:
+            print('Error in AccountInquiryProcessor.process {}'.format(err))
+            ret_val = 'Technical Error in AccountInquiry'
+            print(traceback.format_exc())
+
+        return ret_val
+
+
+class TransactionStatusInquiryProcessor(eMAS_ProcessorBase.eMASProcessorBase):
+    def __init__(self):
+        """
+        Initializes the member variables
+        """
+        eMAS_api_key = eMASTransStatInquiry['ApiKey']
+        eMAS_url = eMASTransStatInquiry['Url']
+        timeout = eMASTransStatInquiry['Timeout']
+        default_tellerd_id = eMASAccntSetlExport['DefaultTellerId']
+        # Use same TellerId and module name, since this inquiry is a part accouting export
+        super(TransactionStatusInquiryProcessor, self).__init__(default_tellerd_id, MODULE_NAME, eMAS_api_key, eMAS_url, timeout)
+
+        self._channel_id = eMASTransStatInquiry['ChannelId']
+        self._message_version = eMASTransStatInquiry['MessageVersion']
+
+    def process(self, settlement):
+        """
+        This function processes the transaction status inquiry flow
+        :param settlement: FSettlement
+        :return: None
+        """
+        log_string = 'TransactionStatusInquiry for Settlement {}'.format(settlement.Oid())
+        settlement_diary_text = ''
+        settlement_status = SETTLEMENT_NACK
+        
+        main_obj = create_transaction_status_inquiry_request(
+            settlement=settlement, message_version=self._message_version,
+            channel_id=self._channel_id, journal_sequence=self._journalSeqNo, teller_id=self._tellerId, tracking_id_counter=self._tracking_id_counter)
+        if main_obj:
+            try:
+                json_obj = main_obj.get_json_object()
+                log_string += f"\n TransactionStatusInquiry json_obj request - {json_obj}"
+                response_object = self._connection_object.post_request(json_obj)
+                log_string += f"\n TransactionStatusInquiry response object - {response_object}"
+
+                if response_object.status_code == eMAS_CommonUtils.HTTP_CODE_SUCCESS:
+                    response_json = response_object.json()
+                    log_string += f"\n TransactionStatusInquiry response_json - {response_json}"
+                    if response_json:
+                        general_posting_response_obj = eMAS_CommonUtils.get_general_posting_response(
+                            response_json)
+                        if general_posting_response_obj:
+                            exception_code = general_posting_response_obj.get_attribute_value("exceptionCode")
+                            error_description = general_posting_response_obj.get_attribute_value(
+                                "exceptionDescription")
+                            if error_description:
+                                log_string += "\nError - {}".format(error_description)
+                                settlement_diary_text = error_description
+                            if exception_code == eMAS_CommonUtils.EXCEPTION_CODE_TELLER_ID_IN_USE:
+                                self.assign_new_tellerId()
+                        else:
+                            response_obj = TransactionStatusInquiryResponse(json_object=response_json)
+                            successful_transaction = response_obj.get_attribute_value("successfulTransaction")
+                            if successful_transaction:
+                                trasaction_reply = TRANS_STATUS_RESPONSE_CODE[successful_transaction]
+                                trasaction_reply_val = trasaction_reply[1]
+                                trasaction_reply_text = trasaction_reply[0]
+
+                                if trasaction_reply_val:
+                                    settlement_status = SETTLEMENT_ACK
+                                    settlement_diary_text = trasaction_reply_text
+                                    log_string += settlement_diary_text
+                                else:
+                                    response_message = response_obj.get_attribute_value("responseMessage")
+                                    log_string += "\nResponse from eMAS- {}".format(response_message)
+                                    settlement_diary_text = "nResponse from eMAS- {}. {}".format(response_message, trasaction_reply_text)
+                            else:
+                                response_message = response_obj.get_attribute_value("responseMessage")
+                                log_string += "\nResponse from eMAS- {}".format(response_message)
+                                settlement_diary_text = "nResponse from eMAS- {}.".format(response_message)
+                    else:
+                        log_string += '\nFailed to get a response.'
+                elif response_object.status_code == eMAS_CommonUtils.HTTP_CODE_TIMEOUT:
+                    settlement_diary_text = '\nThe request timed out while sending transaction status inquiry.'
+                    log_string += settlement_diary_text
+                else:
+                    log_string += '\nError in TransactionStatusInquiryProcessor.process server return code {}. {} '.format(
+                        response_object.status_code,
+                        response_object.reason)
+            except eMAS_CommonUtils.REQUEST_TIMEOUT_EXCEPTION:
+                settlement_diary_text = '\nDid not receive any response for transaction status inquiry'
+                log_string += settlement_diary_text
+                print(traceback.format_exc())
+            except Exception as err:
+                log_string += str(err)
+                settlement_diary_text = 'Technical Error in TransactionStatusInquiry'
+                log_string += '\nError in TransactionStatusInquiryProcessor.process while sending request.'
+            self.save_counters()
+        else:
+            settlement_diary_text = '\nCould not send transaction status inquiry request. OriginalJournalSequence and TellerID may be missing.'
+            log_string = settlement_diary_text
+
+        print(log_string)
+
+        return settlement_status, settlement_diary_text
+
+
+
+...
+
+  eMAS_AccountingSettlementExportUtils
+"""----------------------------------------------------------------------------------------------------
+MODULE:
+    eMAS_AccountingSettlementExportUtils
+
+DESCRIPTION:
+    Common utils functions for the eMAS Accounting Settlement Export.
+-------------------------------------------------------------------------------------------------------"""
+import acm, FUxCore
+
+ACCOUNT_TYPE_ADD_INFO_SPEC = acm.FAdditionalInfoSpec['EMASAccountType']
+ACCOUNT_TYPE_CASA = ['D', 'S']
+ACCOUNT_TYPE_LOAN = ['L']
+ACCOUNT_TYPE_GL = ''
+
+TRANS_CODE_9341 = 9341
+TRANS_CODE_9342 = 9342
+TRANS_CODE_4054 = 4053
+
+import eMAS_CommonUtils
+import ParametersReader
+
+eMASAccntSetlExport = ParametersReader.get_params('eMASAccountingSettlementExportParams')
+SETL_PREFIX = eMASAccntSetlExport['SETL_PREFIX']
+TRADE_PREFIX = eMASAccntSetlExport['TRADE_PREFIX']
+
+class InquireSettlementMenu(FUxCore.SubMenu):
+    def __init__(self, extObj):
+        """
+        Initialize member variables
+        :param extObj: GUI handle
+        """
+        self.m_extObj = extObj
+        self._settlements = list()
+
+    def Checked(self):
+        """
+        This function returns True if the menu should be checked.
+        :return: bolean
+        """
+        return False
+
+    def Invoke(self, eii):
+        """
+        This function is called when the menu item is clicked.
+        The commit on the settlement would let the AMBA process the update.
+        :param eii: GUI handle
+        :return: None
+        """
+        # This method is called by the framework every time the menu is clicked.
+        for settlement in self._settlements:
+            settlement.AddInfoValue(eMAS_CommonUtils.ADD_INFO_SPEC_INQ_SETTLEMENT, True)
+            settlement.Commit()
+
+    def Applicable(self):
+        """
+        This function checks if the menu is available
+        All the selected items should be Settlement with CP network name as EMAS and should not be in Acknowledged status.
+        :return: boolean
+        """
+        ret_val = True
+        try:
+            active_sheet = self.m_extObj.ActiveSheet()
+            if active_sheet:
+                self._settlements = active_sheet.Selection().SelectedRowObjects()
+                for obj in self._settlements:
+                    if not (obj.IsKindOf(
+                            acm.FSettlement) and obj.CounterpartyAccountNetworkName() == 'EMAS' and obj.Status() != 'Acknowledged'):
+                        ret_val = False
+                        break
+            else:
+                ret_val = False
+        except Exception as err:
+            ret_val = False
+            print('Error occurred in InquireSettlementMenu.Applicable. Error {}'.format(err))
+        return ret_val
+
+    def Enabled(self):
+        """
+        This function checks of the menu is enabled.
+        :return: boolean
+        """
+        return True
+
+
+def get_trans_code(settlement):
+    """
+        Debit CASA Credit GL  (CASA to GL)	9341
+        Debit GL Credit CASA  (GL to CASA)	9342
+        Debit GL Credit Loan  (GL to Loan)	4054
+        +---------------+----------------------------------------------------+
+        | CASA (Debit)  | Account Network = eMAS                             |
+        |               | Counterparty Account AddInfo AccountType == S or D |
+        |               | Amount is positive (+ve)                           |
+        +---------------+----------------------------------------------------+
+        | CASA (Credit) | Account Network = eMAS                             |
+        |               | Counterparty Account AddInfo AccountType == S or D |
+        |               | Amount is negative (-ve)                           |
+        +---------------+----------------------------------------------------+
+        | Loan          | Account Network = eMAS                             |
+        |               | Counterparty Account AddInfo AccountType == L      |
+        |               | Amount is negative (-ve)                           |
+        +---------------+----------------------------------------------------+
+    :param settlement: FSettlement
+    :return: integer
+    """
+    ret_val = None
+    cp_account_obj = settlement.CounterpartyAccountRef()
+    cp_acnt_type = cp_account_obj.AddInfoValue(ACCOUNT_TYPE_ADD_INFO_SPEC)
+
+    if cp_acnt_type in ACCOUNT_TYPE_CASA:
+        if settlement.Amount() > 0:
+            # Debit CASA Credit GL  (CASA to GL)	9341
+            ret_val = TRANS_CODE_9341
+        else:
+            # Debit GL Credit CASA  (GL to CASA)	9342
+            ret_val = TRANS_CODE_9342
+    elif cp_acnt_type in ACCOUNT_TYPE_LOAN:
+        if settlement.Amount() < 0:
+            # Debit GL Credit Loan  (GL to Loan)	4054
+            ret_val = TRANS_CODE_4054
+
+    return ret_val
+
+
+def is_account_inquiry_needed(settlement):
+    """
+    This function checks is account inquiry is needed before posting settlement to eMAS.
+    Only the debit on the counterparty account is considered.
+    :param settlement: FSettlement
+    :return: boolean
+    """
+    ret_val = False
+    cp_account_obj = settlement.CounterpartyAccountRef()
+    cp_acnt_type = cp_account_obj.AddInfoValue(ACCOUNT_TYPE_ADD_INFO_SPEC)
+
+    if cp_acnt_type in ACCOUNT_TYPE_CASA and settlement.Amount() > 0:
+        ret_val = True
+
+    return ret_val
+
+
+def inquire_settlement(eii):
+    """
+    This function handles the menu creation
+    :param extObj: GUI handle
+    :return: Object of FUxCore.SubMenu
+    """
+    return InquireSettlementMenu(eii)
+
+
+...
+
+  eMAS_AccountInquiryAPI
+"""----------------------------------------------------------------------------------------------------
+MODULE:
+    eMAS_AccountInquiryAPI
+
+DESCRIPTION:
+    API to be used to invoke the eMAS Account Inquiry.
+
+-------------------------------------------------------------------------------------------------------"""
+import datetime
+import eMAS_AccountInquiryCrBnkRequest, eMAS_CommonUtils
+
+
+def create_account_inquiry_request(account_object, teller_id, channel_id, journal_sequence, branch_number, tracking_id_counter):
+    """This function creates the object account inquiry"""
+    eMAS_system = getattr(account_object.AdditionalInfo(),'EMASSystem', None)
+    if eMAS_system:
+        channel_id = eMAS_CommonUtils.get_emas_system_channel_id(eMAS_system())
+        if not channel_id:
+            raise Exception(" Error - No channel id found for {} .".format(eMAS_system()))
+        
+    request_object = eMAS_AccountInquiryCrBnkRequest.AccountInquiryCrBnkRequest()
+    time_ref = eMAS_CommonUtils.get_emas_time_stamp()
+    tracking_id = "{}{:03}{:08}".format(datetime.datetime.now().strftime("%Y%m%d"), int(channel_id), tracking_id_counter)
+    request_object.set_soaHeader(messageVersion="1.0", messageType="JSON", messageSubType="accountInquiry",
+                                 messageSender="NTCS", senderDomain="OMNI", messageTimeStamp=time_ref,
+                                 initiatedTimeStamp=time_ref, trackingID=tracking_id, captureSystem='SOA')
+
+    eMAS_account_type = account_object.AdditionalInfo().EMASAccountType()
+    transaction_code = {'D': '0019', 'S': '0019', 'L': '0012'}.get(eMAS_account_type)
+    request_object.set_property_list(tellerId=teller_id,
+                                     journalSequence=journal_sequence,
+                                     transactionCode=transaction_code,
+                                     branchNumber=branch_number)
+
+    request_object.set_payLoad(channelId=channel_id,
+                               accountNumber=account_object.Account(),
+                               accountType=eMAS_account_type)
+                               
+    return request_object
+
+
+def capture_account_inquiry_response(response_json):
+    """ This function creates object from the account inquiry response json"""
+    response_obj = eMAS_AccountInquiryCrBnkRequest.ResponseBody(response_json)
+    response_obj.populate_object()
+    return response_obj
+
+...
+
+  eMAS_AccountInquiryCrBnkRequest
+"""--------------------------------------------------------------------------------------------------
+MODULE:
+    eMAS_AccountInquiryCrBnkRequest : Module handling the classes for account inquiry.
+
+DESCRIPTION: This module contains classes for wrapping the JSON request and response.
+-------------------------------------------------------------------------------------------------------"""
+import json
+
+
+class AccountInquiryCrBnkRequest(object):
+    def __init__(self):
+        """Initialize member variables"""
+        self._messageVersion = ""
+        self._messageType = ""
+        self._messageSubType = ""
+        self._messageSender = ""
+        self._senderDomain = ""
+        self._messageTimeStamp = ""
+        self._initiatedTimeStamp = ""
+        self._trackingID = ""
+        self._captureSystem = ""
+
+        self._tellerId = ""
+        self._journalSequence = ""
+        self._transactionCode = ""
+        self._branchNumber = ""
+        self._timestamp = ""
+
+        self._channelId = ""
+        self._accountNumber = ""
+        self._accountType = ""
+
+    def _set_object(self):
+        """Set the member variables in the object"""
+        self._soaHeader = {
+            "messageVersion": self._messageVersion,
+            "messageType": self._messageType,
+            "messageSubType": self._messageSubType,
+            "messageSender": self._messageSender,
+            "senderDomain": self._senderDomain,
+            "messageTimeStamp": self._messageTimeStamp,
+            "initiatedTimeStamp": self._initiatedTimeStamp,
+            "trackingID": self._trackingID,
+            "captureSystem": self._captureSystem,
+        }
+
+        self.property_list = [
+            {"propertyKey": "tellerId", "propertyValue": self._tellerId},
+            {"propertyKey": "journalSequence", "propertyValue": self._journalSequence},
+            {"propertyKey": "transactionCode", "propertyValue": self._transactionCode},
+            {"propertyKey": "branchNumber", "propertyValue": self._branchNumber},
+        ]
+        self._messageHeader = {"property": self.property_list}
+
+        self._payload = {
+            "channelId": self._channelId,
+            "accountNumber": self._accountNumber,
+            "accountType": self._accountType,
+        }
+
+        self._base_object = {
+            "accountInquiryCrBnkRequest":
+                {
+                    "soaHeader": self._soaHeader,
+                    "messageHeader": self._messageHeader,
+                    "payload": self._payload
+                }
+        }
+
+    def set_property_list(self, tellerId, journalSequence, transactionCode, branchNumber):
+        """
+        Set the property list in the object
+        """
+        self._tellerId = tellerId
+        self._journalSequence = str(journalSequence)
+        self._transactionCode = transactionCode
+        self._branchNumber = branchNumber
+
+    def set_soaHeader(self, messageVersion, messageType, messageSubType, messageSender, senderDomain, messageTimeStamp,
+                      initiatedTimeStamp, trackingID, captureSystem):
+        """
+        Set the soaHeader in the object
+        """
+        self._messageVersion = messageVersion
+        self._messageType = messageType
+        self._messageSubType = messageSubType
+        self._messageSender = messageSender
+        self._senderDomain = senderDomain
+        self._messageTimeStamp = messageTimeStamp
+        self._initiatedTimeStamp = initiatedTimeStamp
+        self._trackingID = trackingID
+        self._captureSystem = captureSystem
+
+    def set_payLoad(self, channelId, accountNumber, accountType):
+        """
+        Set the payload in the object
+        """
+        self._channelId = channelId
+        self._accountNumber = accountNumber
+        self._accountType = accountType
+
+    def get_json_object(self):
+        """
+        Returns the main json object.
+        """
+        self._set_object()
+        return json.dumps(self._base_object)
+
+
+class ResponseBody(object):
+    def __init__(self, json_obj):
+        """Initialize member variables"""
+        self._json_object = json_obj
+        
+        self._messageVersion = ""
+        
+        # soaHeader
+        self._messageType = ""
+        self._messageSubType = ""
+        self._messageSender = ""
+        self._senderDomain = ""
+        self._messageTimeStamp = ""
+        self._initiatedTimeStamp = ""
+        self._trackingID = ""
+        self._captureSystem = ""
+        self._exceptionCode = ""
+        self._exceptionDescription = ""
+        
+        #messageHeader
+        self._tellerId = ""
+        self._journalSequence = ""
+        self._transactionCode = ""
+        self._branchNumber = ""
+        self._timestamp = ""
+        self._internalId = ""
+        self._retrievalReferenceNumber = ""
+        self._acquirerReferenceNumber = ""
+        
+        #accountDetails
+        self._accountNumber = ""
+        self._accountType = ""
+        self._branchNumber = ""
+        self._shortName = ""
+        self._accountStatus = ""
+        self._currencyType = ""
+        self._availableBalance = ""
+        self._originalBalance = ""
+        self._tellerStatus = ""
+        self._billedPrintAmount = ""
+        self._billedIntAmount = ""
+        self._billedEscrowAmount = ""
+        self._billedLateCharges = ""
+        self._billedOtherCharges = ""
+        self._billedMiscCost = ""
+        self._billedIntAmountOD = ""
+        self._otherCharges = ""
+        self._miscCost = ""
+        self._loanType = ""
+        self._outstandingBalance = ""
+        self._maturityDate = ""
+        self._nextScheduledPymtDate = ""
+        self._nextScheduledIntPymtDueDate = ""
+        self._individualIndicator = ""
+        self._loanTerm = ""
+        self._interestPaymentFrequencyCode = ""
+        self._interestPaymentFrequency = ""
+        self._totalLateLocalCheck = ""
+        self._lateChargePaid = ""
+        self._accruedPenaltyInterest = ""
+        self._commitmentFeeAccruedInterest = ""
+        self._drawingLimit = ""
+        self._interestPayable = ""
+        self._memoPostAmount = ""
+        self._assessedLateCharge = ""
+        self._totalInterestInArrears = ""
+        self._totalInstalmentInArrears = ""
+        self._interestRate = ""
+        self._accruedInterest = ""
+        self._interestFrequency = ""
+        self._paymentFrequencyCode = ""
+        self._paymentFrequency = ""
+        self._paymentAmount = ""
+        self._amountRelease = ""
+        self._productCode = ""
+        self._passbookOrStatement = ""
+        self._ledgerBalance = ""
+        self._lastActiveDate = ""
+        
+        #cifNameAddressDetails
+        self._CIFName1 = ""
+        self._CIFName2 = ""
+        self._CIFAddress1 = ""
+        self._CIFAddress2 = ""
+        self._CIFAddress3 = ""
+        self._CIFAddress4 = ""
+        
+        #cifInfo
+        self._cifNo = ""
+        self._idNo = ""
+        self._contactNumber = ""
+        self._residentCode = ""
+        
+        #payload
+        self._responseCode = ""
+        self._responseMessage = ""
+        self._responseTimestamp = ""
+        
+        #Exception
+        self._Exception = ""
+
+    def get_attribute_value(self, attrib_name):
+        """
+        Get the attribute based on its name
+        """
+        member_name = "_{}".format(attrib_name)
+        return getattr(self, member_name)
+
+
+    def _extract_soaHeader(self, soaHeader):
+        """
+        Extract the soaHeader from the object
+        """
+        if soaHeader:
+            self._messageVersion = soaHeader.get("messageVersion")
+            self._messageType = soaHeader.get("messageType")
+            self._messageSubType = soaHeader.get("messageSubType")
+            self._messageSender = soaHeader.get("messageSender")
+            self._senderDomain = soaHeader.get("senderDomain")
+            self._messageTimeStamp = soaHeader.get("messageTimeStamp")
+            self._initiatedTimeStamp = soaHeader.get("initiatedTimeStamp")
+            self._trackingID = soaHeader.get("trackingID")
+            self._captureSystem = soaHeader.get("captureSystem")
+            self._exceptionCode = soaHeader.get("exceptionCode")
+            self._exceptionDescription = soaHeader.get("exceptionDescription")
+
+    def _extract_messageHeader(self, messageHeader):
+        """
+        Extract the messageHeader from the object
+        """
+        if messageHeader:
+            property_list = messageHeader.get("Property")
+            if property_list:
+                for prop_item in property_list:
+                    if prop_item.get("propertyKey") == "tellerId":
+                        self._tellerId = prop_item.get("propertyValue")
+                    elif prop_item.get("propertyKey") == "journalSequence":
+                        self._journalSequence = prop_item.get("propertyValue")
+                    elif prop_item.get("propertyKey") == "transactionCode":
+                        self._transactionCode = prop_item.get("propertyValue")
+                    elif prop_item.get("propertyKey") == "branchNumber":
+                        self._branchNumber = prop_item.get("propertyValue")
+                    elif prop_item.get("propertyKey") == "internalId":
+                        self._internalId = prop_item.get("propertyValue")
+                    elif prop_item.get("propertyKey") == "retrievalReferenceNumber":
+                        self._retrievalReferenceNumber = prop_item.get("propertyValue")
+                    elif prop_item.get("acquirerReferenceNumber") == "acquirerReferenceNumber":
+                        self._acquirerReferenceNumber = prop_item.get("propertyValue")
+
+    def _extract_cifNameAddressDetails(self, cifNameAddressDetails):
+        """
+        Extract the cifNameAddressDetails from the object
+        """
+        if cifNameAddressDetails:
+            name_value_list = cifNameAddressDetails.get("cifNameAddress")
+            if name_value_list:
+                for name_value in name_value_list:
+                    if name_value.get("name") == 'CIFName1':
+                        self._CIFName1 = name_value.get("value")
+                    elif name_value.get("name") == 'CIFName2':
+                        self._CIFName2 = name_value.get("value")
+                    elif name_value.get("name") == 'CIFAddress1':
+                        self._CIFAddress1 = name_value.get("value")
+                    elif name_value.get("name") == 'CIFAddress2':
+                        self._CIFAddress2 = name_value.get("value")
+                    elif name_value.get("name") == 'CIFAddress3':
+                        self._CIFAddress3 = name_value.get("value")
+                    elif name_value.get("name") == 'CIFAddress4':
+                        self._CIFAddress4 = name_value.get("value")
+
+    def _extract_cifInfo(self, cifInfo):
+        """
+        Extract the cifInfo from the object
+        """
+        if cifInfo:
+            self._cifNo = cifInfo.get("cifNo")
+            self._idNo = cifInfo.get("idNo")
+            self._contactNumber = cifInfo.get("contactNumber")
+            self._residentCode = cifInfo.get("residentCode")
+            cifNameAddressDetails = cifInfo.get("cifNameAddressDetails")
+            self._extract_cifNameAddressDetails(cifNameAddressDetails)
+
+    def _extract_accountDetails(self, account_details):
+        """
+        Extract the accountDetails from the object
+        """
+        if account_details:
+            self._accountNumber = account_details.get("accountNumber")
+            self._accountType = account_details.get("accountType")
+            self._branchNumber = account_details.get("branchNumber")
+            self._shortName = account_details.get("shortName")
+            self._accountStatus = account_details.get("accountStatus")
+            self._currencyType = account_details.get("currencyType")
+            self._availableBalance = account_details.get("availableBalance")
+            self._originalBalance = account_details.get("originalBalance")
+            self._tellerStatus = account_details.get("tellerStatus")
+            self._billedPrintAmount = account_details.get("billedPrintAmount")
+            self._billedIntAmount = account_details.get("billedIntAmount")
+            self._billedEscrowAmount = account_details.get("billedEscrowAmount")
+            self._billedLateCharges = account_details.get("billedLateCharges")
+            self._billedOtherCharges = account_details.get("billedOtherCharges")
+            self._billedMiscCost = account_details.get("billedMiscCost")
+            self._billedIntAmountOD = account_details.get("billedIntAmountOD")
+            self._otherCharges = account_details.get("otherCharges")
+            self._miscCost = account_details.get("miscCost")
+            self._loanType = account_details.get("loanType")
+            self._outstandingBalance = account_details.get("outstandingBalance")
+            self._maturityDate = account_details.get("maturityDate")
+            self._nextScheduledPymtDate = account_details.get("nextScheduledPymtDate")
+            self._nextScheduledIntPymtDueDate = account_details.get("nextScheduledIntPymtDueDate")
+            self._individualIndicator = account_details.get("individualIndicator")
+            self._loanTerm = account_details.get("loanTerm")
+            self._interestPaymentFrequencyCode = account_details.get("interestPaymentFrequencyCode")
+            self._interestPaymentFrequency = account_details.get("interestPaymentFrequency")
+            self._totalLateLocalCheck = account_details.get("totalLateLocalCheck")
+            self._lateChargePaid = account_details.get("lateChargePaid")
+            self._accruedPenaltyInterest = account_details.get("accruedPenaltyInterest")
+            self._commitmentFeeAccruedInterest = account_details.get("commitmentFeeAccruedInterest")
+            self._drawingLimit = account_details.get("drawingLimit")
+            self._interestPayable = account_details.get("interestPayable")
+            self._memoPostAmount = account_details.get("memoPostAmount")
+            self._assessedLateCharge = account_details.get("assessedLateCharge")
+            self._totalInterestInArrears = account_details.get("totalInterestInArrears")
+            self._totalInstalmentInArrears = account_details.get("totalInstalmentInArrears")
+            self._interestRate = account_details.get("interestRate")
+            self._accruedInterest = account_details.get("accruedInterest")
+            self._interestFrequency = account_details.get("interestFrequency")
+            self._paymentFrequencyCode = account_details.get("paymentFrequencyCode")
+            self._paymentFrequency = account_details.get("paymentFrequency")
+            self._paymentAmount = account_details.get("paymentAmount")
+            self._amountRelease = account_details.get("amountRelease")
+            self._productCode = account_details.get("productCode")
+            self._passbookOrStatement = account_details.get("passbookOrStatement")
+            self._ledgerBalance = account_details.get("ledgerBalance")
+            self._lastActiveDate = account_details.get("lastActiveDate")
+            cifInfo = account_details.get("cifInfo")
+            self._extract_cifInfo(cifInfo)
+
+    def _extract_payload(self, payLoad):
+        """
+        Extract the payLoad from the object
+        """
+        if payLoad:
+            self._responseCode = payLoad.get("responseCode")
+            self._responseMessage = payLoad.get("responseMessage")
+            self._responseTimestamp = payLoad.get("responseTimestamp")
+            account_details = payLoad.get("accountDetails")
+
+            self._extract_accountDetails(account_details)
+
+    def populate_object(self):
+        """
+        Populate the object
+        """        
+        #TCSTCSPBDT-325783 and TCSTCSPBDT-357175 - Changes to remove accountInquiryCrBnkResponse from response as reqsponse will not have accountInquiryCrBnkResponse
+        self._base_object = self._json_object.get('accountInquiryCrBnkResponse')
+        #self._base_object = self._json_object
+        if self._base_object:
+            self._extract_soaHeader(self._base_object.get('soaHeader'))
+            self._extract_messageHeader(self._base_object.get('messageHeader'))
+            self._extract_payload(self._base_object.get("payload"))
+        self._Exception = self._json_object.get("Exception")       
+        
+
+...
+
+  eMAS_FundTransferOverbookingManyToManyListRequest
+"""--------------------------------------------------------------------------------------------------
+MODULE:
+    eMAS_FundTransferOverbookingManyToManyListRequest : Module handling the classes for accounting
+    settlement export.
+
+DESCRIPTION: This module contains classes for wrapping the JSON request and response.
+-------------------------------------------------------------------------------------------------------"""
+import json
+
+
+class FundTransferOverbookingManyToManyListRequest(object):
+    def __init__(self, refNumber, requestTime, numberOfTransaction=1):
+        """
+        Initialize member variables
+        :param extObj: GUI handle
+        """
+        self._transactionMTMHeaderRequest_refNumber = refNumber
+        self._transactionMTMHeaderRequest_requestTime = requestTime
+        self._transactionMTMHeaderRequest_numberOfTransaction = str(numberOfTransaction)
+
+        self._transactionMTMListRequest = list()
+
+    def _set_object(self):
+        """
+        This function sets the object variables to dictionary
+        :return: None
+        """
+        self._transactionMTMHeaderRequest = {
+            "refNumber": self._transactionMTMHeaderRequest_refNumber,
+            "requestTime": self._transactionMTMHeaderRequest_requestTime,
+            "numberOfTransaction": self._transactionMTMHeaderRequest_numberOfTransaction
+        }
+        self._set_base_request()
+
+    def _set_base_request(self):
+        """
+        This function sets the object variables to dictionary
+        :return: None
+        """
+        self._base_request = {
+            "fundTransferOverbookingManyToManyListRequest":
+                {
+                    "transactionMTMHeaderRequest": self._transactionMTMHeaderRequest,
+                    "transactionMTMListRequest": self._transactionMTMListRequest
+                }
+        }
+
+    def get_json_object(self):
+        """
+        This function returns the json object
+        :return: JSON object
+        """
+        self._set_object()
+        return json.dumps(self._base_request)
+
+    def add_object_to_mtm_list_request(self, transaction_mtm_list_request_object):
+        """
+        This function adds the object to parent object list
+        :param transaction_mtm_list_request_object: TransactionMTMListRequestObject
+        :return:None
+        """
+        self._transactionMTMListRequest.append(transaction_mtm_list_request_object.get_base_object())
+        externalId = tellerId = journalSequence = timestamp = ""
+        transaction_mtm_list_request_object.populate_property_list(externalId,
+                                                                   tellerId,
+                                                                   journalSequence,
+                                                                   timestamp)
+
+
+class ReversalFundTransferOverbookingMTMListRequest(FundTransferOverbookingManyToManyListRequest):
+    def __init__(self, refNumber, requestTime, numberOfTransaction, originalRefNumber):
+        """ Initialize member variables"""
+        super(ReversalFundTransferOverbookingMTMListRequest, self).__init__(refNumber, requestTime, numberOfTransaction)
+        self._transactionMTMHeaderRequest_originalRefNumber = originalRefNumber
+
+    def _set_base_request(self):
+        """
+        This function sets the object variables to dictionary
+        :return: None
+        """
+        self._base_request = {
+            "reversalFundTransferOverbookingMTMListRequest":
+                {
+                    "transactionMTMHeaderRequest": self._transactionMTMHeaderRequest,
+                    "transactionMTMListRequest": self._transactionMTMListRequest
+                }
+        }
+
+    def _set_object(self):
+        """
+        This function sets the object variables to dictionary
+        :return: None
+        """
+        super(ReversalFundTransferOverbookingMTMListRequest, self)._set_object()
+        self._transactionMTMHeaderRequest.update(
+            {"originalRefNumber": self._transactionMTMHeaderRequest_originalRefNumber})
+
+...
+
+  eMAS_FundTransferOverbookingManyToManyListResponse
+"""--------------------------------------------------------------------------------------------------
+MODULE:
+    eMAS_FundTransferOverbookingManyToManyListResponse : Module handling the classes for accounting
+    settlement export.
+
+DESCRIPTION: This module contains classes for wrapping the JSON request and response.
+-------------------------------------------------------------------------------------------------------"""
+
+
+class FundTransferOverbookingManyToManyListResponse(object):
+    def __init__(self, response):
+        # soaHeader
+        self._channelId = ""
+        self._exceptionCode = ""
+        self._exceptionDescription = ""
+
+        # messageHeader
+        self._tellerId = ""
+        self._journalSequence = ""
+        self._transactionCode = ""
+        self._externalId = ""
+        self._timestamp = ""
+
+        # payload
+        self._responseCode = ""
+        self._responseMessage = ""
+        self._responseTimestamp = ""
+
+        # transferInfo
+        self._formatCode = ""
+        self._transactionMnemonic = ""
+        self._accountNumber = ""
+        self._ledgerBalance = ""
+        self._availableBalance = ""
+        self._qqName = ""
+
+        self.populate_object(response)
+
+    def _extract_soaHeader(self, soaHeader):
+        """
+        Extract the soaHeader from the object
+        """
+        if soaHeader:
+            self._channelId = soaHeader.get("channelId")
+            self._exceptionCode = soaHeader.get("exceptionCode")
+            self._exceptionDescription = soaHeader.get("exceptionDescription")
+
+    def _extract_messageHeader(self, messageHeader):
+        """
+        Extract the messageHeader from the object
+        +---------------+----------+---------------+------------------------------------+
+        | messageHeader |          |               |                                    |
+        +---------------+----------+---------------+------------------------------------+
+        |               | property |               |                                    |
+        +---------------+----------+---------------+------------------------------------+
+        |               |          | propertyKey   | tellerId                           |
+        +---------------+----------+---------------+------------------------------------+
+        |               |          | propertyValue | value of tellerId                  |
+        +---------------+----------+---------------+------------------------------------+
+        |               |          | propertyKey   | journalSequence                    |
+        +---------------+----------+---------------+------------------------------------+
+        |               |          | propertyValue | value of journalSequence           |
+        +---------------+----------+---------------+------------------------------------+
+        |               |          | propertyKey   | transactionCode                    |
+        +---------------+----------+---------------+------------------------------------+
+        |               |          | propertyValue | value of transactionCode           |
+        +---------------+----------+---------------+------------------------------------+
+        |               |          | propertyKey   | externalId                         |
+        +---------------+----------+---------------+------------------------------------+
+        |               |          | propertyValue | value of externalId                |
+        +---------------+----------+---------------+------------------------------------+
+        |               |          | propertyKey   | timestamp                          |
+        +---------------+----------+---------------+------------------------------------+
+        |               |          | propertyValue | value of timestamp                 |
+        +---------------+----------+---------------+------------------------------------+
+        """
+        if messageHeader:
+            property_list = messageHeader.get("Property")
+            if property_list:
+                for prop_item in property_list:
+                    key_name = prop_item.get("propertyKey")
+                    key_value = prop_item.get("propertyValue")
+                    setattr(self, '_{}'.format(key_name), key_value)
+
+    def _extract_payload(self, payLoad):
+        """
+        Extract the payLoad from the object
+        """
+        if payLoad:
+            self._responseCode = payLoad.get("responseCode")
+            self._responseMessage = payLoad.get("responseMessage")
+            self._responseTimestamp = payLoad.get("responseTimestamp")
+            transferInfo = payLoad.get("transferInfo")
+            if transferInfo:
+                self._formatCode = transferInfo.get("formatCode")
+                self._transactionMnemonic = transferInfo.get("transactionMnemonic")
+                self._accountNumber = transferInfo.get("accountNumber")
+                self._ledgerBalance = transferInfo.get("ledgerBalance")
+                self._availableBalance = transferInfo.get("availableBalance")
+                self._qqName = transferInfo.get("qqName")
+
+    def populate_object(self, response_dict):
+        """
+        Populate the object
+        """
+        soaHeader = response_dict.get('soaHeader')
+        messageHeader = response_dict.get('messageHeader')
+        payload = response_dict.get('payload')
+
+        self._extract_soaHeader(soaHeader)
+        self._extract_messageHeader(messageHeader)
+        self._extract_payload(payload)
+
+
+class TransactionMTMListResponseObjectBase(object):
+    def __init__(self, json_object):
+        """
+        Initialize member variables
+        :param extObj: GUI handle
+       """
+        self._json_object = json_object
+        self._refNumber = ""
+        self._responseCode = ""
+        self._responseMessage = ""
+        self._responseTimestamp = ""
+        self._numberOfTransactionRejected = ""
+
+        self._transactionMTMListResponse = list()
+
+        self.populate_object()
+
+    def get_attribute_value(self, attrib_name):
+        """
+        Get the attribute based on its name
+        """
+        member_name = "_{}".format(attrib_name)
+        return getattr(self, member_name)
+
+    def _extract_transactionMTMHeaderResponse(self, headerResponse):
+        """
+        Extract the soaHeader from the object
+        """
+        if headerResponse:
+            self._refNumber = headerResponse.get("refNumber")
+            self._responseCode = headerResponse.get("responseCode")
+            self._responseMessage = headerResponse.get("responseMessage")
+            self._responseTimestamp = headerResponse.get("responseTimestamp")
+            self._numberOfTransactionRejected = headerResponse.get("numberOfTransactionRejected")
+
+    def _extract_transactionMTMListResponse(self, listResponse):
+        """ This function extracts the response and add it to the parent object"""
+        for response in listResponse:
+            self._transactionMTMListResponse.append(FundTransferOverbookingManyToManyListResponse(response))
+
+    def populate_object(self):
+        """
+        Populate the object
+        """
+        self._base_object = self._json_object.get('fundTransferOverbookingManyToManyListResponse')
+        self._extract_transactionMTMHeaderResponse(self._base_object.get('transactionMTMHeaderResponse'))
+        self._extract_transactionMTMListResponse(self._base_object.get('transactionMTMListResponse'))
+
+
+class TransactionMTMListReversalResponseObjectBase(TransactionMTMListResponseObjectBase):
+    def __init__(self, json_object):
+        """ Initialize member variables """
+        super(TransactionMTMListReversalResponseObjectBase, self).__init__(json_object)
+
+    def populate_object(self):
+        """
+        Populate the object
+        """
+        super(TransactionMTMListReversalResponseObjectBase, self).populate_object()
+        self._base_object = self._json_object.get('reversalFundTransferOverbookingMTMListResponse')
+
+
+...
+
+  eMAS_TransactionMTMListRequestObject_4054
+"""--------------------------------------------------------------------------------------------------
+MODULE:
+    eMAS_TransactionMTMListRequestObject_4054 : Module handling the classes for accounting
+    settlement export.
+
+DESCRIPTION: This module contains classes for wrapping the JSON request and response.
+-------------------------------------------------------------------------------------------------------"""
+import json
+
+
+class Posting4054Base(object):
+    def __init__(self):
+        """
+        Initializes the member variables
+        """
+        # soaHeader
+        self._messageSender = ""
+        self._messageSubType = "generalPosting"
+        self._messageType = "JSON"
+        self._messageVersion = ""
+        self._senderDomain = "CoreBank"
+        self._messageTimeStamp = ""
+        self._initiatedTimeStamp = ""
+        self._trackingID = ""
+        self._channelId = ""
+
+        # messageHeader
+        self._tellerId = ""
+        self._journalSequence = ""
+        self._transactionCode = "4054"
+        self._controlUnitIdentification = ""
+        self._clientIp = ""
+        self._supervisorOverrideFlag = "Y"
+        self._tellerOverrideFlag = "Y"
+
+
+class Posting4054Request(Posting4054Base):
+    def __init__(self):
+        """
+        Initializes the member variables
+        """
+        # Sample message
+        # {
+        #     "generalPostingRequest": {
+        #         "soaHeader": {
+        #             "messageSender": "NTCS",
+        #             "messageSubType": "generalPosting",
+        #             "messageType": "JSON",
+        #             "messageVersion": "1.0",
+        #             "senderDomain": "CoreBank",
+        #             "messageTimeStamp": "2022-06-11 09:35:35.756",
+        #             "initiatedTimeStamp": "2022-06-11 09:35:35.756",
+        #             "trackingID": "211112116565361",
+        #             "correlationID": "9999999002853202",
+        #             "channelId": "154"
+        #         },
+        #         "messageHeader": {
+        #             "property": [
+        #                 {
+        #                     "propertyKey": "tellerId",
+        #                     "propertyValue": "9925411"
+        #                 },
+        #                 {
+        #                     "propertyKey": "transactionCode",
+        #                     "propertyValue": "4054"
+        #                 },
+        #                 {
+        #                     "propertyKey": "journalSequence",
+        #                     "propertyValue": "1001"
+        #                 },
+        #                 {
+        #                     "propertyKey": "controlUnitIdentification",
+        #                     "propertyValue": "NTC"
+        #                 },
+        #                 {
+        #                     "propertyKey": "clientIp",
+        #                     "propertyValue": "10.243.235.113"
+        #                 },
+        #                 {
+        #                     "propertyKey": "tellerOverrideFlag",
+        #                     "propertyValue": "Y"
+        #                 },
+        #                 {
+        #                     "propertyKey": "supervisorOverrideFlag",
+        #                     "propertyValue": "Y"
+        #                 }
+        #             ]
+        #         },
+        #         "payload": {
+        #             "message": {
+        #                 "TLBTPN": "REMARK",
+        #                 "TLBDS1": "REMARK CREDIT ACCOUNT",
+        #                 "TLBDS3": "REMARK DEBIT ACCOUNT",
+        #                 "TLBPNM": "YO000050000195658"
+        #             },
+        #             "tltx": {
+        #                 "TLBF01": "11011101",
+        #                 "TLBF02": "10009",
+        #                 "TLBF05": "10000000",
+        #                 "TLBF06": "10000000",
+        #                 "TLBF07": "10000000",
+        #                 "TLBF08": "10000000",
+        #                 "TLBF15": "10201008231911",
+        #                 "TLBF16": "10009",
+        #                 "TLBF19": "090622",
+        #                 "TLBF29": "1234567890"
+        #             },
+        #             "currency": {
+        #                 "TLCUR1": "IDR",
+        #                 "TLCUR2": "IDR"
+        #             }
+        #         }
+        #     }
+        # }
+
+        super(Posting4054Request, self).__init__()
+
+        # payLoad-message
+        self._TLBTPN = ""
+        self._TLBDS1 = ""
+        self._TLBDS3 = ""
+        self._TLBPNM = ""
+
+        # payLoad-currency
+        self._TLCUR1 = ""
+        self._TLCUR2 = ""
+
+        # payLoad-tltx
+        self._TLBF01 = ""
+        self._TLBF02 = ""
+        self._TLBF05 = ""
+        self._TLBF06 = ""
+        self._TLBF07 = ""
+        self._TLBF08 = ""
+        self._TLBF15 = ""
+        self._TLBF16 = ""
+        self._TLBF19 = ""
+        self._TLBF29 = ""
+
+    def _set_object(self):
+        """
+        This function sets the object variables to dictionary
+        :return: None
+        """
+        _generalPostingRequest_soaHeader = {"messageSender": self._messageSender,
+                                            "messageSubType": self._messageSubType,
+                                            "messageType": self._messageType,
+                                            "messageVersion": self._messageVersion,
+                                            "senderDomain": self._senderDomain,
+                                            "messageTimeStamp": self._messageTimeStamp,
+                                            "initiatedTimeStamp": self._initiatedTimeStamp,
+                                            "trackingID": self._trackingID,
+                                            "channelId": self._channelId}
+
+        _generalPostingRequest_messageHeader = {"property": [{"propertyKey": "tellerId", "propertyValue": self._tellerId},
+                                                             {"propertyKey": "journalSequence", "propertyValue": str(self._journalSequence)},
+                                                             {"propertyKey": "transactionCode", "propertyValue": self._transactionCode},
+                                                             {"propertyKey": "controlUnitIdentification", "propertyValue": self._controlUnitIdentification},
+                                                             {"propertyKey": "clientIp", "propertyValue": self._clientIp},
+                                                             {"propertyKey": "supervisorOverrideFlag", "propertyValue": self._supervisorOverrideFlag},
+                                                             {"propertyKey": "tellerOverrideFlag", "propertyValue": self._tellerOverrideFlag}]}
+                                                             
+                                                             
+                                                             
+        message = {"TLBTPN": self._TLBTPN,
+                   "TLBDS1": self._TLBDS1,
+                   "TLBDS3": self._TLBDS3,
+                   "TLBPNM": self._TLBPNM}
+
+        tltx = {"TLBF01": self._TLBF01,
+                "TLBF02": self._TLBF02,
+                "TLBF05": self._TLBF05,
+                "TLBF06": self._TLBF06,
+                "TLBF07": self._TLBF07,
+                "TLBF08": self._TLBF08,
+                "TLBF15": self._TLBF15,
+                "TLBF16": self._TLBF16,
+                "TLBF19": self._TLBF19,
+                "TLBF29": self._TLBF29}
+
+        currency = {"TLCUR1": self._TLCUR1,
+                    "TLCUR2": self._TLCUR2}
+
+        _generalPostingRequest_payload = {"message": message, "tltx": tltx, "currency": currency}
+
+        self._base_request = {
+            "generalPostingRequest":
+                {
+                    "soaHeader": _generalPostingRequest_soaHeader,
+                    "messageHeader": _generalPostingRequest_messageHeader,
+                    "payload": _generalPostingRequest_payload
+                }
+        }
+
+    def get_transaction_code(self):
+        """ Returns the transaction code"""
+        return self._transactionCode
+
+    def set_attribute(self, attribute_name, attribute_val):
+        """
+        This function sets the attribute name if the attribute is present
+        :param attribute_name: Attribute name
+        :param attribute_val: Attribute value
+        :return: None
+        """
+        if hasattr(self, "_{}".format(attribute_name)):
+            setattr(self, "_{}".format(attribute_name), attribute_val)
+        else:
+            raise Exception("{} is not a valid attribute of class Posting4054Request".format(attribute_name))
+
+    def get_json_object(self):
+        """
+        This function returns the json object
+        :return: JSON object
+        """
+        self._set_object()
+        return json.dumps(self._base_request)
+
+
+...
+
+  eMAS_TransactionMTMListRequestObject_9341
+"""--------------------------------------------------------------------------------------------------
+MODULE:
+    eMAS_TransactionMTMListRequestObject_9341 : Module handling the classes for accounting
+    settlement export.
+
+DESCRIPTION: This module contains classes for wrapping the JSON request and response.
+-------------------------------------------------------------------------------------------------------"""
+from eMAS_TransactionMTMListRequestObjectBase import TransactionMTMListRequestObjectBase
+from eMAS_FundTransferOverbookingManyToManyListResponse import TransactionMTMListResponseObjectBase, \
+    TransactionMTMListReversalResponseObjectBase
+
+
+class TransactionMTMListRequestObject_9341_Posting(TransactionMTMListRequestObjectBase):
+    def __init__(self):
+        """
+        Initializes the member variables
+        """
+        super(TransactionMTMListRequestObject_9341_Posting, self).__init__(transaction_code='9341')
+
+    def _set_object(self):
+        """
+        This function sets the object variables to dictionary
+        :return: None
+        """
+        super(TransactionMTMListRequestObject_9341_Posting, self)._set_object()
+        self._payload.update(
+            {
+                "debitAccountCASA": self._debitAccountCASA,
+                "debitAmountCASA": self._debitAmountCASA,
+                "creditAccountGL": self._creditAccountGL,
+                "creditAmountGL": self._creditAmountGL,
+            })
+
+    def set_debitAccountCASA(self, account):
+        """
+        This function sets the CASA debit account
+        :param account: FAccount
+        :return: None
+        """
+        self._update_list(self._debitAccountCASA, account)
+
+    def set_debitAmountCASA(self, amount):
+        """
+        This function sets the CASA debit amount
+        :param account: float
+        :return: None
+        """
+        self._update_list(self._debitAmountCASA, amount)
+
+    def set_creditAccountGL(self, account):
+        """
+        This function sets the CASA debit account
+        :param account: FAccount
+        :return: None
+        """
+        self._update_list(self._creditAccountGL, account)
+
+    def set_creditAmountGL(self, amount):
+        """
+        This function sets the CASA debit account
+        :param account: FAccount
+        :return: None
+        """
+        self._update_list(self._creditAmountGL, amount)
+
+
+class TransactionMTMListRequestObject_9341_Reversal(TransactionMTMListRequestObject_9341_Posting):
+    def __init__(self):
+        """
+        Initializes the member variables
+        """
+        super(TransactionMTMListRequestObject_9341_Reversal, self).__init__()
+        self._reversalDetails = ""
+
+    def _set_object(self):
+        """
+        This function sets the object variables to dictionary
+        :return: None
+        """
+        super(TransactionMTMListRequestObject_9341_Posting, self)._set_object()
+        self._payload.update({"details": self._reversalDetails})
+
+
+class TransactionMTMListResponseObject_9341_Posting(TransactionMTMListResponseObjectBase):
+    def __init__(self, json_object):
+        """
+        Initializes the member variables
+        """
+        super(TransactionMTMListResponseObject_9341_Posting, self).__init__(json_object)
+
+
+class TransactionMTMListResponseObject_9341_Reversal(TransactionMTMListReversalResponseObjectBase):
+    def __init__(self, json_object):
+        """
+        Initializes the member variables
+        """
+        super(TransactionMTMListResponseObject_9341_Reversal, self).__init__(json_object)
+
+
+...
+
+  eMAS_TransactionMTMListRequestObject_9342
+"""--------------------------------------------------------------------------------------------------
+MODULE:
+    eMAS_TransactionMTMListRequestObject_9342 : Module handling the classes for accounting
+    settlement export.
+
+DESCRIPTION: This module contains classes for wrapping the JSON request and response.
+-------------------------------------------------------------------------------------------------------"""
+from eMAS_TransactionMTMListRequestObjectBase import TransactionMTMListRequestObjectBase
+from eMAS_FundTransferOverbookingManyToManyListResponse import TransactionMTMListResponseObjectBase, \
+    TransactionMTMListReversalResponseObjectBase
+
+
+class TransactionMTMListRequestObject_9342_Posting(TransactionMTMListRequestObjectBase):
+    def __init__(self):
+        """
+        Initializes the member variables
+        """
+        super(TransactionMTMListRequestObject_9342_Posting, self).__init__(transaction_code='9342')
+
+    def _set_object(self):
+        """
+        This function sets the object variables to dictionary
+        :return: None
+        """
+        super(TransactionMTMListRequestObject_9342_Posting, self)._set_object()
+        self._payload.update(
+            {
+                "debitAccountGL": self._debitAccountGL,
+                "debitAmountGL": self._debitAmountGL,
+                "creditAccountCASA": self._creditAccountCASA,
+                "creditAmountCASA": self._creditAmountCASA,
+            })
+
+    def set_debitAccountGL(self, account):
+        """
+        This function sets the GL debit account
+        :param account: FAccount
+        :return: None
+        """
+        self._update_list(self._debitAccountGL, account)
+
+    def set_debitAmountGL(self, amount):
+        """
+        This function sets the GL debit amount
+        :param account: float
+        :return: None
+        """
+        self._update_list(self._debitAmountGL, amount)
+
+    def set_creditAccountCASA(self, account):
+        """
+        This function sets the CASA credit account
+        :param account: FAccount
+        :return: None
+        """
+        self._update_list(self._creditAccountCASA, account)
+
+    def set_creditAmountCASA(self, amount):
+        """
+        This function sets the CASA credit amount
+        :param account: float
+        :return: None
+        """
+        self._update_list(self._creditAmountCASA, amount)
+
+
+class TransactionMTMListRequestObject_9342_Reversal(TransactionMTMListRequestObject_9342_Posting):
+    def __init__(self):
+        """
+        Initializes the member variables
+        """
+        super(TransactionMTMListRequestObject_9342_Reversal, self).__init__()
+        self._reversalDetails = ""
+
+    def _set_object(self):
+        """
+        This function sets the object variables to dictionary
+        :return: None
+        """
+        super(TransactionMTMListRequestObject_9342_Posting, self)._set_object()
+        self._payload.update({"details": self._reversalDetails})
+
+
+class TransactionMTMListResponseObject_9342_Posting(TransactionMTMListResponseObjectBase):
+    def __init__(self, json_object):
+        """
+        Initializes the member variables
+        """
+        super(TransactionMTMListResponseObject_9342_Posting, self).__init__(json_object)
+
+
+class TransactionMTMListResponseObject_9342_Reversal(TransactionMTMListReversalResponseObjectBase):
+    def __init__(self, json_object):
+        """
+        Initializes the member variables
+        """
+        super(TransactionMTMListResponseObject_9342_Reversal, self).__init__(json_object)
+
+...
+
+  eMAS_TransactionMTMListRequestObjectBase
+"""--------------------------------------------------------------------------------------------------
+MODULE:
+    eMAS_TransactionMTMListRequestObjectBase : Module handling the classes for accounting
+    settlement export.
+
+DESCRIPTION: This module contains classes for wrapping the JSON request and response.
+-------------------------------------------------------------------------------------------------------"""
+import copy
+import eMAS_AccountingSettlementExportUtils
+
+
+class TransactionMTMListRequestObjectBase(object):
+    def __init__(self, transaction_code):
+        """
+        Initializes the member variables
+        """
+        self._item_template = {"itemKey": "", "itemValue": ""}
+
+        self._creditCurrency = ""
+        self._debitCurrency = ""
+        self._defaultCurrency = ""
+        self._chargesCurrency = ""
+
+        self._soaHeader_channelId = ""
+
+        self._urcCode = "000"  # Fixed value
+        self._valueDate = ""
+
+        self._tellerId = ""
+        self._journalSequence = ""
+        self._transactionCode = transaction_code
+        self._externalId = ""
+        self._timestamp = ""
+
+        self._ibtBuyRate = ""
+        self._ibtSellRate = ""
+        self._ttBuyRate = ""
+        self._ttSellRate = ""
+
+        self._debitAccountCASA = {"item": list()}
+        self._debitAmountCASA = {"item": list()}
+        self._creditAccountCASA = {"item": list()}
+        self._creditAmountCASA = {"item": list()}
+        self._debitAccountGL = {"item": list()}
+        self._debitAmountGL = {"item": list()}
+        self._creditAccountGL = {"item": list()}
+        self._creditAmountGL = {"item": list()}
+        self._remark = {"item": list()}
+
+    def _set_object(self):
+        """
+        This function sets the object variables to dictionary
+        :return: None
+        """
+        _currency = {
+            "defaultCurrency": self._defaultCurrency,
+            "debitCurrency": self._debitCurrency,
+            "creditCurrency": self._creditCurrency,
+            "chargesCurrency": self._chargesCurrency,
+        }
+
+        _rate = {"ibtBuyRate": self._ibtBuyRate,
+                 "ibtSellRate": self._ibtSellRate,
+                 "ttBuyRate": self._ttBuyRate,
+                 "ttSellRate": self._ttSellRate}
+
+        _details = {"urcCode": self._urcCode, "valueDate": self._valueDate}
+
+        self._soaHeader = {"channelId": self._soaHeader_channelId}
+        self.property_list = [{"propertyKey": "externalId", "propertyValue": self._externalId},
+                              {"propertyKey": "tellerId", "propertyValue": self._tellerId},
+                              {"propertyKey": "journalSequence", "propertyValue": self._journalSequence},
+                              {"propertyKey": "transactionCode", "propertyValue": self._transactionCode},
+                              {"propertyKey": "timestamp", "propertyValue": self._timestamp}
+                              ]
+        self._messageHeader = {"property": self.property_list}
+        self._payload = {
+            "remark": self._remark,
+            "currency": _currency,
+            "rate": _rate,
+            "details": _details
+        }
+        self._base_object = {"soaHeader": self._soaHeader,
+                             "messageHeader": self._messageHeader,
+                             "payload": self._payload}
+
+    def _update_list(self, val_obj, val):
+        """
+        This function helps to set the object variables to dictionary
+        :return: None
+        """
+        item_template = copy.deepcopy(self._item_template)
+        val_list = val_obj["item"]
+
+        item_template["itemKey"] = str(len(val_list) + 1)
+        item_template["itemValue"] = val
+        val_list.append(item_template)
+
+    def get_transaction_code(self):
+        """
+        This function returns transaction code
+        :return: string
+        """
+        return self._transactionCode
+
+    def populate_property_list(self, externalId, tellerId, journalSequence, timestamp):
+        """
+        This function sets the property variables
+        :return: None
+        """
+        self._externalId = externalId
+        self._tellerId = tellerId
+        self._journalSequence = journalSequence
+        self._timestamp = timestamp
+
+    def set_soaHeader_channelId(self, channelId):
+        """
+        This function sets the channel id in SOA
+        :param channelId: channelId
+        :return: None
+        """
+        self._soaHeader_channelId = channelId
+
+    def set_currency(self, debit_curr, credit_curr, default_curr='IDR', charges_currency=''):
+        """
+        This functions sets the currencies
+        :param debit_curr: currency name
+        :param credit_curr: currency name
+        :param default_curr: currency name
+        :param charges_currency: currency name
+        :return: None
+        """
+        self._debitCurrency = debit_curr
+        self._creditCurrency = credit_curr
+        self._defaultCurrency = default_curr
+        self._chargesCurrency = charges_currency
+
+    def set_details(self, valueDate, urcCode=None):
+        """
+        This function sets the value date and urccode
+        :param valueDate: date-string
+        :param urcCode: string
+        :return: None
+        """
+        if urcCode is not None:
+            self._urcCode = urcCode
+        self._valueDate = valueDate
+
+    def set_remark(self, remark):
+        """
+        This function sets the remark variable
+        :param remark: string
+        :return: None
+        """
+        self._update_list(self._remark, remark)
+
+    def set_remarks(self, settlement_id, trade_id, cp_name, accounting_instr):
+        """
+        This function sets the remarks variables
+        :param settlement_id: FSettlent Id
+        :param trade_id: Trade Id
+        :param cp_name: counterparty name
+        :param accounting_instr: accounting instruction
+        :return:
+        """
+        self.set_remark("{}{}".format(eMAS_AccountingSettlementExportUtils.TRADE_PREFIX, trade_id))
+        self.set_remark("{}{}".format(eMAS_AccountingSettlementExportUtils.SETL_PREFIX, settlement_id))
+        self.set_remark(cp_name)
+        self.set_remark(accounting_instr)
+
+    def set_rate(self, ibtBuyRate, ibtSellRate, ttBuyRate, ttSellRate):
+        """ This function sets the currency rates"""
+        self._ibtBuyRate = ibtBuyRate
+        self._ibtSellRate = ibtSellRate
+        self._ttBuyRate = ttBuyRate
+        self._ttSellRate = ttSellRate
+
+    def get_base_object(self):
+        """
+        This function returns the json object
+        :return: JSON object
+        """
+        self._set_object()
+        return self._base_object
+
+
+...
+
+  eMAS_TransactionStatusInquiryRequest
+"""----------------------------------------------------------------------------------------------------
+MODULE:
+    eMAS_TransactionStatusInquiryRequest
+
+DESCRIPTION:
+    Module to process the settlement inquiry flow.
+
+-------------------------------------------------------------------------------------------------------"""
+import json
+
+
+class TransactionStatusInquiryRequest(object):
+    def __init__(self):
+        """
+        Initialize member variables
+        """
+        # Sample message
+        # {
+        #     "transactionStatusInquiryRequest": {
+        #         "soaHeader": {
+        #             "messageVersion": "1.0",
+        #             "messageType": "JSON",
+        #             "messageSubType": "transactioinStatusInquiry",
+        #             "messageTimeStamp": "2022-06-29 16:07:59.000",
+        #             "initiatedTimeStamp": "2022-06-29 16:07:59.000",
+        #             "trackingID": "1"
+        #         },
+        #         "messageHeader": {
+        #             "property": [
+        #                 {
+        #                     "propertyKey": "journalSequence",
+        #                     "propertyValue": "1"
+        #                 },
+        #                 {
+        #                     "propertyKey": "tellerId",
+        #                     "propertyValue": "9925411"
+        #                 },
+        #                 {
+        #                     "propertyKey": "transactionCode",
+        #                     "propertyValue": "0004"
+        #                 }
+        #             ]
+        #         },
+        #         "payload": {
+        #             "channelId": "154",
+        #             "originalJournalSequence": "10011",
+        #             "tellerId": "9925411",
+        #             "defaultCurrencyCode": "IDR"
+        #         }
+        #     }
+        # }
+
+        self._messageSubType = "transactioinStatusInquiry"
+        self._messageType = "JSON"
+        self._messageVersion = ""
+        self._messageTimeStamp = ""
+        self._initiatedTimeStamp = ""
+        self._trackingID = ""
+
+        # messageHeader
+        self._messageHeader_tellerId = ""
+        self._journalSequence = ""
+        self._transactionCode = "0004"
+
+        # payload
+        self._defaultCurrencyCode = ""
+        self._originalJournalSequence = ""
+        self._channelId = ""
+        self._payload_tellerId = ""
+
+    def _set_object(self):
+        """
+        This function sets the object variables to dictionary
+        :return: None
+        """
+        _soaHeader = {"messageSubType": self._messageSubType,
+                      "messageType": self._messageType,
+                      "messageVersion": self._messageVersion,
+                      "messageTimeStamp": self._messageTimeStamp,
+                      "initiatedTimeStamp": self._initiatedTimeStamp,
+                      "trackingID": self._trackingID,
+                      }
+
+        _messageHeader = {"property": [{"propertyKey": "tellerId", "propertyValue": self._messageHeader_tellerId},
+                                       {"propertyKey": "journalSequence", "propertyValue": str(self._journalSequence)},
+                                       {"propertyKey": "transactionCode", "propertyValue": self._transactionCode},
+                                       ]}
+
+        _payload = {"channelId": self._channelId,
+                    "originalJournalSequence": self._originalJournalSequence,
+                    "tellerId": self._payload_tellerId,
+                    "defaultCurrencyCode": self._defaultCurrencyCode}
+
+        self._base_request = {
+            "transactionStatusInquiryRequest":
+                {
+                    "soaHeader": _soaHeader,
+                    "messageHeader": _messageHeader,
+                    "payload": _payload
+                }
+        }
+
+    def get_transaction_code(self):
+        """
+        This function returns the transaction code
+        :return: string
+        """
+        return self._transactionCode
+
+    def set_attribute(self, attribute_name, attribute_val):
+        """
+        This function sets the attribute name if the attribute is present
+        :param attribute_name: Attribute name
+        :param attribute_val: Attribute value
+        :return: None
+        """
+        if hasattr(self, "_{}".format(attribute_name)):
+            setattr(self, "_{}".format(attribute_name), attribute_val)
+        else:
+            raise Exception(
+                "{} is not a valid attribute of class TransactionStatusInquiryRequest".format(attribute_name))
+
+    def set_soa_header(self, message_version, extern_id_or_tracking_id, time_ref):
+        """ This function sets the soa header variables"""
+        self._messageVersion = message_version
+        self._messageTimeStamp = time_ref
+        self._initiatedTimeStamp = time_ref
+        self._trackingID = extern_id_or_tracking_id
+
+    def set_message_header(self, teller_id, journal_sequence):
+        """ This function sets the message header variables"""
+        self._messageHeader_tellerId = teller_id
+        self._journalSequence = str(journal_sequence)
+
+    def set_payload(self, channel_id, inquiry_teller_id, inquiry_seq_num, default_curr):
+        """ This function sets the payload variables"""
+        self._defaultCurrencyCode = default_curr
+        self._originalJournalSequence = inquiry_seq_num
+        self._channelId = channel_id
+        self._payload_tellerId = inquiry_teller_id
+
+    def get_json_object(self):
+        """
+        This function returns the json object
+        :return: JSON object
+        """
+        self._set_object()
+        return json.dumps(self._base_request)
+
+
+class TransactionStatusInquiryResponse(object):
+    def __init__(self, json_object):
+        """
+        Initialize the member objects
+        """
+        # Sample Response
+        # {
+        #     "transactionStatusInquiryResponse": {
+        #         "soaHeader": {
+        #             "messageVersion": "1.0",
+        #             "messageType": "JSON",
+        #             "messageSubType": "transactioinStatusInquiry",
+        #             "messageTimeStamp": "2022-06-29 16:07:59.000",
+        #             "initiatedTimeStamp": "2022-06-29 16:07:59.000",
+        #             "trackingID": "1"
+        #         },
+        #         "messageHeader": {
+        #             "property": [
+        #                 {
+        #                     "propertyKey": "journalSequence",
+        #                     "propertyValue": "1"
+        #                 },
+        #                 {
+        #                     "propertyKey": "tellerId",
+        #                     "propertyValue": "9925411"
+        #                 },
+        #                 {
+        #                     "propertyKey": "transactionCode",
+        #                     "propertyValue": "0004"
+        #                 },
+        #                 {
+        #                     "propertyKey": "internalId",
+        #                     "propertyValue": "1681378450410"
+        #                 },
+        #                 {
+        #                     "propertyKey": "headerType",
+        #                     "propertyValue": "*SOKI"
+        #                 },
+        #                 {
+        #                     "propertyKey": "sourceId",
+        #                     "propertyValue": "*SOAI"
+        #                 },
+        #                 {
+        #                     "propertyKey": "destinationId",
+        #                     "propertyValue": "DQAXISIN"
+        #                 },
+        #                 {
+        #                     "propertyKey": "messageStatus",
+        #                     "propertyValue": "/-------"
+        #                 },
+        #                 {
+        #                     "propertyKey": "bankIdNumber",
+        #                     "propertyValue": null
+        #                 },
+        #                 {
+        #                     "propertyKey": "node",
+        #                     "propertyValue": "1"
+        #                 },
+        #                 {
+        #                     "propertyKey": "transactionCode",
+        #                     "propertyValue": "0004"
+        #                 },
+        #                 {
+        #                     "propertyKey": "retrievalReferenceNumber",
+        #                     "propertyValue": "6520542304131611328591"
+        #                 },
+        #                 {
+        #                     "propertyKey": "acquirerReferenceNumber",
+        #                     "propertyValue": "341038906683"
+        #                 },
+        #                 {
+        #                     "propertyKey": "transmissionNumber",
+        #                     "propertyValue": null
+        #                 },
+        #                 {
+        #                     "propertyKey": "numberOfRecordsToBeLoaded",
+        #                     "propertyValue": "10"
+        #                 },
+        #                 {
+        #                     "propertyKey": "numberOfErrorsToBeLoaded",
+        #                     "propertyValue": "10"
+        #                 },
+        #                 {
+        #                     "propertyKey": "userId",
+        #                     "propertyValue": ""
+        #                 },
+        #                 {
+        #                     "propertyKey": "supervisorId",
+        #                     "propertyValue": ""
+        #                 },
+        #                 {
+        #                     "propertyKey": "moreRecordIndicator",
+        #                     "propertyValue": ""
+        #                 },
+        #                 {
+        #                     "propertyKey": "cutOffIndicator",
+        #                     "propertyValue": ""
+        #                 },
+        #                 {
+        #                     "propertyKey": "userData",
+        #                     "propertyValue": ""
+        #                 },
+        #                 {
+        #                     "propertyKey": "routerQueue",
+        #                     "propertyValue": "KDQICRTTEL"
+        #                 },
+        #                 {
+        #                     "propertyKey": "deviceNameWorkstation",
+        #                     "propertyValue": "10.243.235.113"
+        #                 },
+        #                 {
+        #                     "propertyKey": "messageNumber",
+        #                     "propertyValue": "5118"
+        #                 },
+        #                 {
+        #                     "propertyKey": "communicationQueue",
+        #                     "propertyValue": "PDQAXISINI"
+        #                 },
+        #                 {
+        #                     "propertyKey": "finalSocketAddress",
+        #                     "propertyValue": "0"
+        #                 },
+        #                 {
+        #                     "propertyKey": "entryTime",
+        #                     "propertyValue": "16:11:32.0Z"
+        #                 },
+        #                 {
+        #                     "propertyKey": "uniqueTransactionSynchronisationId",
+        #                     "propertyValue": "0"
+        #                 }
+        #             ]
+        #         },
+        #         "payload": {
+        #             "responseCode": "1",
+        #             "responseMessage": "OK",
+        #             "responseTimestamp": "2023-04-13T16:34:10.0Z",
+        #             "transactionStatusInfo": {
+        #                 "tellerId": "9925411",
+        #                 "journalSequence": "10011",
+        #                 "transactionDate": "2023-04-13",
+        #                 "successfulTransaction": "Y"
+        #             }
+        #         }
+        #     }
+        # }
+
+        self._json_object = json_object
+        self.populate_object()
+
+    def get_attribute_value(self, attrib_name):
+        """
+        Get the attribute based on its name
+        """
+        member_name = "_{}".format(attrib_name)
+        return getattr(self, member_name, None)
+
+    def _extract_soaHeader(self, soaHeader):
+        """
+        Extract the soaHeader from the object
+        """
+        if soaHeader:
+            self._messageSender = soaHeader.get("messageVersion")
+            self._messageSubType = soaHeader.get("messageType")
+            self._messageType = soaHeader.get("messageSubType")
+            self._messageTimeStamp = soaHeader.get("messageTimeStamp")
+            self._initiatedTimeStamp = soaHeader.get("initiatedTimeStamp")
+            self._trackingID = soaHeader.get("trackingID")
+
+    def _extract_payload(self, payLoad):
+        """
+        Extract the payLoad from the object
+        """
+        if payLoad:
+            self._responseCode = payLoad.get("responseCode")
+            self._responseMessage = payLoad.get("responseMessage")
+            self._responseTimestamp = payLoad.get("responseTimestamp")
+            statusInfo = payLoad.get("transactionStatusInfo")
+            if statusInfo:
+                for tag_key, tag_value in statusInfo.items():
+                    setattr(self, '_{}'.format(tag_key), tag_value)
+
+    def _extract_messageHeader(self, messageHeader):
+        """
+        Extract the messageHeader from the object
+        """
+        if messageHeader:
+            property_list = messageHeader.get("property")
+            if property_list:
+                for prop_item in property_list:
+                    key_name = prop_item.get("propertyKey")
+                    key_value = prop_item.get("propertyValue")
+                    setattr(self, '_{}'.format(key_name), key_value)
+
+    def populate_object(self):
+        """
+        Populate the object
+        """
+        self._base_object = self._json_object.get('transactionStatusInquiryResponse')
+        self._extract_soaHeader(self._base_object.get('soaHeader'))
+        self._extract_messageHeader(self._base_object.get('messageHeader'))
+        self._extract_payload(self._base_object.get("payload"))
+
+...
+
+}
+

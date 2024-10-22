@@ -1,0 +1,5 @@
+INSTRALIASTYPE,,,,/INSTRALIASTYPE
+ALIAS_TYPE_DESCRIPTION,NETWORK,TYPE,ALIAS_TYPE_NAME,
+Bloomberg Global ID for an instrument,,Instrument,BB_GLOBAL,
+Bloomberg ticker,,Instrument,BB_TICKER,
+(Thomson-) Reuters Instrument Code,Yes,Instrument,RIC,

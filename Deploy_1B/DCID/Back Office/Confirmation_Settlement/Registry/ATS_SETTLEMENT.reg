@@ -1,0 +1,12 @@
+Windows Registry Editor Version 5.00
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Front\Front Arena\ATS\FA_INSTANCE_NAME]
+"log_to_server" ="0"
+"proc_frequency"=""
+"module_name"="FSettlementMain"
+"username"="ATS_SETTLE"
+"password"="intas"
+"sender_mb_name"="{}"
+"receiver_mb_name"="{SETTLEMENT_RECEIVER}"
+
+

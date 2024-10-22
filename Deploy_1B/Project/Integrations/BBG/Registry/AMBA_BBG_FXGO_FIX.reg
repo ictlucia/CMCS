@@ -1,0 +1,21 @@
+Windows Registry Editor Version 5.00
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Front\Front Arena\AMBA\FA_INSTANCE_NAME]
+"receiver_sources"="{BBG_FXGO_FIX}"
+"sender_mb_name"="BBG_FXGO_FIX_SENDER"
+"receiver_mb_name"="BBG_FXGO_FIX_RECEIVER"
+"sender_off"="1"
+"exit_on_ael_error"="1"
+"receiver_off"="0"
+"show_seqnbr"="1"
+"show_changes"="1"
+"show_protection"="1"
+"nice_enum_names"="1"
+"log_messages"="1"
+"log_to_server"="1"
+"username"="AMBA_BBG_FXGO"
+"password"="intas"
+"ael_module_name"="FXGOFixTradeHook"
+"unicode"="1"
+"create_missing_ref"="{transhst}"
+"ael_receiver_modify"="receiver_modify"

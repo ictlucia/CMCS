@@ -1,0 +1,8 @@
+INSTRUMENT,,,,/INSTRUMENT
+FIXING_LAG_DATE_RULE.TYPE,FIXING_LAG_DATE_RULE.NAME,INSID,INSTYPE,
+Fixing Lag,+1D London,USD/LIBOR/12M,RateIndex,
+Fixing Lag,+1D London,USD/LIBOR/1M,RateIndex,
+Fixing Lag,+1D London,USD/LIBOR/1W,RateIndex,
+Fixing Lag,+1D London,USD/LIBOR/2M,RateIndex,
+Fixing Lag,+1D London,USD/LIBOR/3M,RateIndex,
+Fixing Lag,+1D London,USD/LIBOR/6M,RateIndex,

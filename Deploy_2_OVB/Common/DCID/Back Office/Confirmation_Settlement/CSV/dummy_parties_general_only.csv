@@ -1,0 +1,11 @@
+PARTY,,,,,,,,,,,,,,,,,/PARTY
+FULLNAME,NOT_TRADING,ADDRESS,NOTIFY_RECEIPT,CORRESPONDENT_BANK,TIME_ZONE,INTERNAL_CUTOFF,CITY,FAX,RISK_COUNTRY_CHLNBR.ENTRY,SWIFT,RISK_COUNTRY_CHLNBR.LIST,BIS_STATUS,EXTERNAL_CUTOFF,TYPE,PARENT_PTYNBR.PTYID,PTYID,
+Acquirer 2,,,,,,,,,,,,OECD Bank,,Intern Dept,,Acquirer 2,
+Acquirer 1,,,,,Asia/Ho_Chi_Minh,,,555-123-4567,,ACQIIDJAXXX,,OECD Bank,,Intern Dept,,Acquirer 1,
+Client 1,,,,,,,,,,CLNIIDJAXXX,,OECD Bank,,Client,,Client 1,
+Correspondent Bank 1 ,,,Yes,Yes,Asia/Ho_Chi_Minh,100,,,,CHASUS33,,OECD Bank,1800,Counterparty,,Correspondent Bank 1 (J.P.MORGAN US),
+Correspondent Bank 2,,,,Yes,Asia/Ho_Chi_Minh,100,,,,BKTRUS33,,OECD Bank,1800,Counterparty,,Correspondent Bank 2 (DEUTSCHE BANK NY),
+Correspondent Bank 3,,TestAddress,Yes,Yes,Asia/Ho_Chi_Minh,100,TestCity,,,COBADEFF,,OECD Bank,1800,Counterparty,,Correspondent Bank 3 (COMMERZBANK),
+Correspondent Bank 4,Yes,,,Yes,Asia/Ho_Chi_Minh,100,,,,PNBPUS3NNYC,,OECD Bank,1800,Counterparty,,Correspondent Bank 4 (WELLS FARGO BANK),
+Counterparty 1,,,,,Asia/Ho_Chi_Minh,,,,,CPTIIDJAXXX,,OECD Bank,,Counterparty,,Counterparty 1,
+Counterparty 2,,,,,Asia/Ho_Chi_Minh,,,,United States,CPTWIDJAXXX,Country of Risk,OECD Bank,,Counterparty,,Counterparty 2,

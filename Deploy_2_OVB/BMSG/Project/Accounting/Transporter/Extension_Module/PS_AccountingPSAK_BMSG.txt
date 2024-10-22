@@ -1,0 +1,160 @@
+#
+# Front Arena exported extension module.
+# source          ""
+# timestamp (utc) "2024-03-26 05:16:04.3"
+# ***** DO NOT EDIT! *****
+#
+name        "PS_AccountingPSAK_BMSG"
+description "$Id$"
+
+groups {
+}
+
+decls[FCustomMethod] {
+}
+
+clx FLegAndTrade [FCustomMethod] {
+  IsTradeFxAndSGD =
+  Definition=IsTradeFxAndSGD: bool read
+  Function=AccountingPSAKColumnUtils.IsLegAndTradeFxAndSGD
+
+
+}
+
+clx FMoneyFlow [FCustomMethod] {
+  IsTradeFxAndSGD =
+  Definition=IsTradeFxAndSGD: bool read
+  Function=AccountingPSAKColumnUtils.IsMoneyFlowTradeFxAndSGD
+
+
+}
+
+clx FSettlement [FCustomMethod] {
+  IsTradeFxAndSGD =
+  Definition=IsTradeFxAndSGD: bool read
+  Function=AccountingPSAKColumnUtils.IsSettlementTradeFxAndSGD
+
+
+}
+
+clx FTrade [FCustomMethod] {
+  IsTradeFxAndSGD =
+  Definition=IsTradeFxAndSGD: bool read
+  Function=AccountingPSAKColumnUtils.IsTradeFxAndSGD
+
+
+}
+
+decls[FParameters] {
+}
+
+clx FObject [FParameters] {
+  CustomJournalOutputValidation =
+  BookName=Treasury_SG
+
+
+}
+
+decls[FPythonCode] {
+}
+
+clx FObject [FPythonCode] {
+  AccountingPSAKColumnUtils
+import acm
+
+CURRENCY_NAME = 'SGD'
+
+def IsLegAndTradeFxAndSGD(legAndTrade):
+    trade = legAndTrade.Trade()
+    if not trade:
+        return False
+    return IsTradeFxAndSGD(trade)
+
+def IsMoneyFlowTradeFxAndSGD(moneyFlow):
+    trade = moneyFlow.Trade()
+    if trade is None:
+        return False
+    return IsTradeFxAndSGD(trade)
+
+def IsSettlementTradeFxAndSGD(settlement):
+    trade = settlement.Trade()
+    if trade is None:
+        return False
+    return IsTradeFxAndSGD(trade)
+
+def IsTradeFxAndSGD(trade):
+    instrument = trade.Instrument()
+    ins_type = instrument.InsType()
+    curr_pair = None
+    if ins_type == 'Option':
+        if instrument.UnderlyingType() == 'Curr':
+            curr_pair = trade.InstrumentPair()
+    elif ins_type == 'Future/Forward':
+        if instrument.UnderlyingType() == 'Curr':
+            curr_pair = trade.InstrumentPair()
+    elif ins_type == 'CurrSwap':
+        curr_pair = trade.InstrumentPair()
+    elif ins_type == 'Curr':
+        curr_pair = trade.InstrumentPair()
+    if curr_pair is None:
+        return False
+    if CURRENCY_NAME in [curr_pair.Currency1().Name(), curr_pair.Currency2().Name()]:
+        return True
+
+    return False
+
+...
+
+  FValidationSaveRateOnBOBOConfirmed
+import ael
+import acm
+import AccountingColumnUtils
+
+usdCurr = acm.FInstrument['USD']
+market_spot = acm.FParty['REFINITIV_SPOT']
+market_historic = acm.FParty['EOD_MtM']
+
+def validate_transaction(transaction_list, *rest):
+    for (e, op) in transaction_list:
+        if e.record_type == "Trade":
+            orig = e.original()
+            if not orig or orig.status != 'BO-BO Confirmed':
+                if e.status == "BO-BO Confirmed":
+                    if e.insaddr.instype in ('Curr', 'CurrSwap'):
+                        try:
+                            if e.correction_trdnbr and e.correction_trdnbr.trdnbr != e.trdnbr:
+                                should_continue = False
+                                if e.correction_trdnbr.add_info('BoFxRate'):
+                                    AccountingColumnUtils.set_addinfo(e, 'BoFxRate', e.correction_trdnbr.add_info('BoFxRate'))
+                                    should_continue = True
+                                if should_continue:
+                                    continue
+                            insName = e.insaddr.insid
+                            if insName:
+                                market = market_spot
+                                liveRate = True
+                                ins = acm.FInstrument[insName]
+                                trade = acm.FTrade[e.trdnbr]
+                                tradeCurr = trade.CurrencyPair().Currency1()
+                                curr2 = trade.CurrencyPair().Currency2()
+                                if tradeCurr.Name() not in  ['USD', 'SGD'] and curr2.Name() not in ['USD', 'SGD']:
+                                    if ins and tradeCurr and market:
+                                        fxRate = AccountingColumnUtils.getLatestRateForInstrument(tradeCurr, usdCurr, 'Bid', market, liveRate)
+                                        if not fxRate:
+                                            fxRate = AccountingColumnUtils.getLatestRateForInstrument(usdCurr, tradeCurr, 'Bid', market, liveRate)
+                                            if fxRate and str(fxRate) != 'nan':
+                                                fxRate = 1/fxRate
+                                        if fxRate and str(fxRate) != 'nan':
+                                            AccountingColumnUtils.set_addinfo(e, 'BoFxRate', str(fxRate))
+                        except Exception as exc:
+                            print(exc)
+    return transaction_list
+
+
+
+    
+
+...
+
+}
+

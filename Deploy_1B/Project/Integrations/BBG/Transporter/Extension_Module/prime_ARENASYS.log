@@ -1,0 +1,3 @@
+﻿240311 005153 I B9D0 [last log message repeated 1 times]
+240311 005153 I B9D0 FExtensionAttribute - Extension Editor is waiting for input (click to activate).
+240311 005153 W B9D0 UxControlApi Calling ctrl_remove_callback with null MGH_Control

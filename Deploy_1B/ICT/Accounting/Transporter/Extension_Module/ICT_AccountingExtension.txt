@@ -1,0 +1,56 @@
+#
+# Front Arena exported extension module.
+# source          ""
+# timestamp (utc) "2024-09-26 07:38:37.2"
+# ***** DO NOT EDIT! *****
+#
+name        "ICT_AccountingExtension"
+description ""
+
+groups {
+}
+
+decls[FColumnDefinition] {
+  "Accounting Moneyflow Fixing Date" ( "accounting dates.moneyflow" "sheet columns.moneyflowsheet" ) "";
+  "Accounting Trade Fixing Date" ( "accounting dates.trade" "sheet columns.dealsheet" "sheet columns.tradesheet" ) "";
+}
+
+clx FTradingSheet [FColumnDefinition] {
+  Accounting Moneyflow Fixing Date =
+  Description=Fixing Date of MoneyFlow
+  GroupLabel=Accounting
+  Method=MoneyFlow.Trade.Instrument.ExpiryDateOnly
+  Name=Fixing Date
+
+
+  Accounting Trade Fixing Date =
+  Description=Fixing Date of Trade
+  ExtensionAttribute=fixingDateTrigger
+  GroupLabel=Accounting
+  Name=Fixing Date
+
+
+}
+
+decls[FExtensionAttribute] {
+}
+
+clx FTradeRow [FExtensionAttribute] {
+  fixingDateTrigger = py("AccountingTrigger", context).minusOneCal(object.Trade.Instrument.ExpiryDateOnly);
+}
+
+decls[FPythonCode] {
+}
+
+clx FObject [FPythonCode] {
+  AccountingTrigger
+import acm, ael, re, os
+from datetime import date, datetime
+
+def minusOneCal(date):
+    return acm.Time.DateAdjustPeriod(date,'-1d',jakarta,2)
+
+...
+
+}
+

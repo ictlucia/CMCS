@@ -1,0 +1,11 @@
+INSTRUMENT,,,,,,,,,,,,LEG,,,,,,,,,,,,,,,/LEG,/INSTRUMENT
+CONTR_SIZE,CURR.INSID,FIXING_LAG_DATE_RULE.NAME,FIXING_LAG_DATE_RULE.TYPE,GENERIC,INSID,INSTYPE,MTM_FROM_FEED,OTC,PAY_OFFSET_METHOD,QUOTATION_SEQNBR.NAME,SPOT_BANKING_DAYS_OFFSET,CURR.INSID,DAYCOUNT_METHOD,END_DATE_METHOD,END_PERIOD,INTEREST_PAYMENT_TIME,NOMINAL_AT_END,NOMINAL_FACTOR,PAYLEG,PAY_CALNBR.CALID,PAY_DAY_METHOD,RESET_CALNBR.CALID,ROLLING_CONVENTION,ROLLING_PERIOD,START_PERIOD,TYPE,,
+1000000,IDR,,,Yes,IDR/DEP/1D,Deposit,Yes,Yes,Business Days,Coupon,0,IDR,Act/360,Relative Start,1d,In Arrears,Yes,1,No,Jakarta,Mod. Following,,EOM Cal Days,0d,0d,Fixed,,
+1000000,IDR,,,Yes,IDR/DEP/1M,Deposit,Yes,Yes,Business Days,Coupon,0,IDR,Act/360,Relative Start,1m,In Arrears,Yes,1,No,Jakarta,Mod. Following,,EOM Cal Days,0d,0d,Fixed,,
+1000000,IDR,,,Yes,IDR/DEP/1W,Deposit,Yes,Yes,Business Days,Coupon,0,IDR,Act/360,Relative Start,1w,In Arrears,Yes,1,No,Jakarta,Mod. Following,,EOM Cal Days,0d,0d,Fixed,,
+1000000,IDR,,,Yes,IDR/DEP/1Y,Deposit,Yes,Yes,Business Days,Coupon,0,IDR,Act/360,Relative Start,1y,In Arrears,Yes,1,No,Jakarta,Mod. Following,,EOM Cal Days,0d,0d,Fixed,,
+1000000,IDR,,,Yes,IDR/DEP/2M,Deposit,Yes,Yes,Business Days,Coupon,0,IDR,Act/360,Relative Start,2m,In Arrears,Yes,1,No,Jakarta,Mod. Following,,EOM Cal Days,0d,0d,Fixed,,
+1000000,IDR,,,Yes,IDR/DEP/2W,Deposit,Yes,Yes,Business Days,Coupon,0,IDR,Act/360,Relative Start,2w,In Arrears,Yes,1,No,Jakarta,Mod. Following,,EOM Cal Days,0d,0y,Fixed,,
+1000000,IDR,,,Yes,IDR/DEP/3M,Deposit,Yes,Yes,Business Days,Coupon,0,IDR,Act/360,Relative Start,3m,In Arrears,Yes,1,No,Jakarta,Mod. Following,,EOM Cal Days,0d,0d,Fixed,,
+1000000,IDR,,,Yes,IDR/DEP/6M,Deposit,Yes,Yes,Business Days,Coupon,0,IDR,Act/360,Relative Start,6m,In Arrears,Yes,1,No,Jakarta,Mod. Following,,EOM Cal Days,0d,0d,Fixed,,
+1000000,IDR,+1D Jakarta,Fixing Lag,Yes,IDR/INDONIA,RateIndex,Yes,Yes,Business Days,Coupon,0,IDR,Act/360,Relative Start,1d,In Arrears,Yes,1,No,Jakarta,Mod. Following,Jakarta,None,,0d,Fixed,,

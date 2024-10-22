@@ -1,0 +1,189 @@
+FUNCTION getPartySideIndex(party_side_role) 
+fm_res = ""
+
+
+f_found = 0
+for(i = 0; i < _from.NoPartyIDs && f_found == 0; i++)
+{
+	dummy = System.Info("getPartySideIndex PartyRole", PartyRole[0][i])
+    if (_from.PartyRole[0][i] == party_side_role) 
+	{
+		fm_res = i
+		f_found = 1
+	}
+}
+if (fm_res == "")
+{
+	dummy = System.Error("getPartySideIndex no value found for PartyRole ", party_side_role)
+}
+else
+{
+	dummy = System.Info("getPartySideIndex returns", fm_res)
+}
+return fm_res
+
+FUNCTION getSubPartyIndex(party_side_index, sub_id_type) 
+fm_res = ""
+f_found = 0
+for(i = 0; i < _from.NoPartySubIDs[party_side_index] && f_found == 0; i++)
+{
+	if (_from.PartySubIDType[party_side_index][i] == sub_id_type) 
+	{
+		dummy = System.Info("getSubPartyIndex Index Found for sub id idx", i)
+		fm_res = i
+		f_found = 1
+	}
+}
+if (fm_res == "")
+{
+	dummy = System.Error("getSubPartySideIndex no value found for sub type ", sub_id_type)
+}
+else
+{
+	dummy = System.Info("getSubPartySideIndex returns", fm_res)
+}
+return fm_res
+
+
+FUNCTION getPartyID(party_role)
+fm_res = ""
+for (i = 0; i < _from.NoPartyIDs; i++)
+    {
+        if (_from.PartyRole[i] == party_role)
+			{
+				fm_res = _from.PartyID[i]
+            }
+    }
+if (fm_res == "")
+{
+	dummy = System.Error("getPartyID no value found for PartyID ", party_role)
+}
+else
+{
+	dummy = System.Info("getPartyID returns", fm_res)
+}
+return fm_res
+
+
+FUNCTION getCustomizedCounterpartyID()
+for (i=0; i < NoPartyIDs; i++)
+    {
+        if (PartyRole[i] == "1" && PartyIDSource[i] == "D")
+		{
+            fm_res = PartyID[i]
+		}
+	}
+	
+return fm_res
+
+FUNCTION getPaydayOffset()
+fm_res = "2" 
+s_date = _from.SettlDate
+e_date = _from.MaturityDate
+if (s_date != "" && e_date != "")
+	fm_res = daysBetweenDates(s_date, e_date)
+return fm_res
+
+FUNCTION getOriginatorID()
+
+fm_res = ""
+idx = getPartySideIndex("3")	//Get Originator Id
+if (idx != "")
+{
+	fm_res = _from.PartyID[0][idx]
+}
+dummy = System.Info("getOriginatorID", fm_res)
+return fm_res
+
+
+FUNCTION getCustomizedTraderID()
+uuid = getPartyID("12")	//Get Trader Id
+if (uuid != "")
+{
+	fm_res = uuid
+}
+dummy = System.Info("uuid", fm_res)
+return fm_res
+
+
+FUNCTION getBrokerID()
+fm_res = ""
+idx = getPartySideIndex("16")	//Get broker Id
+if (idx != "")
+{
+	fm_res = _from.PartyID[0][idx]
+}
+dummy = System.Info("getBrokerId", fm_res)
+return fm_res
+
+FUNCTION getDepositQuantity()
+fm_res = ""
+fm_res = 1
+
+if (_from.Side[0] == "1")
+	fm_res = fieldTimesFieldFloat(fm_res, -1) 
+return fm_res
+
+
+FUNCTION getDepositPremium()
+
+fm_res = _from.LastQty
+
+if (_from.Side[0] == "2")
+	fm_res = fieldTimesFieldFloat(fm_res, -1) 
+return fm_res
+
+
+FUNCTION getTradeStatus()
+
+fm_res ="FO Agreed"
+
+if (getCounterpartyID() == getOriginatorID())
+	fm_res = "Internal Input" 
+return fm_res
+
+FUNCTION getInternalTrade()
+fm_res ="0"
+
+if (getCounterpartyID() == getOriginatorID())
+	fm_res = "1" 
+return fm_res
+
+FUNCTION getCurrencyOne() \
+fm_res = "" \
+pos = strpos(Symbol , "/") \
+fm_res = substr(Symbol, 0, pos) \
+return fm_res \
+
+FUNCTION getCurrencyTwo() \
+fm_res = "" \
+pos = strpos(Symbol , "/") \
+fm_res = substr(Symbol, fieldplusfield(pos, 1)) \
+return fm_res \
+
+FUNCTION getExercise(argCFICode) \
+fm_res = argCFICode \
+fm_res = append2(substr(fm_res, 2, 1)) \
+if (fm_res == "A") \
+{ \
+  fm_res = "EXERCISE_AMERICAN" \
+} \
+else if (fm_res == "E") \
+{ \
+  fm_res = "EXERCISE_EUROPEAN" \
+} \
+return fm_res \
+
+FUNCTION getCallOption(argCFICode) \
+fm_res = argCFICode \
+fm_res = append2(substr(fm_res, 1, 1)) \
+is_call = "NO" \
+if ( fm_res == "P" && StrikeCurrency == getCurrencyOne() ) \
+{ \
+  is_call = "YES" \
+} \
+else if(fm_res == "C" && StrikeCurrency == getCurrencyTwo() ) \
+{ \
+  is_call = "YES" \
+} \
+return is_call \

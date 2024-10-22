@@ -1,0 +1,8 @@
+CHOICELIST,,,/CHOICELIST
+DESCRIPTION,LIST,ENTRY,
+,MASTER,StructureType,
+MarketLinkedDepositRAFx,StructureType,Market Linked Deposit RAFx,
+,StructureType,Accumulator,
+,StructureType,Deposit Swap,
+,StructureType,BasketAutocall,
+,StructureType,Target Redemption Forward,

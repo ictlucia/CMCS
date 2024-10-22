@@ -1,0 +1,12 @@
+USERPROFILE,PROFILECOMPONENT,,,,,/PROFILECOMPONENT,/USERPROFILE
+PROFID,ALLOW_CREATE,ALLOW_WRITE,COMPNBR.COMPNAME,COMPNBR.TYPE,FUNCS,,
+CTP_Export_CSV,,,CTP_Mandiri_Export_CSV,Application,Session Manager/Tools,,
+,,,User Preferences,Application,,,
+,Yes,Yes,Extension Module,DBObject,,,
+,Yes,Yes,TextObject,DBObject,,,
+,,,Run Script,Operation,,,
+,,,Run Script,Application,,,
+,Yes,Yes,Task,DBObject,,,
+,,,Trading Manager,Application,,,
+,,,Modify FO,Operation,,,
+,,Yes,Trade,DBObject,,,

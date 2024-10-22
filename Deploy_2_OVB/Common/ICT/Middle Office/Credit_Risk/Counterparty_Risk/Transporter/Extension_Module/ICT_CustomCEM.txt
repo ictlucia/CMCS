@@ -1,0 +1,361 @@
+#
+# Front Arena exported extension module.
+# source          ""
+# timestamp (utc) "2024-02-02 04:44:07.2"
+# ***** DO NOT EDIT! *****
+#
+name        "ICT_CustomCEM"
+description ""
+
+groups {
+}
+
+decls[FCustomFunction] {
+}
+
+clx FObject [FCustomFunction] {
+  ccrUniqueValues =
+  Function=ICT_CustomCreditRiskFuncTools.UniqueValues
+
+
+}
+
+decls[FPythonCode] {
+}
+
+clx FObject [FPythonCode] {
+  CEMCustomOverrides
+import acm
+from ICT_CustomMaturityBuckets import CustomMaturityBuckets as CustMaturityBuckets
+import ICT_Custom_CEM_Filter as Filter
+#-------------------------------------------------------------------------
+# Helper functions for override functions
+#-------------------------------------------------------------------------
+def get_time_to_maturity(maturity_date):
+    today = acm.Time.DateNow()
+    time_to_maturity = acm.Time.DateDifference(maturity_date, today)
+    return time_to_maturity
+    
+#-------------------------------------------------------------------------
+# Methods used for calculating add-on factors
+#-------------------------------------------------------------------------
+
+def Custom_CEMAssetClass( instrument, positionQuantity ):
+    """
+    Add logic for CEM Asset Class.
+    Return type: string
+    Return None to fallback to default implementation.
+    """ 
+    return None
+
+#-------------------------------------------------------------------------
+def Custom_CEMRating( instrument, positionQuantity ):
+    """
+    Add logic for CEM Rating.
+    Return type: string
+    Return None to fallback to default implementation.
+    """
+    return None
+
+#-------------------------------------------------------------------------
+def Custom_CEMMaturityBucket( instrument, positionQuantity, maturityDate ):
+    """
+    Add logic for CEM Maturity Bucket.
+    Return type: string
+    Return None to fallback to default implementation.
+    """
+    time_to_maturity = get_time_to_maturity(maturityDate)
+    if Filter.is_valid_fx_instype(instrument) and time_to_maturity <=365:
+        if time_to_maturity <= 2:
+            return CustMaturityBuckets.TWO_DAYS_LESS
+            
+        elif time_to_maturity <= 30:
+            return CustMaturityBuckets.TWO_TO_ONE_MONTHS
+            
+        elif time_to_maturity <= 90:
+            return CustMaturityBuckets.ONE_TO_THREE_MONTHS
+            
+        elif time_to_maturity <= 180:
+            return CustMaturityBuckets.THREE_TO_SIX_MONTHS
+            
+        elif time_to_maturity <= 365:
+            return CustMaturityBuckets.SIX_M_TO_ONE_YEAR
+
+    else:
+        if time_to_maturity <= 365:
+            return CustMaturityBuckets.ONE_YEAR_LESS
+        
+        elif time_to_maturity <= 730:
+            return CustMaturityBuckets.ONE_TO_TWO_YEARS
+        
+        elif time_to_maturity <= 1095:
+            return CustMaturityBuckets.TWO_TO_THREE_YEARS
+            
+        elif time_to_maturity <= 1460:
+            return CustMaturityBuckets.THREE_TO_FOUR_YEARS
+            
+        elif time_to_maturity <= 1825:
+            return CustMaturityBuckets.FOUR_TO_FIVE_YEARS
+            
+        elif time_to_maturity <= 2190:
+            return CustMaturityBuckets.FIVE_TO_SIX_YEARS
+            
+        elif time_to_maturity <= 2555:    
+            return CustMaturityBuckets.SIX_TO_SEVEN_YEARS
+            
+        elif time_to_maturity <= 2920:
+            return CustMaturityBuckets.SEVEN_TO_EIGHT_YEARS
+            
+        elif time_to_maturity <= 3285:
+            return CustMaturityBuckets.EIGHT_TO_NINE_YEARS
+            
+        elif time_to_maturity <= 3650:
+            return CustMaturityBuckets.NINE_TO_TEN_YEARS
+    
+    return None
+    
+#-------------------------------------------------------------------------    
+def Custom_CEMInsType( instrument, positionQuantity ):
+    """
+    Add logic for CEM Ins Type.
+    Return type: string
+    Return None to fallback to default implementation.
+    """
+    
+    if Filter.is_valid_fx_instype(instrument):
+        return "FX"
+    elif Filter.is_valid_irs_bond_instype(instrument):
+        return "IR"
+    elif Filter.is_valid_ccs_instype(instrument):
+        return "CCS"
+    return "Unregistered Instype"
+    
+#-------------------------------------------------------------------------
+def Custom_CEMCurrency( instrument, positionQuantity ):
+    """
+    Add logic for CEM Currency.
+    Return type: string
+    Return None to fallback to default implementation.
+    """
+    if not Filter.is_valid_irs_bond_instype(instrument):
+        return None
+    
+    if Filter.is_valid_irs_bond_instype(instrument) and Filter.is_valid_rupiah(instrument):
+        return "Rupiah"
+    return "Valas"
+
+#-------------------------------------------------------------------------
+def Custom_CEMCurrencyPair( instrument, positionQuantity ):
+    """
+    Add logic for CEM Currency Pair.
+    Return type: string
+    Return None to fallback to default implementation.
+    """
+    return None
+
+#-------------------------------------------------------------------------
+def Custom_CEMSubtype( instrument, positionQuantity ):
+    """
+    Add logic for CEM Subtype.
+    Return type: string
+    No default implementation.
+    """
+    return None
+    
+#-------------------------------------------------------------------------
+# Custom position add-on calculation
+#-------------------------------------------------------------------------
+def Custom_PositionAddOn( instrument, positionQuantity, addOnHierarchy, defaultNotional, defaultAddOn ):
+    """
+    Add logic for calculating position add-on.
+    Return type: denominatedvalue
+    Return None, addOn to fallback to default implementation.
+    """
+    return None
+
+#-------------------------------------------------------------------------
+# Custom add-on netting
+#-------------------------------------------------------------------------
+def Custom_AddOnByNettingKey( instrument, positionQuantity, addOn ):
+    """
+    Add logic for calculating add-on netting key and direction of add-on.
+    Return type: tuple (netting key, add-on including sign)
+    Return None, addOn to fallback to default implementation.
+    """
+    return None, addOn
+
+...
+
+  CreateCemBaseData
+
+import acm
+
+import CreditRiskSetupCommon
+import CreditRiskLogging
+
+__cemHierarchyName = 'CEM Parameters'
+__cemLevelTypeChoiceListName = 'CEM Level Type'
+__cemAddOnNetting = 'CEM Add-On Netting'
+
+__cemHierarchyColumns = [
+    ['Level Type', 'RecordRef', 32, __cemLevelTypeChoiceListName, 'The type describing the level'],
+    ['Factor', 'Standard', 4, '', 'The Add-On Factor']
+]
+
+__cemHierarchy = [
+    [__cemHierarchyName, {}, [
+        ['FX', {'Level Type':'InsType'}, [
+            ['<= 2d', {'Level Type':'Maturity', 'Factor':0.01},  None],
+            ['2d < tenor <= 1m', {'Level Type':'Maturity', 'Factor':0.03}, None],
+            ['1m < tenor <= 3m', {'Level Type':'Maturity', 'Factor':0.04}, None],
+            ['3m < tenor <= 6m', {'Level Type':'Maturity', 'Factor':0.06}, None],
+            ['6m < tenor <= 1y', {'Level Type':'Maturity', 'Factor':0.08}, None],
+            ['1y < tenor <= 2y', {'Level Type':'Maturity', 'Factor':0.11}, None],
+            ['2y < tenor <= 3y', {'Level Type':'Maturity', 'Factor':0.13}, None],
+            ['3y < tenor <= 4y', {'Level Type':'Maturity', 'Factor':0.15}, None],
+            ['4y < tenor <= 5y', {'Level Type':'Maturity', 'Factor':0.17}, None],
+            ['5y < tenor <= 6y', {'Level Type':'Maturity', 'Factor':0.19}, None],
+            ['6y < tenor <= 7y', {'Level Type':'Maturity', 'Factor':0.2}, None],
+            ['7y < tenor <= 8y', {'Level Type':'Maturity', 'Factor':0.21}, None],
+            ['8y < tenor <= 9y', {'Level Type':'Maturity', 'Factor':0.23}, None],
+            ['9y < tenor <= 10y', {'Level Type':'Maturity', 'Factor':0.24}, None]
+            ]],
+        ['IRS & Bond Forward', {'Level Type':'InsType'}, [
+            ['Rupiah', {'Level Type':'Currency'},[
+                ['<=1y', {'Level Type':'Maturity', 'Factor':0.01},  None],
+                ['1y < tenor <= 2y', {'Level Type':'Maturity', 'Factor':0.03}, None],
+                ['2y < tenor <= 3y', {'Level Type':'Maturity', 'Factor':0.05}, None],
+                ['3y < tenor <= 4y', {'Level Type':'Maturity', 'Factor':0.07}, None],
+                ['4y < tenor <= 5y', {'Level Type':'Maturity', 'Factor':0.08}, None],
+                ['5y < tenor <= 6y', {'Level Type':'Maturity', 'Factor':0.09}, None],
+                ['6y < tenor <= 7y', {'Level Type':'Maturity', 'Factor':0.15}, None],
+                ['7y < tenor <= 8y', {'Level Type':'Maturity', 'Factor':0.19}, None],
+                ['8y < tenor <= 9y', {'Level Type':'Maturity', 'Factor':0.22}, None],
+                ['9y < tenor <= 10y', {'Level Type':'Maturity', 'Factor':0.24}, None]
+            ]],
+            ['Valas', {'Level Type':'Currency'},[
+                ['<= 1y', {'Level Type':'Maturity', 'Factor':0.01},  None],
+                ['1y < tenor <= 2y', {'Level Type':'Maturity', 'Factor':0.03}, None],
+                ['2y < tenor <= 3y', {'Level Type':'Maturity', 'Factor':0.05}, None],
+                ['3y < tenor <= 4y', {'Level Type':'Maturity', 'Factor':0.07}, None],
+                ['4y < tenor <= 5y', {'Level Type':'Maturity', 'Factor':0.08}, None],
+                ['5y < tenor <= 6y', {'Level Type':'Maturity', 'Factor':0.09}, None],
+                ['6y < tenor <= 7y', {'Level Type':'Maturity', 'Factor':0.15}, None],
+                ['7y < tenor <= 8y', {'Level Type':'Maturity', 'Factor':0.19}, None],
+                ['8y < tenor <= 9y', {'Level Type':'Maturity', 'Factor':0.22}, None],
+                ['9y < tenor <= 10y', {'Level Type':'Maturity', 'Factor':0.24}, None]
+            ]]],
+        ['CCS', {'Level Type':'InsType'}, [
+            ['<=1y', {'Level Type':'Maturity', 'Factor':0.09},  None],
+            ['1y < tenor <= 2y', {'Level Type':'Maturity', 'Factor':0.14}, None],
+            ['2y < tenor <= 3y', {'Level Type':'Maturity', 'Factor':0.18}, None],
+            ['3y < tenor <= 4y', {'Level Type':'Maturity', 'Factor':0.22}, None],
+            ['4y < tenor <= 5y', {'Level Type':'Maturity', 'Factor':0.25}, None],
+            ['5y < tenor <= 6y', {'Level Type':'Maturity', 'Factor':0.28}, None],
+            ['6y < tenor <= 7y', {'Level Type':'Maturity', 'Factor':0.35}, None],
+            ['7y < tenor <= 8y', {'Level Type':'Maturity', 'Factor':0.4}, None],
+            ['8y < tenor <= 9y', {'Level Type':'Maturity', 'Factor':0.45}, None],
+            ['9y < tenor <= 10y', {'Level Type':'Maturity', 'Factor':0.48}, None]
+            ]]
+        ]]]
+]
+
+def Setup():
+    CreditRiskLogging.PrintLogMessage( 'CreateCemBaseData started\n' )
+    
+    CreditRiskSetupCommon.CreateChoiceList( __cemLevelTypeChoiceListName, ['Asset Class', 'Maturity', 'Rating', 'Currency', 'Currency Pair', 'InsType', 'Subtype'] )
+    CreditRiskSetupCommon.CreateChoiceList (__cemAddOnNetting, ['Custom', 'Net to Gross Ratio (NGR)'])
+    
+    CreditRiskSetupCommon.CreateAdditionalInfo( 'CVADocument', 'Instrument', 'RecordRef', 'ChoiceList', 'Standard Document', 'Credit Balance' )
+    CreditRiskSetupCommon.CreateAdditionalInfo( 'CVAAcquirer', 'Instrument', 'RecordRef', 'Party', 'Acquirer', 'Credit Balance' )
+    CreditRiskSetupCommon.CreateAdditionalInfo( 'CVAMasterAgreement', 'Instrument', 'RecordRef', 'MasterAgreement', 'Master Agreement', 'Credit Balance' )
+    
+    CreditRiskSetupCommon.CreateHierarchy( __cemHierarchyName, __cemHierarchy, __cemHierarchyColumns, __cemLevelTypeChoiceListName )
+    
+    CreditRiskLogging.PrintLogMessage( 'CreateCemBaseData ended\n' )
+
+#-------------------------------------------------------------------------
+ael_variables = []
+
+#-------------------------------------------------------------------------
+def ael_main(params):
+    Setup()
+
+...
+
+  ICT_Custom_CEM_Filter
+import acm
+
+FX_INSTYPE_LIST = ["Fx Rate", "Option", "Curr", "Future/Forward"]
+IR_INSTYPE_LIST = ["Swap","Bond","FRA"]
+CCS_INSTYPE_LIST = ["CurrSwap"]
+
+
+def is_valid_fx_instype(instrument):
+    if instrument.InsType() in FX_INSTYPE_LIST:
+        return True
+    return False
+    
+def is_valid_irs_bond_instype(instrument):
+    if instrument.InsType() in IR_INSTYPE_LIST:
+        return True
+    return False
+    
+def is_valid_ccs_instype(instrument):
+    if instrument.InsType() in CCS_INSTYPE_LIST:
+        return True
+    return False
+
+def is_valid_rupiah(instrument):
+    if instrument.Currency().Name() == "IDR":
+        return True
+    return False
+    
+    
+
+...
+
+  ICT_CustomCreditRiskFuncTools
+
+from itertools import chain, groupby
+
+import acm
+
+def UniqueValues( values ):
+    uniqueValues = acm.FSet()
+    
+    if type(values) is str:
+        values = [values]
+
+    for value in values:
+        uniqueValues.Add( value )
+    
+    uniqueValues =  uniqueValues.AsArray()
+    
+    return uniqueValues.First() if len( uniqueValues ) == 1 else uniqueValues
+
+...
+
+  ICT_CustomMaturityBuckets
+class CustomMaturityBuckets:
+    TWO_DAYS_LESS = "<= 2d"
+    TWO_TO_ONE_MONTHS = "2d < tenor <= 1m"
+    ONE_TO_THREE_MONTHS = "1m < tenor <= 3m"
+    THREE_TO_SIX_MONTHS = "3m < tenor <= 6m"
+    SIX_M_TO_ONE_YEAR = "6m < tenor <= 1y"
+    ONE_TO_TWO_YEARS = "1y < tenor <= 2y"
+    TWO_TO_THREE_YEARS = "2y < tenor <= 3y"
+    THREE_TO_FOUR_YEARS = "3y < tenor <= 4y"
+    FOUR_TO_FIVE_YEARS = "4y < tenor <= 5y"
+    FIVE_TO_SIX_YEARS = "5y < tenor <= 6y"
+    SIX_TO_SEVEN_YEARS = "6y < tenor <= 7y"
+    SEVEN_TO_EIGHT_YEARS = "7y < tenor <= 8y"
+    EIGHT_TO_NINE_YEARS = "8y < tenor <= 9y"
+    NINE_TO_TEN_YEARS = "9y < tenor <= 10y"
+    ONE_YEAR_LESS = "<= 1y"
+    
+
+...
+
+}
+

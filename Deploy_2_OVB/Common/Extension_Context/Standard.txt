@@ -1,0 +1,15 @@
++BaseCore
++PS_Utilities
++PS_ProjectTools
++Front Office
++Middle Office
++Back Office
++Accounting
++Integrations
++Distribution
++Trade and Limit Workflow
++Reports
++StructuredProducts
++FRTB
+%org
+%user

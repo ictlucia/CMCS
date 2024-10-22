@@ -1,0 +1,218 @@
+#
+# Front Arena exported extension module.
+# source          ""
+# timestamp (utc) "2022-01-11 08:18:15"
+# ***** DO NOT EDIT! *****
+#
+name        "Standard Workflow"
+description "$Id$"
+
+groups {
+}
+
+decls[FParameters] {
+}
+
+clx FObject [FParameters] {
+  PS_TradeWorkflowConfig =
+  LOGGER_LEVEL=4
+
+
+}
+
+decls[FPythonCode] {
+}
+
+clx FObject [FPythonCode] {
+  FTradeStatus
+
+"""----------------------------------------------------------------------------
+
+MODULE
+    FTradeStatus
+
+DESCRIPTION
+    A Python hook module which, if it exists, allows control over changes to
+    trade status by the user. The module can contain the following functions:
+
+    * check_trade_status_action can be used to allow or prevent the user from 
+      making a change to the status of a trade.
+    * change_trade_status_allowed can be used to limit the available statuses
+      to which the user can change the trade. 
+
+----------------------------------------------------------------------------"""
+
+import ael
+import acm
+import FLogger
+
+from FTradeStatusUtils import get_workflow_param, is_component_in_user_profile
+from FTradeStatusDictionary import intoStdD, trdStatOpD
+
+
+# INFO/LOG: 1, DEBUG/DLOG: 2, WARN: 3, ERROR/ELOG: 4
+logger    = FLogger.FLogger('FTradeStatus :     ')
+log_level = int(get_workflow_param('LOGGER_LEVEL')[0])
+logger    = logger.Reinitialize(level=log_level)
+
+
+def check_trade_status_action(trd_old, trd_new):  
+    ''''Is this TradeStatus transition allowed?
+    0=No, 1=Yes, 2=Look at default rules'''
+    
+    logger.DLOG("In check_trade_status_action.")
+    ret = 2
+    
+    if is_component_in_user_profile("Bypass Trade Workflow"):
+        ret = 1
+    
+    return ret
+
+
+def change_trade_status_allowed(current, new, trade=None):
+    '''Given current status, should the new status be in the drop down list?'''
+    
+    ret = 2
+    
+    if is_component_in_user_profile("Bypass Trade Workflow"):
+        ret = 1
+    elif current in intoStdD:
+        if current == new:
+            ret = 1
+        elif new in intoStdD[current]:
+            ret = is_component_in_user_profile(trdStatOpD[new])
+        else:
+            ret = 0
+    
+    return ret
+
+
+...
+
+  FTradeStatusDictionary
+
+"""----------------------------------------------------------------------------
+
+MODULE
+    FTradeStatusDictionary
+
+DESCRIPTION
+    A Python hook module which contain the dictionary of trade status transition
+
+----------------------------------------------------------------------------"""
+
+
+# intoStdD is a dictionary for Standard status transitions on format A:[B,C]
+# where A is From status and B,C are allowed To statuses (i.e. they will show
+# in the drop down list if the user has the Operation.) If you don't need this
+# ability, leave an empty dictionary
+#intoStdD = {'FO Confirmed': ['BO Confirmed'],
+#            'BO Confirmed': ['BO-BO Confirmed']}
+
+intoStdD = {    
+    'Simulated'                                 : ['Reserved', 'Internal', 'Void'],
+    'Reserved'                                  : ['Simulated', 'FO Confirmed', 'Void'],
+    'FO Confirmed'                              : ['Reserved','BO Confirmed','BO Rejected', 'Void'],
+    'Internal'                                  : ['Void'],
+    'BO Rejected'                               : ['Reserved', 'Void'],
+    'BO Confirmed'                              : ['BO-BO Confirmed', 'BO Rejected','Void'],
+    'BO-BO Confirmed'                           : ['Void'],
+    'Void'                                      : ['Confirmed Void'],
+    'Confirmed Void'                            : []
+    }
+
+
+# trdStatOpD is a dictionary to translate TradeStatus into corresponding Operation.
+# At least add statuses of the afterD here in the format TradeStatus:Operation
+# N.B. Always means that if it is an allowed transition status, you don't need 
+# the Operation in your profile.
+#trdStatOpD = {'Trade Status Name' : 'Operation Spec Name', }
+
+trdStatOpD = {'Simulated'                       : 'FO Confirm',
+              'Reserved'                        : 'FO Confirm',
+              'FO Confirmed'                    : 'FO Confirm',
+              'BO Confirmed'                    : 'BO Confirm',
+              'BO Rejected'                     : 'BO Reject',
+              'BO-BO Confirmed'                 : 'BO-BO Confirm',
+              'Internal'                        : 'FO Confirm',
+              'Void'                            : 'Void Deal',
+              'Confirmed Void'                  : 'Confirm Void'
+              }
+
+...
+
+  FTradeStatusUtils
+
+"""----------------------------------------------------------------------------
+
+MODULE
+    FTradeStatusUtils
+
+DESCRIPTION
+    Utility functions, mostly for FTradeStatus python hook
+
+----------------------------------------------------------------------------"""
+
+import acm
+import ael
+import types
+
+
+def get_workflow_param(listname):
+    list1 = []
+    module = acm.GetDefaultContext().GetExtension('FParameters', 'FObject', 'PS_TradeWorkflowConfig').Value()
+    if module[listname] :
+        return module[listname].Text().split(",")
+    else:
+        return list1
+
+
+def is_component_in_user_profile(compname, ctype='Operation'):
+    '''Does this user have this component in one of his profiles'''
+    if compname == 'Always' or compname == 'Exception':
+        return 1
+        
+    # If component does not exist we do not allow
+    try:
+        if not acm.FComponent.Select(f"type='{ctype}' and name='{compname}'"):
+            return 0
+    except RuntimeError:
+        return 0
+
+    if acm.User().IsAllowed(compname, ctype):
+        return 1
+        
+    return 0
+
+
+def only_changing_trade_status(old_trade, new_trade):
+    ''' Return 1 if only trade status has changed between old_trade and
+    new_trade. '''
+
+    if old_trade.status == new_trade.status:
+        return 0
+
+    res = 1
+    exclude_fields = ['status', 'execution_time', 'trdnbr', 'insaddr']
+    exclude_fields_status_void = ['text1', 'text2', 'correction_trdnbr']
+
+    for c in ael.Trade.columns():
+        if (not c in exclude_fields and
+            (not c in exclude_fields_status_void or not
+             (new_trade.status == 'Void' and old_trade.status != 'Void'))):
+            old_col_value = eval('old_trade.%s' % c)
+            new_col_value = eval('new_trade.%s' % c)
+            if isinstance(eval('old_trade.%s' % c), types.FloatType):
+                val = abs(old_col_value - new_col_value) < 1e-10
+            else:
+                val = old_col_value == new_col_value
+            if not val:
+                res = 0
+                break
+
+    return res
+
+...
+
+}
+

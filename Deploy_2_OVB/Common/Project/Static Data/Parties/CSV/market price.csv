@@ -1,0 +1,7 @@
+PARTY,,,,/PARTY
+NOT_TRADING,BIS_STATUS,TYPE,PTYID,
+Yes,OECD Bank,Market,Mark to Model,
+Yes,OECD Bank,Market,PBOC_GovBond,
+Yes,OECD Bank,Market,PBOC_ClosingFxRates,
+Yes,OECD Bank,Market,MAS Website,
+Yes,OECD Bank,Market,Bloomberg CBBT,

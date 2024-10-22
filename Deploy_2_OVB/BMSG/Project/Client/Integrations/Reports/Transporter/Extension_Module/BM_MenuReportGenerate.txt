@@ -1,0 +1,418 @@
+#
+# Front Arena exported extension module.
+# source          ""
+# timestamp (utc) "2024-04-04 08:43:04"
+# ***** DO NOT EDIT! *****
+#
+name        "BM_MenuReportGenerate"
+description "$Id$"
+
+groups {
+}
+
+decls[FMenuExtension] {
+}
+
+clx FObject [FMenuExtension] {
+  Cashflow =
+  DisplayName=Cashflow
+  Function=CI04_Cashflow.StartApplication
+  MenuType=Application
+  ModuleName=Cashflow
+  ParentMenu=Reporting Menu
+  RibbonPosition=Reporting Menu/Front Office Report
+
+
+  CI06_LiquidityStress =
+  DisplayName=Liquidity Stress
+  Function=CI06_LiquidityStress.StartApplication
+  MenuType=Application
+  ModuleName=Liquidity Stress
+  ParentMenu=Tools
+  RibbonPosition=Reporting Menu/Middle Office Report
+
+
+  Consolidated Country Limit - Ultimate =
+  DisplayName=SGBO22 - Consolidated Country Limit - Ultimate
+  Function=SGBO22_ConsolidatedCountryLimitUltimate.StartApplication
+  MenuType=Application
+  ModuleName=SGBO22 - Consolidated Country Limit - Ultimate
+  ParentMenu=Reporting Menu
+  RibbonPosition=Reporting Menu/Back Office Report
+
+
+  Journal Import =
+  Function=FJournalImportUtil.StartApplication
+  MenuType=Application
+  ModuleName=Journal Import
+  ParentMenu=Tools
+  RibbonPosition=Tools
+
+
+  Liquidity Gap =
+  DisplayName=Liquidity Gap
+  Function=CI05_LiquidityGap.StartApplication
+  MenuType=Application
+  ModuleName=Liquidity Gap
+  ParentMenu=Tools
+  RibbonPosition=Reporting Menu/Middle Office Report
+
+
+  Maturity GAP =
+  DisplayName=Maturity GAP
+  Function=CI01_MaturityGAP.StartApplication
+  MenuType=Application
+  ModuleName=Maturity GAP
+  ParentMenu=Reporting Menu
+  RibbonPosition=Reporting Menu/Front Office Report
+
+
+  Minimum Liquidity Ratio =
+  DisplayName=Minimum Liquidity Ratio
+  Function=CI03_MinimumLiquidityRatio.StartApplication
+  MenuType=Application
+  ModuleName=Minimum Liquidity Ratio
+  ParentMenu=Reporting Menu
+  RibbonPosition=Reporting Menu/Front Office Report
+
+
+  Repricing GAP =
+  DisplayName=Repricing GAP
+  Function=CI02_RepricingGAP.StartApplication
+  MenuType=Application
+  ModuleName=Repricing GAP
+  ParentMenu=Reporting Menu
+  RibbonPosition=Reporting Menu/Front Office Report
+
+
+  SGBO22 - Consolidated Country Limit - Ultimate =
+  DisplayName=SGBO22 - Consolidated Country Limit - Ultimate
+  Function=SGBO22_ConsolidatedCountryLimitUltimate.StartApplication
+  MenuType=Application
+  ModuleName=SGBO22 - Consolidated Country Limit - Ultimate
+  ParentMenu=Reporting Menu
+  RibbonPosition=Reporting Menu/Back Office Report
+
+
+  SGBO34 - MTM for All FX and Other Credit Derivatives =
+  DisplayName=SGBO34 - MTM for All FX and Other Credit Derivatives
+  Function=SGBO34_MTMforAllFXandOtherCreditDerivatives.StartApplication
+  MenuType=Application
+  ModuleName=SGBO34 - MTM for All FX and Other Credit Derivatives
+  ParentMenu=Reporting Menu
+  RibbonPosition=Reporting Menu/Back Office Report
+
+
+  SGBO35 - Cashflow Report for All Products =
+  DisplayName=SGBO35 - Cashflow Report for All Products
+  Function=SGBO35_CashflowReportforAllProducts.StartApplication
+  MenuType=Application
+  ModuleName=SGBO35 - Cashflow Report for All Products
+  ParentMenu=Reporting Menu
+  RibbonPosition=Reporting Menu/Back Office Report
+
+
+  SGBO44 - Customer Limit =
+  DisplayName=SGBO44 - Customer Limit
+  Function=SGBO44_CustomerLimit.StartApplication
+  MenuType=Application
+  ModuleName=SGBO44 - Customer Limit
+  ParentMenu=Reporting Menu
+  RibbonPosition=Reporting Menu/Back Office Report
+
+
+  SGBO45 - Industry Limit =
+  DisplayName=SGBO45 - Industry Limit
+  Function=SGBO45_IndustryLimit.StartApplication
+  MenuType=Application
+  ModuleName=SGBO45 - Industry Limit
+  ParentMenu=Reporting Menu
+  RibbonPosition=Reporting Menu/Back Office Report
+
+
+  SGFOa02 - Daily Cash Flow Report =
+  DisplayName=SGFOa02 - Daily Cash Flow Report
+  Function=SGFOa02_DailyCashFlowReport.StartApplication
+  MenuType=Application
+  ModuleName=SGFOa02 - Daily Cash Flow Report
+  ParentMenu=Reporting Menu
+  RibbonPosition=Reporting Menu/Front Office Report
+
+
+  SGMO15 - Total Available for Sale Securities AFS =
+  DisplayName=SGMO15 - Total Available for Sale Securities AFS
+  Function=SGMO15_TotalAvailableforSaleSecuritiesAFS.StartApplication
+  MenuType=Application
+  ModuleName=SGMO15 - Total Available for Sale Securities AFS
+  ParentMenu=Reporting Menu
+  RibbonPosition=Reporting Menu/Middle Office Report
+
+
+  SGMOa03 - Treasury Trading Limit Monitoring =
+  DisplayName=SGMOa03 - Treasury Trading Limit Monitoring
+  Function=SGMOa03_TreasuryTradingLimitMonitoring.StartApplication
+  MenuType=Application
+  ModuleName=SGMOa03 - Treasury Trading Limit Monitoring
+  ParentMenu=Reporting Menu
+  RibbonPosition=Reporting Menu/Middle Office Report
+
+
+}
+
+clx FSessionManagerFrame [FMenuExtension] {
+  Journal Import =
+  Function=FJournalImportUtil.StartApplication
+  MenuType=Application
+  ModuleName=Journal Import
+  ParentMenu=Tools
+  RibbonPosition=Tools
+
+
+}
+
+decls[FPythonCode] {
+}
+
+clx FObject [FPythonCode] {
+  CI01_MaturityGAP
+
+import acm
+import UserProfileUtils as up
+
+def StartApplication(eii):
+    component = 'Front Office'
+    shell = acm.UX.SessionManager().Shell()
+    isallow = up.is_component_in_user_profile(component, 'Operation')
+    if isallow == 1:
+        acm.RunModuleWithParameters("CI01 - Maturity GAP", acm.GetDefaultContext())
+    else:
+        acm.UX().Dialogs().MessageBoxInformation(shell,"User not have access")
+
+...
+
+  CI02_RepricingGAP
+
+import acm
+import UserProfileUtils as up
+
+def StartApplication(eii):
+    component = 'Front Office'
+    shell = acm.UX.SessionManager().Shell()
+    isallow = up.is_component_in_user_profile(component, 'Operation')
+    if isallow == 1:
+        acm.RunModuleWithParameters("CI02 - Repricing GAP", acm.GetDefaultContext())
+    else:
+        acm.UX().Dialogs().MessageBoxInformation(shell,"User not have access")
+
+...
+
+  CI03_MinimumLiquidityRatio
+
+import acm
+import UserProfileUtils as up
+
+def StartApplication(eii):
+    component = 'Front Office'
+    shell = acm.UX.SessionManager().Shell()
+    isallow = up.is_component_in_user_profile(component, 'Operation')
+    if isallow == 1:
+        acm.RunModuleWithParameters("CI03 - Minimum Liquidity Ratio", acm.GetDefaultContext())
+    else:
+        acm.UX().Dialogs().MessageBoxInformation(shell,"User not have access")
+
+...
+
+  CI04_Cashflow
+
+import acm
+import UserProfileUtils as up
+
+def StartApplication(eii):
+    component = 'Front Office'
+    shell = acm.UX.SessionManager().Shell()
+    isallow = up.is_component_in_user_profile(component, 'Operation')
+    if isallow == 1:
+        acm.RunModuleWithParameters("CI04 - Cashflow", acm.GetDefaultContext())
+    else:
+        acm.UX().Dialogs().MessageBoxInformation(shell,"User not have access")
+
+...
+
+  CI05_LiquidityGap
+
+import acm
+import UserProfileUtils as up
+
+def StartApplication(eii):
+    component = 'Middle Office'
+    shell = acm.UX.SessionManager().Shell()
+    isallow = up.is_component_in_user_profile(component, 'Operation')
+    if isallow == 1:
+        acm.RunModuleWithParameters("CI05 - Liquidity Gap", acm.GetDefaultContext())
+    else:
+        acm.UX().Dialogs().MessageBoxInformation(shell,"User not have access")
+
+...
+
+  CI06_LiquidityStress
+
+import acm
+import UserProfileUtils as up
+
+def StartApplication(eii):
+    component = 'Middle Office'
+    shell = acm.UX.SessionManager().Shell()
+    isallow = up.is_component_in_user_profile(component, 'Operation')
+    if isallow == 1:
+        acm.RunModuleWithParameters("CI06 - Liquidity Stress", acm.GetDefaultContext())
+    else:
+        acm.UX().Dialogs().MessageBoxInformation(shell,"User not have access")
+
+...
+
+  FJournalImportUtil
+
+import acm
+import UserProfileUtils as up
+
+def StartApplication(eii):
+    component = 'BO Journal Upload'
+    shell = acm.UX.SessionManager().Shell()
+    isallow = up.is_component_in_user_profile(component, 'Operation')
+    if isallow == 1:
+        acm.RunModuleWithParameters("FJournalImport", acm.GetDefaultContext())
+    else:
+        acm.UX().Dialogs().MessageBoxInformation(shell,"User not have access")
+
+...
+
+  SGBO22_ConsolidatedCountryLimitUltimate
+
+import acm
+import UserProfileUtils as up
+
+def StartApplication(eii):
+    component = 'Back Office'
+    shell = acm.UX.SessionManager().Shell()
+    isallow = up.is_component_in_user_profile(component, 'Operation')
+    if isallow == 1:
+        acm.RunModuleWithParameters("SGBO22 - Consolidated Country Limit - Ultimate", acm.GetDefaultContext())
+    else:
+        acm.UX().Dialogs().MessageBoxInformation(shell,"User not have access")
+
+...
+
+  SGBO34_MTMforAllFXandOtherCreditDerivatives
+
+import acm
+import UserProfileUtils as up
+
+def StartApplication(eii):
+    component = 'Back Office'
+    shell = acm.UX.SessionManager().Shell()
+    isallow = up.is_component_in_user_profile(component, 'Operation')
+    if isallow == 1:
+        acm.RunModuleWithParameters("SGBO34 - MTM for All FX and Other Credit Derivatives", acm.GetDefaultContext())
+    else:
+        acm.UX().Dialogs().MessageBoxInformation(shell,"User not have access")
+
+...
+
+  SGBO35_CashflowReportforAllProducts
+
+import acm
+import UserProfileUtils as up
+
+def StartApplication(eii):
+    component = 'Back Office'
+    shell = acm.UX.SessionManager().Shell()
+    isallow = up.is_component_in_user_profile(component, 'Operation')
+    if isallow == 1:
+        acm.RunModuleWithParameters("SGBO35 - Cashflow Report for All Products", acm.GetDefaultContext())
+    else:
+        acm.UX().Dialogs().MessageBoxInformation(shell,"User not have access")
+
+...
+
+  SGBO44_CustomerLimit
+
+import acm
+import UserProfileUtils as up
+
+def StartApplication(eii):
+    component = 'Back Office'
+    shell = acm.UX.SessionManager().Shell()
+    isallow = up.is_component_in_user_profile(component, 'Operation')
+    if isallow == 1:
+        acm.RunModuleWithParameters("SGBO44 - Customer Limit", acm.GetDefaultContext())
+    else:
+        acm.UX().Dialogs().MessageBoxInformation(shell,"User not have access")
+
+...
+
+  SGBO45_IndustryLimit
+
+import acm
+import UserProfileUtils as up
+
+def StartApplication(eii):
+    component = 'Back Office'
+    shell = acm.UX.SessionManager().Shell()
+    isallow = up.is_component_in_user_profile(component, 'Operation')
+    if isallow == 1:
+        acm.RunModuleWithParameters("SGBO45 - Industry Limit", acm.GetDefaultContext())
+    else:
+        acm.UX().Dialogs().MessageBoxInformation(shell,"User not have access")
+
+...
+
+  SGFOa02_DailyCashFlowReport
+
+import acm
+import UserProfileUtils as up
+
+def StartApplication(eii):
+    component = 'Front Office'
+    shell = acm.UX.SessionManager().Shell()
+    isallow = up.is_component_in_user_profile(component, 'Operation')
+    if isallow == 1:
+        acm.RunModuleWithParameters("SGFOa02 - Daily Cash Flow Report", acm.GetDefaultContext())
+    else:
+        acm.UX().Dialogs().MessageBoxInformation(shell,"User not have access")
+
+...
+
+  SGMO15_TotalAvailableforSaleSecuritiesAFS
+
+import acm
+import UserProfileUtils as up
+
+def StartApplication(eii):
+    component = 'Middle Office'
+    shell = acm.UX.SessionManager().Shell()
+    isallow = up.is_component_in_user_profile(component, 'Operation')
+    if isallow == 1:
+        acm.RunModuleWithParameters("SGMO15 - Total Available for Sale Securities AFS (Volume Limit", acm.GetDefaultContext())
+    else:
+        acm.UX().Dialogs().MessageBoxInformation(shell,"User not have access")
+
+...
+
+  SGMOa03_TreasuryTradingLimitMonitoring
+
+import acm
+import UserProfileUtils as up
+
+def StartApplication(eii):
+    component = 'Middle Office'
+    shell = acm.UX.SessionManager().Shell()
+    isallow = up.is_component_in_user_profile(component, 'Operation')
+    if isallow == 1:
+        acm.RunModuleWithParameters("SGMOa03 - Treasury Trading Limit Monitoring", acm.GetDefaultContext())
+    else:
+        acm.UX().Dialogs().MessageBoxInformation(shell,"User not have access")
+
+...
+
+}
+

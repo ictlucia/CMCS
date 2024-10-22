@@ -1,0 +1,5 @@
+CHOICELIST,,,,/CHOICELIST
+DESCRIPTION,ENTRY,LIST,SORT_ORDER,
+MT,Modal inti tambahan,Pengakuan_KPMM,,
+MP,Modal pelengkap,Pengakuan_KPMM,1,
+NM,Tidak diperhitungkan,Pengakuan_KPMM,2,

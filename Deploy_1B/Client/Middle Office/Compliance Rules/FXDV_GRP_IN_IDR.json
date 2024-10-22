@@ -1,0 +1,153 @@
+[
+    {
+        "FTransaction": {
+            "Objects": [
+                {
+                    "FComplianceRule": {
+                        "Definition": {
+                            "ref(RuleDefinition.PositionAndRiskControl)": {
+                                "Column": {
+                                    "ref(FStandardColumnCreator)": {
+                                        "Configuration": {
+                                            "ref(FColumnCreatorConfiguration)": {
+                                                "ref(FDictionary)": {
+                                                    "columnParameters": {
+                                                        "ref(FVariantDictionary)": {
+                                                            "AggCurrChoice": "Fixed Curr",
+                                                            "CEMHierarchyChoice": {
+                                                                "ref(FHierarchy)": "CEM Parameters"
+                                                            },
+                                                            "FixedCurr": {
+                                                                "ref(FCurrency)": "IDR"
+                                                            },
+                                                            "PosCurrChoice": "Fixed Curr"
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        "ContextSym": {
+                                            "ref(FSymbol)": "Standard"
+                                        },
+                                        "OriginalColumnId": {
+                                            "ref(FSymbol)": "Counterparty CEM Limit"
+                                        }
+                                    }
+                                },
+                                "ColumnIndex": 0,
+                                "CompoundQueryLogicalOperator": "AND",
+                                "FilterQuery": {
+                                    "ref(FArray)": [
+                                        {
+                                            "ref(FStoredASQLQuery)": {
+                                                "Cid": "FASQL Query",
+                                                "Name": "NB_FXDV_LIMIT",
+                                                "User": null
+                                            }
+                                        }
+                                    ]
+                                },
+                                "ForEach": "",
+                                "PythonFilterMethodName": "",
+                                "RelationType": "Explicit",
+                                "RelativeTo": false,
+                                "RelativeToColumn": null,
+                                "RelativeToColumnIndex": 0,
+                                "StoredTimeBuckets": null,
+                                "TradeRelation": "AdditionalInfo.LimitPartyTarget.RiskCountry.Name"
+                            }
+                        },
+                        "DefinitionInfo": "PositionAndRiskControl",
+                        "Description": "",
+                        "Name": "FXDV_GRP_IN_IDR",
+                        "RuleCategory": {
+                            "ref(FChoiceList)": {
+                                "List": "Compliance Rule Category",
+                                "Name": "Pre-Deal"
+                            }
+                        }
+                    }
+                },
+                {
+                    "FThreshold": {
+                        "ComparisonType": "Greater",
+                        "ComplianceRule": {
+                            "ref(FComplianceRule)": "FXDV_GRP_IN_IDR"
+                        },
+                        "Coordinates": {
+                            "ref(FStaticArray)": []
+                        },
+                        "Description": "",
+                        "Parent": null,
+                        "Relative": false,
+                        "Type": {
+                            "ref(FChoiceList)": {
+                                "List": "Threshold Type",
+                                "Name": "Violation"
+                            }
+                        },
+                        "Value": 100.0
+                    }
+                },
+                {
+                    "FThreshold": {
+                        "ComparisonType": "Greater",
+                        "ComplianceRule": {
+                            "ref(FComplianceRule)": "FXDV_GRP_IN_IDR"
+                        },
+                        "Coordinates": {
+                            "ref(FStaticArray)": []
+                        },
+                        "Description": "",
+                        "Parent": {
+                            "ref(FThreshold)": {
+                                "ComparisonType": "Greater",
+                                "ComplianceRule": {
+                                    "ref(FComplianceRule)": "FXDV_GRP_IN_IDR"
+                                },
+                                "Coordinates": {
+                                    "ref(FStaticArray)": []
+                                },
+                                "Type": {
+                                    "ref(FChoiceList)": {
+                                        "List": "Threshold Type",
+                                        "Name": "Violation"
+                                    }
+                                }
+                            }
+                        },
+                        "Relative": true,
+                        "Type": {
+                            "ref(FChoiceList)": {
+                                "List": "Threshold Type",
+                                "Name": "Warning"
+                            }
+                        },
+                        "Value": 85.0
+                    }
+                },
+                {
+                    "FThreshold": {
+                        "ComparisonType": "Less or Equal",
+                        "ComplianceRule": {
+                            "ref(FComplianceRule)": "FXDV_GRP_IN_IDR"
+                        },
+                        "Coordinates": {
+                            "ref(FStaticArray)": []
+                        },
+                        "Description": "",
+                        "Parent": null,
+                        "Relative": false,
+                        "Type": {
+                            "ref(FChoiceList)": {
+                                "List": "Threshold Type",
+                                "Name": "Reporting"
+                            }
+                        },
+                        "Value": 85.0
+                    }
+                }
+            ]
+        }
+    }
+]

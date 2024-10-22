@@ -1,0 +1,1237 @@
+#
+# Front Arena exported extension module.
+# source          ""
+# timestamp (utc) "2024-08-29 09:16:07.5"
+# ***** DO NOT EDIT! *****
+#
+name        "PS_TPSOutRTGS"
+description "$Id$"
+
+groups {
+}
+
+decls[FParameters] {
+}
+
+clx FObject [FParameters] {
+  TPSSettlementParams =
+  BranchOfTrxn=99120
+  CUID=NTC
+  DefaultTellerId=9925505
+  IP_Address=10.243.235.113
+  LogFilename=TPSOutSettlementLog_{}.txt
+  LogRequest=1
+  OrderCustName=BMRIIDJASTL
+  Password=0x4wqfCmcK3w4HCrmLCpcKd
+  SettlementFilter=TPSSettlementOutRTGS
+  SuspenseAccount=ALL AKUN SUSPEND TRANSAKSI TREASURY
+  Timeout=30
+  TTC_AccountMap={'330': {'From': ['GWM Mandiri', 'IDR-BIRTGS'], 'To': ['BI FAST Mandiri', 'IDR-BIFAST']}, '331': {'From': ['BI FAST Mandiri', 'IDR-BIFAST'], 'To': ['GWM Mandiri', 'IDR-BIRTGS']}}
+  Url=http://10.243.136.160:9443/opfrest/webapi/rtgs/channel
+  User=bva2
+
+
+}
+
+decls[FPythonCode] {
+}
+
+clx FObject [FPythonCode] {
+  TPSOutSettlementProcessor
+"""----------------------------------------------------------------------------------------------------
+MODULE:
+    TPSOutSettlementProcessor
+
+DESCRIPTION:
+    File to generate the tps out settlement format text.
+
+-------------------------------------------------------------------------------------------------------"""
+import ast, acm, eMAS_CommonUtils, ParametersReader
+import TPSOutSettlementsAPI, traceback, requests, json
+import EncoderUtils
+
+MODULE_NAME = "TpsOutSettlements"
+MAX_TRACKING_SEQ_NUM = 99999999999999999999999999999999
+TPS_ADD_INFO_SPEC = acm.FAdditionalInfoSpec['SentToTPS']
+SETTLEMENT_NACK = "Not Acknowledged"
+
+
+class ConnectionObject(object):
+    def __init__(self, api_key, url, timeout, user, password):
+        """
+        Initialize member variables
+        :return: None
+        """
+        self._url = url
+        self._timeout = float(timeout)
+        self._user = user
+        self._password = password
+        self._header = {"Content-Type": "application/json", "apiKey": api_key}
+
+    def post_request(self, json_data):
+        """
+        Send the post request
+        """
+        return requests.post(self._url, headers=self._header, json=json.loads(json_data), timeout=self._timeout, verify=False, auth=(self._user, self._password))
+        
+class TPSOutSettlementProcessor(object):
+    def __init__(self):
+        # eMAS specific parameters, since we are using TellerID from the eMAS slot
+        eMASCommonParams = ParametersReader.get_params('eMASCommonParams')  # Read it every time
+        tpsSettlementParams = ParametersReader.get_params('TPSSettlementParams')  # Read it every time
+                
+        eMAS_CommonUtils.new_day_check(eMASCommonParams)
+        self._default_tellerId = tpsSettlementParams['DefaultTellerId']
+        self._blockedTellerId = ast.literal_eval(eMASCommonParams['BlockedTellerId'])
+        self.interfaceToTellerId = ast.literal_eval(eMASCommonParams['InterfaceToTellerId'])
+        self._seqUpdateDate = eMASCommonParams['SeqUpdateDate']
+        self._MaxTellerId = int(eMASCommonParams['MaxTellerId'])
+        self._MinTellerId = int(eMASCommonParams['MinTellerId'])
+        self._log_request = int(tpsSettlementParams['LogRequest'])
+        _user = tpsSettlementParams['User']
+        _password = tpsSettlementParams['Password']
+        if _password:
+            _password = EncoderUtils.get_decrypted_password(_password, TPSOutSettlementsAPI.TPS_KEY)
+
+        self.tellerIdSeqNoList = self.interfaceToTellerId.get(MODULE_NAME)
+
+        if not self.tellerIdSeqNoList:
+            self.tellerIdSeqNoList = list()
+            self.tellerIdSeqNoList.append(self._default_tellerId)
+            self.tellerIdSeqNoList.append(1)
+            self.tellerIdSeqNoList.append(1)
+            self.interfaceToTellerId.update({MODULE_NAME: self.tellerIdSeqNoList})
+
+        self._tellerId = self.tellerIdSeqNoList[0]
+        self._journalSeqNo = int(self.tellerIdSeqNoList[1])
+        self._trackingSeqNo = int(self.tellerIdSeqNoList[2])
+
+        
+        _tps_api_key = tpsSettlementParams['ApiKey']
+        _tps_url = tpsSettlementParams['Url']
+        _timeout = tpsSettlementParams['Timeout']
+        self._CUID = tpsSettlementParams['CUID']
+        self._suspence_account = tpsSettlementParams['SuspenseAccount']
+        self._transaction_branch = tpsSettlementParams['BranchOfTrxn']
+
+        self._connection_object = ConnectionObject(url=_tps_url, api_key=_tps_api_key, timeout=_timeout, user=_user, password=_password)
+
+    def update_settlement_diary(self, settlement, settlement_diary_text):
+        """
+        This function saves the settlement diary text
+        :param settlement: FSettlement
+        :param settlement_diary_text: diary text
+        :return: None
+        """
+        try:
+            acm.BeginTransaction()
+            if settlement_diary_text:
+                diary_obj = settlement.Diary()
+                if not diary_obj:
+                    diary_obj = acm.FSettlementDiary()
+                diary_obj.AddNote("TPS : {}".format(settlement_diary_text))
+                diary_obj.Commit()
+                settlement.Diary(diary_obj)
+            settlement.Commit()
+            acm.CommitTransaction()
+        except Exception as err:
+            acm.AbortTransaction()
+            print('Error in _save_settlement_status. {}'.format(err))
+            
+    def set_settlement_status_nack(self, settlement, settlement_diary_text):
+        settlement.Status(SETTLEMENT_NACK)
+        self.update_settlement_diary(settlement, settlement_diary_text)
+        
+
+    def process(self, settlement):
+        """
+        This function processes the TPS settlement
+        :param settlement: FSettlement
+        :return: None
+        """
+        log_string = 'TPS Out Settlement - {} with tellerId {} and journalSequence {}.'.format(
+            settlement.Oid(), self._tellerId, self._journalSeqNo)
+        settlement_diary_text = ''
+        try:
+            gl_acnt = acm.FTAccount.Select01("name = '{}'".format(self._suspence_account), None)
+            if gl_acnt:
+                gl_acnt = gl_acnt.Number()
+            json_obj = TPSOutSettlementsAPI.create_fund_transfer_object(settlement, self._CUID, self._tellerId,
+                                                                        self._journalSeqNo, self._trackingSeqNo,
+                                                                        gl_acnt, self._transaction_branch)
+            try:
+                if self._log_request:
+                    log_string += '\nJSON request: {}\n'.format(json_obj)
+                response_object = self._connection_object.post_request(json_obj)
+                if self._log_request:
+                        log_string += '\nResponse object: {}\n'.format(response_object)
+                if response_object and response_object.status_code == 200:
+                    response_json = response_object.json()
+                    if self._log_request:
+                        log_string += '\nJSON object response: {}\n'.format(response_json)
+                    if response_json:
+                        resp_ = TPSOutSettlementsAPI.TPSOutSettlementResponse(response_json)
+                        resp_.populate_object()
+                        if resp_.is_response_ok():
+                            log_string += " Successful."
+                            settlement.AddInfoValue(TPS_ADD_INFO_SPEC, '1')
+                            settlement.Commit()
+                        else:
+                            log_string += 'Failed response: \n'
+                            log_string += str(response_json)
+                            settlement_diary_text = resp_.failed_response_text()                            
+                    else:
+                        log_string += ' Failed to get a response for trade id {}'.format(settlement.Oid())
+                        settlement_diary_text = log_string
+                else:
+                    settlement_diary_text = 'Server return code {}. {} '.format(response_object.status_code,
+                                                                      response_object.reason)
+                    log_string += settlement_diary_text
+
+            except Exception as err:
+                settlement_diary_text = 'Internal exception handler' + str(err)
+                log_string += 'Internal exception handler' + str(err)
+                print(traceback.format_exc())
+            self.save_counters()
+        except Exception as err:
+            settlement_diary_text = 'Internal exception handler' + str(err)
+            print('Error in TPSOutSettlementProcessor.process - {}'.format(err))
+            print(traceback.format_exc())
+        
+        if settlement_diary_text:
+            self.set_settlement_status_nack(settlement, settlement_diary_text)
+
+        print(log_string)
+
+    def _get_tellerId_in_use(self):
+        """
+        This function returns the teller ids in use
+        :return: list
+        """
+        teller_id_in_use = list()
+        for interface_name, interface_list in self.interfaceToTellerId.items():
+            if len(interface_list) > 1:
+                teller_id_in_use.append(interface_list[0])
+
+        return teller_id_in_use
+
+    def assign_new_tellerId(self):
+        """
+         This function finds out the next free teller id
+         :return: None
+         """
+        try:
+            self._blockedTellerId.append(str(self._tellerId))
+
+            teller_id_in_use = self._get_tellerId_in_use()
+
+            for tellerid in range(self._MinTellerId + eMAS_CommonUtils.NEW_TELLER_ID_OFFSET, self._MaxTellerId, 1):
+                if str(tellerid) not in self._blockedTellerId and str(tellerid) not in teller_id_in_use:
+                    self._tellerId = str(tellerid)
+                    self._journalSeqNo = 0
+                    break
+        except Exception as err:
+            print('Error in assign_new_tellerId {}'.format(err))
+
+    def save_counters(self):
+        """
+        This function saves the counters in the FParameters
+        :return:
+        """
+        self._journalSeqNo += 1
+        self._trackingSeqNo += 1
+
+        if self._journalSeqNo >= eMAS_CommonUtils.MAX_SEQ_NUM:
+            self._journalSeqNo = 1
+
+        if self._trackingSeqNo >= MAX_TRACKING_SEQ_NUM:
+            self._trackingSeqNo = 1
+
+        self.tellerIdSeqNoList[0] = self._tellerId
+        self.tellerIdSeqNoList[1] = self._journalSeqNo
+        self.tellerIdSeqNoList[2] = self._trackingSeqNo
+
+        commonParameterDict = {'InterfaceToTellerId': str(self.interfaceToTellerId),
+                               'BlockedTellerId': str(self._blockedTellerId),
+                               'MaxTellerId': self._MaxTellerId,
+                               'MinTellerId': self._MinTellerId,
+                               'SeqUpdateDate': self._seqUpdateDate}
+
+        eMAS_CommonUtils.SaveParameterValues('eMASCommonParams', commonParameterDict)
+
+...
+
+  TPSOutSettlements
+"""----------------------------------------------------------------------------------------------------
+MODULE:
+    TPSOutSettlements
+
+DESCRIPTION:
+    Entry point to invoke the TPS Out Settlements run task gui.
+
+-------------------------------------------------------------------------------------------------------"""
+import acm, ael, traceback, os
+import FLogger, FRunScriptGUI
+import ParametersReader, InterfaceUtils
+
+# get value from FParameter
+tpsParams = ParametersReader.get_params('TPSSettlementParams')
+log_file_name = tpsParams['LogFilename'].format(acm.Time.DateToday().replace('-', ''))
+
+class TPSOutSettlements(FRunScriptGUI.AelVariablesHandler):
+    def __init__(self):
+        """
+        Initialize member variables
+        """
+        # NAME = 0  # internal name
+        # TEXT = 1  # GUI Text
+        # TYPE = 2  # object type
+        # VALUES = 3  # valid values
+        # DEFAULT = 4  # default
+        # MANDATORY = 5  # mandatory
+        # MULTI = 6  # multiple selection
+        # TIP = 7  # floating tip
+        # CB = 8  # callback
+        # ENABLED = 9  # enabled
+
+        logLevels = [FLogger.FLogger.INFO, FLogger.FLogger.ERROR, FLogger.FLogger.WARNING, FLogger.FLogger.DEBUG]
+
+        query = [query.Name() for query in acm.FStoredASQLQuery.Select("subType='FSettlement'")]
+        query.sort()
+
+        folderPicker = FRunScriptGUI.DirectorySelection()
+
+        gui_vars = [
+            ['settlement_query', 'TPS Settlements_Input', 'string', query, 'TPSSettlementOutRTGS', 1, 0,
+             'TPS Settlements', None, 1],
+            ['logToConsole', 'Log to console_Logging', 'int', [1, 0], 1, 1, 0,
+             'Whether logging should be done in the Log Console or not.'],
+            ['log_folder', 'Log folder_Logging', folderPicker, None, folderPicker, 0, 1,
+             'Select where to store the log file',
+             0, None],
+            ['log_level', 'Log level_Logging', 'string', logLevels, FLogger.FLogger.DEBUG, 1, 0]
+        ]
+
+        self._logger = None
+        FRunScriptGUI.AelVariablesHandler.__init__(self, gui_vars)
+
+    def set_logger(self, logger):
+        """
+        This function sets the logger
+        :param logger: FLogger
+        :return: None
+        """
+        self._logger = logger
+
+    def process_out_settlement(self, params):
+        """
+        This function generates recap data
+        :param params: parameters
+        :return:None
+        """
+        self._logger.LOG('Start process_out_settlement')
+        settlements_query = params['settlement_query']
+        settlements = acm.FStoredASQLQuery[settlements_query]
+        if settlements:
+            settlements = settlements.Query().Select().Sort()
+            for counter, settlement in enumerate(settlements):
+                try:
+                    settlement.Touch()
+                    settlement.Commit()
+                    self._logger.DLOG('Updated settlement {}'.format(settlement.Oid()))
+                except Exception as err:
+                    self._logger.LOG('Error while updating settlement {}. Error {}'.format(settlement.Oid(), err))
+
+        self._logger.LOG('Finish process_out_settlement')
+
+
+ael_gui_parameters = {'windowCaption': "TPS Out Settlements"}
+
+ael_variables = TPSOutSettlements()
+ael_variables.LoadDefaultValues(__name__)
+app_name = 'TPS_Out_Settlements'
+
+
+def initialize_logging(params, logfile_name, app_name):
+    """
+    Initialize logger
+    :param params: parameters
+    :return: FLogger object
+    """
+    logger = None
+    try:
+        logFolder = params['log_folder']
+        logfolderString = logFolder.SelectedDirectory().AsString()
+        logfile = os.path.join(logfolderString, logfile_name)
+        if logfile == '':
+            logfile = None
+
+        logLevel = params['log_level']
+        level = InterfaceUtils.LogLevelNameToNumber(logLevel)
+        logger = FLogger.FLogger(level=level,
+                                 name=app_name,
+                                 logToPrime=True,
+                                 logToFileAtSpecifiedPath=logfile,
+                                 logToConsole=False)
+    except Exception as err:
+        print('Error in initializing logger {}'.format(err))
+        print(traceback.format_exc())
+    return logger
+
+
+def ael_main(params):
+    """
+    AEL main function
+    :param params: GUI parameters
+    :return: None
+    """
+    tps_logger = None
+    try:
+        tps_logger = initialize_logging(params, log_file_name, app_name)
+        if tps_logger:
+            tps_logger.LOG('Execution started.')
+            ael_variables.set_logger(tps_logger)
+            ael_variables.process_out_settlement(params)
+
+    except Exception as err:
+        if tps_logger is not None:
+            tps_logger.ELOG(str(err))
+        print(traceback.format_exc())
+        print('Error in ael main. {}'.format(err))
+
+
+...
+
+  TPSOutSettlementsAPI
+"""----------------------------------------------------------------------------------------------------
+MODULE:
+    TPSOutSettlementsAPI
+
+DESCRIPTION:
+    Utils functions.
+
+-------------------------------------------------------------------------------------------------------"""
+import acm, FLogger, traceback, InterfaceUtils
+import json, ast
+import ParametersReader
+import datetime
+import TPSOutSettlementsUtils
+TPS_KEY='WYDN7239'
+
+
+settlement_params = ParametersReader.get_params('TPSSettlementParams')
+
+ttc_account_map = settlement_params['TTC_AccountMap']
+local_ip_address = settlement_params['IP_Address']
+orderCustName= settlement_params['OrderCustName']
+if not local_ip_address:
+    # If not able to find local ip automatically use it from parameter
+    local_ip_address = TPSOutSettlementsUtils.get_local_ip()    
+
+HTTP_CODE_SUCCESS = 200
+
+product_code_list = ['FXBN', 'FXBN', 'FXBN', 'FXDU', 
+                     'FXDU', 'FXDU', 'FX', 'FX', 'FX', 
+                     'FX', 'FX', 'FX', 'FX', 'FX', '', 
+                     'NOST', 'DEBT', 'DEBT', 'DEBT', 'DEBT', 
+                     'REPO', 'REPO', 'REPO', 'REPO', 'REPO', 
+                     'REPO', 'REPO', 'REPO', 'REPO', 'REPO', 
+                     'DL', 'DL', 'DL', 'DL', 'DL', 'DL', 
+                     'DL', 'DL', 'DL', 'DL', 'REPO', 'REPO', 
+                     'REPO', 'REPO', 'REPO', 'REPO', 'REPO', 
+                     'REPO', 'REPO', 'REPO', 'REPO', 'REPO', 'REPO', 
+                     'REPO', 'REPO', 'REPO', 'REPO', 'REPO', 
+                     'REPO', 'REPO', 'REPO', 'REPO', 'REPO', 
+                     'REPO', 'REPO', 'REVREPO', 'REVREPO', 'REVREPO', 
+                     'REVREPO', 'REVREPO', 'REVREPO', 'REVREPO', 'REVREPO', 
+                     'REVREPO', 'REVREPO', 'REVREPO', 'REVREPO', 
+                     'BONDSREPO', 'BONDSREPO', 'BONDSREPO', 'BONDSREPO', 
+                     'BONDSREPO', 'BONDSREPO', 'TD', 'TD', 'BOND', 'DL', 
+                     'SBI', 'SBI', 'SBI', 'SBI', 'SWAP', 'SWAP', 'SWAP', 
+                     'SWAP', 'BOND', 'BOND', '', '', '', '', 'BOND', 'BOND', 
+                     'BOND', 'BOND', 'BOND', 'BOND', 'BOND', 'BOND', '', 
+                     'BOND', 'BOND', 'BOND', 'BOND', 'BOND', 'BOND', 'BOND', 
+                     'BOND', 'BOND', '', 'BOND', 'BOND', 'SP', 'SP', 'SP', 
+                     'SP', 'SP', 'SP', '', '', '', '', '', '', '', '', '', 
+                     '', '','SBI',
+                     'DL', 'DL',
+                     'REPO', 'REPO', 'REPO', 'REPO', 'REPO', 'REVREPO', 'REVREPO', 'REVREPO', 'REVREPO', 'REVREPO']
+                     
+                     
+
+type_list = ['TOD', 'SPOT', 'FWD', 'TOD', 'SPOT', 
+             'FWD', 'TOD', 'TOM', 'SPOT', 'FWD', 
+             'NDF', 'NS', 'SWAP', 'OPT', '', 'NTRF', 
+             'BOND', 'ZCO', 'NCD', 'NCN', 'IWFSBI', 
+             'IWFGOV', 'IWFDIS', 'IWFNON', 'IWFOTH', 'CWFSBI', 
+             'CWFGOV', 'CWFDIS', 'CWFNON', 'CWFOTH', 'CL', 
+             'MD', 'CMP', 'CMT', 'OVP', 'OVT', 'BLT', 
+             'SHARI', 'FASBI', 'LF', 'BISBI', 'BIGOV', 'BIDIS', 
+             'BINON', 'BIOTH', 'IBSBI', 'IBGOV', 'IBDIS', 'IBNON', 
+             'IBOTH', 'CCSBI', 'CCGV', 'CCDC', 'CCND', 'CCOH', 
+             'OVBSBI', 'OVBGOV', 'OVBDIS', 'OVBNON', 'OVBOTH', 'NEGSBI', 
+             'NEGGOV', 'NEGDIS', 'NEGNON', 'NEGOTH', 'BISBI', 'BIOB', 
+             'BIOH', 'IBSBI', 'IBOB', 'IBOH', 'OVBSBI', 'OVBGOV', 
+             'OVBOTH', 'CCSBI', 'CCGOV', 'CCOTH', 'SBI', 'GOV', 'OBL', 
+             'DIS', 'NON', 'OTH', 'FASBI', 'BI', 'RDPU', 'BA', 'IDBI', 
+             'IDSV', 'SUKBI', 'IDSD', 'IRS', 'CCS', 'OIS', 'FRA', 'OPT', 
+             'FWD', '', '', '', '', 'CBIDR', 'CBUSD', 'CBVALAS', 'UST', 
+             'BILLS', 'ROI', 'ORI', 'SR', '', 'SBBI', 'SBK', 'SPN', 'SPNS', 
+             'FR', 'VR', 'INDOIS', 'PBS', 'NCD', '', 'RDPT', 'EBA', 'MDS', 
+             'MDCI', 'MCS', 'MPF', 'MMLD', 'MLDR', '', '', '', '', '', 
+             '', '', '', '', '', '','SRBI',
+             'FVP', 'FVT',
+             'FVSBI', 'FVGOV', 'FVDIS', 'FVNON', 'FVOTH', 'FVSBI', 'FVGOV', 'FVDIS', 'FVNON', 'FVOTH']
+
+ttc_list = ['103', '103', '103', '103', '103', '103', 
+            '111', '111', '111', '111', '111', '111', 
+            '111', '103', '103', ['330', '331'], '104', 
+            '104', '104', '104', '104', '104', '104', 
+            '104', '104', '104', '104', '104', '104', 
+            '104', '103', '103', ['112', '113'], ['112', '113'], 
+            '101', '101', '103', ['112', '113'], '', '', 
+            '104', '104', '104', '104', '104', '104', 
+            '104', '104', '104', '104', '104', '104', 
+            '104', '104', '104', '104', '104', '104', 
+            '104', '104', '104', '104', '104', '104', 
+            '104', '104', '104', '104', '104', '104', 
+            '104', '104', '104', '104', '104', '104', 
+            '104', '104', '104', '104', '104', '104', 
+            '104', '', '', '100', '', '104', '104', 
+            '104', '104', '103', '103', '103', '103', 
+            '103', '104', '103', '103', '103', '103', 
+            '100', '', '', '', '', '', '104', '104', 
+            '', '104', '100', '104', '104', '104', 
+            '104', '', '104', '100', '', '100', '100', 
+            '', '103', '103', '103', '103', '103', '103', 
+            '103', '103', '103', '103', '', '', '', '', '', '','104',
+            ['112','113'],['112','113'],
+            '104','104','104','104','104','104','104','104','104','104']
+
+code_list = ['IFTBN', 'IFTBN', 'IFTBN', 'IFTBN', 
+             'IFTBN', 'IFTBN', 'IFTFX00', 'IFTFX00', 
+             'IFTFX00', 'IFTFX00', 'IFTFX00', 'IFTFX00',
+             'IFTFX00', 'IFTBN', 'IFTBN',['IFTFAST1', 'IFTAST2'], 
+             'IFTSX001', 'IFTSX001', 'IFTSX001', 'IFTSX001', 
+             '', '', '', '', '', '', '', '', '', '', 
+             'IFTBN', 'IFTBN', ['IFTMM00', 'IFTMM001'], 
+             ['IFTMM00', 'IFTMM001'], 
+             'IFTNA00', 'IFTNA00', 'IFTNA00', 
+             ['IFTMM00', 'IFTMM001'], 
+             '', '', '', '', '', '', '', '', '', 
+             '', '', '', '', '', '', '', '', '', 
+             '', '', '', '', '', '', '', '', '', 
+             '', '', '', '', '', '', '', '', '', 
+             '', '', '', '', '', '', '', '', '', 
+             '', '', 'IFT000', '', '', '', '', '', 
+             'IFTBN', 'IFTBN', 'IFTBN', 'IFTBN', 
+             '', '', 'IFTBN', 'IFTBN', 'IFTBN', 
+             'IFTBN', 'IFT000', '', '', '', '', 
+             '', '', '', '', '', '', '', '', '', '', 
+             '', '', '', '', '', '', '', '', 'IFTBN', 
+             'IFTBN', 'IFTBN', 'IFTBN', 'IFTBN', 
+             'IFTBN', 'IFTBN', 'IFTBN', 'IFTBN', 
+             '', '', '', '', '', '', '',
+             ['IFTMM00', 'IFTMM001'], ['IFTMM00', 'IFTMM001'],
+             '', '', '', '', '', '', '', '', '', '']
+             
+
+
+class TPSOutSettlementResponse(object):
+    RESPONCE_CODE_SUCCESS = '1'
+
+    def __init__(self, json_object):
+        """
+        Init member variables
+        Sample
+        {
+        "channelID": "21",
+        "tellerID": "9912499",
+        "journalSequence": "301990",
+        "transactionCode": "7882",
+        "responseCode": "2",
+        "responseMessage": "Rekening tidak ditemukan",
+        "responseTimestamp": "26-04-2023 12:45:13",
+        "requestBranch": "99102",
+        "intlTrnsfrRes": {
+        "status": "Rejected",
+        "responseCode": "2",
+        "reasonForRejection": "Rekening tidak ditemukan",
+        "errorNumber": "1",
+        "availableBalance": "0.00000",
+        "responseHeader": "2"
+            }
+        }
+        :param json_object:
+        """
+        self._json_object = json_object
+
+    def populate_object(self):
+        """
+        Populate the object
+        """
+        if isinstance(self._json_object, dict):
+            for item, val in self._json_object.items():
+                if not isinstance(item, dict):
+                    setattr(self, '_{}'.format(item), val)
+
+            trf_reponse = self._json_object.get('intlTrnsfrRes')
+            for item, val in trf_reponse.items():
+                setattr(self, '_intlTrnsfrRes_{}'.format(item), val)
+
+    def is_response_ok(self):
+        """ Check if the response is OK"""
+        return True if self._intlTrnsfrRes_responseCode == TPSOutSettlementResponse.RESPONCE_CODE_SUCCESS else False
+
+    def failed_response_text(self):
+        """ Check if the response is failed"""
+        return self._intlTrnsfrRes_reasonForRejection if self._intlTrnsfrRes_reasonForRejection else self._responseMessage
+
+
+class TPSOutSettlementRequest(object):
+    def __init__(self):
+        """ Initialize members """
+        # Sample:
+        # {
+        #     "header": {
+        #         "externalId": "230320133817837493",
+        #         "msgType": "103",
+        #         "coverType": "",
+        #         "msgStep": "RTGS",
+        #         "channelID": "001",
+        #         "transportDate": "230320"
+        #     },
+        #     "payload": {
+        #         "valueDate": "230320",
+        #         "branchOfTrxn": "12100",
+        #         "remittanceNo": "0712100008824601",
+        #         "debitAccount": "1210031058906",
+        #         "debitCurrency": "IDR",
+        #         "debitAmount": "500035000.00",
+        #         "provision": "0.00",
+        #         "chargesCurrency": "IDR",
+        #         "chargesAmount": "35000.00",
+        #         "chargesExchangeRate": "1.0000000",
+        #         "swiftChargesAmount": "0.00",
+        #         "swiftChargesExchangeRate": "1.0000000",
+        #         "taxAmount": "0.00",
+        #         "totalCharges": "35000.00",
+        #         "ibtBuyRate": "1.0000000",
+        #         "ibtSellRate": "1.0000000",
+        #         "ttBuyRate": "1.0000000",
+        #         "ttSellRate": "1.0000000",
+        #         "creditAmount": "500000000.00",
+        #         "creditCurrency": "IDR",
+        #         "userInformation": "",
+        #         "passbookSerialNo": "",
+        #         "passbookBalance": "",
+        #         "passbookNextLine": "",
+        #         "chequeNo": "",
+        #         "orderCustName": "0380599082",
+        #         "benefName": "NIRA ARDIANTI",
+        #         "remittanceInfo1": "MODAL KERJA",
+        #         "remittanceInfo2": "",
+        #         "remittanceInfo3": "",
+        #         "remittanceInfo4": "",
+        #         "chargesType": "OUR",
+        #         "tellerID": "1210055",
+        #         "journalSequence": "40",
+        #         "tranCode": "4858",
+        #         "CUID": "137",
+        #         "ipAddress": "10.117.1.75",
+        #         "instructionCode1": "",
+        #         "instructionRemarks1": "",
+        #         "instructionCode2": "",
+        #         "instructionRemarks2": "",
+        #         "instructionCode3": "",
+        #         "instructionRemarks3": "",
+        #         "purpose": "",
+        #         "userReference": "",
+        #         "WSID": "",
+        #         "spvOvID": "1210004",
+        #         "pinPadBlock1": "",
+        #         "pinPadBlock2": "",
+        #         "orderCustPhoneNo": "08124322009",
+        #         "orderCustID": "3272051002870041",
+        #         "orderTaxID": "3272051002870041",
+        #         "benefID": "",
+        #         "benefBankName": "CENAIDJA",
+        #         "benefAccount": "0380599082",
+        #         "beneficiaryAddress1": "JAKARTA",
+        #         "beneficiaryAddress2": "JAKARTA",
+        #         "beneficiaryAddress3": "0300",
+        #         "trnCode": "IFT00000",
+        #         "returnReason": "",
+        #         "relatedJournalSequence": "",
+        #         "altSenderAcct": "1210031058906",
+        #         "nameAltSenderAcct": "MUCHAMAD SERTUNURISM",
+        #         "customerType": "",
+        #         "regulatoryReporting1": "/FEAB/R/PTR/Local-Local",
+        #         "tellerIdApproval": "1210004",
+        #         "somisFlag": "YY",
+        #         "residentFlag": "Y",
+        #         "regulatoryReporting2": "/OUR/",
+        #         "oringinalSenderRefNo": "",
+        #         "regulatoryReporting3": "",
+        #         "singleOrMulti": "S",
+        #         "altSenderAddr1": "ASRAMA PASPAMPRES JL TANAH ABANG II",
+        #         "altSenderAddr2": "RT 009 RW 008",
+        #         "altSenderAddr3": "0391"
+        #     }
+        # }
+
+        # header
+        self._externalId = ""
+        self._msgType = ""  # Always empty
+        self._coverType = ""  # Always empty
+        self._msgStep = ""  # Always empty
+        self._channelID = "154"
+        self._transportDate = ""
+
+        # payload
+        self._valueDate = ""
+        self._BranchOfTrxn = "99120"
+        self._remittanceNo = ""
+        self._oringinalSenderRefNo = ""
+        self._debitAccount = ""
+        self._debitCurrency = ""
+        self._creditCurrency = "IDR"
+        self._creditAmount = ""
+        self._debitAmount = ""
+        self._chargesAmount = "0.00"
+        self._taxAmount = "0.00"
+        self._ibtBuyRate = "1.0000000"
+        self._ibtSellRate = "1.0000000"
+        self._ttBuyRate = "1.0000000"
+        self._ttSellRate = "1.0000000"
+        self._passbookSerialNo = ""
+        self._passbookBalance = ""
+        self._passbookNextLine = ""
+        self._chequeNo = ""
+        self._orderCustName = ""
+        self._orderTaxID = ""
+        self._benefName = ""
+        self._benefID = ""
+        self._benefPhoneNo = ""
+        self._benefBankName = ""
+        self._benefAccount = ""
+        self._beneficiaryAddress1 = ""
+        self._beneficiaryAddress2 = ""
+        self._beneficiaryAddress3 = ""
+        self._TRN = ""
+        self._returnReason = ""
+        self._tellerID = ""
+        self._journalSequence = ""
+        self._relatedJournalSequence = ""
+        self._tranCode = "7880"  # hardcoded value
+        self._CUID = ""
+        self._ipAddress = ""
+        self._altSenderAcct = ""
+        self._nameAltSenderAcct = ""
+        self._regulatoryReporting1 = ""
+        self._regulatoryReporting2 = ""
+        self._regulatoryReporting3 = ""
+        self._chargesType = "OUR"
+        self._remittanceInfo1 = ""
+        self._remittanceInfo2 = ""
+        self._remittanceInfo3 = ""
+        self._remittanceInfo4 = ""
+        self._tellerIDApproval = ""
+        self._somisFlag = ""
+        self._residentFlag = ""
+        self._singleOrMulti = ""
+        self._altSenderAddr1 = ""
+        self._altSenderAddr2 = ""
+        self._altSenderAddr3 = ""
+        self._chargesCurrency = "IDR" # Always IDR
+        self._provision = ""
+        self._chargesExchangeRate = ""
+        self._swiftChargesAmount = ""
+        self._swiftChargesExchangeRate = ""
+        self._totalCharges = ""
+        self._userInformation = ""
+        self._instructionCode1 = ""
+        self._instructionRemarks1 = ""
+        self._instructionCode2 = ""
+        self._instructionRemarks2 = ""
+        self._instructionCode3 = ""
+        self._instructionRemarks3 = ""
+        self._purpose = ""
+        self._userReference = ""
+        self._WSID = ""
+        self._spvOvID = ""
+        self._pinPadBlock1 = ""
+        self._pinPadBlock2 = ""
+        self._orderCustPhoneNo = ""
+        self._orderCustID = ""
+        self._customerType = ""
+        self._accWithInstName = ""
+        self._accWithInstAddr1 = ""
+        self._accWithInstAddr2 = ""
+        self._accWithInstAddr3 = ""
+        self._sndrToRcvrInfo1 = ""
+        self._sndrToRcvrInfo2 = ""
+        self._sndrToRcvrInfo3 = ""
+        self._sndrToRcvrInfo4 = ""
+        self._sndrToRcvrInfo5 = ""
+        self._sndrToRcvrInfo6 = ""
+        self._remarkInfo1 = ""
+        self._remarkInfo2 = ""
+        self._remarkInfo3 = ""
+        self._remarkInfo4 = ""
+        self._treasuryCode = ""
+
+    def set_remittance_no(self, seq_num):
+        """Format
+        07 --> Product Code RTGS Outgoing
+        99120 --> Branch Code
+        1234567 --> Settlement seq number
+        01 -->  currency code(IDR)
+        """
+        prod_code = 7
+        branch_code = 99120
+        curr_code = 1
+        self._remittanceNo = '{:02}{:05}{:07}{:02}'.format(prod_code, branch_code, int(seq_num), curr_code)
+
+    def set_debit_account_amount_currency(self, account, amount, currency):
+        """ This function sets account amount and currency
+        """
+        self._debitCurrency = currency
+        self._debitAccount = account
+        self._debitAmount = amount
+
+    def set_credit_amount(self, amount):
+        """ This function sets credit amount and currency"""
+        self._creditAmount = amount
+        
+
+    def set_beneficiary_details(self, benefName, benefBankName, benefAccount, benefAddress):
+        """ This function sets beneficiary party details"""
+        self._beneficiaryAddress1 = benefAddress[0:35]
+        self._beneficiaryAddress2 = benefAddress[34:70]
+        self._beneficiaryAddress3 = benefAddress[69:105]
+
+        self._benefName = benefName
+        self._benefBankName = benefBankName
+        self._benefAccount = benefAccount
+
+    def set_ordering_customer_details(self, orderingCustmer):
+        """ This function sets the ordering customer details"""
+        self._orderCustName = orderingCustmer
+
+    def set_CUID(self, cuid):
+        """ Set the CUID"""
+        self._CUID = cuid
+
+    def set_ttc_and_trn(self, ttc, trn):
+        """ This function sets ttc and trn code"""
+        self._TRN = trn
+        self._ttc = ttc
+
+    def set_value_date(self, _valueDate):
+        """This function sets value date"""
+        self._valueDate = InterfaceUtils.date_from_datetime(_valueDate, format_str='%y%m%d')        
+    
+
+    def _set_object(self):
+        """
+        This function sets the object variables to dictionary
+        :return: None
+        """
+        self._header = {"externalId": str(self._externalId),
+                        "msgType": str(self._msgType),
+                        "coverType": str(self._coverType),
+                        "msgStep": str(self._msgStep),
+                        "channelID": str(self._channelID),
+                        "transportDate": str(self._transportDate)}
+
+        self._payload = {
+            "valueDate": str(self._valueDate),
+            "branchOfTrxn": str(self._BranchOfTrxn),
+            "remittanceNo": str(self._remittanceNo),
+            "oringinalSenderRefNo": str(self._oringinalSenderRefNo),
+            "debitAccount": str(self._debitAccount),
+            "debitCurrency": str(self._debitCurrency),
+            "creditCurrency": str(self._creditCurrency),
+            "creditAmount": str(self._creditAmount),
+            "debitAmount": str(self._debitAmount),
+            "chargesAmount": str(self._chargesAmount),
+            "taxAmount": str(self._taxAmount),
+            "ibtBuyRate": str(self._ibtBuyRate),
+            "ibtSellRate": str(self._ibtSellRate),
+            "ttBuyRate": str(self._ttBuyRate),
+            "ttSellRate": str(self._ttSellRate),
+            "passbookSerialNo": str(self._passbookSerialNo),
+            "passbookBalance": str(self._passbookBalance),
+            "passbookNextLine": str(self._passbookNextLine),
+            "chequeNo": str(self._chequeNo),
+            "orderCustName": str(self._orderCustName),
+            "orderTaxID": str(self._orderTaxID),
+            "benefName": str(self._benefName),
+            "benefID": str(self._benefID),
+            "benefPhoneNo": str(self._benefPhoneNo),
+            "benefBankName": str(self._benefBankName),
+            "benefAccount": str(self._benefAccount),
+            "beneficiaryAddress1": str(self._beneficiaryAddress1),
+            "beneficiaryAddress2": str(self._beneficiaryAddress2),
+            "beneficiaryAddress3": str(self._beneficiaryAddress3),
+            "trnCode": str(self._TRN),
+            "returnReason": str(self._returnReason),
+            "tellerID": str(self._tellerID),
+            "journalSequence": str(self._journalSequence),
+            "relatedJournalSequence": str(self._relatedJournalSequence),
+            "tranCode": str(self._tranCode),
+            "CUID": str(self._CUID),
+            "ipAddress": str(self._ipAddress),
+            "altSenderAcct": str(self._altSenderAcct),
+            "nameAltSenderAcct": str(self._nameAltSenderAcct),
+            "regulatoryReporting1": str(self._regulatoryReporting1),
+            "regulatoryReporting2": str(self._regulatoryReporting2),
+            "regulatoryReporting3": str(self._regulatoryReporting3),
+            "chargesType": str(self._chargesType),
+            "remittanceInfo1": str(self._remittanceInfo1),
+            "remittanceInfo2": str(self._remittanceInfo2),
+            "remittanceInfo3": str(self._remittanceInfo3),
+            "remittanceInfo4": str(self._remittanceInfo4),
+            "tellerIDApproval": str(self._tellerIDApproval),
+            "somisFlag": str(self._somisFlag),
+            "residentFlag": str(self._residentFlag),
+            "singleOrMulti": str(self._singleOrMulti),
+            "altSenderAddr1": str(self._altSenderAddr1),
+            "altSenderAddr2": str(self._altSenderAddr2),
+            "altSenderAddr3": str(self._altSenderAddr3),
+            "chargesCurrency": str(self._chargesCurrency),
+            "provision": str(self._provision),
+            "chargesExchangeRate": str(self._chargesExchangeRate),
+            "swiftChargesAmount": str(self._swiftChargesAmount),
+            "swiftChargesExchangeRate": str(self._swiftChargesExchangeRate),
+            "totalCharges": str(self._totalCharges),
+            "userInformation": str(self._userInformation),
+            "instructionCode1": str(self._instructionCode1),
+            "instructionRemarks1": str(self._instructionRemarks1),
+            "instructionCode2": str(self._instructionCode2),
+            "instructionRemarks2": str(self._instructionRemarks2),
+            "instructionCode3": str(self._instructionCode3),
+            "instructionRemarks3": str(self._instructionRemarks3),
+            "purpose": str(self._purpose),
+            "userReference": str(self._userReference),
+            "WSID": str(self._WSID),
+            "spvOvID": str(self._spvOvID),
+            "pinPadBlock1": str(self._pinPadBlock1),
+            "pinPadBlock2": str(self._pinPadBlock2),
+            "orderCustPhoneNo": str(self._orderCustPhoneNo),
+            "orderCustID": str(self._orderCustID),
+            "customerType": str(self._customerType),
+            "accWithInstName": str(self._accWithInstName),
+            "accWithInstAddr1": str(self._accWithInstAddr1),
+            "accWithInstAddr2": str(self._accWithInstAddr2),
+            "accWithInstAddr3": str(self._accWithInstAddr3),
+            "sndrToRcvrInfo1": str(self._sndrToRcvrInfo1),
+            "sndrToRcvrInfo2": str(self._sndrToRcvrInfo2),
+            "sndrToRcvrInfo3": str(self._sndrToRcvrInfo3),
+            "sndrToRcvrInfo4": str(self._sndrToRcvrInfo4),
+            "sndrToRcvrInfo5": str(self._sndrToRcvrInfo5),
+            "sndrToRcvrInfo6": str(self._sndrToRcvrInfo6),
+            "remarkInfo1": str(self._remarkInfo1),
+            "remarkInfo2": str(self._remarkInfo2),
+            "remarkInfo3": str(self._remarkInfo3),
+            "remarkInfo4": str(self._remarkInfo4),
+            "treasuryCode": str(self._treasuryCode)
+        }
+        self._base_object = {
+            "header": self._header,
+            "payload": self._payload
+        }
+
+    def set_remittance_info(self, info1, info2, info3, info4):
+        """
+        This function helps to set the remittance info fields
+        :return: None
+        """
+        if info1:
+            self._remittanceInfo1 = info1
+        if info2:
+            self._remittanceInfo2 = info2
+        if info3:
+            self._remittanceInfo3 = info3
+        if info4:
+            self._remittanceInfo4 = info4
+
+    def set_externalId(self, external_id):
+        """ This function sets the external id"""
+        self._externalId = external_id
+
+    def set_branch_of_transaction(self, branch_tranx):
+        """This function sets the branch of transaction"""
+        self._BranchOfTrxn = branch_tranx
+        
+    def set_ip_add(self, ip_add):
+        """This function sets local ip address"""
+        self._ipAddress = ip_add
+
+    def set_beneficiary_info(self, beneficiaryAccount, beneficiaryName,
+                             beneficiaryAddress1, beneficiaryAddress2, beneficiaryAddress3):
+        """ This function sets the beneficiary details"""
+        self._beneficiaryAccount = beneficiaryAccount
+        self._beneficiaryName = beneficiaryName
+        self._beneficiaryAddress1 = beneficiaryAddress1
+        self._beneficiaryAddress2 = beneficiaryAddress2
+        self._beneficiaryAddress3 = beneficiaryAddress3
+
+    def get_json_object(self):
+        """
+        This function returns the json object
+        :return: JSON object
+        """
+        self._set_object()
+        return json.dumps(self._base_object)
+
+    def set_transport_date(self):
+        """This function sets the transport date"""
+        self._transportDate = InterfaceUtils.date_from_datetime(acm.Time.DateNow(), format_str='%y%m%d')
+
+    def set_teller_id_and_seq_num(self, tellerID, journal_sequence, trackingSeqNum):
+        """ This function sets the teller id and sequence numbers"""
+        self._tellerID = tellerID
+        self._journalSequence = journal_sequence
+        self._externalId = '{}{}'.format(InterfaceUtils.date_from_datetime(acm.Time.DateNow(), format_str='%Y%m%d'),
+                                         trackingSeqNum)
+
+
+def get_trn_code(prod_code, type_code, settlement):
+    """This function return the code and ttc"""
+    ret_val = '', ''
+    settlement_from_acnt = ''
+    settlement_to_acnt = ''    
+    
+    assert len(product_code_list) == len(type_list) == len(ttc_list) == len(code_list), 'Product code map incorrect'
+    
+    acquire_account = settlement.AcquirerAccountRef().Name()
+    counterparty_account = settlement.CounterpartyAccountRef().Name()
+    counterparty_acnt_ref = settlement.CounterpartyAccountRef()
+    
+    if settlement.Amount() < 0:
+        settlement_from_acnt = acquire_account
+        settlement_to_acnt = counterparty_account
+    else:
+        settlement_from_acnt = counterparty_account
+        settlement_to_acnt = acquire_account
+    
+    ttc_account_dict = ast.literal_eval(ttc_account_map)
+    #{'330': {'From': ['GWM Mandiri'], 'To': ['BI FAST Mandiri']}, '331': {'From': ['BI FAST Mandiri'], 'To': ['GWM Mandiri']}}
+
+    for _index, (_prod_code, _type_code) in enumerate(zip(product_code_list, type_list)):
+        if prod_code == _prod_code and type_code == _type_code:
+            if prod_code == 'NOST' and type_code == 'NTRF':
+                for ttc, accounts_map in ttc_account_dict.items():
+                    from_acnt_list = accounts_map.get('From')
+                    to_acnt_list = accounts_map.get('To')
+                    if settlement_from_acnt in from_acnt_list and settlement_to_acnt in to_acnt_list:
+                        for _ttc, _code in zip(ttc_list[_index], code_list[_index]):
+                            if ttc == _ttc:
+                                ret_val = _code, _ttc
+            elif prod_code == 'DL' and type_code in ['CMP', 'CMT', 'SHARI','FVP','FVT']:
+                instr = settlement.Trade().Instrument()
+                if instr.IsKindOf(acm.FDeposit):
+                    lender_borrower = ''
+                    ttc = ''
+                    if settlement.Trade().Direction() == 'Loan':
+                        ttc = '112' #Lender
+                    elif settlement.Trade().Direction() == 'Deposit':
+                        ttc = '113' #Borrower
+                    for _ttc, _code in zip(ttc_list[_index], code_list[_index]):
+                        if ttc == _ttc:
+                            ret_val = _code, _ttc
+            else:
+                ret_val = code_list[_index], ttc_list[_index]
+    
+    if counterparty_acnt_ref.CorrespondentBank2() or \
+            counterparty_acnt_ref.CorrespondentBank3() or \
+            counterparty_acnt_ref.CorrespondentBank4() or \
+            counterparty_acnt_ref.CorrespondentBank5():
+        code, ttc = ret_val
+        if ttc not in ['104', '101']:    
+            ttc = '100'
+            code = ''
+            ret_val = code, ttc
+    return ret_val
+    
+    
+def set_decimal_format_15_2(value):
+    whole_number_size = 15
+    decimal_char_size=1
+    decimal_place_size=2     
+
+    total_format_size = whole_number_size + decimal_char_size + decimal_place_size
+    format_str = '{{:0{}.{}f}}'.format(total_format_size, decimal_place_size)  # e.g. {:09.5f}
+    val = format_str.format(value)
+    if val:
+        val = val.lstrip('0') # remove any leading zeros
+    
+    return val
+    
+        
+
+def get_ttc_and_trn(settlement):
+    """ This function returns ttc and trn codes"""
+    prod_code = settlement.Trade().OptKey3()
+    if prod_code:
+        prod_code = prod_code.Name()
+    category = settlement.Trade().OptKey4()
+    if category:
+        category = category.Name()
+    trn, ttc = get_trn_code(prod_code, category, settlement)
+    return ttc, trn
+
+
+def get_party_street_and_number(party):
+    """ Returns party street details """
+    return "{}{}".format(party.Address(),
+                         party.Address2()) if party.Address() != party.Address2() else party.Address()
+
+
+def get_party_address(party):
+    """ Return party address """
+    return "{} {} {}".format(get_party_street_and_number(party), party.City(), party.Country()).strip()
+
+
+def get_beneficiary_details(settlement, ttc):
+    """ This function returns the beneficiary details"""
+
+    def is_intermediary_present(settlement):
+        return True if (settlement.CounterpartyAccountRef().CorrespondentBank5() or
+                        settlement.CounterpartyAccountRef().CorrespondentBank4() or
+                        settlement.CounterpartyAccountRef().CorrespondentBank3() or
+                        settlement.CounterpartyAccountRef().CorrespondentBank2()) else False
+
+    transaction_with_person = not is_intermediary_present(settlement)
+    account = settlement.CounterpartyAccountRef()
+    bic = benefName = benefBankName = benefAccount = benefAddress = ''
+    if account.NetworkAlias():
+        bic = account.NetworkAlias().Alias()
+    if not bic:
+        assert account.Party(), "The account has no party reference"
+        bic = account.Party().Swift()
+
+    if transaction_with_person:
+        benefName = benefAccount = benefAddress = ''
+        benefBankName = bic
+        # since the TTC 330 is kind of top up /account transfer between bank Mandiri and bank Mandiri 
+        # self but only different account so its need information  to which account it transfer
+        if ttc == '330':
+            benefAccount = account.Account()
+            benefName = account.Party().FullName()
+    else:
+        benefName = account.Party().FullName()
+        benefAccount = account.Account()
+        bic = account.Bic()
+        if bic:
+            benefBankName = bic.Alias()
+
+        benefAddress = get_party_address(account.Party())
+
+    return benefName, benefBankName, benefAccount, benefAddress
+    
+
+
+def get_time_stamp():
+    """This function return the current time UTC format"""
+    time_now = datetime.datetime.utcnow()
+    time_ref = datetime.datetime.strftime(time_now, '%Y-%m-%dT%H:%M:%S.%f')
+    time_part1, time_part2 = time_ref.split('.')
+    time_ref = "{}.{}Z".format(time_part1, time_part2[:3])  # yyyy-MM-dd HH:mm:ss.SSS
+    return time_ref
+
+
+def get_debit_amount_currency(settlement):
+    """ This function returns debit amount and currency"""
+    amount = abs(settlement.Amount())
+    currency = settlement.Trade().Currency().Name()
+
+    return amount, currency
+
+
+def create_fund_transfer_object(settlement, cuid, tellerId, journalSeqNum, trackingSeqNum, suspence_account, transaction_branch):
+    """ This function creates the fund transfer object and returns the JSON object"""
+    remittanceInfo1 = settlement.AdditionalInfo().RemittanceInfo1()
+    remittanceInfo2 = settlement.AdditionalInfo().RemittanceInfo2()
+    remittanceInfo3 = settlement.AdditionalInfo().RemittanceInfo3()
+    remittanceInfo4 = settlement.AdditionalInfo().RemittanceInfo4()
+    ttc, trn = get_ttc_and_trn(settlement)
+    debit_amount, debit_currency = get_debit_amount_currency(settlement)
+        
+    debit_amount = set_decimal_format_15_2(debit_amount)
+    credit_amount = debit_amount
+
+    fund_trans_obj = TPSOutSettlementRequest()
+
+    # header
+    fund_trans_obj.set_teller_id_and_seq_num(tellerId, journalSeqNum, trackingSeqNum)
+    fund_trans_obj.set_transport_date()
+
+    # payload
+    fund_trans_obj.set_value_date(settlement.ValueDay())
+    fund_trans_obj.set_remittance_no(settlement.Oid())
+    fund_trans_obj.set_debit_account_amount_currency(suspence_account, debit_amount, debit_currency)
+    fund_trans_obj.set_credit_amount(credit_amount)
+    #To Do: Call this function later when TPS team supports trn mapping 
+    #fund_trans_obj.set_ttc_and_trn(ttc, trn)
+    fund_trans_obj.set_ttc_and_trn(ttc, ttc) # for now keep ttc and trn same
+    fund_trans_obj.set_CUID(cuid)
+    fund_trans_obj.set_branch_of_transaction(transaction_branch)
+    fund_trans_obj.set_ip_add(local_ip_address)
+    fund_trans_obj.set_remittance_info(remittanceInfo1, remittanceInfo2, remittanceInfo3, remittanceInfo4)
+    
+    benefName, benefBankName, benefAccount, benefAddress = get_beneficiary_details(settlement, ttc)    
+    fund_trans_obj.set_beneficiary_details(benefName, benefBankName, benefAccount, benefAddress)
+    fund_trans_obj.set_ordering_customer_details(orderCustName)
+
+    return fund_trans_obj.get_json_object()
+
+...
+
+  TPSOutSettlementsUtils
+"""----------------------------------------------------------------------------------------------------
+MODULE:
+    TPSOutSettlementsUtils
+
+DESCRIPTION:
+    TPS Utils.
+
+-------------------------------------------------------------------------------------------------------"""
+import acm, socket
+import ParametersReader
+
+
+def is_tps_out_settlement(settlement):
+    """ This function returns True if the settlement is TPS out settlement"""
+    tpsSettlementParams = ParametersReader.get_params('TPSSettlementParams')
+    settlement_filter_name = tpsSettlementParams['SettlementFilter']
+    ret_val = False
+    settlement_query = acm.FStoredASQLQuery[settlement_filter_name]
+    if settlement_query and settlement_query.Query().IsSatisfiedBy(settlement):
+        ret_val = True
+
+    return ret_val
+    
+
+def get_local_ip():
+    """ This function returns local IP"""
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    s.settimeout(0)
+    ip = ''
+    try:
+        # doesn't even have to be reachable
+        s.connect(('10.254.254.254', 1))
+        ip = s.getsockname()[0]
+    except Exception:
+        ip = '127.0.0.1'
+    finally:
+        s.close()
+    return ip
+
+
+...
+
+}
+

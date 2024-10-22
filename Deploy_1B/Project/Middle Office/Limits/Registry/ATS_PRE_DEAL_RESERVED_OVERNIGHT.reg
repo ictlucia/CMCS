@@ -1,0 +1,9 @@
+Windows Registry Editor Version 5.00
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Front\Front Arena\ATS\FA_INSTANCE_NAME]
+"task"="PreDealReserved_Overnight"
+"logcategory"="compliance"
+"username"="ATS_PREDEAL_OVERNIGH"
+"password"="intas"
+"unicode"="1"
+"logdir"="D:\Front\Front Arena\LOG\ATS_PRE_DEAL_RESERVED_OVERNIGHT"

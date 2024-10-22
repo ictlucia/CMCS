@@ -1,0 +1,3 @@
+ADDITIONALINFOSPEC,,,,,/ADDITIONALINFOSPEC
+DATA_TYPE.GRP,DESCRIPTION,DATA_TYPE.TYPE,FIELD_NAME,REC_TYPE,
+Standard,Closing balance received from incoming MT950 tag 62F,String,ClosingBalance,Account,

@@ -1,0 +1,7 @@
+INSTRUMENT,,,,,,,,,,,,LEG,,,,,,,,,,,,,,/LEG,/INSTRUMENT
+PAY_OFFSET_METHOD,PRODUCT_CHLNBR.ENTRY,MTM_FROM_FEED,QUOTATION_SEQNBR.NAME,GENERIC,INSID,OTC,PRODUCT_CHLNBR.LIST,CONTR_SIZE,CURR.INSID,SPOT_BANKING_DAYS_OFFSET,INSTYPE,PAY_CALNBR.CALID,END_DATE_METHOD,TYPE,INTEREST_PAYMENT_TIME,DAYCOUNT_METHOD,PAYLEG,START_PERIOD,ROLLING_PERIOD,NOMINAL_AT_END,END_PERIOD,CURR.INSID,PAY_DAY_METHOD,NOMINAL_FACTOR,ROLLING_CONVENTION,,
+Business Days,Swap,Yes,Coupon,Yes,CHF/DEP/12M,Yes,ValGroup,1000000,CHF,2,Deposit,Zurich,Relative Start,Fixed,In Arrears,Act/360,No,0d,0d,Yes,12m,CHF,Mod. Following,1,None,,
+Business Days,Swap,Yes,Coupon,Yes,CHF/DEP/1M,Yes,ValGroup,1000000,CHF,2,Deposit,Zurich,Relative Start,Fixed,In Arrears,Act/360,No,0d,0d,Yes,1m,CHF,Mod. Following,1,None,,
+Business Days,Swap,Yes,Coupon,Yes,CHF/DEP/3M,Yes,ValGroup,1000000,CHF,2,Deposit,Zurich,Relative Start,Fixed,In Arrears,Act/360,No,0d,0d,Yes,3m,CHF,Mod. Following,1,None,,
+Business Days,Swap,Yes,Coupon,Yes,CHF/DEP/6M,Yes,ValGroup,1000000,CHF,2,Deposit,Zurich,Relative Start,Fixed,In Arrears,Act/360,No,0d,0d,Yes,6m,CHF,Mod. Following,1,None,,
+Business Days,Swap,Yes,Coupon,Yes,CHF/DEP/9M,Yes,ValGroup,1000000,CHF,2,Deposit,Zurich,Relative Start,Fixed,In Arrears,Act/360,No,0d,0d,Yes,9m,CHF,Mod. Following,1,None,,

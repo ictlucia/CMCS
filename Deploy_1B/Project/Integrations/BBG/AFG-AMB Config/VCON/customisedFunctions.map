@@ -1,0 +1,44 @@
+FUNCTION getQuantity()
+f_quantity = _from.LastQty
+if (_from.Side == "2")
+{
+    f_quantity = mul(_from.LastQty, -1)
+}
+return f_quantity
+ 
+FUNCTION getPremium()
+f_premium = _from.NetMoney
+if (_from.Side == "1")
+{
+    f_premium = mul(_from.NetMoney, -1)
+}
+return f_premium
+
+FUNCTION getCustomizedCounterpartyID()
+fm_res = ""
+for (i=0; i < _from.NoNotes; i++)
+    {
+        dummy = System.Error("_from.NoteLabel[i] ", _from.NoteLabel[i]) \
+		if (_from.NoteLabel[i] == "counterpar")
+		{
+			dummy = System.Error("_from.NoteText[0][i] ", _from.NoteText[i]) \
+            fm_res = _from.NoteText[i]
+		}
+	}
+	
+return fm_res
+
+FUNCTION getCustomizedPortfolio()
+fm_res = ""
+for (i=0; i < _from.NoNotes; i++)
+    {
+        dummy = System.Error("_from.NoteLabel[i] ", _from.NoteLabel[i]) \
+		if (_from.NoteLabel[i] == "portfolio")
+		{
+			dummy = System.Error("_from.NoteText[0][i] ", _from.NoteText[i]) \
+            fm_res = _from.NoteText[i]
+		}
+	}
+	
+return fm_res
+		

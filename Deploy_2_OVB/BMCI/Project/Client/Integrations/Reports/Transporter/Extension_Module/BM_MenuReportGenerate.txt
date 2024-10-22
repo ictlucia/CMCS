@@ -1,0 +1,209 @@
+#
+# Front Arena exported extension module.
+# source          ""
+# timestamp (utc) "2024-04-05 12:26:12"
+# ***** DO NOT EDIT! *****
+#
+name        "BM_MenuReportGenerate"
+description "$Id$"
+
+groups {
+}
+
+decls[FMenuExtension] {
+}
+
+clx FObject [FMenuExtension] {
+  Cashflow =
+  DisplayName=Cashflow
+  Function=CI04_Cashflow.StartApplication
+  MenuType=Application
+  ModuleName=Cashflow
+  ParentMenu=Reporting Menu
+  RibbonPosition=Reporting Menu/Front Office Report
+
+
+  CI06_LiquidityStress =
+  DisplayName=Liquidity Stress
+  Function=CI06_LiquidityStress.StartApplication
+  MenuType=Application
+  ModuleName=Liquidity Stress
+  ParentMenu=Tools
+  RibbonPosition=Reporting Menu/Middle Office Report
+
+
+  Journal Import =
+  Function=FJournalImportUtil.StartApplication
+  MenuType=Application
+  ModuleName=Journal Import
+  ParentMenu=Tools
+  RibbonPosition=Tools
+
+
+  Liquidity Gap =
+  DisplayName=Liquidity Gap
+  Function=CI05_LiquidityGap.StartApplication
+  MenuType=Application
+  ModuleName=Liquidity Gap
+  ParentMenu=Tools
+  RibbonPosition=Reporting Menu/Middle Office Report
+
+
+  Maturity GAP =
+  DisplayName=Maturity GAP
+  Function=CI01_MaturityGAP.StartApplication
+  MenuType=Application
+  ModuleName=Maturity GAP
+  ParentMenu=Reporting Menu
+  RibbonPosition=Reporting Menu/Front Office Report
+
+
+  Minimum Liquidity Ratio =
+  DisplayName=Minimum Liquidity Ratio
+  Function=CI03_MinimumLiquidityRatio.StartApplication
+  MenuType=Application
+  ModuleName=Minimum Liquidity Ratio
+  ParentMenu=Reporting Menu
+  RibbonPosition=Reporting Menu/Front Office Report
+
+
+  Repricing GAP =
+  DisplayName=Repricing GAP
+  Function=CI02_RepricingGAP.StartApplication
+  MenuType=Application
+  ModuleName=Repricing GAP
+  ParentMenu=Reporting Menu
+  RibbonPosition=Reporting Menu/Front Office Report
+
+
+}
+
+clx FSessionManagerFrame [FMenuExtension] {
+  Journal Import =
+  Function=FJournalImportUtil.StartApplication
+  MenuType=Application
+  ModuleName=Journal Import
+  ParentMenu=Tools
+  RibbonPosition=Tools
+
+
+}
+
+decls[FPythonCode] {
+}
+
+clx FObject [FPythonCode] {
+  CI01_MaturityGAP
+
+import acm
+import UserProfileUtils as up
+
+def StartApplication(eii):
+    component = 'Front Office'
+    shell = acm.UX.SessionManager().Shell()
+    isallow = up.is_component_in_user_profile(component, 'Operation')
+    if isallow == 1:
+        acm.RunModuleWithParameters("CI01 - Maturity GAP", acm.GetDefaultContext())
+    else:
+        acm.UX().Dialogs().MessageBoxInformation(shell,"User not have access")
+
+...
+
+  CI02_RepricingGAP
+
+import acm
+import UserProfileUtils as up
+
+def StartApplication(eii):
+    component = 'Front Office'
+    shell = acm.UX.SessionManager().Shell()
+    isallow = up.is_component_in_user_profile(component, 'Operation')
+    if isallow == 1:
+        acm.RunModuleWithParameters("CI02 - Repricing GAP", acm.GetDefaultContext())
+    else:
+        acm.UX().Dialogs().MessageBoxInformation(shell,"User not have access")
+
+...
+
+  CI03_MinimumLiquidityRatio
+
+import acm
+import UserProfileUtils as up
+
+def StartApplication(eii):
+    component = 'Front Office'
+    shell = acm.UX.SessionManager().Shell()
+    isallow = up.is_component_in_user_profile(component, 'Operation')
+    if isallow == 1:
+        acm.RunModuleWithParameters("CI03 - Minimum Liquidity Ratio", acm.GetDefaultContext())
+    else:
+        acm.UX().Dialogs().MessageBoxInformation(shell,"User not have access")
+
+...
+
+  CI04_Cashflow
+
+import acm
+import UserProfileUtils as up
+
+def StartApplication(eii):
+    component = 'Front Office'
+    shell = acm.UX.SessionManager().Shell()
+    isallow = up.is_component_in_user_profile(component, 'Operation')
+    if isallow == 1:
+        acm.RunModuleWithParameters("CI04 - Cashflow", acm.GetDefaultContext())
+    else:
+        acm.UX().Dialogs().MessageBoxInformation(shell,"User not have access")
+
+...
+
+  CI05_LiquidityGap
+
+import acm
+import UserProfileUtils as up
+
+def StartApplication(eii):
+    component = 'Middle Office'
+    shell = acm.UX.SessionManager().Shell()
+    isallow = up.is_component_in_user_profile(component, 'Operation')
+    if isallow == 1:
+        acm.RunModuleWithParameters("CI05 - Liquidity Gap", acm.GetDefaultContext())
+    else:
+        acm.UX().Dialogs().MessageBoxInformation(shell,"User not have access")
+
+...
+
+  CI06_LiquidityStress
+
+import acm
+import UserProfileUtils as up
+
+def StartApplication(eii):
+    component = 'Middle Office'
+    shell = acm.UX.SessionManager().Shell()
+    isallow = up.is_component_in_user_profile(component, 'Operation')
+    if isallow == 1:
+        acm.RunModuleWithParameters("CI06 - Liquidity Stress", acm.GetDefaultContext())
+    else:
+        acm.UX().Dialogs().MessageBoxInformation(shell,"User not have access")
+
+...
+
+  FJournalImportUtil
+
+import acm
+import UserProfileUtils as up
+
+def StartApplication(eii):
+    component = 'BO Journal Upload'
+    shell = acm.UX.SessionManager().Shell()
+    isallow = up.is_component_in_user_profile(component, 'Operation')
+    if isallow == 1:
+        acm.RunModuleWithParameters("FJournalImport", acm.GetDefaultContext())
+    else:
+        acm.UX().Dialogs().MessageBoxInformation(shell,"User not have access")
+
+...
+
+}
+

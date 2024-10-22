@@ -1,0 +1,533 @@
+#
+
+# Front Arena exported extension module.
+
+# source          ""
+
+# timestamp (utc) "2024-01-18 12:00:10"
+
+# ***** DO NOT EDIT! *****
+
+#
+
+name        "BM_TPSOutSettlementStatusAPI"
+
+description "$Id$"
+
+
+
+groups {
+
+}
+
+
+
+decls[FParameters] {
+
+}
+
+
+
+clx FObject [FParameters] {
+
+  TPSOutSettlementStatusAPIParams =
+
+  branch_code=99120
+
+  channel_id=154
+
+  url=https://tpsgateway.corp.devmandiri.co.id:20003/TPSGateway/OutgoingACK/
+
+
+
+
+
+}
+
+
+
+decls[FPythonCode] {
+
+}
+
+
+
+clx FObject [FPythonCode] {
+
+  TPSOutSettlementStatusAPI
+
+
+
+#import pyodbc
+
+import ParametersReader
+
+import acm
+
+import FRunScriptGUI
+
+import ael
+
+import FLogger
+
+import os
+
+import traceback
+
+import InterfaceUtils
+
+from datetime import datetime
+
+import requests 
+
+import datetime
+
+from BM_JWT import get_token
+
+
+
+TPSStatusParamAPI  = ParametersReader.get_params('TPSOutSettlementStatusAPIParams')
+
+branch_code = TPSStatusParamAPI['branch_code']
+
+channel_id = TPSStatusParamAPI['channel_id']
+
+url= TPSStatusParamAPI['url']
+
+
+
+
+
+def initialize_logging(params, logfile_name, app_name):
+
+    """
+
+    Initialize logger
+
+    :param params: parameters
+
+    :return: FLogger object
+
+    """
+
+    logger = None
+
+    logfile = None
+
+    try:
+
+        logFolder = params['log_folder']
+
+        logfolderString = logFolder.SelectedDirectory().AsString()
+
+        if logfolderString:
+
+            if logfile_name:
+
+                logfile = os.path.join(logfolderString, logfile_name)
+
+
+
+        logLevel = params['log_level']
+
+        log_to_console = params['log_to_console']
+
+        level = InterfaceUtils.LogLevelNameToNumber(logLevel)
+
+        logger = FLogger.FLogger(level=level,
+
+                                 name=app_name,
+
+                                 logToPrime=True,
+
+                                 logToFileAtSpecifiedPath=logfile,
+
+                                 logToConsole=log_to_console)
+
+    except Exception as err:
+
+        print('Error in initializing logger {}'.format(err))
+
+        print(traceback.format_exc())
+
+    return logger
+
+
+
+
+
+folderPicker = FRunScriptGUI.DirectorySelection()
+
+
+
+ael_gui_parameters =    {'windowCaption' : 'TPS Settlement Inquiry  API'}
+
+logLevels = [FLogger.FLogger.INFO, FLogger.FLogger.ERROR, FLogger.FLogger.WARNING, FLogger.FLogger.DEBUG]
+
+
+
+
+
+ael_variables=  [['TPS_Settlement_Selection', 'TPS Out Settlement Selection Query Folder', acm.FStoredASQLQuery, None, 'TPSOutSettlementQuery', 0, 1, None, None, 1],
+
+                 ['log_folder', 'Log Folder Logging', folderPicker, None, folderPicker, 0, 1, 'Select where to store the log file', 0, None],
+
+                 ['log_level', 'Log Level_Logging', 'string', logLevels, FLogger.FLogger.DEBUG, 1, 0],
+
+                 ['log_to_console', 'Log to console_Logging', 'int', [1, 0], 1, 1, 0,'Whether logging should be done in the Log Console or not.']]
+
+
+
+
+
+LOG_PARAM = 'TPS Out Settlement Status API' 
+
+log_file_name = 'TPS Settlement'.format(acm.Time.DateToday().replace('-', ''))
+
+app_name = 'TPS Out Settlement Status API'
+
+
+
+
+
+currencyCode='01'
+
+rtgsProductCode='07'
+
+
+
+#bearer_token='eyJhbGciOiJIUzI1NiJ9.eyJleHAiOjE2OTU4NDE0MDEsIkFQSSI6eyJjcmVhdGVkIjoiV2VkIFNlcCAyNyAxNzo0MzoyMSBXSUIgMjAyMyIsInVzZXJuYW1lIjoiVXNlck5UQ1NBY2sifX0.XakWoiBkdXJnBy9UVxQxcHQvXMwLxZ2Mlp-C9eRSXFs'
+
+
+
+
+
+def extract_sequence_number(branch_code, currency_code, rtgs_product_code, input_string):
+
+    front_length = len(branch_code) + len(rtgs_product_code)
+
+    back_length = len(currency_code)
+
+    
+
+    input_string = input_string[front_length:]
+
+    input_string = input_string[:-back_length]
+
+    stripped_sequence_number = input_string.lstrip('0')
+
+    return stripped_sequence_number
+
+
+
+def getNumberOfPage(branch_code, channel_id):
+
+    try:
+
+        page_number = '1'
+
+        page_number_format = page_number.zfill(5)
+
+        bearer_token = get_token()
+
+        formatted_date = getFormatedDate()
+
+        timestamp_date = getTimestampDate()
+
+        initParamsAPI = {
+
+            'valueDate': formatted_date,
+
+            'branchCode': branch_code,
+
+            'channelID': channel_id,
+
+            'pageNumber': page_number,
+
+            'pageSize' : 10
+
+        }
+
+        initHeaders = {
+
+            'Authorization': f'Bearer {bearer_token}',
+
+            'externalID': channel_id + '-' + str(page_number).zfill(5) + '-' + timestamp_date
+
+        }
+
+        print(f'init: {initParamsAPI}')
+
+        print(f'initHeaders: {initHeaders}')
+
+        print(f'page token: {bearer_token}')
+
+        response = requests.get(url, params=initParamsAPI, headers=initHeaders, verify=False)
+
+        data = response.json()
+
+        
+
+        if 'numberOfPages' in data:
+
+            numberOfPages = data['numberOfPages']
+
+            return numberOfPages
+
+        else:
+
+            errorMessage = data['TPSGatewayOutgoingACKResponse']['payload']['responseMessage']
+
+            print(f"Response Message: {errorMessage}")
+
+            print("Return No items")
+
+            return 0  # Return 0 or another suitable value to handle this case
+
+
+
+    except Exception as e:
+
+        print(f"An error occurred while getting the number of pages: {str(e)}")
+
+        return 0  # Return 0 or another suitable value to handle this case
+
+
+
+# Rest of your code remains the same...
+
+
+
+
+
+def getFormatedDate():
+
+    current_date = datetime.datetime.now()
+
+    
+
+    #for testing
+
+    #one_day = datetime.timedelta(days=1)
+
+    #previous_date = current_date - one_day
+
+    #formatted_date = previous_date.strftime("%d%m%y")
+
+    
+
+    #for production
+
+    formatted_date = current_date.strftime("%d%m%y")
+
+    timestamp_date = current_date.strftime("%Y%m%d%H%M%S%f")[:-3]
+
+    print(f"formatted_date = {formatted_date}") 
+
+    return formatted_date  
+
+
+
+def getTimestampDate():
+
+    current_date = datetime.datetime.now()
+
+    
+
+    #for testing
+
+    #one_day = datetime.timedelta(days=1)
+
+    #previous_date = current_date - one_day
+
+    #timestamp_date = previous_date.strftime("%Y%m%d%H%M%S%f")[:-3]
+
+    
+
+    #for production
+
+    formatted_date = current_date.strftime("%d%m%y")
+
+    timestamp_date = current_date.strftime("%Y%m%d%H%M%S%f")[:-3]
+
+    print(f"timestamp_date = {timestamp_date}")
+
+    return timestamp_date
+
+
+
+
+
+
+
+
+
+def ael_main(params):
+
+    logger = None  # Initialize the logger variable here
+
+    try:
+
+        # Initialize your logger here
+
+        logger = initialize_logging(params, log_file_name, app_name)
+
+        if 'TPS_Settlement_Selection' in params and params['TPS_Settlement_Selection']:
+
+            settlement_list = params['TPS_Settlement_Selection'][0].Query().Select()
+
+            print(f'settlement to be processed: {settlement_list}')
+
+            if settlement_list:
+
+                numberOfPages = getNumberOfPage(branch_code, channel_id)
+
+                if numberOfPages:
+
+                    for settl in settlement_list:
+
+                        bearer_token = get_token()
+
+                        logger.LOG('db Settlement Id %s' % settl.Oid())
+
+                        print(f'numberOfPages is : {numberOfPages}')
+
+                        page_number = '1'
+
+                        while int(page_number) <= int(numberOfPages):
+
+                            formatted_date = getFormatedDate()
+
+                            timestamp_date = getTimestampDate()
+
+                            paramsAPI = {
+
+                                'valueDate': formatted_date,
+
+                                'branchID': branch_code,
+
+                                'channelID': channel_id,
+
+                                'pageNumber': str(page_number),
+
+                                'pageSize' : 10
+
+                            }
+
+                            headers = {
+
+                                'Authorization': f'Bearer {bearer_token}',
+
+                                'externalID': channel_id + '-' + str(page_number).zfill(5) + '-' + timestamp_date
+
+                            }
+
+                            print(f'params: {paramsAPI}')
+
+                            
+
+                            response = requests.get(url, params=paramsAPI, headers=headers, verify=False)
+
+                            
+
+                            if response.status_code == 200:
+
+                                print("Request successful!")
+
+                                data = response.json()  # Parse JSON response
+
+                                print(f'data ========{data}') 
+
+                                items_list = data['items']
+
+
+
+                                for item in items_list:
+
+                                    outRemittanceNo = item['outRemittanceNo']
+
+                                    paymentFlag = item['paymentFlag']
+
+                                    settlementNo = extract_sequence_number(branch_code, currencyCode, rtgsProductCode,
+
+                                                                         outRemittanceNo)
+
+                                    print(f'outRemittanceNo: {settlementNo}')
+
+                                    print(f'paymentFlag: {paymentFlag}')
+
+                                    print(f'isfound: {settl.Oid()} vs {settlementNo.strip()}')
+
+
+
+                                    if str(settl.Oid()).strip() == settlementNo.strip():
+
+                                        if paymentFlag == 'ACK':
+
+                                            settl.Status('Acknowledged')
+
+                                            settl.Commit()
+
+                                            print('success ack')
+
+                                        else:
+
+                                            # Check if there are more pages available
+
+                                            if page_number < numberOfPages:
+
+                                                print("Payment flag is not ACK. Checking the next page.")
+
+                                            else:
+
+                                                print("Payment flag is not ACK, and no more pages to check.")
+
+                                    else:
+
+                                        print("Settlement not found on this page.")
+
+                            else:
+
+                                print(f"Request failed with status code: {response.status_code}")
+
+                                break  # Exit the loop on request failure
+
+                            page_number=int(page_number)
+
+                            page_number += 1  # Increment page number for the next request
+
+    except requests.exceptions.RequestException as req_ex:
+
+        print(f"Request error: {str(req_ex)}")
+
+    except Exception as e:
+
+        print(f"An error occurred: {str(e)}")
+
+    finally:
+
+        if logger:
+
+            logger.LOG('Execution ended')
+
+
+
+
+
+
+
+
+
+
+
+        
+
+
+
+...
+
+
+
+}
+
+

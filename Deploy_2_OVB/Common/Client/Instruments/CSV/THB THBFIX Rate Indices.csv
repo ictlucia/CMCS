@@ -1,0 +1,8 @@
+INSTRUMENT,,,,,,,,,,,INSTRUMENTALIAS,,/INSTRUMENTALIAS,LEG,,,,,,,,,,,,,/LEG,/INSTRUMENT
+PAY_OFFSET_METHOD,MTM_FROM_FEED,QUOTATION_SEQNBR.NAME,GENERIC,INSID,OTC,CONTR_SIZE,CURR.INSID,SPOT_BANKING_DAYS_OFFSET,EXTERN_ID1,INSTYPE,TYPE.ALIAS_TYPE_NAME,ALIAS,,PAY_CALNBR.CALID,END_DATE_METHOD,TYPE,DAYCOUNT_METHOD,INTEREST_PAYMENT_TIME,PAYLEG,START_PERIOD,NOMINAL_AT_END,END_PERIOD,CURR.INSID,PAY_DAY_METHOD,NOMINAL_FACTOR,ROLLING_CONVENTION,,
+Business Days,Yes,Coupon,Yes,THB/THBFIX/1M,Yes,1,THB,0,THBXF1M,RateIndex,BB_TICKER,THBXF1M Index,,Bangkok,Relative Start,Fixed,Act/365,In Arrears,No,0d,Yes,1m,THB,Following,1,None,,
+Business Days,Yes,Coupon,Yes,THB/THBFIX/1W,Yes,1,THB,0,THBXF1W,RateIndex,BB_TICKER,THBXF1W Index,,Bangkok,Relative Start,Fixed,Act/365,In Arrears,No,0d,Yes,1w,THB,Following,1,None,,
+Business Days,Yes,Coupon,Yes,THB/THBFIX/1Y,Yes,1,THB,0,THBXF1Y,RateIndex,BB_TICKER,THBXF1Y Index,,Bangkok,Relative Start,Fixed,Act/365,In Arrears,No,0d,Yes,1y,THB,Following,1,None,,
+Business Days,Yes,Coupon,Yes,THB/THBFIX/3M,Yes,1,THB,0,THBXF3M,RateIndex,BB_TICKER,THBXF3M Index,,Bangkok,Relative Start,Fixed,Act/365,In Arrears,No,0d,Yes,3m,THB,Following,1,None,,
+Business Days,Yes,Coupon,Yes,THB/THBFIX/6M,Yes,1,THB,0,THBXF6M,RateIndex,BB_TICKER,THBXF6M Index,,Bangkok,Relative Start,Fixed,Act/365,In Arrears,No,0d,Yes,6m,THB,Following,1,None,,
+Business Days,Yes,Coupon,Yes,THB/THBFIX/ON,Yes,1,THB,0,THBXFON,RateIndex,BB_TICKER,THBXFON Index,,Bangkok,Relative Start,Fixed,Act/365,In Arrears,No,0d,Yes,1d,THB,Following,1,None,,

@@ -1,0 +1,27 @@
+Windows Registry Editor Version 5.00
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Front\Front Arena\APH\FA_INSTANCE_NAME]
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Front\Front Arena\APH\FA_INSTANCE_NAME\Modules\ADSModule]
+"Active"=dword:00000001
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Front\Front Arena\APH\FA_INSTANCE_NAME\Modules\ADSModule\Parameters]
+"ADSUser"="APH_REFINITIV"
+"ADSPassword"="intas"
+"PriceDistributor"="APH_REFINITIV"
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Front\Front Arena\APH\APH_REFINITIV_MANDIRI_UAT\Modules\RefinitivModule\Parameters\RRTProvider\Parameters]
+"userName"="fasghkshdev"
+"serverList"="172.16.1.9:14002, 172.16.1.10:14002"
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Front\Front Arena\APH\FA_INSTANCE_NAME\Setup]
+"Description"="APH-Refinitiv handling prices from RRTDS or RRTO using ETA"
+"Component"="APH-Refinitiv for RRTDS or RRTO (x64)"
+"ComponentGroup"="APH"
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Front\Front Arena\APH\FA_INSTANCE_NAME\Setup\ActiveElements\ADSModule]
+"Version"="0.001"
+
+
+
+

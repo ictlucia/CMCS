@@ -1,0 +1,14 @@
+ADDITIONALINFOSPEC,,,,,,,,,/ADDITIONALINFOSPEC
+SUBREC_MASK1,SUBREC_MASK2,SUBREC_MASK3,DATA_TYPE.GRP,DESCRIPTION,DATA_TYPE.TYPE,FIELD_NAME,REC_TYPE,MANDATORY,DEFAULT_VALUE
+,,,Standard,Sender to Receiver info for settlement line 1,String,SwiftSettleTag72_1,Trade,,
+,,,Standard,Sender to Receiver info for settlement line 2,String,SwiftSettleTag72_2,Trade,,
+,,,Standard,Sender to Receiver info for settlement line 3,String,SwiftSettleTag72_3,Trade,,
+,,,Standard,Sender to Receiver info for settlement line 4,String,SwiftSettleTag72_4,Trade,,
+,,,Standard,Sender to Receiver info for settlement line 5,String,SwiftSettleTag72_5,Trade,,
+,,,Standard,Sender to Receiver info for settlement line 6,String,SwiftSettleTag72_6,Trade,,
+,,,Standard,Sender to Receiver info for confirmation line 1,String,SwiftConfTag72_1,Trade,,
+,,,Standard,Sender to Receiver info for confirmation line 2,String,SwiftConfTag72_2,Trade,,
+,,,Standard,Sender to Receiver info for confirmation line 3,String,SwiftConfTag72_3,Trade,,
+,,,Standard,Sender to Receiver info for confirmation line 4,String,SwiftConfTag72_4,Trade,,
+,,,Standard,Sender to Receiver info for confirmation line 5,String,SwiftConfTag72_5,Trade,,
+,,,Standard,Sender to Receiver info for confirmation line 6,String,SwiftConfTag72_6,Trade,,

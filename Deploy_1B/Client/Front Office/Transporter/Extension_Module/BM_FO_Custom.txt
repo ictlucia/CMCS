@@ -1,0 +1,171 @@
+#
+# Front Arena exported extension module.
+# source          ""
+# timestamp (utc) "2024-09-19 08:30:55"
+# ***** DO NOT EDIT! *****
+#
+name        "BM_FO_Custom"
+description "$Id$"
+
+groups {
+}
+
+decls[FExtensionValue] {
+}
+
+clx CInsDef_FX_CASH [FExtensionValue] {
+  CustomLayout_FrontOfficePane
+vbox(;
+  hbox(;
+    trade_fx_detail_fill;
+    trade_fx_swap_detail_fill;
+  );
+  hbox(;
+    vbox[Currency Pair;
+      hbox(;
+        trade_fx_apps_curr1;
+        trade_fx_apps_curr2;
+      );
+      trade_fx_curr_fill;
+    ];
+    vbox{;
+      hbox{;
+        trade_fx_spot_toggle;
+        trade_fx_swap_toggle;
+        trade_cls_in_out_swap_toggle;
+        salescover_SalesCoverEnabled;
+      };
+      trade_fx_toggle_fill;
+    };
+  );
+  hbox(;
+    vbox{;
+      trade_fx_near_amount1;
+      trade_acquire_day;
+      hbox(;
+        trade_value_day;
+        trade_fx_spot_cover;
+      );
+      hbox(;
+        trade_fx_spot;
+        trade_fx_quoting_method;
+      );
+      hbox(;
+        trade_fx_spot_price;
+        trade_fx_trader_spot_price;
+        trade_fx_spot_margin;
+        trade_fx_spot_price_detailed;
+      );
+      hbox(;
+        trade_fx_near_points;
+        trade_fx_trader_near_points;
+        trade_fx_near_points_margin;
+        trade_fx_near_points_detailed;
+      );
+      hbox(;
+        trade_fx_near_price;
+        trade_fx_trader_near_price;
+        trade_fx_near_price_margin;
+        trade_fx_near_price_detailed;
+      );
+      trade_fx_near_amount2;
+      trade_fx_historic_funding_rate;
+      trade_fx_historic_funding_spread;
+      trade_fx_near_pv;
+    };
+    vbox{;
+      trade_fx_far_amount1;
+      trade_fx_far_acquire_day;
+      hbox(;
+        trade_fx_far_value_day;
+        trade_fx_far_spot_cover;
+      );
+      hbox(;
+        trade_fx_early_delivery_swap_points;
+        trade_fx_trader_far_swap_points;
+        trade_fx_far_swap_points_margin;;
+        trade_fx_early_delivery_swap_points_detailed;	
+      );
+      hbox(;
+        trade_fx_far_points;
+        trade_fx_early_delivery_points;
+        trade_fx_trader_far_points;
+        trade_fx_far_points_margin;
+        trade_fx_far_points_detailed;
+        trade_fx_early_delivery_points_detailed;
+      );
+      hbox(;
+        trade_fx_far_price;
+        trade_fx_trader_far_price;
+        trade_fx_far_price_margin;
+        trade_fx_far_price_detailed;
+      );
+      trade_fx_far_amount2;
+      trade_fx_historic_funding_cost;
+      trade_fx_far_pv;
+    };
+    trade_fx_far_fill;
+  );
+  hbox(;
+    vbox{;
+      trade_prfnbr;
+      trade_PositionPair;
+      salescover_TraderPortfolio;
+      salescover_TraderPositionPair;
+      trade_Counterparty;
+      trade_hostid;
+      trade_MirrorPortfolio; 
+      trade_your_ref;
+      trade_fx_split_btn;
+    };
+    vbox{;
+      hbox(;
+        trade_DiscountingType;
+        trade_suggest_discounting_type;
+        trade_suggest_disc_type_ccy_pair;
+      );
+      trade_time;
+      trade_acquirer_ptynbr;
+      salescover_TraderAcquirer;
+      trade_trader_usrnbr;
+      trade_AdditionalInfo.RTM;
+      trade_sales_person_usrnbr;
+      trade_SettleCategoryChlItem;
+      trade_Broker;
+      trade_fee;
+    };
+  );
+  hbox(;
+    vbox{;
+      trade_optkey1_chlnbr;
+      trade_optkey2_chlnbr;
+      trade_AdditionalInfo.DealerCode;
+      trade_AdditionalInfo.DocumentType;
+      trade_AdditionalInfo.TransactionPurpose;
+      trade_AdditionalInfo.ClientRate;
+    };
+    vbox{;
+      trade_optkey3_chlnbr;
+      trade_optkey4_chlnbr;
+    };
+  );
+  hbox(;
+    vbox{;
+      trade_trdnbr;
+      trade_Status;
+      trade_CLS;
+    };
+    vbox{;
+      trade_bo_trdnbr;
+      hbox(;
+        trade_payments;
+        trade_save_new;
+      );
+      trade_fx_far_cls;
+    };
+  );
+);
+...
+
+}
+

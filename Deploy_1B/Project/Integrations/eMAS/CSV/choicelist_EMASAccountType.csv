@@ -1,0 +1,6 @@
+CHOICELIST,,,,/CHOICELIST
+LIST,SORT_ORDER,ENTRY,DESCRIPTION,
+EMASAccountType,,S,Saving Account,
+EMASAccountType,2,L,Loan Account,
+MASTER,,EMASAccountType,EMASAccountType,
+EMASAccountType,1,D,Current Account,

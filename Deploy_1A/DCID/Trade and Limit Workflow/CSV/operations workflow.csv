@@ -1,0 +1,5 @@
+COMPONENT,,/COMPONENT
+COMPNAME,TYPE,
+Bypass Trade Workflow,Operation,
+BO Reject,Operation,
+BO-BO Confirm,Operation,

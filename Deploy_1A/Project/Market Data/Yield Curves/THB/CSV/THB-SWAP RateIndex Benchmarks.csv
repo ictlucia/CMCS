@@ -1,0 +1,9 @@
+INSTRUMENT,,,,,,,,,,LEG,,,,,,,,,,,,,/LEG,/INSTRUMENT
+CONTR_SIZE,CURR.INSID,GENERIC,INSID,INSTYPE,MTM_FROM_FEED,OTC,PAY_OFFSET_METHOD,QUOTATION_SEQNBR.NAME,SPOT_BANKING_DAYS_OFFSET,CURR.INSID,DAYCOUNT_METHOD,END_DATE_METHOD,END_PERIOD,INTEREST_PAYMENT_TIME,NOMINAL_AT_END,NOMINAL_FACTOR,PAYLEG,PAY_CALNBR.CALID,PAY_DAY_METHOD,ROLLING_CONVENTION,START_PERIOD,TYPE,,
+1,THB,Yes,THB/BOT BIBOR/1M,RateIndex,Yes,Yes,Business Days,Coupon,0,THB,Act/365,Relative Start,1m,In Arrears,Yes,1,No,Bangkok,Following,None,0d,Fixed,,
+1,THB,Yes,THB/BOT BIBOR/1Y,RateIndex,Yes,Yes,Business Days,Coupon,0,THB,Act/365,Relative Start,1y,In Arrears,Yes,1,No,Bangkok,Following,None,0d,Fixed,,
+1,THB,Yes,THB/BOT BIBOR/2M,RateIndex,Yes,Yes,Business Days,Coupon,0,THB,Act/365,Relative Start,2m,In Arrears,Yes,1,No,Bangkok,Following,None,0d,Fixed,,
+1,THB,Yes,THB/BOT BIBOR/3M,RateIndex,Yes,Yes,Business Days,Coupon,0,THB,Act/365,Relative Start,3m,In Arrears,Yes,1,No,Bangkok,Following,None,0d,Fixed,,
+1,THB,Yes,THB/BOT BIBOR/6M,RateIndex,Yes,Yes,Business Days,Coupon,0,THB,Act/365,Relative Start,6m,In Arrears,Yes,1,No,Bangkok,Following,None,0d,Fixed,,
+1,THB,Yes,THB/BOT BIBOR/ON,RateIndex,Yes,Yes,Business Days,Coupon,0,THB,Act/365,Relative Start,1d,In Arrears,Yes,1,No,Bangkok,Following,None,0d,Fixed,,
+1,THB,Yes,THB/BOT BIBOR/SW,RateIndex,Yes,Yes,Business Days,Coupon,0,THB,Act/365,Relative Start,1w,In Arrears,Yes,1,No,Bangkok,Following,None,0d,Fixed,,

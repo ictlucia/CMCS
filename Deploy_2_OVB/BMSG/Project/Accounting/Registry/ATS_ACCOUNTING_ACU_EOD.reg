@@ -1,0 +1,9 @@
+Windows Registry Editor Version 5.00
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Front\Front Arena\ATS\FA_INSTANCE_NAME]
+"username"="ATS_ACCOUNTING_ACU"
+"password"="intas"
+"group"="ACCOUNTING_EOD_ACU"
+"Unicode"="1"
+
+

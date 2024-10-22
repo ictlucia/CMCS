@@ -1,0 +1,11 @@
+Windows Registry Editor Version 5.00
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Front\Front Arena\ATS\FA_INSTANCE_NAME]
+"module_name"="FLongFormMain"
+"username"="ATS_LONGFORM"
+"password"="intas"
+"Unicode"="1"
+"receiver_mb_name"="{FLF_OUT_MSG_READER,FLF_DOCX_READER_WRITER}"
+
+
+

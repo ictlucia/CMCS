@@ -1,0 +1,2203 @@
+#
+# Front Arena exported extension module.
+# source          ""
+# timestamp (utc) "2024-02-02 07:18:43"
+# ***** DO NOT EDIT! *****
+#
+name        "BM_CIF"
+description "$Id$"
+
+groups {
+}
+
+decls[FMenuExtension] {
+}
+
+clx FSessionManagerFrame [FMenuExtension] {
+  Account Registration =
+  Function=AccountUtils.StartApplication
+  MenuType=Application
+  ModuleName=Account Registration
+  ParentMenu=Tools
+  RibbonPosition=Customer Registration
+
+
+  API Log Downloader =
+  Function=APILogUtil.StartApplication
+  MenuType=Application
+  ModuleName=API Log Downloader
+  ParentMenu=Tools
+  RibbonPosition=API Monitoring
+
+
+  CIF Registration =
+  Function=CIFUtils.StartApplication
+  MenuType=Application
+  ModuleName=CIF Registration
+  ParentMenu=Tools
+  RibbonPosition=Customer Registration
+
+
+  Dummy Cpty Creation =
+  Function=DummyCptyCreationUtils.StartApplication
+  MenuType=Application
+  ModuleName=Dummy Cpty Creation
+  ParentMenu=Tools
+  RibbonPosition=Customer Registration
+
+
+}
+
+decls[FParameters] {
+}
+
+clx FObject [FParameters] {
+  eMASDBParam =
+  DATABASE=NTCSSTGDB;
+  DRIVER={SQL Server};
+  FILE=CPTYLog
+  PROFILE=CustomerRegistration
+  PROFILE_API=ApiLog
+  PWD='UEBzc3cwcmROdGNzIw=='
+  query_folder=DummyCptyTradeFiler
+  SERVER=10.243.212.173;
+  UID=AdminNTCS
+
+
+  MnemonicParams =
+  1=A
+  10=J
+  11=K
+  12=L
+  13=M
+  14=N
+  15=O
+  16=P
+  17=Q
+  18=R
+  19=S
+  2=B
+  20=T
+  21=U
+  22=V
+  23=W
+  24=X
+  25=Y
+  26=Z
+  3=C
+  4=D
+  5=E
+  6=F
+  7=G
+  8=H
+  9=I
+
+
+  SoaParams =
+  API_BASE_URL=http://10.243.213.191:5555
+  API_IP=0.0.0.0
+  API_KEY=638f2361-cd12-4fad-bfc9-d0c14aabf2f9
+  BOOKRATE_INQ_SUBTYPE=BookRateInquiry
+  BOOKRATE_INQ_TRANCODE=9971
+  BOOKRATE_INQ_URL=/gateway/CoreBankBookRateInquiry/1.0/bookRateInquiry
+  BRANCH_EMAS=SG
+  CHANNEL_ID=188
+  CHANNEL_ID_ACU=189
+  CIF_ACCT_INQ_LOG_FILENAME=CIF_ACCT_INQ_LOG_%s.log
+  CIF_ACCT_INQ_LOG_PATH=D:\\NTCS\\LOG\\CIFAccountsInquiry
+  CIF_ACCT_INQ_SUBTYPE=cifAccountInquiry
+  CIF_ACCT_INQ_TRANCODE=1565
+  CIF_ACCT_INQ_URL=/gateway/CoreBankCIFAccountsInquiry/1.0/cifAccountsInquiry
+  CIF_INQ_LOG_FILENAME=CIF_INQ_LOG_%s.log
+  CIF_INQ_LOG_PATH=D:\\NTCS\\LOG\\CIFInquiry
+  CIF_INQ_SUBTYPE=cifInquiry
+  CIF_INQ_TRANCODE=1618
+  CIF_INQ_URL=/gateway/CoreBankCIFInquiry/1.0/cifInquiry
+  INQ_SEQ_NO=1
+  KeyWord1=REKSA DANA
+  KeyWord2=REKSADANA
+  MAX_TELLER=500
+  MIN_TELLER=400
+  PARTY_CREATION_LOG_FILENAME=PARTY_CREATION_LOG_%s.log
+  Port_CifSync=8008
+
+
+}
+
+decls[FPythonCode] {
+}
+
+clx FObject [FPythonCode] {
+  AccountRegistration
+
+import ael,acm
+import os
+import FLogger
+import FRunScriptGUI
+import ParametersReader
+import SoaCommonDef
+import CIFAccountsInquiryService as ai
+import APIRequestResponseMonitoring as Mo
+import PartyCreation
+import csv
+import pyodbc
+
+
+SoaParams = ParametersReader.get_params("SoaParams") 
+queryName = "ListofeMasClientCpty"
+storedQuery = acm.FStoredASQLQuery.Select('name="%s"'% queryName)[0]
+data = storedQuery.Query().Select().Sort()
+
+folderPicker = FRunScriptGUI.DirectorySelection()
+
+b = 0
+
+
+def snapshot_cb(index, fieldValues):
+    global b
+
+    #Input with Account Number
+    if fieldValues[index] == 'Account Number':
+        
+        #Account Number's Section (Fields and Mandatory's Stat)
+        ael_variables[1][9] = 1
+        ael_variables[2][9] = 1
+        
+        ael_variables[1][5] = 1
+        ael_variables[2][5] = 1
+        
+        #CIF's Section (Fields and Mandatory's Stat)
+        ael_variables[3][9] = 0
+        ael_variables[4][9] = 0
+        
+        ael_variables[3][5] = 0
+        ael_variables[4][5] = 0
+        
+        b = 1
+        
+    #Input with CIF's Number
+    else:
+        #Account Number's Section (Fields and Mandatory's Stat)
+        ael_variables[1][9] = 0
+        ael_variables[2][9] = 0
+        
+        ael_variables[1][5] = 0
+        ael_variables[2][5] = 0        
+        
+        #CIF's Section (Fields and Mandatory's Stat)
+        ael_variables[3][9] = 1
+        ael_variables[4][9] = 1
+        
+        ael_variables[3][5] = 1
+        ael_variables[4][5] = 1
+        
+        b = 0
+        
+    return fieldValues
+
+
+ael_variables = [
+                 #Main Tab
+                 ['status', 'Register Using_Main', 'string', ['CIF', 'Account Number'], 'CIF', 1, None, 'Register Method', snapshot_cb, 1, ''],
+                 ['accnbr', 'Account Number_Main', 'string', None, None, 1, 0, "Account Number", None, 0],
+                 ['party_type', 'Party_Main', 'string', data, None, 1, 0, "Counterparty/Client", None, 0 ],
+                 ['cifs','CIFs_Main','string', None, None, 1, 0, "CIF", None, 1],
+                 ['File', 'File Path_Main', folderPicker, None, folderPicker, 1, 1, 'Select where to store the log file', None, 1, None]
+                ]
+                
+ael_gui_parameters = {
+  'windowCaption':'Account Registration',
+  'runButtonLabel':'&&Go',
+  'runButtonTooltip':'Execute',
+  'hideExtraControls':True,
+  'closeWhenFinished':False,
+  'InsertItemsShowExpired':False
+}
+
+def ael_main(variablesDict):
+    shell = acm.UX.SessionManager().Shell()
+    
+    #Extract the Variables
+    accnbr = variablesDict["accnbr"]
+    party_test = variablesDict["party_type"]
+    party_temp = acm.FParty[party_test]
+    
+    CIFarray = []
+    
+    CIFs = variablesDict["cifs"]
+    path = variablesDict["File"]
+    
+    if b == 0: #Function CIF will run
+        if "," in CIFs:
+            CIFarray = CIFs.split(",")
+        else:
+            CIFarray.append(CIFs)
+            
+        for row in CIFarray:
+            print(row)
+            
+        filename = str(path) + '\\'  + "CIFAccountInquiry_" + acm.Time.TimeNow().replace(':', '')[:-7] + ".csv"
+        field = ["No", "CIF Number", "Account Number","Registration Status"]
+        nomor = 0
+        msg=""
+        
+        
+        with open(filename, mode='w', encoding='UTF-8', newline='') as csvfile:
+            filewriter = csv.writer(csvfile, delimiter=',', quotechar=',', quoting=csv.QUOTE_MINIMAL)
+            filewriter.writerow(field)
+            
+            for row in CIFarray:
+                
+                
+                """
+                    Get the params : BRANCH_EMAS
+                    Concatenate the branch with DBU (Default emas branch)
+                """
+                branchEmas = SoaParams["BRANCH_EMAS"]
+                branch = branchEmas + "_DBU"
+                
+                accountData = ai.apiMainCall(row,branch)
+                
+                """
+                    Get the params : branchEmas
+                    Concatenate the branch with ACU only for SG or SH
+                    Merged the list of account data dbu and acu
+                """
+                if (branchEmas == "SG") or (branchEmas == "SH"):
+                    branch = branchEmas + "_ACU"
+                    accountDataACU = ai.apiMainCall(row,branch)
+                    accountData = accountData + accountDataACU
+                    
+                party = acm.FParty.Select01('hostId = ' + row , '')
+                if party is not None:
+                    PartyCreation.storeAccountsWithReturn(acm.FParty.Select01('hostId = ' + row , ''))
+                else:
+                    print("CIF Belum terdaftar")
+                
+                
+                for account in range(len(accountData)):
+                    nomor = nomor + 1
+                    data = []
+                    data.append(nomor)
+                    data.append(row)
+                    
+                    try:
+                        data.append(accountData[account]["accountNumber"])
+                    except:
+                        data.append("-")
+                        
+                    try:
+                        data.append(accountData["error"])
+                    except:
+                        temp = []
+                        
+                        if party is not None:
+                            for item in party.Accounts():
+                                temp.append(item.Account())
+                            
+                            if accountData[account]["accountNumber"] in temp:
+                                data.append("Success")
+                                msg="File Downloaded !"
+                            else:
+                                tipe_akun = accountData[account]["accountType"]
+                                data.append(f"Account Type {tipe_akun}")
+                                msg="File Downloaded !"
+                        else:
+                            data.append("Register CIF First")
+                            msg="Register CIF First"
+                            #acm.UX().Dialogs().MessageBoxInformation(shell, "CIF Belum Terdaftar ")
+                            break
+                    
+                    filewriter.writerow(data)                
+            acm.UX().Dialogs().MessageBoxInformation(shell, msg)
+    
+
+    elif b == 1: #Function Account Number will run
+    
+        stat = PartyCreation.storeAccountsWithReturn(party_temp, 1, accnbr)
+        acm.UX().Dialogs().MessageBoxInformation(shell, stat)
+
+    
+
+...
+
+  AccountUtils
+import acm
+import UserProfileUtils as up
+import ParametersReader
+
+def StartApplication(eii):
+    profile = ParametersReader.get_params("eMASDBParam")
+    shell = acm.UX.SessionManager().Shell()  
+    isallow = up.is_component_in_user_profile(str(profile['PROFILE']))
+    if isallow == 1:
+        acm.RunModuleWithParameters("AccountRegistration", acm.GetDefaultContext())
+    else :
+        acm.UX().Dialogs().MessageBoxInformation(shell, "user doesn't have access right for this menu")
+        
+        
+        
+
+...
+
+  APILogDownloader
+
+import os
+import FLogger
+import ParametersReader
+import pyodbc
+import ael
+import acm
+import FRunScriptGUI
+import csv
+import base64
+
+
+DB = ParametersReader.get_params("eMASDBParam")
+paswrd = base64.b64decode(DB['PWD']).decode("utf-8")
+cnxn = pyodbc.connect('DRIVER='+DB['DRIVER'] + ';SERVER='+DB['SERVER'] + ';DATABASE='+DB['DATABASE'] + ';UID='+ DB['UID']  +';PWD='+ paswrd)
+cursor = cnxn.cursor()
+cnxn.autocommit = True
+query = """SET NOCOUNT ON; SELECT [Service_Name] FROM RFAPIType"""
+cursor.execute(query)
+data = cursor.fetchall()
+listdata = []
+for row in data:
+    listdata.append(''.join(row)) 
+
+folderPicker = FRunScriptGUI.DirectorySelection()
+ael_gui_parameters =    {'windowCaption' : 'API Logger Downloader'}
+
+ael_variables = [
+    ['serviceName', 'Service Name_Logging', 'string', listdata, listdata[0], 1],
+    ['startDate', 'Start Date_Logging', 'string', None, acm.Time.DateToday(), 1, 1, 'The date to API log from', None, 1],
+    ['endDate', 'End Date_Logging', 'string', None, acm.Time.DateToday(), 1, 1, 'The date to API log to', None, 1],
+    ['logFile', 'File Path_Logging', folderPicker, None, folderPicker, 1, 1, 'Select where to store the log file', 0, None]
+    ]
+
+
+def ael_main(variablesDict):
+    shell = acm.UX.SessionManager().Shell()
+    serviceName = variablesDict['serviceName']
+    endDate = acm.Time.AsDate(variablesDict['endDate'])
+    startDate = acm.Time.AsDate(variablesDict['startDate'])
+    logFile = variablesDict['logFile']
+    query = """SET NOCOUNT ON; EXEC SP_GetDataLogging @service=?, @from=?, @to=?"""
+    param = (str(serviceName), str(startDate), str(endDate))
+    cursor.execute(query, param)
+    data = cursor.fetchall()
+    field = []
+    for d in cursor.description:
+        field.append(d[0])
+    print(field)
+    filename = str(logFile)+ '\\' + serviceName + '_' + str(startDate) +'_to_' + str(endDate) + '.csv'
+    print(filename)
+    with open(filename, mode='w', encoding='UTF-8') as csvfile:
+        filewriter = csv.writer(csvfile, delimiter=',', quotechar=',', quoting=csv.QUOTE_MINIMAL)
+        filewriter.writerow(field)
+        for rows in data:
+            #row = bytes(rows)
+            filewriter.writerow(rows)
+    acm.UX().Dialogs().MessageBoxInformation(shell, "File Downloaded! ")
+        
+
+
+
+...
+
+  APILogUtil
+import acm
+import UserProfileUtils as up
+import ParametersReader
+
+def StartApplication(eii):
+    profile = ParametersReader.get_params("eMASDBParam")
+    shell = acm.UX.SessionManager().Shell()  
+    isallow = up.is_component_in_user_profile(str(profile['PROFILE_API']))
+    if isallow == 1:
+        acm.RunModuleWithParameters("RunScriptCIFReg", acm.GetDefaultContext())
+    else:
+        acm.UX().Dialogs().MessageBoxInformation(shell, "user doesn't have access right for this menu")
+
+...
+
+  APIRequestResponseMonitoring
+
+"""-----------------------------------------------------------------------------------------------------
+MODULE
+    APIRequestResponseMonitoring
+
+DESCRIPTION: This module provide function to save request and response from API to database
+
+AUTHOR: Sendhy Octovan Dwiputra, Adel Fahmi Karim, Titoyan Dwinhandoko
+-------------------------------------------------------------------------------------------------------"""
+
+import pyodbc
+import ParametersReader
+import requests
+import base64
+
+"""-----------------------------------------------------------------------------------------
+    This function send request to API and call fuction to save request and response header and body from API
+    :param ServiceName: string of ServiceName
+    :param url: string of url
+    :param Header: JSON of Header
+    :param Body: JSON of Body
+    :param TrackID: string of TrackID
+    :param type: string of type
+    :return JSON data
+    -----------------------------------------------------------------------------------------"""
+
+def NTCSApiMonitoring(ServiceName, url, Header, Body, TrackID, type):
+    response = None
+    RequestID = Loging(ServiceName, Body, Header, TrackID, None, None, None)
+
+    if type == "POST":
+        response = requests.post(url, headers=Header, data=Body, verify=False)
+    else:
+        response = requests.get(url, headers=Header, data=Body, verify=False)
+    if response is not None:
+        Loging(ServiceName, str(response), None, None, RequestID, str(response.status_code), str(response.text))
+    else:
+        Loging('CIFAccountsInquiryService', "", "", None, RequestID, "400", "API Does Not Give Any Response")
+    return response
+    
+"""-----------------------------------------------------------------------------------------
+    This function fuction to save request and response header and body from API
+    :param ServiceName: string of ServiceName
+    :param Header: JSON of Header
+    :param Body: JSON of Body
+    :param TrackID: string of TrackID
+    :param RequestID: string of RequestID
+    :param ResponseCode: string of ResponseCode
+    :param ResponseMsg: string of ResponseMsg
+    :return string data
+    -----------------------------------------------------------------------------------------"""
+
+def Loging(ServiceName, Body, Header = "", TrackID = "", RequestID = "", ResponseCode = "", ResponseMsg = ""):
+    DB = ParametersReader.get_params("eMASDBParam") 
+    paswrd = base64.b64decode(DB['PWD']).decode("utf-8")
+    #paswrd = DB['PWD']
+    cnxn = pyodbc.connect('DRIVER='+DB['DRIVER'] + ';SERVER='+DB['SERVER'] + ';DATABASE='+DB['DATABASE'] + ';UID='+DB['UID']  +';PWD='+ paswrd)
+    cursor = cnxn.cursor()
+    cnxn.autocommit = True
+    query = """SET NOCOUNT ON; EXEC SP_NTCS_Monitor @ServiceName=?, @Body=?, @Header=?, @TrackingID=?, @RequestID=?, @ResponseCode=?, @ResponseMsg=?"""
+    #print('requestid = ' + str(RequestID))
+    #print(type(RequestID))
+    conv = str(RequestID)
+    #print('string ' + conv)
+    if RequestID is not None and RequestID != "": 
+        RequestID = "".join(RequestID)
+    param = (str(ServiceName), str(Body), str(Header), TrackID, RequestID, ResponseCode, ResponseMsg)
+    #print(str(param))
+    cursor.execute(query, param)
+    if RequestID is None and RequestID == "":
+        data = cursor.fetchall()
+        if data is not None:
+           print("API Send Request")
+           return data[0]
+    else:
+        cursor.commit()
+        print("API Get Response")
+
+...
+
+  CIFAccountsInquiryService
+"""-----------------------------------------------------------------------------------------------------
+MODULE
+    CIFAccountsInquiryService
+
+DESCRIPTION: This module provide function to call SOA/eMAS CIFAccountInquiry API/Service then return the value of Account Data in List of Dictionary which will be used in PartyCreation Module
+
+AUTHOR: Sendhy Octovan Dwiputra, Adel Fahmi Karim, Titoyan Dwinhandoko
+-------------------------------------------------------------------------------------------------------"""
+import acm, ael
+from datetime import datetime
+import csv
+import requests
+import json
+import FRunScriptGUI
+import FLogger
+import ParametersReader
+import SoaCommonDef
+import os
+import pyodbc
+import APIRequestResponseMonitoring as Mo
+
+SoaParams  = ParametersReader.get_params('SoaParams')
+folderPicker = FRunScriptGUI.DirectorySelection()
+logFileName = SoaParams['CIF_ACCT_INQ_LOG_FILENAME'] % acm.Time.DateToday().replace('-', '')
+logLevels   = [ FLogger.FLogger.INFO, FLogger.FLogger.ERROR, FLogger.FLogger.WARNING, FLogger.FLogger.DEBUG ]
+
+
+ael_variables = [
+['customerNumber','Customer Number','string',0],
+['logToConsole', 'Log to console_Logging', 'int', [1, 0], 1, 1, 0, 'Whether logging should be done in the Log Console or not.'],
+['log_folder', 'Log folder_Logging', folderPicker, None, folderPicker, 0, 1, 'Select where to store the log file', 0, None],
+['log_level', 'Log level_Logging', 'string', logLevels, FLogger.FLogger.DEBUG, 1, 0]
+]
+
+logger = None
+
+     
+def InitializeLogging(params):
+    logfolderString = SoaParams["CIF_ACCT_INQ_LOG_PATH"]
+    logfile = os.path.join(logfolderString, logFileName)
+    if logfile == '':
+        logfile = None
+    global logger
+    
+    logger = FLogger.FLogger(level=2,
+                    name='CIFAccountsInquiryService',
+                    logToPrime=True,
+                    logToFileAtSpecifiedPath=logfile,
+                    logToConsole=False)
+
+
+def ael_main(parameter):
+    InitializeLogging(parameter)
+    logger.LOG("FINISH       >>> InitializeLogging")
+    logger.LOG("START        >>> ael_main")
+    customerNumber = parameter["customerNumber"]
+    
+    #branch = "HK_DBU"
+    branchEmas = SoaParams["BRANCH_EMAS"]
+    branch = branchEmas + "_DBU"
+    customerData = apiMainCall(customerNumber,branch)
+    logger.LOG("FINISH       >>> ael_main")
+
+
+def genDataPayload(customerNumber,branch):
+    """-----------------------------------------------------------------------------------------
+    This function generate payload of request message that will be merged into the Main request message by using genMainRequest
+    :param customerNumber: string of customerNumber
+    :return dict
+    -----------------------------------------------------------------------------------------"""
+    channelId = SoaParams["CHANNEL_ID"]
+    if (branch=="SG_ACU") or (branch=="SH_ACU"):
+        channelId = SoaParams["CHANNEL_ID_ACU"]
+    print("CHANNEL ID: ", channelId)
+    dataPayload = dict({"channelId":channelId, "customerNumber":customerNumber})
+    
+    return dataPayload
+    
+    
+def genMoreDataPayload(customerNumber, accountData,branch):
+    """-----------------------------------------------------------------------------------------
+    This function generate payload of request message that is modified according to Account Data used to call the function.
+    Generated payload will be merged into genMoreMainRequest.
+    :param customerNumber: string of customerNumber
+    :param accountData: dict of accountData
+    :return dict
+    -----------------------------------------------------------------------------------------"""
+    morePayload = {}
+    for key in accountData:
+        morePayload["accountType"] = key["accountType"]
+        morePayload["accountNumber"] = key["accountNumber"]
+        morePayload["shortName"] = key["shortName"]
+        morePayload["accountRelationship"] = key["accountRelationship"]
+        
+    channelId = SoaParams["CHANNEL_ID"]
+    if (branch=="SG_ACU") or (branch=="SH_ACU"):
+        channelId = SoaParams["CHANNEL_ID_ACU"]
+    print("CHANNEL ID: ", channelId)
+    dataPayload = dict({"channelId":channelId, "customerNumber":customerNumber, "accountType":morePayload["accountType"], "accountNumber": morePayload["accountNumber"], "shortName": morePayload["shortName"], "accountRelationship": morePayload["accountRelationship"]})
+    
+    return dataPayload
+
+
+def genMainRequest(customerNumber,branch):
+    """-----------------------------------------------------------------------------------------
+    This function generate main request body of the respective API/service which contains of soaHeader, property, payload. 
+    :param customerNumber: string of customerNumber
+    :return json
+    -----------------------------------------------------------------------------------------"""
+    
+    dataSoaHeader = SoaCommonDef.generateSoaHeader("JSON", SoaParams["CIF_ACCT_INQ_SUBTYPE"], "NTCS", "CoreBank")
+    property = SoaCommonDef.generatePropertyForMessageHeader(SoaParams["CIF_ACCT_INQ_TRANCODE"])
+    dictProperty = dict({"property":property})
+    dataPayload= genDataPayload(customerNumber,branch)
+    
+    data = dict({"soaHeader":dataSoaHeader, "messageHeader":dictProperty, "payload":dataPayload})
+    dataRequest = dict({"cifAccountInquiryRequest":data})
+    jsonDataRequest = json.dumps(dataRequest)
+    
+    return jsonDataRequest
+    
+    
+def genMoreMainRequest(customerNumber, accountData,branch):
+    """-----------------------------------------------------------------------------------------
+    This function generate main request body of the respective API/service using modified payload from genMoreDataPayload.
+    Generated request body contains of soaHeader, property, payload. 
+    :param customerNumber: string of customerNumber
+    :param accountData: dict of accountData
+    :return json
+    -----------------------------------------------------------------------------------------"""
+    dataSoaHeader = SoaCommonDef.generateSoaHeader("JSON", SoaParams["CIF_ACCT_INQ_SUBTYPE"], "NTCS", "CoreBank")
+    property = SoaCommonDef.generatePropertyForMessageHeader(SoaParams["CIF_ACCT_INQ_TRANCODE"])
+    dictProperty = dict({"property":property})
+    dataPayload= genMoreDataPayload(customerNumber, accountData,branch)
+    
+    
+    data = dict({"soaHeader":dataSoaHeader, "messageHeader":dictProperty, "payload":dataPayload})
+    dataRequest = dict({"cifAccountInquiryRequest":data})
+    
+    jsonDataRequest = json.dumps(dataRequest)
+    
+    return jsonDataRequest
+
+
+def apiMainCall(customerNumber,branch):
+    """-----------------------------------------------------------------------------------------
+    This is the main function which sending CIFAccountsInquiry Request to SOA/eMAS. 
+    :param customerNumber: string of customerNumber
+    :return list
+    Usage:
+          return {"error":"Error Message"} if response code != 200 or response message != OK
+          return {accountData} if response code == 200 and response message == OK
+    -----------------------------------------------------------------------------------------"""
+    #logging info : print('start apiMainCall', customerNumber)
+    apiBaseUrl = SoaParams["API_BASE_URL"]
+    cifAccountsInquiryURL = SoaParams["CIF_ACCT_INQ_URL"]
+    url = apiBaseUrl+cifAccountsInquiryURL
+    httpHeaderReq = SoaCommonDef.genHttpHeader()
+    httpBodyReq = genMainRequest(customerNumber,branch)
+    #print('data request')
+    #print(str(httpHeaderReq))
+    #print(str(httpBodyReq))
+    response = Mo.NTCSApiMonitoring(SoaParams["CIF_ACCT_INQ_SUBTYPE"], url, httpHeaderReq, httpBodyReq, None, "POST")
+    
+    if response.status_code == 200:
+        print('response 200')
+        jsonResp = response.json()
+        cifAccountInquiryResponse = jsonResp["cifAccountInquiryResponse"]
+        payloadResponse = cifAccountInquiryResponse["payload"]
+        responseCode = payloadResponse["responseCode"]
+        responseMessage = payloadResponse["responseMessage"]
+        messageHeader = cifAccountInquiryResponse["messageHeader"]
+        headerProperty = messageHeader["property"]
+        
+        if responseMessage == "OK" :
+            print('responseMessage OK')
+            print("Payload Response : ", payloadResponse)
+            customerAccountData = payloadResponse["customerAccount"]
+            accountData = constructCustomerData(customerNumber, customerAccountData, headerProperty,branch)
+            
+            return accountData
+        else:
+            return {"error":responseMessage}
+    else:
+        return {"error":response.status_code}
+
+
+def constructCustomerData(customerNumber, customerAccountData, headerProperty,branch):
+    """-----------------------------------------------------------------------------------------
+    This function generate filtered account data from SOA/eMAS response 
+    :param customerNumber: string of customerNumber
+    :param customerAccountData: dict of CIF Account Detail data from SOA/eMAS response
+    :param headerProperty : dict request message header property
+    :param branch : combined string from parameter branch emas and emas system (DBU or ACU)
+    :return list
+    Usage:
+          return {accountData}
+    -----------------------------------------------------------------------------------------"""
+    #logging info : print('start constructCustomerData')
+    accountList = customerAccountData["accountList"]
+    moreRecordsIndicator = ""
+    
+    for key in headerProperty:
+        if key["propertyKey"] == "moreRecordsIndicator":
+           moreRecordsIndicator=key["propertyValue"]
+    
+    
+    accountData = []
+    
+    for key in accountList:
+        try:
+            if (key["productCode"] != "") and (key["currencyCode"] != ""):
+                accountData.append({"accountType":key["accountType"],"accountNumber":key["accountNumber"],"shortName":key["shortName"],"accountRelationship":key["accountRelationship"], "status": key["status"], "productCode": key["productCode"], "currencyCode": key["currencyCode"]})
+            
+            
+        except:
+            print("Failed to check product code and currency code")
+            
+    
+    """-----------------------------------------------------------------------------------------
+    This loop will repeat the process of retrieving account data dictionary if moreRecordsIndicator that retrieved from JSON request header property has 'Y' value.
+    All the retrieved dictionary will then appended into one list.
+    -----------------------------------------------------------------------------------------"""
+        
+    while moreRecordsIndicator == "Y":
+        print("There is more records")
+        
+        apiBaseUrl = SoaParams["API_BASE_URL"]
+        cifAccountsInquiryURL = SoaParams["CIF_ACCT_INQ_URL"]
+        url = apiBaseUrl+cifAccountsInquiryURL
+        
+        
+        httpHeaderReq = SoaCommonDef.genHttpHeader()
+        httpBodyReq = genMoreMainRequest(customerNumber, accountData, branch)
+        response = Mo.NTCSApiMonitoring(SoaParams["CIF_ACCT_INQ_SUBTYPE"], url, httpHeaderReq, httpBodyReq, None, "POST")
+        
+        
+        #print(str(httpHeaderReq))
+        #print(str(httpBodyReq))
+        
+        if response.status_code == 200:
+            print('Response 200')
+            jsonResp = response.json()
+            cifAccountInquiryResponse = jsonResp["cifAccountInquiryResponse"]
+            payloadResponse = cifAccountInquiryResponse["payload"]
+            responseCode = payloadResponse["responseCode"]
+            responseMessage = payloadResponse["responseMessage"]
+            messageHeader = cifAccountInquiryResponse["messageHeader"]
+            headerProperty = messageHeader["property"]
+            if responseMessage == "OK":
+                print('ResponseMessage OK')
+                customerAccountData = payloadResponse["customerAccount"]
+                accountList = customerAccountData["accountList"]
+                
+                for key in headerProperty:
+                    if key["propertyKey"] == "moreRecordsIndicator":
+                        moreRecordsIndicator=key["propertyValue"]
+                        
+                """
+                    After requesting the more records, 
+                    EMAS will give the first response of the last account number. 
+                    FA will store this last account number,
+                    and check this account number so that it doesn't duplicate.
+                    
+                """
+                tempAccountData=""
+                if accountData:
+                    tempAccountData = accountData[-1]["accountNumber"]
+                
+                for key in accountList:
+                    try:
+                        if (key["productCode"] != "") and (key["currencyCode"] != "") and (key["accountNumber"] != tempAccountData):
+                            
+                            accountData.append({"accountType":key["accountType"],"accountNumber":key["accountNumber"],"shortName":key["shortName"],"accountRelationship":key["accountRelationship"], "status": key["status"], "productCode": key["productCode"], "currencyCode": key["currencyCode"]})
+                    except:
+                        print("CURRENCY CODE KOSONG")
+                
+            else:
+                #print(responseMessage)
+                return {"error":responseMessage}
+        else:
+            #print(response.status_code)
+            return {"error":response.status_code}
+                
+    
+    return accountData
+
+
+
+...
+
+  CIFInquiryService
+"""-----------------------------------------------------------------------------------------------------
+MODULE
+    CIFInquiryService
+
+DESCRIPTION: This module provide function to call SOA/eMAS CIFInquiry API/Service then return the value of Party Data in Dictionary which will be used in PartyCreation Module
+
+AUTHOR: Sendhy Octovan Dwiputra
+-------------------------------------------------------------------------------------------------------"""
+
+import acm, ael
+from datetime import datetime
+import csv
+import requests
+import json
+import ParametersReader
+import SoaCommonDef
+import os
+import APIRequestResponseMonitoring as Mo
+
+SoaParams  = ParametersReader.get_params('SoaParams')
+
+def genDataPayload(cifNumber):
+    """-----------------------------------------------------------------------------------------
+    This function generate payload of request message that will be merge into the Main request messageby using genMainRequest
+    :param cifNumber: string of cifNumber
+    :return dict
+    -----------------------------------------------------------------------------------------"""
+    channelId = SoaParams["CHANNEL_ID"]
+    dataPayload = dict({"channelId":channelId, "cifNumber":cifNumber})
+    
+    return dataPayload
+
+def genMainRequest(cifNumber):
+    """-----------------------------------------------------------------------------------------
+    This function generate main request body of the respective API/service which contains of soaHeader, property, payload. 
+    :param cifNumber: string of cifNumber
+    :return json
+    -----------------------------------------------------------------------------------------"""
+    dataSoaHeader = SoaCommonDef.generateSoaHeader("JSON", SoaParams["CIF_INQ_SUBTYPE"], "NTCS", "OMNI")
+    property = SoaCommonDef.generatePropertyForMessageHeader(SoaParams["CIF_INQ_TRANCODE"])
+    dictProperty = dict({"property":property})
+    dataPayload= genDataPayload(cifNumber)
+    
+    data = dict({"soaHeader":dataSoaHeader, "messageHeader":dictProperty, "payload":dataPayload})
+    dataRequest = dict({"cifInquiryRequest":data})
+    
+    jsonDataRequest = json.dumps(dataRequest)
+    return jsonDataRequest
+
+def apiMainCall(cifNumber):
+    """-----------------------------------------------------------------------------------------
+    This is the main function which sending CIFInquiry Request to SOA/eMAS. 
+    :param cifNumber: string of cifNumber
+    :return dict
+    Usage:
+          return {"error":"Error Message"} if response code != 200 or response message != OK
+          return {partyData} if response code == 200 and response message == OK
+    -----------------------------------------------------------------------------------------"""
+    try:
+        print('b')
+        apiBaseUrl = SoaParams["API_BASE_URL"]
+        cifInquiryURL = SoaParams["CIF_INQ_URL"]
+        url = apiBaseUrl+cifInquiryURL
+        httpHeaderReq = SoaCommonDef.genHttpHeader()
+        httpBodyReq = genMainRequest(cifNumber)
+        print('a')
+        response = Mo.NTCSApiMonitoring(SoaParams["CIF_INQ_SUBTYPE"], url, httpHeaderReq, httpBodyReq, None, "POST")
+        print('e')
+        print(response)
+        if response.status_code == 200:
+            jsonResp = response.json()
+            cifInquiryResponse = jsonResp["cifInquiryResponse"]
+            payloadResponse = cifInquiryResponse["payload"]
+            responseCode = payloadResponse["responseCode"]
+            responseMessage = payloadResponse["responseMessage"]
+            print("Before response code to construct data")
+            if responseMessage == "OK":
+                print("Start payload response")
+                customerData = payloadResponse["customer"]
+                print("Start Construct customer")
+                partyData = constructCustomerData(cifNumber, customerData)
+                print('partyData', partyData)
+                return partyData
+            else:
+                return {"error":responseMessage}
+        else:
+            return {"error":response.status_code}
+    except Exception as e:
+        return {"error":e}
+
+def constructCustomerMnemonic(cNO):
+    """-----------------------------------------------------------------------------------------
+    This function help to construct Customer Mnemonic
+    Logic: 
+        if cNO length == 9, then substitute the first char of cifNumber with the alphabet based on the order of alphabetical. Example 1000000001 will be A00000001
+        if cNO length == 10, then substitute the first and second char of cifNumber with the alphabet based on the order of alphabetical. Example 1600000001 will be P000000001
+    :param cNO: string of cNO
+    :return string
+    -----------------------------------------------------------------------------------------"""
+    MnemonicParams  = ParametersReader.get_params("MnemonicParams")
+    customerMnemonic = ""
+    cifLength = len(cNO)
+    if cifLength == 9:
+        firstChar = str(cNO[:1])
+        substituteChar = MnemonicParams[firstChar]
+        customerMnemonic = cNO.replace(firstChar, substituteChar)
+    elif cifLength == 10:
+        firstSecondChar = str(cNO[:2])
+
+        if int(firstSecondChar) > 26:
+            customerMnemonic = cNO.replace(firstSecondChar, "ZZ")
+        else:
+            substituteChar = MnemonicParams[firstSecondChar]
+            customerMnemonic = cNO.replace(firstSecondChar, substituteChar)
+
+    return customerMnemonic
+    
+def generateCNOforAlias(cifNumber):
+    """-----------------------------------------------------------------------------------------
+    This function generate CNO value which will be stored in alias(ptyid2). CNO = CIF Number with 3rd digit is removed 
+    :param cifNumber: string of cifNumber
+    :return string
+    -----------------------------------------------------------------------------------------"""
+    cNO = ""
+
+    for i in range(len(cifNumber)):
+            if i != 2:
+                    cNO = cNO + cifNumber[i]
+                    
+    return cNO
+    
+def getCustomerTypeMapping(customerTypeCode):
+    """-----------------------------------------------------------------------------------------
+    This function do mapping from emas CustomerTypeCode to the respective description. Example: emas CustomerTypeCode = A, customerType=Perorangan
+    The Customer Type Master data maintain in Customer Type Choice List
+    :param customerTypeCode: string of customerTypeCode
+    :return string
+    -----------------------------------------------------------------------------------------"""
+    list = "Customer Type"
+    customerTypeSet = acm.FChoiceList.Select('description = \'' + customerTypeCode + '\' and list = \'' + list + '\'')
+    print("customerTypeSet", customerTypeSet)
+    return customerTypeSet[0].Name()
+
+def getChoiceListMapping(description, list, flag=0):
+    """-----------------------------------------------------------------------------------------
+    This function do mapping from emas field to master data in ChoiceList.
+    :param description: string of description
+    :param list: string of list
+    :return string
+    -----------------------------------------------------------------------------------------"""
+    if flag == 1:
+        country_number = acm.FChoiceList.Select('name = \'' + description + '\' and list = \'' + list + '\'')
+        country_name = country_number[0].Description()
+        print("description", description)
+        print("list", list)
+        return country_name
+        
+    else:
+        value = acm.FChoiceList.Select('description = \'' + description + '\' and list = \'' + list + '\'')
+    
+    print("description", description)
+    print("list", list)
+    print("value", value)
+    result = ""
+    if len(value) > 0:
+        result=value[0].Name()
+    return result
+    
+
+def getPartyType(customerTypeCode):
+    """-----------------------------------------------------------------------------------------
+    This function do mapping emas CustomerTypeCode to FA Party Type.
+    CustomerTypeCode C or M = Counterparty
+    CustomerTypeCode other than C or M = Client
+    :param customerTypeCode: string of customerTypeCode
+    :return string
+    -----------------------------------------------------------------------------------------"""
+    partyType = "Client"
+    if customerTypeCode == "C" or customerTypeCode == "M":
+        partyType = "Counterparty"
+    
+    return partyType
+    
+def constructCustomerData(cifNumber, customerData):
+    """-----------------------------------------------------------------------------------------
+    This function generate filtered party data from SOA/eMAS response 
+    :param cifNumber: string of cifNumber
+    :param customerData: dict of CIF Detail data from SOA/eMAS response
+    :return dict
+    Usage:
+          return {partyData}
+    -----------------------------------------------------------------------------------------"""
+    cifName1 = customerData["cifName1"]
+    partyName = (cifNumber+"_"+cifName1.replace(" ", ""))[:39]
+    
+    cNO = generateCNOforAlias(cifNumber)
+    customerMnemonic = constructCustomerMnemonic(cNO)
+    
+    address = customerData["address"][0]
+    address1 = address["address1"]
+    address2 = address["address2"]
+    address3 = address["address3"]
+    address4 = address["address4"]
+    postalCode = address["postalCode"]
+    
+    contactDetails = customerData["contactDetails"]
+    telephone = contactDetails["telephone"]
+    fax = contactDetails["fax"]
+    handphone = contactDetails["handphone"]
+    customerCategory = contactDetails["customerCategory"]
+    customerTypeCode = customerCategory["customerTypeCode"]
+    customerType = getCustomerTypeMapping(customerTypeCode)
+    
+    partyType = getPartyType("customerTypeCode")
+    
+    identificationData = customerData["identificationData"]
+    identificationDetails = identificationData["identificationDetails"]
+    ktpNumber = ""
+    npwpNumber = ""
+    for i in identificationDetails:
+        typeCode = i["typeCode"]
+        if typeCode == "KTP":
+            ktpNumber = i["idNumber"]
+        elif typeCode == "NPWP":
+            npwpNumber = i["idNumber"]
+    
+    partyData = {}
+    partyData["error"] = "NO"
+    partyData["hostId"] = cifNumber
+    partyData["name"] = partyName
+    partyData["fullname"] = cifName1
+    partyData["additionalFullname"] = customerData["cifName2"]
+    partyData["customerMnemonic"] = customerMnemonic
+    partyData["dayOfBirth"] = customerData["dayOfBirth"]
+    partyData["birthIncorporationPlace"] = customerData["birthIncorporationPlace"]
+    partyData["sexCode"] = customerData["sexCode"]
+    
+    try:
+        hubunganAntasena = getChoiceListMapping(customerData["hubunganDenganBank2"], "LBUT_HUB PELAPOR")
+        partyData["hubunganDenganBank"] = hubunganAntasena #CHOICELIST
+    except:
+        partyData["hubunganDenganBank"] = ""
+    
+    #partyData["kolektabilitas"] = 1
+    partyData["residentCode"] = customerData["residentCode"]
+    partyData["address1"] = address1
+    partyData["address2"] = address2
+    partyData["address3"] = address3
+    partyData["address4"] = address4
+    
+    print("Countryofcitizenship")
+    try:
+        uccode = getChoiceListMapping(customerData["countryOfCitizenship"], "UCCODE_EMAS", 1)
+        partyData["countryOfCitizenship"] = uccode
+    except:
+        partyData["countryOfCitizenship"] = ""
+        
+    partyData["businessUnitCode"] = customerData["businessUnitCode"]
+    partyData["zipCode"] = postalCode
+    
+    partyData["code1"] = customerData["code1"]#CHOICELIST
+    
+    location = getChoiceListMapping(customerData["lokasi"], "Location")
+    partyData["lokasi"] = location #CHOICELIST
+    
+    partyData["businessUnitCode"] = customerData["businessUnitCode"]
+    partyData["ktpNumber"] = ktpNumber
+    partyData["npwpNumber"] = npwpNumber
+    partyData["branchNumber"] = customerData["branchNumber"]
+    partyData["fax"] = fax
+    partyData["telephone"] = telephone
+    partyData["handphone"] = handphone
+    partyData["customerTypeCode"] = customerType
+    partyData["cNO"] = cNO
+    partyData["partyType"] = partyType
+    
+    partyData["customerTypeCode"] = customerTypeCode
+    if customerTypeCode == "C":
+        sandi_lbut = getChoiceListMapping(customerData["pemilik"], "LBUT_SANDI BANK")
+        partyData["sandi_lbut"] = sandi_lbut
+    else:
+        try:
+            partyData["golonganNasabah2"] = customerData["golonganNasabah2"]
+            golonganPihakLawan = getChoiceListMapping(customerData["golonganNasabah2"], "LBUT_GOL PIHAKLAWAN")
+            
+            partyData["golonganPihakLawan"] = golonganPihakLawan
+        except:
+            partyData["golonganPihakLawan"] = ""
+        
+    partyData["cifName1"] = customerData["cifName1"]
+
+    if (SoaParams["KeyWord1"] in customerData["cifName1"].upper()) or (SoaParams["KeyWord2"] in customerData["cifName1"].upper()):
+        partyData["dataFund"] = "Y"
+    else:
+        partyData["dataFund"] = "N"
+    
+    partyData["customerType"] = customerType
+    
+    LLDSandiPelaku = getMappingLLDSandiPelaku(partyData["customerTypeCode"])
+    partyData["LLDSandiPelaku"] = getChoiceListMapping(LLDSandiPelaku, "LLD_SANDI PELAKU")
+    
+    if customerData["lokasi"] != "9999":
+        partyData["countryCode"] = "Indonesia"
+
+    print('partyData', partyData)
+    
+    return partyData
+    
+def getMappingLLDSandiPelaku(customerTypeCode):
+    """-----------------------------------------------------------------------------------------
+    This function do mapping from emas CustomerTypeCode to the respective description. Example: emas CustomerTypeCode = A, LLDSandiPelaku=A0
+    The LLDSandiPelaku maintain in SANDI_PELAKU_TRANSAKSI_LLD
+    :param customerTypeCode: string of customerTypeCode
+    :return string
+    -----------------------------------------------------------------------------------------"""
+    SandiPelaku = {
+            "B0" : ["F", "N"],
+            "C0" : [],
+            "C2" : [],
+            "C9" : ["C", "M"],
+            "A0" : ["A"],
+            "D0" : ["D", "I", "U", "P", "MF"],
+            "E0" : ["B", "J", "K", "L", "Q", "T", "V"],
+            "F1" : [],
+            "F2" : ["G"],
+            "Z9" : ["E", "H", "O", "R", "S", "W", "X", "Y", "Z"]
+            }
+
+    key_list = list(SandiPelaku.keys())
+    val_list = list(SandiPelaku.values())
+    i = 0
+
+    for item in val_list:
+        if customerTypeCode in item:
+            LLDSandiPelaku = key_list[i]
+            break
+        i = i + 1
+    
+    return LLDSandiPelaku
+
+...
+
+  CIFRegUtils
+import acm
+
+def StartApplication(eii):
+    acm.RunModuleWithParameters("RunScript", acm.GetDefaultContext())
+
+...
+
+  CIFSyncAPI
+"""--------------------------------------------------------------------------------------------------
+MODULE:
+    CIFSyncAPI : List Endpoint for CIF Sync
+
+DESCRIPTION: This module have list endpoints.
+-------------------------------------------------------------------------------------------------------"""
+
+
+from flask import Flask, jsonify, request, make_response
+import json
+import acm
+import PartyCreation, PartyEntity
+from flask_httpauth import HTTPBasicAuth
+import APIRequestResponseMonitoring as am
+from werkzeug.security import generate_password_hash, check_password_hash
+
+app = Flask(__name__)
+auth = HTTPBasicAuth()
+
+auth_username = "test"
+auth_password = "test"
+
+users = {
+    auth_username: generate_password_hash(auth_password),
+}
+
+
+class Response:
+    def __init__(self, data, success, message, error_code):
+        self.data = data
+        self.message = message
+        self.success = success
+        self.error_code = error_code
+        
+def getChoiceListMapping(description, list, flag=0):
+    """-----------------------------------------------------------------------------------------
+    This function do mapping from emas field to master data in ChoiceList.
+    :param description: string of description
+    :param list: string of list
+    :return string
+    -----------------------------------------------------------------------------------------"""
+    if flag == 1:
+        country_number = acm.FChoiceList.Select('name = \'' + description + '\' and list = \'' + list + '\'')
+        country_name = country_number[0].Description()
+        #print("description", description)
+        #print("list", list)
+        return country_name
+        
+    else:
+        value = acm.FChoiceList.Select('description = \'' + description + '\' and list = \'' + list + '\'')
+    
+    #print("description", description)
+    #print("list", list)
+    #print("value", value)
+    result = ""
+    if len(value) > 0:
+        result=value[0].Name()
+    return result
+    
+@auth.verify_password
+def verify_password(username, password):
+    """-----------------------------------------------------------------------------------------
+    This function to Authectification user
+    :param username: string of username
+    :param password: string of password
+    :return string
+    -----------------------------------------------------------------------------------------"""
+    if username in users and check_password_hash(users.get(username), password):
+        return username
+
+
+@app.route("/", methods=['GET'])
+@auth.login_required(optional = True)
+def welcome():
+    """
+    This function handles the default client request
+    :return: string
+    """
+    #Authentification
+    if auth.current_user() == None :
+        return jsonify({"errorStatus":"Y" , "result" :"unauthorized"}),401
+        
+    return "Welcome to FrontArena webserver for posting eMAS SIT 1B deals!"
+
+@app.route('/api/v1/party/cifsync', methods=['POST'])
+@auth.login_required(optional = True)
+def cifsync():
+    """
+    This function handles request sync to eMAS
+    :return: json
+    """
+    #Authentification
+    if auth.current_user() == None :
+        return jsonify({"errorStatus":"Y" , "result" :"unauthorized"}),401
+        
+    dict_payload = json.loads(request.data)
+    idlog = am.Loging("cifsync", str(request.data), "", "", "", "", "")
+    # validation payload first
+    print(str(dict_payload))
+    is_valid = PartyEntity.validate_payload(dict_payload)
+    if is_valid == False:
+        r = Response({},False,"Bad Request",0)
+        print(r)
+        am.Loging("cifsync", str(jsonify(r.__dict__)), None, None, idlog, "400", "Bad Request")
+        return make_response(jsonify(r.__dict__),400)
+ 
+    # check exists by CIF Number
+    cif_number = dict_payload["CIFNumber"]
+    is_exist, dict_party = PartyEntity.check_exists_by_cif_number(cif_number)
+    
+    #---divider---
+    try:
+        #print(dict_payload["country"])
+        country = dict_payload["country"]
+        #print("Country:", country)
+        uccode = getChoiceListMapping(country, "UCCODE_EMAS", 1)
+        #print("UC CODE :",uccode)
+        
+        dict_payload["country"] = uccode
+        mapping_country = dict_payload["country"]
+        #print("Mapping Country:",mapping_country)
+    except Exception as err:
+        print("error when checked country data :", err)
+    #---divider---
+    
+    if is_exist == False:
+        # when not exist, then create party and send request to eMAS
+        try:
+            status,reason,accountStatus= PartyCreation.getPartyCreationStatus(cif_number)
+            if(status == "Failed"):
+                r = Response({},False,reason,1)
+                print("result:", r)
+                am.Loging("cifsync", str(jsonify(r.__dict__)), None, None, idlog, "503", str(reason))
+                return make_response(jsonify(r.__dict__),503)
+            
+                
+        except Exception as err:
+            r = Response({},False,str(err),1)
+            print("ERROR:", err)
+            am.Loging("cifsync", str(jsonify(r.__dict__)), None, None, idlog, "503", str(err))
+            return make_response(jsonify(r.__dict__),503)
+        
+        r = Response({},True,"Data Party has been created",None)
+        print("result:", r)
+        am.Loging("cifsync", str(jsonify(r.__dict__)), None, None, idlog, "201","Data Party has been created")
+        return make_response(jsonify(r.__dict__),201)
+        
+    elif is_exist == True:
+        # when exists, then update party
+        if(dict_party):
+            result = PartyEntity.update(dict_payload,dict_party)
+            
+            if result == False:
+                r = Response({},False,"Data Failed Update",0)
+                print("result:", r)
+                am.Loging("cifsync", str(jsonify(r.__dict__)), None, None, idlog, "500","Data Failed Update")
+                return make_response(jsonify(r.__dict__),500)
+        
+        r = Response({},True,"Data Found",None)
+        print("result:", r)
+        am.Loging("cifsync", str(jsonify(r.__dict__)), None, None, idlog, "200","Data Found")
+        return make_response(jsonify(r.__dict__),200)
+
+    r = Response({},True,"Data Found",None)
+    print("result:", r)
+    am.Loging("cifsync", str(jsonify(r.__dict__)), None, None, idlog, "200","Data Found")
+    return make_response(jsonify(r.__dict__),200)
+        
+
+...
+
+  CIFSyncAPIMain
+"""--------------------------------------------------------------------------------------------------
+MODULE:
+    CIFSyncAPIMain : Main module for ATS
+
+DESCRIPTION: This module uses gevent to run the webserver in start method.
+             The start never returns and hence work and stop functions are not called.
+-------------------------------------------------------------------------------------------------------"""
+from gevent.pywsgi import WSGIServer
+import CIFSyncAPI
+import ParametersReader
+
+
+def server_routine():
+    """
+    This function starts the gevent WSGI
+    :return: None
+    """
+    try:
+        #deal_posting_config = FDealPostingUtils.Parameters('FDealPostingConfig')
+        #key_file = getattr(deal_posting_config, 'KeyFile', None)
+        #server_port = getattr(deal_posting_config, 'ServerPort', None)
+        #cert_file = getattr(deal_posting_config, 'CertificateFile', None)
+        url = ParametersReader.get_params("SoaParams") 
+        API_IP = url["API_IP"]
+        API_PORT = url["Port_CifSync"]
+        print('IP', API_IP)
+        print('PORT', API_PORT)
+        bind = (url["API_IP"], int(url["Port_CifSync"]))
+        #bind = ('0.0.0.0', 8008)
+        app = CIFSyncAPI.app
+        #g_server = WSGIServer(bind, app, keyfile=key_file, certfile=cert_file)
+        g_server = WSGIServer(bind, app)
+        print('Started webserver.', g_server)
+        g_server.serve_forever()
+    except Exception as err:
+        print(err)
+        return False
+
+
+def start():
+    """ ATS start """
+    try:
+        server_routine()
+    except Exception as err:
+        print(err)
+
+...
+
+  CIFUtils
+import acm
+import UserProfileUtils as up
+import ParametersReader
+
+def StartApplication(eii):
+    profile = ParametersReader.get_params("eMASDBParam")
+    shell = acm.UX.SessionManager().Shell()  
+    isallow = up.is_component_in_user_profile(str(profile['PROFILE']))
+    if isallow == 1:
+        acm.RunModuleWithParameters("RunScriptCIFReg", acm.GetDefaultContext())
+    else:
+        acm.UX().Dialogs().MessageBoxInformation(shell, "user doesn't have access right for this menu")
+
+...
+
+  DummyCptyCreation
+
+import FRunScriptGUI
+import PartyCreation
+import acm,ael
+import FLogger
+import csv
+import re
+from datetime import datetime
+import FRunScriptGUI
+import ParametersReader
+
+logger = None
+def InitializeLogging(params):
+    logfile = params['logFile']
+    if logfile == '':
+        logfile = None
+    global logger
+    logger = FLogger.FLogger(level=1,
+                    name='DummyCptyCreation',
+                    logToPrime=True,
+                    logToFileAtSpecifiedPath=logfile,
+                    logToConsole=False)
+                    
+ael_gui_parameters =    {'runButtonLabel':   '&&Run',
+                        'hideExtraControls': True,
+                        'windowCaption' : 'Dummy Cpty Registration'}
+
+folderPicker = FRunScriptGUI.DirectorySelection()
+                        
+ael_variables=  [['folderPath', 'Log folder', folderPicker, None, folderPicker, 0, 1,'Select where to store the log file',],
+['logFile', 'Log File_Logging', 'string', [], '', 0, 0, '', None, 1]]
+
+def ael_main(parameter):
+    shell = acm.UX.SessionManager().Shell()
+    par = ParametersReader.get_params("eMASDBParam")
+    query_folder = par['query_folder']
+    storedQuery = acm.FStoredASQLQuery.Select('name="%s"' % query_folder)[0]
+    dummyTrade = storedQuery.Query().Select().Sort()
+    print(dummyTrade)    
+    filenm = par['FILE']
+    path = str(parameter['folderPath'])
+    filename = path + '\\' + filenm + '_'+ acm.Time.DateToday() +'.csv'
+    print(filename)
+    field = ["No","TradeNo","CptyRef","CIF Status","Acct Status"]
+    nomor = 0
+    with open(filename, mode='w', encoding='UTF-8', newline='') as csvfile:
+        filewriter = csv.writer(csvfile, delimiter=',', quotechar=',', quoting=csv.QUOTE_MINIMAL)
+        filewriter.writerow(field)
+        for dt in dummyTrade:
+            nomor = nomor + 1
+            cif_number = dt.YourRef()
+            data = []
+            data.append(nomor)
+            data.append(dt.Oid())
+            data.append(dt.YourRef())            
+            party = acm.FParty.Select('hostId = %s' % cif_number)
+            if(len(party)==0):
+                output = PartyCreation.getPartyCreationStatus(cif_number)
+                if output is not None:
+                    data.append(output[0])
+                    data.append(output[1])
+            else:
+                data.append("Failed")
+                data.append("CIF Already Exist")
+            filewriter.writerow(data)
+    acm.UX().Dialogs().MessageBoxInformation(shell, "Process Finish")
+    
+
+...
+
+  DummyCptyCreationUtils
+import acm
+import UserProfileUtils as up
+import ParametersReader
+
+def StartApplication(eii):
+    profile = ParametersReader.get_params("eMASDBParam")
+    shell = acm.UX.SessionManager().Shell()  
+    isallow = up.is_component_in_user_profile(str(profile['PROFILE']))
+    if isallow == 1:
+        acm.RunModuleWithParameters("DummyCptyCreation", acm.GetDefaultContext())
+    else :
+        acm.UX().Dialogs().MessageBoxInformation(shell, "user doesn't have access right for this menu")
+        
+
+...
+
+  PartyCreation
+"""----------------------------------------------------------------------------------------
+MODULE:
+    PartyCreation
+
+DESCRIPTION: This module provides function to create new Party, Party Alias, Contacts, Accounts from eMAS Interface
+----------------------------------------------------------------------------------------"""
+import CIFAccountsInquiryService
+import CIFInquiryService
+import acm
+import sys, traceback
+from datetime import datetime
+import ParametersReader
+
+
+
+def storeNewClientParty(partyData):
+    """
+    This function used to store new FParty based on data from eMAS CIFInquiry
+    :return: tuple
+    """
+    print('clientparty')
+    error = partyData["error"]
+    print(error)
+    print("error CIFInquiry: ", error)
+    if error == "NO":
+        partyType = partyData["partyType"]
+        newParty = acm.FParty()
+        if partyType == "Client":
+            newParty = acm.FClient()
+        elif partyType == "Counterparty":
+            newParty = acm.FCounterParty()
+
+        acm.BeginTransaction()
+        try:
+            #store party
+            print("partytype", partyData["partyType"])
+            
+            newParty.Type(partyData["partyType"])
+            newParty.Name(partyData["name"])
+            newParty.Id2(partyData["cNO"])
+            newParty.HostId(partyData["hostId"])
+            newParty.Fullname(partyData["fullname"])
+            newParty.Fullname2(partyData["additionalFullname"])
+            dob = partyData["dayOfBirth"]
+            newParty.AdditionalInfo().DOB(dob)
+            newParty.ZipCode(partyData["zipCode"])
+            newParty.Address(partyData["address1"])
+            newParty.Address2(partyData["address2"])
+            newParty.Fax(partyData["fax"])
+            newParty.Telephone(partyData["telephone"])
+            newParty.AdditionalInfo().KTP(partyData["ktpNumber"])
+            #print('npwp')
+            newParty.AdditionalInfo().NPWP(partyData["npwpNumber"])
+            #print('beres npwp')
+            
+            #print(partyData["customerTypeCode"])
+            
+            if partyData["customerTypeCode"] == "C":
+                #newParty.AdditionalInfo().SANDI_LBUT(partyData["sandi_lbut"])
+                newParty.AdditionalInfo().LBUT_SANDI_BANK(partyData["sandi_lbut"])
+                #print("beres SANDI_LBUT")
+            else:
+                try:
+                    #newParty.AdditionalInfo().GolonganPihakLawan(partyData["golonganPihakLawan"])
+                    newParty.AdditionalInfo().LBUT_GOL_PIHAKLAWAN(partyData["golonganPihakLawan"])
+                    #print("beres GolanganPihakLawan")
+                except:
+                    print("Pihak Lawan Tidak Ada")
+            #newParty.AdditionalInfo().SIC(partyData["sic"])
+            #print('beres sic')
+            newParty.AdditionalInfo().Data_Fund(partyData["dataFund"])
+            newParty.AdditionalInfo().LLD_SANDI_PELAKU(partyData["LLDSandiPelaku"])
+            try:
+                newParty.AdditionalInfo().LLD_SANDI_NEGARA(partyData["countryCode"])
+            except:
+                print("There is no country code")
+            
+            newParty.AdditionalInfo().UCCODE(partyData["countryOfCitizenship"])
+            #newParty.AdditionalInfo().KOLEKTABILITAS(str(partyData["kolektabilitas"]))
+            newParty.AdditionalInfo().BUC(str(partyData["businessUnitCode"]))
+            newParty.AdditionalInfo().BranchCode(str(partyData["branchNumber"]))
+            
+            newParty.Free2ChoiceList(partyData["customerType"])
+            try:
+                newParty.AdditionalInfo().LBUT_HUB_PELAPOR(str(partyData["hubunganDenganBank"]))
+            except:
+                print("THERE IS NO LBUT HUB")
+            newParty.AdditionalInfo().Address3(partyData["address3"])
+            newParty.AdditionalInfo().Address4(partyData["address4"])
+            newParty.AdditionalInfo().Address_Location(partyData["lokasi"])
+            newParty.AdditionalInfo().LLD_RESIDENT(partyData["residentCode"])
+            print("newParty", newParty)
+            newParty.Commit()
+            
+            #store customer mnemonic party alias
+            newAlias = acm.FPartyAlias()
+            newAlias.Party(newParty)
+            newAlias.Type('Customer Mnemonic')
+            newAlias.Name(partyData["customerMnemonic"])
+            #print("newAlias", newAlias)
+            newAlias.Commit()
+            
+            #store contacts
+            newContact = acm.FContact()
+            newContact.Fullname(partyData["fullname"])
+            newContact.UniqueName('')
+            newContact.Fullname2(partyData["additionalFullname"])
+            newContact.Attention('')
+            newContact.Address(partyData["address1"])
+            newContact.Address2(partyData["address2"])
+            newContact.Zipcode(partyData["zipCode"])
+            newContact.City('')
+            newContact.Country(partyData["countryOfCitizenship"])
+            newContact.Telephone(partyData["telephone"])
+            newContact.Fax(partyData["fax"])
+            newContact.Email('')
+            newContact.Party(newParty)
+            print("newContact", newContact)
+            newContact.Commit()
+            
+            print("Start commit transaction")
+            acm.CommitTransaction()
+            return("Success","")
+        except Exception as imsgs:
+            print("Error When Store client: ", imsgs)
+            traceback.print_exception(*sys.exc_info())
+            acm.AbortTransaction()
+            print("Done AbortTransaction")
+            return("Failed",imsgs)
+    else:
+        print("Error response from emas: ", error)
+        return("Failed",error)
+
+def storeAccountsWithReturn(newParty, flag=0, accnbr=None):
+    """
+    This function call storeAccount function and return tuple of Success message or Error message if Exception
+    :return: tuple
+    """
+    
+    flag_ = flag
+    acc_nbr = accnbr
+    
+    try:
+        if flag_ == 1:
+            status = storeAccount(newParty, flag_, acc_nbr)
+            return status
+        else:
+            storeAccount(newParty)
+            return("Success")
+            
+    except Exception as e:
+        return(e)
+
+def getPartyCreationStatus(cifNumber):
+    """
+    This function consolidated the storeNewClientParty and storeAccountsWithReturn to create 1 flow of Customer Registration
+    :return: tuple
+    """
+    print("getPartyCreationStatus: ", cifNumber)
+    partyData = CIFInquiryService.apiMainCall(cifNumber)
+    status,reason = storeNewClientParty(partyData)
+    print("status: ", status)
+    print("reason: ", reason)
+    try:
+        if status == "Success":
+            partyName = partyData["name"]
+            print("partyName: ", partyName)
+            newParty = acm.FParty[partyName]
+            accStatus = storeAccountsWithReturn(newParty)
+            return(status,reason,accStatus)
+        else:
+            accStatus = "Failed"
+            return(status,reason,accStatus)
+        
+    except Exception as imsgs:
+        print("Error system inquiry: ", imsgs)    
+        return(status,reason,"Failed")
+    
+def storeAccount(newParty, flag=0, accnbr=None):
+    """-----------------------------------------------------------------------------------------
+    This function will store all of the Party's accounts
+    :param newParty: dict of newParty
+    -----------------------------------------------------------------------------------------"""
+    try:
+        print("start store-account")
+        SoaParams = ParametersReader.get_params("SoaParams") 
+        branchEmas = SoaParams["BRANCH_EMAS"]
+        
+        print("BRANCH EMAS in PARTY CREATION : ",branchEmas)
+        customerNumber = newParty.HostId()
+        
+        branch = branchEmas + "_DBU"
+        accountData = CIFAccountsInquiryService.apiMainCall(customerNumber,branch)
+        
+        partyAccList = []
+        for key in newParty.Accounts():
+            #partyAccList.append(key.Name())
+            partyAccList.append(key.Account())
+            
+        
+        
+        acc_nbr = accnbr
+        flag_ = flag
+        flagDBU = 0
+        
+        #Checking Account Number is in CIF
+        if flag_ == 1:
+            data_bucket = []
+            for acc_data in accountData:
+                data_bucket.append(acc_data["accountNumber"])
+                
+            if acc_nbr in data_bucket:
+                print("Account Number is in this party")
+            else:
+                #print("Account Number is not in this party DBU")
+                if (branchEmas == "SG") or (branchEmas == "SH"):
+                    flagDBU += 1
+                else:
+                    return f'Account Number {acc_nbr} is not in CIF ({customerNumber})'
+        
+        if (flagDBU == 0):
+            #print("FLAG ACC NUMBER IN DBU : ", flagDBU)
+            for key in accountData:
+                if key["accountType"] == "D" or key["accountType"] == "S" or key["accountType"] == "L":
+                    account = acm.FAccount()
+                    account.AdditionalInfo().EMASAccountType(key["accountType"])
+                
+                    try:
+                        account.AdditionalInfo().ProductCode(key["productCode"])
+                    except:
+                        print("PRODUCT CODE IS NOT IN CHOICE LIST")
+                    
+                    account.AdditionalInfo().ShortName(key["shortName"])
+                    account.AdditionalInfo().Status(key["status"])
+                    #Add additional info for flag acu
+                    if (branchEmas == "SG") or (branchEmas == "SH"):
+                        try:
+                            account.AdditionalInfo().EMASSystem("DBU")
+                        except Exception as error:
+                            print("FAILED TO SAVE EMAS FLAG DBU with error :", error)
+                    account.AccountType(1)
+                    account.Account(key["accountNumber"])
+                    #account.Name(key["accountNumber"])
+                    account.NetworkAliasType("EMAS")
+                    if key["currencyCode"] != "":
+                        account.Currency(key["currencyCode"])
+                    try:
+                        nameAccount = "EMAS_" + key["currencyCode"] + "_" + key["accountNumber"] + "_" +"CASH"
+                        account.Name(nameAccount)
+                    except:
+                        account.Name(key["accountNumber"])
+                    a = partyAccList.count(key["accountNumber"])
+                
+
+                    if(a >= 1): # if exists
+                        if flag_ == 1:
+                            if key["accountNumber"] == acc_nbr:
+                                print("account number ", key["accountNumber"], " already in the party, can't duplicate")
+                                return f'Account number {key["accountNumber"]}  already exist in this party, cannot duplicate'
+                            else:
+                                continue
+
+                        else:
+                            print("account number ", key["accountNumber"], " already in the party, cannot duplicate")
+               
+                    elif(a == 0): # if none
+                        if flag_ == 1:
+                            if key["accountNumber"] == acc_nbr:
+                                newParty.Accounts().Add(account)
+                                newParty.Accounts().Commit()
+                                print("account number", key["accountNumber"], "with type", account.AdditionalInfo().EMASAccountType(), "already added")
+                                return f'Account number {key["accountNumber"]} with type {account.AdditionalInfo().EMASAccountType()} already added'
+                        elif flag_ == 0:
+                                if account.AdditionalInfo().EMASAccountType() == 'D':
+                                
+                                    newParty.Accounts().Add(account)
+                                    newParty.Accounts().Commit()
+                                    print("account number", key["accountNumber"], "with type", account.AdditionalInfo().EMASAccountType(), "already added")
+                                else:
+                                    continue
+   
+                else:
+                    if flag_ == 1:
+                        print(f"Account type {key['accountNumber']} is not suitable to be added in Front Arena")
+                    
+                        return f"Account type {key['accountNumber']} is not suitable to be added in Front Arena"
+                    elif flag_ == 0:
+                        print(f"Account type {key['accountNumber']} is not suitable to be added in Front Arena")
+        
+        
+        
+        """
+            -----------------------------------------------------------------------------------
+            Check if branch equal to SG or SH, it will call the API Main Call using branch ACU.
+            If it's other branch, then skip.
+            -----------------------------------------------------------------------------------
+        """
+        if (branchEmas == "SG") or (branchEmas == "SH"):
+            print("START REQUEST TO ACU")
+        
+            branch = branchEmas + "_ACU"
+            accountDataACU = CIFAccountsInquiryService.apiMainCall(customerNumber,branch)
+            
+            partyAccList = []
+            for key in newParty.Accounts():
+                #partyAccList.append(key.Name())
+                partyAccList.append(key.Account())
+            
+            
+            acc_nbr = accnbr
+            flag_ = flag
+        
+            #Checking Account Number is in CIF
+            if flag_ == 1:
+                data_bucket = []
+                for acc_data in accountDataACU:
+                    data_bucket.append(acc_data["accountNumber"])
+                
+                if acc_nbr in data_bucket:
+                    print("Account Number is in this party")
+                else:
+                    print("Account Number is not in this party")
+                    return f'Account number {acc_nbr} is not in this CIF ({customerNumber})'
+            #print("ACCOUNT DATA ACU", accountDataACU)
+            for key in accountDataACU:
+                if key["accountType"] == "D" or key["accountType"] == "S" or key["accountType"] == "L":
+                    accountACU = acm.FAccount()
+                    accountACU.AdditionalInfo().EMASAccountType(key["accountType"])
+                    #account.AdditionalInfo().ProductCode(key["productCode"])
+                    try:
+                        accountACU.AdditionalInfo().ProductCode(key["productCode"])
+                    except:
+                        print("PRODUCT CODE IS NOT IN CHOICELIST")
+                    accountACU.AdditionalInfo().ShortName(key["shortName"])
+                    accountACU.AdditionalInfo().Status(key["status"])
+                    
+                    #Add additional info for flag acu
+                    try:
+                        accountACU.AdditionalInfo().EMASSystem("ACU")
+                    except Exception as error:
+                        print("FAILED TO SAVE EMAS FLAG ACU:", error)
+                    accountACU.AccountType(1)
+                    accountACU.Account(key["accountNumber"])
+                
+                    accountACU.NetworkAliasType("EMAS")
+                    if key["currencyCode"] != "":
+                        accountACU.Currency(key["currencyCode"])
+                    try:
+                        nameAccount = "EMAS_" + key["currencyCode"] + "_" + key["accountNumber"] + "_" +"CASH"
+                        accountACU.Name(nameAccount)
+                    except:
+                        accountACU.Name(key["accountNumber"])
+                    a = partyAccList.count(key["accountNumber"])
+                    
+                    
+
+                    if(a >= 1): # if exists
+                        if flag_ == 1:
+                            if key["accountNumber"] == acc_nbr:
+                                print("account number ", key["accountNumber"], " already in the party, can't duplicate")
+                                return f'Account number {key["accountNumber"]} already in the party, cannot duplicate'
+                            else:
+                                continue
+
+                        else:
+                            print("account number ", key["accountNumber"], "already in the party, can't duplicate")
+               
+                    elif(a == 0): # if none
+                        if flag_ == 1:
+                            if key["accountNumber"] == acc_nbr:
+                                newParty.Accounts().Add(accountACU)
+                                newParty.Accounts().Commit()
+                                print("account number", key["accountNumber"], "with account type ", accountACU.AdditionalInfo().EMASAccountType(), "already added")
+                                return f'Account number {key["accountNumber"]} with account type {accountACU.AdditionalInfo().EMASAccountType()} already added'
+                        elif flag_ == 0:
+                                if accountACU.AdditionalInfo().EMASAccountType() == 'D':
+                                    newParty.Accounts().Add(accountACU)
+                                    newParty.Accounts().Commit()
+                                    print("account number", key["accountNumber"], "with account type ", accountACU.AdditionalInfo().EMASAccountType(), "already added")
+                                else:
+                                    continue
+   
+                else:
+                    if flag_ == 1:
+                        print(f"Account type {key['accountNumber']} is not suitable to be added in Front Arena")
+                    
+                        return f"Account type {key['accountNumber']} is not suitable to be added in Front Arena"
+                    elif flag_ == 0:
+                        print(f"Account type {key['accountNumber']} is not suitable to be added in Front Arena")
+        
+        
+    except Exception as amsgs:
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        tb = traceback.extract_tb(exc_tb)[-1]
+        print("Error : " + str(amsgs) + " " + str(exc_type) + str(tb[2]) + str(tb[1]))
+        
+    print("end store-account")
+
+...
+
+  PartyEntity
+
+"""----------------------------------------------------------------------------------------
+MODULE:
+    PartyEntity
+
+DESCRIPTION: This module provides function to read and update Party.
+
+AUTHOR: Willy
+----------------------------------------------------------------------------------------"""
+
+import acm
+import ParametersReader
+import CIFInquiryService
+
+def check_exists_by_cif_number(cif_number) -> (bool, dict):
+    """---
+    This function checks whether CIF-Number exists or not
+    :param cif_number: string
+    :return bool,dict
+    ---"""
+    
+    party = acm.FParty.Select('hostId = %s' % cif_number)
+
+    if(len(party) == 1): # if exists
+        return True, party[0]
+        
+    elif(len(party) > 1): # if multiple record
+        return False, None
+    
+    elif(len(party) == 0): # if none
+        return False, None
+    
+    return True, party[0]
+
+
+def update(dict_payload, dict_party) -> bool:
+    """---
+    This function is doing update Party
+    :param dict_payload: dict from request payload
+    :param dict_party: dict from existing party by cif-number
+    :return bool
+    ---"""
+    
+    try:
+        dict_party.Fullname(dict_payload["CIFName1"])
+        dict_party.Fullname2(dict_payload["CIFName2"])
+        dict_party.Address(dict_payload["address1"])
+        dict_party.Address2(dict_payload["address2"])
+        dict_party.ZipCode(dict_payload["postalCode"])
+        dict_party.Telephone(dict_payload["telephone"])
+        dict_party.Fax(dict_payload["fax"])
+        dict_party.Country(dict_payload["country"])
+        
+        custType=CIFInquiryService.getCustomerTypeMapping(dict_payload["customerTypeCode"])
+        dict_party.Free2ChoiceList(custType)
+        
+        dict_party.AdditionalInfo().Address3(dict_payload["address3"])
+        dict_party.AdditionalInfo().Address4(dict_payload["address4"])
+        dict_party.AdditionalInfo().BUC(dict_payload["businessUnitCode"])
+        
+        #17-Jan-23
+        dict_party.AdditionalInfo().UCCODE(dict_payload["country"])
+        
+        dict_party.Commit()
+    except Exception as err:
+        print(err)
+        return False
+    
+    return True  
+    
+
+def validate_payload(dict_payload):
+    """---
+    This function is validating payload
+    :param dict_payload: dict
+    :return bool
+    ---"""
+    
+    bool_valid = True
+    if len(dict_payload) == 0:
+        bool_valid = False
+    
+    if not dict_payload.get('CIFNumber',0):
+        bool_valid = False
+    
+    return bool_valid
+
+...
+
+  RunScriptCIFReg
+
+import FRunScriptGUI
+import PartyCreation
+import acm,ael
+import FLogger
+import csv
+import re
+from datetime import datetime
+
+logLevels   = [ FLogger.FLogger.INFO, FLogger.FLogger.ERROR, FLogger.FLogger.WARNING, FLogger.FLogger.DEBUG ]
+logger = None
+def InitializeLogging(params):
+    #logfile = params['logFile']
+    logfile = ''
+    if logfile == '':
+        logfile = None
+    global logger
+    logger = FLogger.FLogger(level=1,
+                    name='CIFInquiry',
+                    logToPrime=True,
+                    logToFileAtSpecifiedPath=logfile,
+                    logToConsole=False)
+                    
+ael_gui_parameters =    {'runButtonLabel':   '&&Run',
+                        'hideExtraControls': True,
+                        'windowCaption' : 'Cif Registration'}
+
+folderPicker = FRunScriptGUI.DirectorySelection()
+                        
+ael_variables=  [['cifs','CIFs :','string',0],
+['folderPath', 'Log folder', folderPicker, None, folderPicker, 0, 1,'Select where to store the log file',]
+]
+
+
+    
+ScriptName = 'RunScript'
+def ael_main(parameter):
+    try:
+        cifs = parameter['cifs']
+        x = bool(re.findall("[a-zA-Z]", str(cifs)))
+        print("Does String contain alphabets : " + str(x))
+        shell = acm.UX.SessionManager().Shell()
+        if x:    
+            text = 'CIFS can\'t Contain Alphabet'
+        else:
+            text = 'Finish Processing CIF Registration'
+            folderPath = str(parameter['folderPath'])
+            folderPath = folderPath + "\\"
+            InitializeLogging(parameter)
+            listCifs = list(cifs.split(","))
+            fieldNames = ['No','Cif','Status','Reason','Account Reason']
+            rowsContent = []
+            checkAllFlag = "N"
+            isExist = "N"
+            i=0
+            #20 Oct 2022 add validation for space and empty value        
+            validatedCifs =[]
+            for cif in listCifs:
+                newcif = cif.replace(" ","")
+                if cif.strip():
+                    rowContent = []
+                    i = i + 1
+                    #20 Oct 2022 change the method for existing cif already exist
+                    print("--------------------cif yang sedang di proses extention:" + cif)
+                    dataExist=acm.FParty.Select('hostId = '+cif)          
+                    if dataExist:
+                        isExist = "Y"             
+                    else:
+                        isExist = "N"
+
+                    checkAllFlag = "Y"
+                    if(checkAllFlag == "Y" and isExist == "N"):
+                        print("check flag:" + checkAllFlag)
+                        print("check exist flag:" + isExist)
+                        #r=1/int(cif)##for test exception
+                        print("Call inquiry and Create New Party here")
+                        status,reason,accountStatus = PartyCreation.getPartyCreationStatus(cif)
+                        rowContent.append(i)
+                        rowContent.append(cif)
+                        rowContent.append(status)
+                        rowContent.append(reason)
+                        rowContent.append(accountStatus)
+
+                    else:
+                        rowContent.append(i)
+                        rowContent.append(cif)
+                        rowContent.append("Failed")
+                        rowContent.append("Already Exist")
+                        rowContent.append("Failed")
+                    checkAllFlag = "N"
+                    isExist = "N"
+                    rowsContent.append(rowContent)
+                    
+            dt = str(datetime.now()).replace(":",".")
+            with open(r""+folderPath+dt+".csv", 'w', newline='') as csvfile: 
+                csvwriter = csv.writer(csvfile) 
+                csvwriter.writerow(fieldNames) 
+                csvwriter.writerows(rowsContent)
+        acm.UX().Dialogs().MessageBoxInformation(shell, text)
+
+        
+        
+    except Exception as msgs:
+        print("Error run script : " + str(msgs))
+
+########################
+
+...
+
+  SoaCommonDef
+"""------------------------------------------------------------------------------------------------
+MODULE:
+    SoaCommonDef
+
+DESCRIPTION: This module provides the base defintions which return common soaHeader, messageHeader and HTTP Header that will be used when constructing Request Message to SOA/eMAS
+---------------------------------------------------------------------------------------------------"""
+import acm
+import random
+import ParametersReader
+
+SoaParams  = ParametersReader.get_params('SoaParams')
+
+def generateSoaHeader(messageType, messageSubType, messageSender, senderDomain):
+    datetime = acm.Time.TimeNow()[:-3]
+    
+    #generate trackingID
+    trackingDate = datetime.replace('-', '')[:8]
+    channelID = SoaParams["CHANNEL_ID"]
+    randomNumber = random.randint(1, 9999)
+    strRandNum = format(randomNumber, '0' + str(4)) 
+    trackingID = trackingDate+channelID+strRandNum
+    
+    dataSoaHeader = dict({"messageVersion":"1.0", 
+                          "messageType":messageType, 
+                          "messageSubType":messageSubType, 
+                          "messageSender":messageSender, 
+                          "senderDomain":senderDomain, 
+                          "messageTimeStamp":datetime, 
+                          "initiatedTimeStamp":datetime, 
+                          "trackingID":trackingID})
+    
+    return dataSoaHeader
+    
+def generatePropertyForMessageHeader(transactionCode):
+    #generate teller id
+    minTeller = int(SoaParams["MIN_TELLER"])
+    maxTeller = int(SoaParams["MAX_TELLER"])
+    lastThree = random.randint(minTeller, maxTeller)
+    #divider
+    tellerId = "9925"+str(lastThree)
+    #tellerId = "9925400"
+    inqSeqNo = SoaParams["INQ_SEQ_NO"]
+    recordsRetrieve = 10
+
+    dataPropertyTeller = dict({"propertyKey":"tellerId", "propertyValue":tellerId})
+    dataPropertyJournalSeq = dict({"propertyKey":"journalSequence", "propertyValue":inqSeqNo})
+    dataPropertyTranCode = dict({"propertyKey":"transactionCode", "propertyValue":transactionCode})
+    dataPropertyRetrieve = dict({"propertyKey":"noOfRecordsToRetrieve", "propertyValue":recordsRetrieve})
+    
+    if transactionCode == "1565":
+        property = [dataPropertyTeller, dataPropertyJournalSeq, dataPropertyTranCode, dataPropertyRetrieve]
+    else:
+        property = [dataPropertyTeller, dataPropertyJournalSeq, dataPropertyTranCode]
+
+    return property
+
+def genHttpHeader():
+    headers = {
+      'Content-Type': 'application/json',
+      'apiKey': SoaParams["API_KEY"]
+    }
+    
+    return headers
+    
+
+...
+
+  TransactionStatusInquiry
+
+import requests
+import json
+import constructJSONRequest
+import ael
+import FLogger
+
+logger = None
+def InitializeLogging(params):
+    logfile = params['logFile']
+    if logfile == '':
+        logfile = None
+    global logger
+    logger = FLogger.FLogger(level=1,
+                    name='TransactionStatusInquiry',
+                    logToPrime=True,
+                    logToFileAtSpecifiedPath=logfile,
+                    logToConsole=False)
+
+ael_gui_parameters =    {'runButtonLabel':   '&&Run',
+                        'hideExtraControls': True,
+                        'windowCaption' : 'eMAS Check Posting'}
+
+
+ael_variables=  [['tellerID','Ori Teller ID','string',0],
+['seqNo','Ori Seq No','string',0],
+['ccy','Ori Currency Code','string',0],
+['logFile', 'Log File_Logging', 'string', [], '', 0, 0, '', None, 1]]
+
+def ael_main(parameter):
+    tellerID = parameter['tellerID']
+    seqNo = parameter['seqNo']
+    ccy = parameter['ccy']
+    
+    InitializeLogging(parameter)
+
+    base_url = 'http://10.243.213.191:5355'
+    url = base_url+'/gateway/CoreBankTransactionStatusInquiry/1.0/transactionStatusInquiry'
+
+    payload = constructJSONRequest.constructJSONRequest('9925411', seqNo, tellerID, ccy)
+
+    headers = {
+      'Content-Type': 'application/json',
+      'apiKey': '423be65d-645e-43b5-b643-e3c26cd6f451'
+    }
+
+    response = requests.post(url, headers=headers, data=payload, verify=False)
+    
+    if response.status_code == 200:
+        #print('b: ', response.text)
+        jsonResp = response.json()
+        #print(jsonResp)
+        logger.LOG(jsonResp['transactionStatusInquiryResponse'])
+    else:
+        logger.ELOG('error')
+
+
+...
+
+}
+

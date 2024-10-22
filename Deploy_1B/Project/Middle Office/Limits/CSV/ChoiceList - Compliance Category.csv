@@ -1,0 +1,7 @@
+CHOICELIST,,,,/CHOICELIST
+DESCRIPTION,LIST,SORT_ORDER,ENTRY,
+Compliance Rule Category,MASTER,,Compliance Rule Category,
+Transaction,Compliance Rule Category,2,Transaction,
+Pre-Deal,Compliance Rule Category,,Pre-Deal,
+Periodic,Compliance Rule Category,3,Periodic,
+Compliance,Compliance Rule Category,1,Compliance,

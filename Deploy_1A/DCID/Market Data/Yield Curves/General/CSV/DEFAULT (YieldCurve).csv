@@ -1,0 +1,12 @@
+YIELDCURVE,,,,,,,,,,,,,,,YIELDCURVEPOINT,,/YIELDCURVEPOINT,/YIELDCURVE
+CALCULATION_FORMAT,CURR.INSID,DATA,ESTIMATION_TYPE,EXTRAPOL_TYPE_LONG_END,EXTRAPOL_TYPE_SHORT_END,INTERPOLATION_TYPE,IPOL_RATE_TYPE,IR_FORMAT,PAY_DAY_METHOD,STORAGE_CALC_TYPE,STORAGE_DAYCOUNT,STORAGE_RATE_TYPE,YIELD_CURVE_NAME,YIELD_CURVE_TYPE,DATE_PERIOD,VALUE,,
+Use Storage Format,EUR,,Boot Strap,Default,Default,Linear,Spot Rate,Zero Coupon Curve,Mod. Following,Spot Rate,Act/360,Continuous,DEFAULT,Benchmark,1m,0.03,,
+,,,,,,,,,,,,,,,2m,0.03,,
+,,,,,,,,,,,,,,,6m,0.03,,
+,,,,,,,,,,,,,,,1y,0.03,,
+,,,,,,,,,,,,,,,2y,0.03,,
+,,,,,,,,,,,,,,,3y,0.03,,
+,,,,,,,,,,,,,,,5y,0.03,,
+,,,,,,,,,,,,,,,7y,0.03,,
+,,,,,,,,,,,,,,,10y,0.03,,
+,,,,,,,,,,,,,,,1d,0.03,,

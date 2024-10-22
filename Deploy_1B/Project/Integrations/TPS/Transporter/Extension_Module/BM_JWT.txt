@@ -1,0 +1,113 @@
+#
+# Front Arena exported extension module.
+# source          ""
+# timestamp (utc) "2023-12-11 06:55:08"
+# ***** DO NOT EDIT! *****
+#
+name        "BM_JWT"
+description "$Id$"
+
+groups {
+}
+
+decls[FParameters] {
+}
+
+clx FObject [FParameters] {
+  JWTParams =
+  base_url=https://tpsgateway.corp.devmandiri.co.id:20003/TPSGateway
+  branch_code=99120
+  channel_id=154
+  token_base=Bearer eyJhbGciOiJIUzI1NiJ9.eyJBY2Nlc3MiOnsiY3JlYXRlZCI6IjIwMjMtMTItMTEtMTE6MDM6MTAuNjEwIiwiSWQiOiIyMjY0OSIsInVzZXJOYW1lIjoiVVNFUk5UQ1MifSwiZXhwIjoxNzEwMDQzMzkwfQ.J2-_rOr8MmTGRIbplXBIGypuOOYNZ0bhK3ANcoTwayo
+
+
+}
+
+decls[FPythonCode] {
+}
+
+clx FObject [FPythonCode] {
+  BM_JWT
+
+import requests
+import json
+import pyodbc
+import traceback
+import datetime as libdt
+from datetime import datetime
+import ParametersReader
+import acm
+import FRunScriptGUI
+import ael
+import FLogger
+import os
+import InterfaceUtils
+import random
+import string
+
+JWTParams  = ParametersReader.get_params('JWTParams')
+base_url= JWTParams['base_url']
+token_base = JWTParams['token_base']
+branch_code=JWTParams['branch_code']
+channel_id=JWTParams['channel_id']
+
+def generate_value_dt_today():
+    # getting the current date and time
+    current_datetime = libdt.date.today()
+    
+    return current_datetime.strftime('%d%m%y')
+
+def get_milli_second(current_datetime):
+    ms = current_datetime.microsecond % 1000
+    result = "{:03d}".format(ms)
+    return result
+
+
+def generate_external_id():
+    current_datetime = datetime.now() 
+    ms = get_milli_second(current_datetime)
+    
+    dt = current_datetime.strftime('%Y%m%d%H%M%S')
+    return f'{dt}{ms}'
+
+
+def get_token():
+    #channel_id='154'
+    #base_url='https://tpsgateway.corp.devmandiri.co.id:20003/TPSGateway'
+    #token_base = 'Bearer eyJhbGciOiJIUzI1NiJ9.eyJBY2Nlc3MiOnsiY3JlYXRlZCI6IjIwMjMtMTItMTEtMTE6MDM6MTAuNjEwIiwiSWQiOiIyMjY0OSIsInVzZXJOYW1lIjoiVVNFUk5UQ1MifSwiZXhwIjoxNzEwMDQzMzkwfQ.J2-_rOr8MmTGRIbplXBIGypuOOYNZ0bhK3ANcoTwayo'
+    url_token = base_url + "/Token/generateAPI/"
+    print(f"url token {url_token} di-hit")
+    print(token_base)
+    external_id = generate_external_id()
+    result_str = ''.join(random.choice(string.digits) for i in range(5))
+    dict_headers = {
+        'Accept':'Application/json',
+        'Authorization': token_base,
+        'externalID' : f"{channel_id}-{result_str}-{external_id}"
+    }
+    print(f"dict headers: {dict_headers}")
+    
+    r = requests.get(url_token, headers=dict_headers, verify=False)
+    
+    if(r.status_code != 200):
+        print('gagal get token')
+        return None
+        
+    data = r.json()
+    print(data)
+    response_code = data['generateTokenAPIResponse']['responseCode']
+    if(response_code != 'TPS_000'):
+        print('gagal get token')
+        return None
+        
+    token = data['generateTokenAPIResponse']['payload']['tokenAPI']
+    
+    print('berhasil get token')
+    return token
+    
+
+
+...
+
+}
+

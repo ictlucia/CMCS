@@ -1,0 +1,6 @@
+FSwiftInstaller
+FSwiftSolutionBase
+FSwiftCash
+FSwiftFXMMConfirmation
+FSwiftSecuritySettlement
+FSwiftCashConfirmation

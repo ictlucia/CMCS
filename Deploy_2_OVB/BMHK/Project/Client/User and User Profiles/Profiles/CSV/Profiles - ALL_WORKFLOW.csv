@@ -1,0 +1,7 @@
+USERPROFILE,,PROFILECOMPONENT,,,,,/PROFILECOMPONENT,/USERPROFILE
+DESCRIPTION,PROFID,ALLOW_CREATE,ALLOW_DELETE,ALLOW_WRITE,COMPNBR.COMPNAME,COMPNBR.TYPE,,
+All workflow operations,ALL_WORKFLOW,,,,Void Input,Operation,,
+,,,,,Bypass Release Restriction,Operation,,
+,,,,,Bypass Trade Workflow,Operation,,
+,,,,,Bypass Value Day Check,Operation,,
+,,Yes,Yes,Yes,Trade,DBObject,,

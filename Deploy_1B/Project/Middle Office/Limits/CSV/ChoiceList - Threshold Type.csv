@@ -1,0 +1,6 @@
+CHOICELIST,,,,/CHOICELIST
+DESCRIPTION,LIST,SORT_ORDER,ENTRY,
+Threshold Type,MASTER,,Threshold Type,
+Warning,Threshold Type,1,Warning,
+Violation,Threshold Type,,Violation,
+Reporting,Threshold Type,2,Reporting,

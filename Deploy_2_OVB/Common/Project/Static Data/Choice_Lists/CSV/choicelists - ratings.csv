@@ -1,0 +1,8 @@
+CHOICELIST,,,/CHOICELIST
+ENTRY,LIST,SORT_ORDER,
+Ratings,MASTER,,
+OurRate,MASTER,,
+None,OurRate,,
+S&P,Ratings,,
+Moodys,Ratings,1,
+OurRate,Ratings,2,

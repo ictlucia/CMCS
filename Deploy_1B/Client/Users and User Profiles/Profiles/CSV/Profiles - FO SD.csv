@@ -1,0 +1,13 @@
+USERPROFILE,,PROFILECOMPONENT,,,,,/PROFILECOMPONENT,/USERPROFILE
+DESCRIPTION,PROFID,ALLOW_CREATE,ALLOW_DELETE,ALLOW_WRITE,COMPNBR.COMPNAME,COMPNBR.TYPE,,
+FO Static Data,FO_SD,Yes,,Yes,TextObject,DBObject,,
+,,Yes,,Yes,RoundingSpec,DBObject,,
+,,Yes,Yes,Yes,RateIndex,DBObject,,
+,,Yes,Yes,Yes,Portfolio,DBObject,,
+,,Yes,Yes,Yes,PartyGroup,DBObject,,
+,,Yes,Yes,Yes,Party,DBObject,,
+,,Yes,,Yes,HierarchyType,DBObject,,
+,,Yes,,Yes,Hierarchy,DBObject,,
+,,Yes,Yes,Yes,CurrencyPair,DBObject,,
+,,Yes,Yes,Yes,Curr,DBObject,,
+,,Yes,Yes,Yes,MasterAgreement,DBObject,,

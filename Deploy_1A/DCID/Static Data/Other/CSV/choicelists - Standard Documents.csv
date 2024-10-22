@@ -1,0 +1,5 @@
+CHOICELIST,,,,/CHOICELIST
+DESCRIPTION,LIST,SORT_ORDER,ENTRY,
+,MASTER,,Standard Document,
+,Standard Document,,ISDA,
+,Standard Document,,GMRA,

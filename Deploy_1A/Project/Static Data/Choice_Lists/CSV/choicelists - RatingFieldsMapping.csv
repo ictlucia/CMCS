@@ -1,0 +1,5 @@
+CHOICELIST,,,/CHOICELIST
+LIST,ENTRY,DESCRIPTION,
+ADM Choicelist Mappings,Rating1,Moodys,
+ADM Choicelist Mappings,Rating2,S&P,
+ADM Choicelist Mappings,Rating3,Fitch,

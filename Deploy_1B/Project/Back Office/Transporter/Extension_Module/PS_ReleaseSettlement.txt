@@ -1,0 +1,252 @@
+#
+# Front Arena exported extension module.
+# source          ""
+# timestamp (utc) "2024-08-21 08:59:29"
+# ***** DO NOT EDIT! *****
+#
+name        "PS_ReleaseSettlement"
+description "$Id$"
+
+groups {
+}
+
+decls[FPythonCode] {
+}
+
+clx FObject [FPythonCode] {
+  AutoReleaseSettlement
+"""----------------------------------------------------------------------------------------------------
+MODULE:
+    AutoReleaseSettlement
+
+DESCRIPTION:
+    Entry point to invoke the Release Settlement run task gui.
+
+-------------------------------------------------------------------------------------------------------"""
+import acm, ael, traceback
+import FSwiftWriterAPIs, FLogger
+import InterfaceUtils, FRunScriptGUI
+import InterfaceSettingUtils
+
+
+def initialize_logging(logLevel, app_name='AutoReleaseSettlements'):
+    """
+    Initialize logger
+    :param params: parameters
+    :return: FLogger object
+    """
+    logger = None
+    try:
+        level = InterfaceUtils.LogLevelNameToNumber(logLevel)
+        logger = FLogger.FLogger(level=level,
+                                 name=app_name,
+                                 logToPrime=True,
+                                 logToFileAtSpecifiedPath=False,
+                                 logToConsole=False)
+    except Exception as err:
+        print('Error in initializing logger {}'.format(err))
+        print(traceback.format_exc())
+    return logger
+
+
+class AutoReleaseSetl(FRunScriptGUI.AelVariablesHandler):
+    def __init__(self):
+        """
+        Init the member variables
+        """
+        self._logger = None
+        query = [query.Name() for query in acm.FStoredASQLQuery.Select("subType='FSettlement'")]
+        query.sort()
+        query_conf = [query.Name() for query in acm.FStoredASQLQuery.Select("subType='FConfirmation'")]
+        query_conf.sort()
+        logLevels = [FLogger.FLogger.INFO, FLogger.FLogger.ERROR, FLogger.FLogger.WARNING, FLogger.FLogger.DEBUG]
+        # NAME = 0  # internal name
+        # TEXT = 1  # GUI Text
+        # TYPE = 2  # object type
+        # VALUES = 3  # valid values
+        # DEFAULT = 4  # default
+        # MANDATORY = 5  # mandatory
+        # MULTI = 6  # multiple selection
+        # TIP = 7  # floating tip
+        # CB = 8  # callback
+        # ENABLED = 9  # enabled
+        gui_vars = [
+            ['releaseSettlement', 'Eligible settlements to Release_Input', 'string', query, None, 1, 0,
+             'Release Settlements on Value Day', None, 1],
+            ['matchedConf', 'Confirmation to check on settlements_Input', 'string', query_conf, None, 1, 0,
+             'Confirmation query', None, 1],
+            ['cal_currency', 'Calendar Currency_Input', 'string', '', 'IDR', 1, 0,
+             'Currency for selecting the calendar', None, 0],
+            ['log_level', 'Log level_Logging', 'string', logLevels, FLogger.FLogger.DEBUG, 1, 0]
+        ]
+
+        FRunScriptGUI.AelVariablesHandler.__init__(self, gui_vars)
+
+    def set_logger(self, logger):
+        """ Set the logger"""
+        self._logger = logger
+        
+        
+    def get_mt_type(self, acm_obj):
+        """ This function finds the MT type of Swift message"""
+        mt_type = None
+        try:
+            mt_type = FSwiftWriterAPIs.get_swift_mt_type(acm_obj)
+        except:
+            pass
+        return mt_type
+        
+
+    def all_conf_are_swift(self, matched_conf_query, trd):
+        """
+        This function checks if all the confirmations on trade are swift confirmations and satisfy the query
+        :param matched_conf_query: Query
+        :param trd: Trade
+        :return: boolean
+        """
+        def non_swift_conf_found(confs):
+            ret_val = True
+            if confs:
+                ret_val = False
+                for conf in confs:
+                    mt_type = self.get_mt_type(conf)
+                    if not mt_type:
+                        ret_val = True
+                        break
+                    
+            return ret_val
+
+        def latest_swift_conf_matched(confs, matched_conf_query):
+
+            latest_conf = None
+            for conf in confs:
+                if conf.IsNewestInConfirmationChain():
+                    latest_conf = conf
+                    self._logger.LOG('Latest confirmation found {}'.format(latest_conf.Oid()))
+                    break
+           
+            ret_val = True if latest_conf and matched_conf_query.Query().Select().IsSatisfiedBy(latest_conf) else False
+                    
+            return ret_val            
+            
+        trd_confs = trd.Confirmations()
+        return True if not non_swift_conf_found(trd_confs) and latest_swift_conf_matched(trd_confs, matched_conf_query) else False
+
+
+    def process_task(self, params):
+        """ This function processes the auto release of settlements"""
+        self._logger.LOG('Start process auto release settlement')
+        ssss_setl_query_value_day_today_name = params['releaseSettlement']
+        matched_conf_query_name = params['matchedConf']
+        cal_curr = params['cal_currency']
+        filtered_settlements = list()
+
+        ssss_setl_query_value_day_today = acm.FStoredASQLQuery[ssss_setl_query_value_day_today_name]
+        matched_conf_query = acm.FStoredASQLQuery[matched_conf_query_name]
+        IDR_Calender = acm.FCurrency[cal_curr].Calendar()
+        today_day = acm.Time.DateToday()
+        next_banking_day = IDR_Calender.AdjustBankingDays(today_day, 1)
+        date_tomorrow = acm.Time.DateAdjustPeriod(today_day, '1d')
+        settlement_to_process = ssss_setl_query_value_day_today.Query().Select()
+        settlement_to_log = ', '.join([str(settlement.Oid()) for settlement in settlement_to_process])
+        self._logger.LOG('About to process settlements {}'.format(settlement_to_log))
+        
+        for settlement_obj in settlement_to_process:
+            settlement_processed = False
+            self._logger.LOG("Processing settlement {}".format(settlement_obj.Oid()))
+            try:
+                trd = settlement_obj.Trade()
+                if trd:
+                    network_alias_type = settlement_obj.CounterpartyAccountRef().NetworkAliasType().Name().upper()
+                    status_to_set = ''
+                    settlement_mt_type = self.get_mt_type(settlement_obj)
+                    
+                    # Check the val day
+                    if not status_to_set and (settlement_obj.Amount() > 0 and str(settlement_mt_type) not in ['210', 'MT210'] and
+                            network_alias_type in ['BI-SSSS', 'RTGS', 'SWIFT'] and settlement_obj.Type() not in ['Security Nominal','Security DvP','End Security','Broker Fee','WHT']):
+                        setl_val_day = settlement_obj.ValueDay()
+                        # Pending Closure on Value Day
+                        if setl_val_day == today_day:
+                            status_to_set = 'Pending Closure'
+                       ############remove base on jira TCSTCSPBDT-437886 want pending closure always in value date event next day from value date is holiday
+                       #elif setl_val_day < next_banking_day:
+                       #     status_to_set = 'Pending Closure'
+                    
+                    # need handle condition if the matching confirmation overlaping start process then the pending closure
+                    if InterfaceSettingUtils.get_env_name() == 'HO':
+                        if self.all_conf_are_swift(matched_conf_query, trd):
+                            setl_val_day = settlement_obj.ValueDay()
+                            if not status_to_set and network_alias_type == 'BI-SSSS':
+                                if (settlement_obj.Amount() < 0) or (settlement_obj.Amount() > 0 and settlement_obj.Type()  in ['Security Nominal','Security DvP','End Security']):
+                                    if setl_val_day == today_day:
+                                        status_to_set = 'Released'
+                            if not status_to_set and network_alias_type in ['SWIFT']:
+                                # Release on Value Day - 1
+                                if (settlement_obj.Amount() < 0) or (settlement_obj.Amount() > 0 and settlement_obj.Type()  in ['Security Nominal','Security DvP','End Security']):
+                                    if today_day == setl_val_day or date_tomorrow == setl_val_day:
+                                        status_to_set = 'Released'
+                                    elif setl_val_day <= next_banking_day:
+                                        status_to_set = 'Released'
+                            if not status_to_set and network_alias_type in ['RTGS']:
+                                # Release on Value Day - 1
+                                if (settlement_obj.Amount() < 0):
+                                #update request per 3 June 2024, from releaes H-1 become  H+0 since for easy recon posting
+                                #update request per 2 August 2024, from releaes H+0 become H-1  because TPS application is bad and user say for reduce their risk
+                                    self._logger.LOG("TPS today day - set day -date_tommorow - next banking day = {}  {} {}".format(today_day, setl_val_day, date_tomorrow, next_banking_day))
+                                    if today_day == setl_val_day or date_tomorrow == setl_val_day:
+                                        status_to_set = 'Released'
+                                    elif setl_val_day <= next_banking_day:
+                                        status_to_set = 'Released'
+                                    #if today_day == setl_val_day:
+                                    #    status_to_set = 'Released'
+                            
+                            
+                    if status_to_set:
+                        settlement_obj.Status(status_to_set)
+                        settlement_obj.Commit()
+                        self._logger.LOG('Setting Settlement {} to status {}'.format(settlement_obj.Oid(), status_to_set))
+                        settlement_processed = True
+                else:
+                    self._logger.LOG("Skipping settlement {} as no trade is associated with it.".format(settlement_obj.Oid()))
+                
+                if not settlement_processed:    
+                    filtered_settlements.append(str(settlement_obj.Oid()))
+            except Exception as err:
+                filtered_settlements.append(str(settlement_obj.Oid()))
+                self._logger.LOG('Error in processing settlement query {}'.format(err))
+                print(traceback.format_exc())                
+            
+        self._logger.LOG('Settlements filtered due to conditions. {}'.format(', '.join(filtered_settlements)))
+        self._logger.LOG('End process auto release settlement')
+
+
+ael_gui_parameters = {'windowCaption': "Automatic Release Settlements"}
+
+ael_variables = AutoReleaseSetl()
+ael_variables.LoadDefaultValues(__name__)
+
+
+def ael_main(params):
+    """
+    AEL main function
+    :param params: GUI parameters
+    :return: None
+    """
+    auto_rel_setl_logger = None
+    try:
+
+        auto_rel_setl_logger = initialize_logging(params['log_level'])
+        if auto_rel_setl_logger:
+            auto_rel_setl_logger.LOG('Execution started.')
+            ael_variables.set_logger(auto_rel_setl_logger)
+            ael_variables.process_task(params)
+    except Exception as err:
+        if auto_rel_setl_logger is not None:
+            auto_rel_setl_logger.ELOG(str(err))
+        print(traceback.format_exc())
+        print('Error in ael main. {}'.format(err))
+
+...
+
+}
+

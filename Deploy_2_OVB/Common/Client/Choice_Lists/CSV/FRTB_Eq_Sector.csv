@@ -1,0 +1,7 @@
+CHOICELIST,,,/CHOICELIST
+LIST,SORT_ORDER,ENTRY,
+FRTB_Eq_Sector,2,"Basic Material, energy,...",
+FRTB_Eq_Sector,,"Consumer goods, transportation,...",
+FRTB_Eq_Sector,3,"Financial (inc: BUMN),...",
+FRTB_Eq_Sector,4,Others,
+FRTB_Eq_Sector,1,"Telecommunication and industries,...",

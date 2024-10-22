@@ -1,0 +1,88 @@
+[MESSAGE]
+  TYPE=INSERT_TEXTOBJECT
+  VERSION=1.0
+  TIME=2024-05-06 03:40:10
+  SOURCE=FAMBAMessageGenerator
+  [TEXTOBJECT]
+    TYPE=Customizable
+    DATA={\
+    "MSWordTemplates": [\
+        {\
+            "name": "Republic of Indonesia Bond USD",\
+            "type": "LongFormTPL",\
+            "version": "3",\
+            "checksumFields": {\
+                "RegularFields": [\
+                    {\
+                        "fieldName": "LongFormIssuer"\
+                    },\
+                    {\
+                        "fieldName": "LongFormEndDate"\
+                    },\
+                    {\
+                        "fieldName": "LongFormIsin"\
+                    },\
+                    {\
+                        "fieldName": "LongFormCurrency"\
+                    },\
+                    {\
+                        "fieldName": "LongFormFaceValue"\
+                    },\
+                    {\
+                        "fieldName": "LongFormPrice"\
+                    },\
+                    {\
+                        "fieldName": "LongFormPrincipalAmount"\
+                    },\
+                    {\
+                        "fieldName": "LongFormAccruedInterest"\
+                    },\
+                    {\
+                        "fieldName": "LongFormNetConsideration"\
+                    },\
+                    {\
+                        "fieldName": "LongFormTradeDate"\
+                    },\
+                    {\
+                        "fieldName": "LongFormValueDay"\
+                    },\
+                    {\
+                        "fieldName": "Trade"\
+                    },\
+                    {\
+                        "fieldName": "LongFormSettleInstruction"\
+                    },\
+                    {\
+                        "fieldName": "LongFormOurAccount_BondRepo"\
+                    },\
+                    {\
+                        "fieldName": "LongFormYourAccount_BondRepo"\
+                    }\
+                ],\
+                "LoopFields": []\
+            }\
+        }\
+    ],\
+    "PrimeSheetTemplates": [\
+        {\
+            "name": "Republic of Indonesia Bond",\
+            "classType": "Confirmation Sheet",\
+            "type": "Primary",\
+            "insertItem": "",\
+            "insertQuery": ""\
+        },\
+        {\
+            "name": "Republic of Indonesia Bond",\
+            "classType": "Confirmation Sheet",\
+            "type": "Supplement",\
+            "insertItem": "Confirmation",\
+            "insertQuery": ""\
+        }\
+    ],\
+    "FormattedColumnSet": []\
+}
+    NAME=Bond Republic of Indonesia
+    SIZE=2351
+    SUBTYPE=ReportForm
+  [/TEXTOBJECT]
+[/MESSAGE]

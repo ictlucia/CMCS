@@ -1,0 +1,886 @@
+TEXTOBJECT,,,,,/TEXTOBJECT
+SIZE,DATA,NAME,TYPE,USRNBR.USERID,
+8538,"<?xml version='1.0' encoding='UTF-8'?>\
+<FrontArenaPrimeSheetExport>\
+<!--PRIME Version: 2022.4.3-->\
+<FDictionary type =""AcmDomain"">\
+  <Element>\
+  <FAssociation type =""AcmDomain"">\
+    <associationKey type =""Property"">\
+      <FSymbol type =""AcmDomain"">\
+        <Text type =""Property"">\
+          <string type =""AcmDomain"">scenario</string>\
+        </Text>\
+      </FSymbol>\
+    </associationKey>\
+    <associationValue type =""Property"">\
+      <FDynamicScenario type =""AcmDomain"">\
+        <name type =""Property"">\
+          <string type =""AcmDomain"">MO04 - Credit VaR</string>\
+        </name>\
+        <uniqueId type =""Property"">\
+          <FSymbol type =""AcmDomain"">\
+            <Text type =""Property"">\
+              <string type =""AcmDomain"">8b59d311-aa59-4461-b6df-77b24f6f8cc1</string>\
+            </Text>\
+          </FSymbol>\
+        </uniqueId>\
+        <defaultSettings type =""Property"">\
+          <FScenarioSettings type =""AcmDomain"">\
+            <showColors type =""Property"">\
+              <bool type =""AcmDomain"">true</bool>\
+            </showColors>\
+            <ShiftDisplayType type =""Property"">\
+              <eShiftDisplayType type =""AcmDomain"">Absolute</eShiftDisplayType>\
+            </ShiftDisplayType>\
+          </FScenarioSettings>\
+        </defaultSettings>\
+        <params type =""Property"">\
+          <FVariantDictionary type =""AcmDomain"">\
+            <Element>\
+            <FAssociation type =""AcmDomain"">\
+              <associationKey type =""Property"">\
+                <FString type =""AcmDomain"">\
+                  <Text type =""Property"">\
+                    <string type =""AcmDomain"">Attribute</string>\
+                  </Text>\
+                </FString>\
+              </associationKey>\
+              <associationValue type =""Property"">\
+                <FSymbol type =""AcmDomain"">\
+                  <Text type =""Property"">\
+                    <string type =""AcmDomain""></string>\
+                  </Text>\
+                </FSymbol>\
+              </associationValue>\
+            </FAssociation>\
+            </Element>\
+            <Element>\
+            <FAssociation type =""AcmDomain"">\
+              <associationKey type =""Property"">\
+                <FString type =""AcmDomain"">\
+                  <Text type =""Property"">\
+                    <string type =""AcmDomain"">commentChar</string>\
+                  </Text>\
+                </FString>\
+              </associationKey>\
+              <associationValue type =""Property"">\
+                <FString type =""AcmDomain"">\
+                  <Text type =""Property"">\
+                    <string type =""AcmDomain"">*</string>\
+                  </Text>\
+                </FString>\
+              </associationValue>\
+            </FAssociation>\
+            </Element>\
+            <Element>\
+            <FAssociation type =""AcmDomain"">\
+              <associationKey type =""Property"">\
+                <FString type =""AcmDomain"">\
+                  <Text type =""Property"">\
+                    <string type =""AcmDomain"">delimiterChar</string>\
+                  </Text>\
+                </FString>\
+              </associationKey>\
+              <associationValue type =""Property"">\
+                <FString type =""AcmDomain"">\
+                  <Text type =""Property"">\
+                    <string type =""AcmDomain"">,</string>\
+                  </Text>\
+                </FString>\
+              </associationValue>\
+            </FAssociation>\
+            </Element>\
+            <Element>\
+            <FAssociation type =""AcmDomain"">\
+              <associationKey type =""Property"">\
+                <FString type =""AcmDomain"">\
+                  <Text type =""Property"">\
+                    <string type =""AcmDomain"">endIndex</string>\
+                  </Text>\
+                </FString>\
+              </associationKey>\
+              <associationValue type =""Property"">\
+                <FString type =""AcmDomain"">\
+                  <Text type =""Property"">\
+                    <string type =""AcmDomain"">0</string>\
+                  </Text>\
+                </FString>\
+              </associationValue>\
+            </FAssociation>\
+            </Element>\
+            <Element>\
+            <FAssociation type =""AcmDomain"">\
+              <associationKey type =""Property"">\
+                <FString type =""AcmDomain"">\
+                  <Text type =""Property"">\
+                    <string type =""AcmDomain"">file</string>\
+                  </Text>\
+                </FString>\
+              </associationKey>\
+              <associationValue type =""Property"">\
+                <FString type =""AcmDomain"">\
+                  <Text type =""Property"">\
+                    <string type =""AcmDomain"">C:\\Users\\emili\\OneDrive\\Desktop\\scenario VaR\\RiskScenario.txt</string>\
+                  </Text>\
+                </FString>\
+              </associationValue>\
+            </FAssociation>\
+            </Element>\
+            <Element>\
+            <FAssociation type =""AcmDomain"">\
+              <associationKey type =""Property"">\
+                <FString type =""AcmDomain"">\
+                  <Text type =""Property"">\
+                    <string type =""AcmDomain"">riskFactorSetup</string>\
+                  </Text>\
+                </FString>\
+              </associationKey>\
+              <associationValue type =""Property"">\
+                <FPersistent type =""AcmDomain"">\
+                  <Class type =""Property"">\
+                    <FDomain type =""AcmDomain"">\
+                      <DomainName type =""Property"">\
+                        <string type =""AcmDomain"">FRiskFactorSetup</string>\
+                      </DomainName>\
+                    </FDomain>\
+                  </Class>\
+                  <ExternalReference type =""Property"">\
+                    <FVariantDictionary type =""AcmDomain"">\
+                      <Element>\
+                      <FAssociation type =""AcmDomain"">\
+                        <associationKey type =""Property"">\
+                          <FSymbol type =""AcmDomain"">\
+                            <Text type =""Property"">\
+                              <string type =""AcmDomain"">Name</string>\
+                            </Text>\
+                          </FSymbol>\
+                        </associationKey>\
+                        <associationValue type =""Property"">\
+                          <FString type =""AcmDomain"">\
+                            <Text type =""Property"">\
+                              <string type =""AcmDomain"">VaR Setup</string>\
+                            </Text>\
+                          </FString>\
+                        </associationValue>\
+                      </FAssociation>\
+                      </Element>\
+                    </FVariantDictionary>\
+                  </ExternalReference>\
+                </FPersistent>\
+              </associationValue>\
+            </FAssociation>\
+            </Element>\
+            <Element>\
+            <FAssociation type =""AcmDomain"">\
+              <associationKey type =""Property"">\
+                <FString type =""AcmDomain"">\
+                  <Text type =""Property"">\
+                    <string type =""AcmDomain"">startIndex</string>\
+                  </Text>\
+                </FString>\
+              </associationKey>\
+              <associationValue type =""Property"">\
+                <FString type =""AcmDomain"">\
+                  <Text type =""Property"">\
+                    <string type =""AcmDomain"">0</string>\
+                  </Text>\
+                </FString>\
+              </associationValue>\
+            </FAssociation>\
+            </Element>\
+            <Element>\
+            <FAssociation type =""AcmDomain"">\
+              <associationKey type =""Property"">\
+                <FString type =""AcmDomain"">\
+                  <Text type =""Property"">\
+                    <string type =""AcmDomain"">Value</string>\
+                  </Text>\
+                </FString>\
+              </associationKey>\
+              <associationValue type =""Property"">\
+                <FString type =""AcmDomain"">\
+                  <Text type =""Property"">\
+                    <string type =""AcmDomain""></string>\
+                  </Text>\
+                </FString>\
+              </associationValue>\
+            </FAssociation>\
+            </Element>\
+          </FVariantDictionary>\
+        </params>\
+        <templateName type =""Property"">\
+          <string type =""AcmDomain"">RiskScenarioFromFile</string>\
+        </templateName>\
+        <context type =""Property"">\
+          <string type =""AcmDomain"">Standard</string>\
+        </context>\
+      </FDynamicScenario>\
+    </associationValue>\
+  </FAssociation>\
+  </Element>\
+</FDictionary>\
+</FrontArenaPrimeSheetExport>",MO04 - Credit VaR,Stored Scenario,ARENASYS,
+8552,"<?xml version='1.0' encoding='UTF-8'?>\
+<FrontArenaPrimeSheetExport>\
+<!--PRIME Version: 2022.4.3-->\
+<FDictionary type =""AcmDomain"">\
+  <Element>\
+  <FAssociation type =""AcmDomain"">\
+    <associationKey type =""Property"">\
+      <FSymbol type =""AcmDomain"">\
+        <Text type =""Property"">\
+          <string type =""AcmDomain"">scenario</string>\
+        </Text>\
+      </FSymbol>\
+    </associationKey>\
+    <associationValue type =""Property"">\
+      <FDynamicScenario type =""AcmDomain"">\
+        <name type =""Property"">\
+          <string type =""AcmDomain"">MO04 - FX VaR</string>\
+        </name>\
+        <uniqueId type =""Property"">\
+          <FSymbol type =""AcmDomain"">\
+            <Text type =""Property"">\
+              <string type =""AcmDomain"">6b8ec5ca-9516-4cf1-8ac0-be72c8b7779a</string>\
+            </Text>\
+          </FSymbol>\
+        </uniqueId>\
+        <defaultSettings type =""Property"">\
+          <FScenarioSettings type =""AcmDomain"">\
+            <showColors type =""Property"">\
+              <bool type =""AcmDomain"">true</bool>\
+            </showColors>\
+            <ShiftDisplayType type =""Property"">\
+              <eShiftDisplayType type =""AcmDomain"">Absolute</eShiftDisplayType>\
+            </ShiftDisplayType>\
+          </FScenarioSettings>\
+        </defaultSettings>\
+        <params type =""Property"">\
+          <FVariantDictionary type =""AcmDomain"">\
+            <Element>\
+            <FAssociation type =""AcmDomain"">\
+              <associationKey type =""Property"">\
+                <FString type =""AcmDomain"">\
+                  <Text type =""Property"">\
+                    <string type =""AcmDomain"">Attribute</string>\
+                  </Text>\
+                </FString>\
+              </associationKey>\
+              <associationValue type =""Property"">\
+                <FSymbol type =""AcmDomain"">\
+                  <Text type =""Property"">\
+                    <string type =""AcmDomain"">Name</string>\
+                  </Text>\
+                </FSymbol>\
+              </associationValue>\
+            </FAssociation>\
+            </Element>\
+            <Element>\
+            <FAssociation type =""AcmDomain"">\
+              <associationKey type =""Property"">\
+                <FString type =""AcmDomain"">\
+                  <Text type =""Property"">\
+                    <string type =""AcmDomain"">commentChar</string>\
+                  </Text>\
+                </FString>\
+              </associationKey>\
+              <associationValue type =""Property"">\
+                <FString type =""AcmDomain"">\
+                  <Text type =""Property"">\
+                    <string type =""AcmDomain"">*</string>\
+                  </Text>\
+                </FString>\
+              </associationValue>\
+            </FAssociation>\
+            </Element>\
+            <Element>\
+            <FAssociation type =""AcmDomain"">\
+              <associationKey type =""Property"">\
+                <FString type =""AcmDomain"">\
+                  <Text type =""Property"">\
+                    <string type =""AcmDomain"">delimiterChar</string>\
+                  </Text>\
+                </FString>\
+              </associationKey>\
+              <associationValue type =""Property"">\
+                <FString type =""AcmDomain"">\
+                  <Text type =""Property"">\
+                    <string type =""AcmDomain"">,</string>\
+                  </Text>\
+                </FString>\
+              </associationValue>\
+            </FAssociation>\
+            </Element>\
+            <Element>\
+            <FAssociation type =""AcmDomain"">\
+              <associationKey type =""Property"">\
+                <FString type =""AcmDomain"">\
+                  <Text type =""Property"">\
+                    <string type =""AcmDomain"">endIndex</string>\
+                  </Text>\
+                </FString>\
+              </associationKey>\
+              <associationValue type =""Property"">\
+                <FString type =""AcmDomain"">\
+                  <Text type =""Property"">\
+                    <string type =""AcmDomain"">0</string>\
+                  </Text>\
+                </FString>\
+              </associationValue>\
+            </FAssociation>\
+            </Element>\
+            <Element>\
+            <FAssociation type =""AcmDomain"">\
+              <associationKey type =""Property"">\
+                <FString type =""AcmDomain"">\
+                  <Text type =""Property"">\
+                    <string type =""AcmDomain"">file</string>\
+                  </Text>\
+                </FString>\
+              </associationKey>\
+              <associationValue type =""Property"">\
+                <FString type =""AcmDomain"">\
+                  <Text type =""Property"">\
+                    <string type =""AcmDomain"">C:\\Users\\emili\\OneDrive\\Desktop\\scenario VaR\\RiskScenario.txt</string>\
+                  </Text>\
+                </FString>\
+              </associationValue>\
+            </FAssociation>\
+            </Element>\
+            <Element>\
+            <FAssociation type =""AcmDomain"">\
+              <associationKey type =""Property"">\
+                <FString type =""AcmDomain"">\
+                  <Text type =""Property"">\
+                    <string type =""AcmDomain"">riskFactorSetup</string>\
+                  </Text>\
+                </FString>\
+              </associationKey>\
+              <associationValue type =""Property"">\
+                <FPersistent type =""AcmDomain"">\
+                  <Class type =""Property"">\
+                    <FDomain type =""AcmDomain"">\
+                      <DomainName type =""Property"">\
+                        <string type =""AcmDomain"">FRiskFactorSetup</string>\
+                      </DomainName>\
+                    </FDomain>\
+                  </Class>\
+                  <ExternalReference type =""Property"">\
+                    <FVariantDictionary type =""AcmDomain"">\
+                      <Element>\
+                      <FAssociation type =""AcmDomain"">\
+                        <associationKey type =""Property"">\
+                          <FSymbol type =""AcmDomain"">\
+                            <Text type =""Property"">\
+                              <string type =""AcmDomain"">Name</string>\
+                            </Text>\
+                          </FSymbol>\
+                        </associationKey>\
+                        <associationValue type =""Property"">\
+                          <FString type =""AcmDomain"">\
+                            <Text type =""Property"">\
+                              <string type =""AcmDomain"">VaR Setup</string>\
+                            </Text>\
+                          </FString>\
+                        </associationValue>\
+                      </FAssociation>\
+                      </Element>\
+                    </FVariantDictionary>\
+                  </ExternalReference>\
+                </FPersistent>\
+              </associationValue>\
+            </FAssociation>\
+            </Element>\
+            <Element>\
+            <FAssociation type =""AcmDomain"">\
+              <associationKey type =""Property"">\
+                <FString type =""AcmDomain"">\
+                  <Text type =""Property"">\
+                    <string type =""AcmDomain"">startIndex</string>\
+                  </Text>\
+                </FString>\
+              </associationKey>\
+              <associationValue type =""Property"">\
+                <FString type =""AcmDomain"">\
+                  <Text type =""Property"">\
+                    <string type =""AcmDomain"">0</string>\
+                  </Text>\
+                </FString>\
+              </associationValue>\
+            </FAssociation>\
+            </Element>\
+            <Element>\
+            <FAssociation type =""AcmDomain"">\
+              <associationKey type =""Property"">\
+                <FString type =""AcmDomain"">\
+                  <Text type =""Property"">\
+                    <string type =""AcmDomain"">Value</string>\
+                  </Text>\
+                </FString>\
+              </associationKey>\
+              <associationValue type =""Property"">\
+                <FSymbol type =""AcmDomain"">\
+                  <Text type =""Property"">\
+                    <string type =""AcmDomain"">FX Risk Factor</string>\
+                  </Text>\
+                </FSymbol>\
+              </associationValue>\
+            </FAssociation>\
+            </Element>\
+          </FVariantDictionary>\
+        </params>\
+        <templateName type =""Property"">\
+          <string type =""AcmDomain"">RiskScenarioFromFile</string>\
+        </templateName>\
+        <context type =""Property"">\
+          <string type =""AcmDomain"">Standard</string>\
+        </context>\
+      </FDynamicScenario>\
+    </associationValue>\
+  </FAssociation>\
+  </Element>\
+</FDictionary>\
+</FrontArenaPrimeSheetExport>",MO04 - FX VaR,Stored Scenario,ARENASYS,
+8532,"<?xml version='1.0' encoding='UTF-8'?>\
+<FrontArenaPrimeSheetExport>\
+<!--PRIME Version: 2022.4.3-->\
+<FDictionary type =""AcmDomain"">\
+  <Element>\
+  <FAssociation type =""AcmDomain"">\
+    <associationKey type =""Property"">\
+      <FSymbol type =""AcmDomain"">\
+        <Text type =""Property"">\
+          <string type =""AcmDomain"">scenario</string>\
+        </Text>\
+      </FSymbol>\
+    </associationKey>\
+    <associationValue type =""Property"">\
+      <FDynamicScenario type =""AcmDomain"">\
+        <name type =""Property"">\
+          <string type =""AcmDomain"">MO04 - HVaR</string>\
+        </name>\
+        <uniqueId type =""Property"">\
+          <FSymbol type =""AcmDomain"">\
+            <Text type =""Property"">\
+              <string type =""AcmDomain"">dff158ad-86de-4cf4-b59d-3f68c0778b51</string>\
+            </Text>\
+          </FSymbol>\
+        </uniqueId>\
+        <defaultSettings type =""Property"">\
+          <FScenarioSettings type =""AcmDomain"">\
+            <showColors type =""Property"">\
+              <bool type =""AcmDomain"">true</bool>\
+            </showColors>\
+            <ShiftDisplayType type =""Property"">\
+              <eShiftDisplayType type =""AcmDomain"">Absolute</eShiftDisplayType>\
+            </ShiftDisplayType>\
+          </FScenarioSettings>\
+        </defaultSettings>\
+        <params type =""Property"">\
+          <FVariantDictionary type =""AcmDomain"">\
+            <Element>\
+            <FAssociation type =""AcmDomain"">\
+              <associationKey type =""Property"">\
+                <FString type =""AcmDomain"">\
+                  <Text type =""Property"">\
+                    <string type =""AcmDomain"">Attribute</string>\
+                  </Text>\
+                </FString>\
+              </associationKey>\
+              <associationValue type =""Property"">\
+                <FSymbol type =""AcmDomain"">\
+                  <Text type =""Property"">\
+                    <string type =""AcmDomain""></string>\
+                  </Text>\
+                </FSymbol>\
+              </associationValue>\
+            </FAssociation>\
+            </Element>\
+            <Element>\
+            <FAssociation type =""AcmDomain"">\
+              <associationKey type =""Property"">\
+                <FString type =""AcmDomain"">\
+                  <Text type =""Property"">\
+                    <string type =""AcmDomain"">commentChar</string>\
+                  </Text>\
+                </FString>\
+              </associationKey>\
+              <associationValue type =""Property"">\
+                <FString type =""AcmDomain"">\
+                  <Text type =""Property"">\
+                    <string type =""AcmDomain"">*</string>\
+                  </Text>\
+                </FString>\
+              </associationValue>\
+            </FAssociation>\
+            </Element>\
+            <Element>\
+            <FAssociation type =""AcmDomain"">\
+              <associationKey type =""Property"">\
+                <FString type =""AcmDomain"">\
+                  <Text type =""Property"">\
+                    <string type =""AcmDomain"">delimiterChar</string>\
+                  </Text>\
+                </FString>\
+              </associationKey>\
+              <associationValue type =""Property"">\
+                <FString type =""AcmDomain"">\
+                  <Text type =""Property"">\
+                    <string type =""AcmDomain"">,</string>\
+                  </Text>\
+                </FString>\
+              </associationValue>\
+            </FAssociation>\
+            </Element>\
+            <Element>\
+            <FAssociation type =""AcmDomain"">\
+              <associationKey type =""Property"">\
+                <FString type =""AcmDomain"">\
+                  <Text type =""Property"">\
+                    <string type =""AcmDomain"">endIndex</string>\
+                  </Text>\
+                </FString>\
+              </associationKey>\
+              <associationValue type =""Property"">\
+                <FString type =""AcmDomain"">\
+                  <Text type =""Property"">\
+                    <string type =""AcmDomain"">0</string>\
+                  </Text>\
+                </FString>\
+              </associationValue>\
+            </FAssociation>\
+            </Element>\
+            <Element>\
+            <FAssociation type =""AcmDomain"">\
+              <associationKey type =""Property"">\
+                <FString type =""AcmDomain"">\
+                  <Text type =""Property"">\
+                    <string type =""AcmDomain"">file</string>\
+                  </Text>\
+                </FString>\
+              </associationKey>\
+              <associationValue type =""Property"">\
+                <FString type =""AcmDomain"">\
+                  <Text type =""Property"">\
+                    <string type =""AcmDomain"">C:\\Users\\emili\\OneDrive\\Desktop\\scenario VaR\\RiskScenario.txt</string>\
+                  </Text>\
+                </FString>\
+              </associationValue>\
+            </FAssociation>\
+            </Element>\
+            <Element>\
+            <FAssociation type =""AcmDomain"">\
+              <associationKey type =""Property"">\
+                <FString type =""AcmDomain"">\
+                  <Text type =""Property"">\
+                    <string type =""AcmDomain"">riskFactorSetup</string>\
+                  </Text>\
+                </FString>\
+              </associationKey>\
+              <associationValue type =""Property"">\
+                <FPersistent type =""AcmDomain"">\
+                  <Class type =""Property"">\
+                    <FDomain type =""AcmDomain"">\
+                      <DomainName type =""Property"">\
+                        <string type =""AcmDomain"">FRiskFactorSetup</string>\
+                      </DomainName>\
+                    </FDomain>\
+                  </Class>\
+                  <ExternalReference type =""Property"">\
+                    <FVariantDictionary type =""AcmDomain"">\
+                      <Element>\
+                      <FAssociation type =""AcmDomain"">\
+                        <associationKey type =""Property"">\
+                          <FSymbol type =""AcmDomain"">\
+                            <Text type =""Property"">\
+                              <string type =""AcmDomain"">Name</string>\
+                            </Text>\
+                          </FSymbol>\
+                        </associationKey>\
+                        <associationValue type =""Property"">\
+                          <FString type =""AcmDomain"">\
+                            <Text type =""Property"">\
+                              <string type =""AcmDomain"">VaR Setup</string>\
+                            </Text>\
+                          </FString>\
+                        </associationValue>\
+                      </FAssociation>\
+                      </Element>\
+                    </FVariantDictionary>\
+                  </ExternalReference>\
+                </FPersistent>\
+              </associationValue>\
+            </FAssociation>\
+            </Element>\
+            <Element>\
+            <FAssociation type =""AcmDomain"">\
+              <associationKey type =""Property"">\
+                <FString type =""AcmDomain"">\
+                  <Text type =""Property"">\
+                    <string type =""AcmDomain"">startIndex</string>\
+                  </Text>\
+                </FString>\
+              </associationKey>\
+              <associationValue type =""Property"">\
+                <FString type =""AcmDomain"">\
+                  <Text type =""Property"">\
+                    <string type =""AcmDomain"">0</string>\
+                  </Text>\
+                </FString>\
+              </associationValue>\
+            </FAssociation>\
+            </Element>\
+            <Element>\
+            <FAssociation type =""AcmDomain"">\
+              <associationKey type =""Property"">\
+                <FString type =""AcmDomain"">\
+                  <Text type =""Property"">\
+                    <string type =""AcmDomain"">Value</string>\
+                  </Text>\
+                </FString>\
+              </associationKey>\
+              <associationValue type =""Property"">\
+                <FString type =""AcmDomain"">\
+                  <Text type =""Property"">\
+                    <string type =""AcmDomain""></string>\
+                  </Text>\
+                </FString>\
+              </associationValue>\
+            </FAssociation>\
+            </Element>\
+          </FVariantDictionary>\
+        </params>\
+        <templateName type =""Property"">\
+          <string type =""AcmDomain"">RiskScenarioFromFile</string>\
+        </templateName>\
+        <context type =""Property"">\
+          <string type =""AcmDomain"">Standard</string>\
+        </context>\
+      </FDynamicScenario>\
+    </associationValue>\
+  </FAssociation>\
+  </Element>\
+</FDictionary>\
+</FrontArenaPrimeSheetExport>",MO04 - HVaR,Stored Scenario,ARENASYS,
+8563,"<?xml version='1.0' encoding='UTF-8'?>\
+<FrontArenaPrimeSheetExport>\
+<!--PRIME Version: 2022.4.3-->\
+<FDictionary type =""AcmDomain"">\
+  <Element>\
+  <FAssociation type =""AcmDomain"">\
+    <associationKey type =""Property"">\
+      <FSymbol type =""AcmDomain"">\
+        <Text type =""Property"">\
+          <string type =""AcmDomain"">scenario</string>\
+        </Text>\
+      </FSymbol>\
+    </associationKey>\
+    <associationValue type =""Property"">\
+      <FDynamicScenario type =""AcmDomain"">\
+        <name type =""Property"">\
+          <string type =""AcmDomain"">MO04 - IR VaR</string>\
+        </name>\
+        <uniqueId type =""Property"">\
+          <FSymbol type =""AcmDomain"">\
+            <Text type =""Property"">\
+              <string type =""AcmDomain"">e6113cb3-c169-4eba-bec5-731dae72ed91</string>\
+            </Text>\
+          </FSymbol>\
+        </uniqueId>\
+        <defaultSettings type =""Property"">\
+          <FScenarioSettings type =""AcmDomain"">\
+            <showColors type =""Property"">\
+              <bool type =""AcmDomain"">true</bool>\
+            </showColors>\
+            <ShiftDisplayType type =""Property"">\
+              <eShiftDisplayType type =""AcmDomain"">Absolute</eShiftDisplayType>\
+            </ShiftDisplayType>\
+          </FScenarioSettings>\
+        </defaultSettings>\
+        <params type =""Property"">\
+          <FVariantDictionary type =""AcmDomain"">\
+            <Element>\
+            <FAssociation type =""AcmDomain"">\
+              <associationKey type =""Property"">\
+                <FString type =""AcmDomain"">\
+                  <Text type =""Property"">\
+                    <string type =""AcmDomain"">Attribute</string>\
+                  </Text>\
+                </FString>\
+              </associationKey>\
+              <associationValue type =""Property"">\
+                <FSymbol type =""AcmDomain"">\
+                  <Text type =""Property"">\
+                    <string type =""AcmDomain"">Name</string>\
+                  </Text>\
+                </FSymbol>\
+              </associationValue>\
+            </FAssociation>\
+            </Element>\
+            <Element>\
+            <FAssociation type =""AcmDomain"">\
+              <associationKey type =""Property"">\
+                <FString type =""AcmDomain"">\
+                  <Text type =""Property"">\
+                    <string type =""AcmDomain"">commentChar</string>\
+                  </Text>\
+                </FString>\
+              </associationKey>\
+              <associationValue type =""Property"">\
+                <FString type =""AcmDomain"">\
+                  <Text type =""Property"">\
+                    <string type =""AcmDomain"">*</string>\
+                  </Text>\
+                </FString>\
+              </associationValue>\
+            </FAssociation>\
+            </Element>\
+            <Element>\
+            <FAssociation type =""AcmDomain"">\
+              <associationKey type =""Property"">\
+                <FString type =""AcmDomain"">\
+                  <Text type =""Property"">\
+                    <string type =""AcmDomain"">delimiterChar</string>\
+                  </Text>\
+                </FString>\
+              </associationKey>\
+              <associationValue type =""Property"">\
+                <FString type =""AcmDomain"">\
+                  <Text type =""Property"">\
+                    <string type =""AcmDomain"">,</string>\
+                  </Text>\
+                </FString>\
+              </associationValue>\
+            </FAssociation>\
+            </Element>\
+            <Element>\
+            <FAssociation type =""AcmDomain"">\
+              <associationKey type =""Property"">\
+                <FString type =""AcmDomain"">\
+                  <Text type =""Property"">\
+                    <string type =""AcmDomain"">endIndex</string>\
+                  </Text>\
+                </FString>\
+              </associationKey>\
+              <associationValue type =""Property"">\
+                <FString type =""AcmDomain"">\
+                  <Text type =""Property"">\
+                    <string type =""AcmDomain"">0</string>\
+                  </Text>\
+                </FString>\
+              </associationValue>\
+            </FAssociation>\
+            </Element>\
+            <Element>\
+            <FAssociation type =""AcmDomain"">\
+              <associationKey type =""Property"">\
+                <FString type =""AcmDomain"">\
+                  <Text type =""Property"">\
+                    <string type =""AcmDomain"">file</string>\
+                  </Text>\
+                </FString>\
+              </associationKey>\
+              <associationValue type =""Property"">\
+                <FString type =""AcmDomain"">\
+                  <Text type =""Property"">\
+                    <string type =""AcmDomain"">C:\\Users\\emili\\OneDrive\\Desktop\\scenario VaR\\RiskScenario.txt</string>\
+                  </Text>\
+                </FString>\
+              </associationValue>\
+            </FAssociation>\
+            </Element>\
+            <Element>\
+            <FAssociation type =""AcmDomain"">\
+              <associationKey type =""Property"">\
+                <FString type =""AcmDomain"">\
+                  <Text type =""Property"">\
+                    <string type =""AcmDomain"">riskFactorSetup</string>\
+                  </Text>\
+                </FString>\
+              </associationKey>\
+              <associationValue type =""Property"">\
+                <FPersistent type =""AcmDomain"">\
+                  <Class type =""Property"">\
+                    <FDomain type =""AcmDomain"">\
+                      <DomainName type =""Property"">\
+                        <string type =""AcmDomain"">FRiskFactorSetup</string>\
+                      </DomainName>\
+                    </FDomain>\
+                  </Class>\
+                  <ExternalReference type =""Property"">\
+                    <FVariantDictionary type =""AcmDomain"">\
+                      <Element>\
+                      <FAssociation type =""AcmDomain"">\
+                        <associationKey type =""Property"">\
+                          <FSymbol type =""AcmDomain"">\
+                            <Text type =""Property"">\
+                              <string type =""AcmDomain"">Name</string>\
+                            </Text>\
+                          </FSymbol>\
+                        </associationKey>\
+                        <associationValue type =""Property"">\
+                          <FString type =""AcmDomain"">\
+                            <Text type =""Property"">\
+                              <string type =""AcmDomain"">VaR Setup</string>\
+                            </Text>\
+                          </FString>\
+                        </associationValue>\
+                      </FAssociation>\
+                      </Element>\
+                    </FVariantDictionary>\
+                  </ExternalReference>\
+                </FPersistent>\
+              </associationValue>\
+            </FAssociation>\
+            </Element>\
+            <Element>\
+            <FAssociation type =""AcmDomain"">\
+              <associationKey type =""Property"">\
+                <FString type =""AcmDomain"">\
+                  <Text type =""Property"">\
+                    <string type =""AcmDomain"">startIndex</string>\
+                  </Text>\
+                </FString>\
+              </associationKey>\
+              <associationValue type =""Property"">\
+                <FString type =""AcmDomain"">\
+                  <Text type =""Property"">\
+                    <string type =""AcmDomain"">0</string>\
+                  </Text>\
+                </FString>\
+              </associationValue>\
+            </FAssociation>\
+            </Element>\
+            <Element>\
+            <FAssociation type =""AcmDomain"">\
+              <associationKey type =""Property"">\
+                <FString type =""AcmDomain"">\
+                  <Text type =""Property"">\
+                    <string type =""AcmDomain"">Value</string>\
+                  </Text>\
+                </FString>\
+              </associationKey>\
+              <associationValue type =""Property"">\
+                <FSymbol type =""AcmDomain"">\
+                  <Text type =""Property"">\
+                    <string type =""AcmDomain"">Interest Rate Risk Factor</string>\
+                  </Text>\
+                </FSymbol>\
+              </associationValue>\
+            </FAssociation>\
+            </Element>\
+          </FVariantDictionary>\
+        </params>\
+        <templateName type =""Property"">\
+          <string type =""AcmDomain"">RiskScenarioFromFile</string>\
+        </templateName>\
+        <context type =""Property"">\
+          <string type =""AcmDomain"">Standard</string>\
+        </context>\
+      </FDynamicScenario>\
+    </associationValue>\
+  </FAssociation>\
+  </Element>\
+</FDictionary>\
+</FrontArenaPrimeSheetExport>",MO04 - IR VaR,Stored Scenario,ARENASYS,

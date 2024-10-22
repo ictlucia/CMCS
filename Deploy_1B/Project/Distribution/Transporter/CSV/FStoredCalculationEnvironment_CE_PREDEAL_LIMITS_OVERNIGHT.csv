@@ -1,0 +1,60 @@
+TEXTOBJECT,,,,/TEXTOBJECT
+DATA,NAME,SIZE,TYPE,
+"<?xml version='1.0' encoding='UTF-8'?>\
+<FrontArenaPrimeSheetExport>\
+<!--PRIME Version: 2022.4.13-->\
+<FDictionary type =""AcmDomain"">\
+  <Element>\
+  <FAssociation type =""AcmDomain"">\
+    <associationKey type =""Property"">\
+      <FSymbol type =""AcmDomain"">\
+        <Text type =""Property"">\
+          <string type =""AcmDomain"">allowUserSimulations</string>\
+        </Text>\
+      </FSymbol>\
+    </associationKey>\
+    <associationValue type =""Property"">\
+      <FTrue type =""AcmDomain"">\
+      </FTrue>\
+    </associationValue>\
+  </FAssociation>\
+  </Element>\
+  <Element>\
+  <FAssociation type =""AcmDomain"">\
+    <associationKey type =""Property"">\
+      <FSymbol type =""AcmDomain"">\
+        <Text type =""Property"">\
+          <string type =""AcmDomain"">calcUser</string>\
+        </Text>\
+      </FSymbol>\
+    </associationKey>\
+    <associationValue type =""Property"">\
+      <FPersistent type =""AcmDomain"">\
+        <Class type =""Property"">\
+          <FDomain type =""AcmDomain"">\
+            <DomainName type =""Property"">\
+              <string type =""AcmDomain"">FUser</string>\
+            </DomainName>\
+          </FDomain>\
+        </Class>\
+      </FPersistent>\
+    </associationValue>\
+  </FAssociation>\
+  </Element>\
+  <Element>\
+  <FAssociation type =""AcmDomain"">\
+    <associationKey type =""Property"">\
+      <FSymbol type =""AcmDomain"">\
+        <Text type =""Property"">\
+          <string type =""AcmDomain"">useRealTimePrices</string>\
+        </Text>\
+      </FSymbol>\
+    </associationKey>\
+    <associationValue type =""Property"">\
+      <FFalse type =""AcmDomain"">\
+      </FFalse>\
+    </associationValue>\
+  </FAssociation>\
+  </Element>\
+</FDictionary>\
+</FrontArenaPrimeSheetExport>",CE_PREDEAL_LIMITS_OVERNIGHT,1649,Calculation Environment,

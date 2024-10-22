@@ -1,0 +1,13 @@
+CHOICELIST,,/CHOICELIST
+LIST,ENTRY,
+Business Status,"1.9.Sovereigns, central banks, MDB",
+Business Status,16.Other sector,
+Business Status,17.IG indices,
+Business Status,18.HY indices,
+Business Status,"2.10.Local government, non-financial,..",
+Business Status,"3.11.Financials,...",
+Business Status,"4.12.Basic materials, energy,...",
+Business Status,"5.13.Consumer goods and services,...",
+Business Status,"6.14.Technology, telecommunications",
+Business Status,"7.15.Health care, utilities,...",
+Business Status,8.Covered bonds,

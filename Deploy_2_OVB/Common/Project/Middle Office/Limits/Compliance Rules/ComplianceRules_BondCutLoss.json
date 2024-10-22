@@ -1,0 +1,127 @@
+[
+    {
+        "FTransaction": {
+            "Objects": [
+                {
+                    "FComplianceRule": {
+                        "Definition": {
+                            "ref(RuleDefinition.Exposure)": {
+                                "Column": {
+                                    "ref(FStandardColumnCreator)": {
+                                        "Configuration": null,
+                                        "ContextSym": {
+                                            "ref(FSymbol)": "Standard"
+                                        },
+                                        "OriginalColumnId": {
+                                            "ref(FSymbol)": "Cut Loss Ratio"
+                                        }
+                                    }
+                                },
+                                "ColumnIndex": 0,
+                                "CompoundQueryLogicalOperator": "AND",
+                                "FilterQuery": {
+                                    "ref(FArray)": [
+                                        {
+                                            "ref(FStoredASQLQuery)": {
+                                                "Cid": "FASQL Query",
+                                                "Name": "InstrumentCcy_USD",
+                                                "User": null
+                                            }
+                                        }
+                                    ]
+                                },
+                                "ForEach": "Instrument",
+                                "PythonFilterMethodName": "",
+                                "RelativeTo": false,
+                                "RelativeToColumn": null,
+                                "RelativeToColumnIndex": 0,
+                                "StoredTimeBuckets": null
+                            }
+                        },
+                        "DefinitionInfo": "Exposure",
+                        "Description": "",
+                        "Name": "Standard_BondCutLoss",
+                        "RuleCategory": {
+                            "ref(FChoiceList)": {
+                                "List": "Compliance Rule Category",
+                                "Name": "Pre-Deal"
+                            }
+                        }
+                    }
+                },
+                {
+                    "FThreshold": {
+                        "ComparisonType": "Greater",
+                        "ComplianceRule": {
+                            "ref(FComplianceRule)": "Standard_BondCutLoss"
+                        },
+                        "Coordinates": {
+                            "ref(FStaticArray)": []
+                        },
+                        "Description": "",
+                        "Parent": null,
+                        "Relative": false,
+                        "Type": {
+                            "ref(FChoiceList)": {
+                                "List": "Threshold Type",
+                                "Name": "Violation"
+                            }
+                        },
+                        "Value": 0.01
+                    }
+                },
+                {
+                    "FAppliedRule": {
+                        "ComplianceRule": {
+                            "ref(FComplianceRule)": "Standard_BondCutLoss"
+                        },
+                        "Data": "!enc!(7II<'@A-C4X(7C:C9(_:\\,P$,5W?XHC0\\;:='`+40VFPD.')C1M=\\6Z!!59$O(9XF]?9-'\\:>50+>)TQ[OW>RAC3>V<5BC?!HU<D``:'<+3HFX[;CNAS*+*`)C$O3**E#4_`QMO'7H:ISX`:[AJ0U_X,:T!P/*+H4DV/^M.M1->=$CH^]DU%WXW?Z9_;PR244!A7QOY*?2`<]K_Q4BBQ,?$LA-ZTGA,P5W7@U$TR[\\=NYW5-X#?\\4BW\"'ORRAP2`DM-JR;8>]FN7S](Z?Z.8VLERO7N\"UL\"&R]!4!R+<.X?>/E8%B5_+I8'6K$\\:I_S\"%Y.`43GD3@@5MEU*N'[5=_Z2\\XS",
+                        "EndDate": "",
+                        "Inactive": false,
+                        "ReviewDate": "",
+                        "Size": 353,
+                        "StartDate": "",
+                        "Target": {
+                            "ref(FPhysicalPortfolio)": "ALM Bilateral Loans"
+                        },
+                        "Unit": {
+                            "ref(FSymbol)": "<FRuleJSONUtils.DecodedObject object at 0x0000027D68606DC0>"
+                        }
+                    }
+                },
+                {
+                    "FThresholdValue": {
+                        "AppliedRule": {
+                            "ref(FAppliedRule)": {
+                                "ComplianceRule": {
+                                    "ref(FComplianceRule)": "Standard_BondCutLoss"
+                                },
+                                "Target": {
+                                    "ref(FPhysicalPortfolio)": "ALM Bilateral Loans"
+                                }
+                            }
+                        },
+                        "Threshold": {
+                            "ref(FThreshold)": {
+                                "ComparisonType": "Greater",
+                                "ComplianceRule": {
+                                    "ref(FComplianceRule)": "Standard_BondCutLoss"
+                                },
+                                "Coordinates": {
+                                    "ref(FStaticArray)": []
+                                },
+                                "Type": {
+                                    "ref(FChoiceList)": {
+                                        "List": "Threshold Type",
+                                        "Name": "Violation"
+                                    }
+                                }
+                            }
+                        },
+                        "Value": 0.01
+                    }
+                }
+            ]
+        }
+    }
+]

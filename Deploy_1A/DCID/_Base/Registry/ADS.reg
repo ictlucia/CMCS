@@ -1,0 +1,10 @@
+Windows Registry Editor Version 5.00
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Front\Front Arena\ADS\DOES_NOT_MATTER]
+"Unicode"="1"
+"history"="1"
+"write_cache_tables"="{{limit_value,*},{price,APH_REFINITIV},{price,AMPH},{price_definition,APH_REFINITIV},{price_definition,AMPH},{price_link_definition,APH_REFINITIV},{price_link_definition,AMPH}}"
+"audit_disable"="{{limit_value,*},{price,APH_REFINITIV},{price,AMPH},{price_definition,APH_REFINITIV},{price_definition,AMPH},{price_link_definition,APH_REFINITIV},{price_link_definition,AMPH},{trans_hst,*},{task_history,*}}"
+"history_disable"="{{limit_value,*},{user_log,*},{trans_hst_subscription,*},{price,APH_REFINITIV},{price,AMPH},{price_definition,APH_REFINITIV},{price_definition,AMPH},{price_link_definition,APH_REFINITIV},{price_link_definition,AMPH},{task_history,*}}"
+
+

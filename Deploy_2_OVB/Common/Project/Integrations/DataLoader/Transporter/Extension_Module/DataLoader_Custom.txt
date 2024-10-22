@@ -1,0 +1,361 @@
+#
+# Front Arena exported extension module.
+# source          ""
+# timestamp (utc) "2024-08-21 10:50:23.5"
+# ***** DO NOT EDIT! *****
+#
+name        "DataLoader_Custom"
+description ""
+
+groups {
+}
+
+decls[FParameters] {
+}
+
+clx FObject [FParameters] {
+  FDLConfigAddInfoInstrument =
+  BBG_INSTRUMENT_ADDITIONAL_INFO_ex={'INSTRUMENT' : {'BBG_INDUSTRY_GROUP' : 'INDUSTRY_GROUP', 'BBG_INDUSTRY_SECT' : 'INDUSTRY_SECTOR', 'BBG_INDUSTRY_SUBGRP' : 'INDUSTRY_SUBGROUP', 'CALC_TYP_DES':'CALC_TYP_DES', 'Fitch_Indonesia' : 'RTG_FITCH_NATIONAL_LT', 'Pefindo' : 'RTG_PEF_LONG_TERM'}}
+
+
+  FDLConfigAMBSettings =
+  AMBA_SENDER_MB_NAME=AMBA_DL_SENDER
+  AMBA_SENDER_SOURCE_ex=AMBA_DL_SENDER_SOURCE
+  MESSAGE_BROKER_ex=10.243.244.58:9102/mb
+
+
+  FDLConfigFileSettings =
+  BBG_DATA_FILE_PATH_ex=D:\DataLoader\data
+  BBG_PUTTY_INSTALLABLE_PATH=D:\DataLoader\PuTTy
+  BBG_XSL_FILE_PATH=D:\DataLoader\xsl
+
+
+  FDLConfigFTPSettings =
+  BBG_DECRYPT_SOFTWARE_PATH=D:\blp\bbdl\rb6.0\des.exe
+  BBG_FTP_DECRYPT_MESSAGE=False
+  BBG_FTP_PASSWORD=Passw0rdbloomberg%
+  BBG_FTP_POLL_TIMEOUT=600
+  BBG_FTP_USER=dl793124
+  BBG_LICENSE_REQUEST_TYPE=adhoc
+  BBG_SFTP_HOST=sftp.bloomberg.com
+  BBG_SFTP_PORT=22
+  BBG_USERNUMBER=17218457
+
+
+  FDLConfigLogSettings =
+  NOTIFICATION_MEDIA_ex=PRIME_LOG  # choose  MAIL, MESSAGE, PRIME_LOG, PRIME_LOG_TRANSIENT, OFF
+  NOTIFY_LEVEL_ex=DEBUG  # choose DEBUG, TRACK, SUCCESS, WARNING, ERROR
+  SMTP_SERVER_ex=
+  USER_EMAIL_ex=
+  VERBOSITY_LEVEL_ex=2
+
+
+  FDLConfigOpenFigiSettings =
+  DO_NOT_USE_OPENFIGI_API=True
+
+
+  FDLConfigRatingsInstrument =
+  BBG_INSTRUMENT_RATINGS_ex={'INSTRUMENT' : ({'Moodys'  : 'RTG_MOODY'},{'S&P'     : 'RTG_SP'}, {'Fitch' : 'RTG_FITCH'} )}
+
+
+  FDLConfigSystemSettings =
+  BBG_IDENTIFIER_PREFERENCE=BB_TICKER,ISIN,BB_UNIQUE,SEDOL,CUSIP,FIGI
+  BBG_OVERWRITE_INSID_ex=False
+  BBG_USE_PRICE_DEFINITION=False
+
+
+}
+
+decls[FPythonCode] {
+}
+
+clx FObject [FPythonCode] {
+  FDLMessageAdaptations_local
+
+"""--------------------------------------------------------------------
+MODULE
+    FDLMessageAdaptations_local - is the data loader message adaptations hook.
+
+DESCRIPTION
+
+    Added customizations on top of standard mappings provided.
+
+VERSION: 5.0.6
+--------------------------------------------------------------------"""
+import FDLLogger
+logger = FDLLogger.FDLLogger("DataLoader_customization")
+import amb, acm
+
+
+def getRawData(m,obj):
+    rawData=''
+    raw = m.mbf_find_object('RAW_DATA','MBFE_BEGINNING')
+    if raw:
+        rawData_o = raw.mbf_find_object(obj,'MBFE_BEGINNING')
+        if rawData_o:
+            rawData = rawData_o.mbf_get_value()
+    return rawData
+
+
+def getValue(m, n, obj = None):
+    if obj: m = m.mbf_find_object(obj, 'MBFE_BEGINNING')
+    if m:
+        x = m.mbf_find_object(n, 'MBFE_BEGINNING')
+        if x: return x.mbf_get_value()
+        else: return None
+
+def setValue(m, n, v, obj = None):
+    if obj: m = m.mbf_find_object(obj, 'MBFE_BEGINNING')
+    x = m.mbf_find_object(n, 'MBFE_BEGINNING')
+    if x: m.mbf_replace_string(n, v)
+    else: m.mbf_add_string(n, v)
+
+def replaceSpecialCharParty(m):
+    try:
+        obj = m.mbf_find_object('PARTY')
+        while obj is not None:
+            if obj.mbf_get_value() == 'PARTY':
+                party = obj.mbf_find_object('PTYID')
+                if party and "'" in party.mbf_get_value():
+                    temp_party = party.mbf_get_value().replace("'","")
+                    setValue(obj, "PTYID", temp_party)
+            obj = m.mbf_next_object()
+    except Exception as e:
+        raise e
+
+def amend_special_char_party(amb_instrument, message):
+    #Function to replace special characters in party name
+    try:
+        party = getRawData(message, 'ISSUER')
+        if "'" in party:
+            logger.LOG('Removing apostrophe from party in Instrument def')
+            temp_party = party.replace("'","")
+            setValue(amb_instrument, "ISSUER_PTYNBR.PTYID", temp_party)
+            logger.LOG('Checking for [PARTY] messages')
+            replaceSpecialCharParty(message)
+    except Exception as e:
+        raise e
+
+
+def receiver_modify(m):
+    logger.LOG("In DataLoader customization")
+
+    if m and m.mbf_find_object('INSTRUMENT','MBFE_BEGINNING'):
+        mb_instrument = m.mbf_find_object('INSTRUMENT','MBFE_BEGINNING')
+        amend_special_char_party(mb_instrument, m)
+    return m
+
+
+
+
+
+...
+
+}
+
+decls[FXSLTemplate] {
+}
+
+clx FObject [FXSLTemplate] {
+  bbg_request_fields_custom_load
+<!-- This file is used for defining user define actions for different ADM entity like INSTRUMENT, PRICE etc. User can define fields to be requested from Data source for each action. 
+Below is the example for defining custom load name UPDATE_60DAYS_VOLATILITY for INSTRUMENT.  -->
+
+<DATALOADER_ACTION_REQUEST>
+	<BLOOMBERG>
+            <INSTRUMENT>
+                <RATINGS_FITCHINDO>
+                    <FIELDS>
+                    <RTG_FITCH_NATIONAL_LT/>
+                    </FIELDS>
+                </RATINGS_FITCHINDO>
+                <RATINGS_PEFINDO>
+                    <FIELDS>
+                    <RTG_PEF_LONG_TERM/>
+                    </FIELDS>
+                </RATINGS_PEFINDO>
+            </INSTRUMENT>
+	</BLOOMBERG>
+</DATALOADER_ACTION_REQUEST>
+
+...
+
+  bbg_request_fields_local
+<!-- This is customization file where user can customize request fields for any ADM Entity provided in the standard DataLoader FXSLTemplate request_fields. For request fields starting with number, a prefix should be added. Default prefix is DL_NUM_FN_PREFIX_.  For creating user defined prefix, add FParameter REQUEST_NUMBER_FIELDS_PREFIX and set its value. 
+Below is the example for customizing instrument type Bond and create a subtype  AMERICAN_BOND. -->
+
+<DATALOADER_REQUEST>
+	<BLOOMBERG>
+		<!-- Example for INSTRUMENT Type: Bond, SubType:AMERICAN_BOND
+			This includes standard Bond-OPTIONAL and standard PRICE fields along with 
+			 user defined custom block MY_CUSTOM_BLOCK as defined below-->
+		<!--
+		<INSTRUMENT>
+			<BOND>
+				<AMERICAN_BOND name = 'American Bond' subtype='True'>
+					<STD-BOND-OPTIONAL/>
+					<MY_CUSTOM_BLOCK/>
+					<STD-PRICE/>
+				</AMERICAN_BOND>
+			</BOND>
+		</INSTRUMENT>
+		-->
+		<!-- Example for Price with standard PRICE block and extra specified fields -->
+		
+		<PRICE><STD-PRICE-OPTIONAL/>
+			<FIELDS>
+				<PX_ASK_EOD/>
+				<PX_BID_EOD/>
+				<PRIOR_CLOSE_ASK_YIELD/>
+				<YLD_YTM_BID/>
+				<YLD_YTM_ASK/>
+                                <LAST_UPDATE_DATE_EOD/>
+				
+		</FIELDS>
+		</PRICE>
+		
+		<!-- Example for user defined block, can be used in any other blocks -->
+		<!--
+		<MY_CUSTOM_BLOCK>
+			<FIELDS>
+				<ISSUER_INDUSTRY/>
+			
+				<STATE_CODE/>
+			</FIELDS>
+		</MY_CUSTOM_BLOCK>
+		-->
+        
+                <RATINGS>
+                    <INSTRUMENT_FITCH name="Instrument Fitch">
+                        <FIELDS>
+                            <RTG_FITCH/>
+                        </FIELDS>
+                    </INSTRUMENT_FITCH>
+                </RATINGS>
+ 
+</BLOOMBERG>
+</DATALOADER_REQUEST>	
+
+
+...
+
+  bbg_request_file_header
+<!-- This is request file header configuration file where user can add or remove the optional request header parameter. 
+       There are some mandatory params in request header which should not be override. If user configure mandatory params 
+        also then he need to add a FParameter  OVERRIDE_REQHEADER_MANDATORY_PARAMS to True. Please refer to the FCA for 
+        mandatory parameters -->
+
+<BLOOMBERG_REQUEST_HEADER>
+	<GETDATA>
+                    <CLOSINGVALUES>yes</CLOSINGVALUES>
+                    <CREDITRISK>yes</CREDITRISK>
+                    <DATEFORMAT>yyyymmdd</DATEFORMAT>
+                    <DERIVED>yes</DERIVED>
+                    <DIFFFLAG>changes</DIFFFLAG>
+                    <HISTORICAL>yes</HISTORICAL>
+                    <OUTPUTFORMAT>variable</OUTPUTFORMAT>
+                    <REPORT>yes</REPORT>
+                    <SECMASTER>yes</SECMASTER>
+                    <USERNUMBER>17218457</USERNUMBER>
+	</GETDATA>
+	<GETHISTORY>
+                    <DATEFORMAT>yyyymmdd</DATEFORMAT>
+                    <HISTORICAL>yes</HISTORICAL>
+                    <PROGRAMNAME>gethistory</PROGRAMNAME>
+	</GETHISTORY>
+	<GETACTIONS>
+                    <HISTORICAL>yes</HISTORICAL>
+                    <DATEFORMAT>yyyymmdd</DATEFORMAT>
+                    <DATERANGE>20140401|20140501</DATERANGE>
+                    <ACTIONS>capital_change|corporate_events|distributions</ACTIONS>
+                    <ACTIONS_DATE>effective</ACTIONS_DATE>
+	</GETACTIONS>
+</BLOOMBERG_REQUEST_HEADER>
+
+
+...
+
+  custom_load_local
+<xsl:stylesheet version = '1.0' xmlns:xsl='http://www.w3.org/1999/XSL/Transform'>
+
+    <!-- This is sample file provided by DataLoader. Below shows an example of how to 
+            call user defined actions. 
+            To define your own custom_load_local, please copy this file to your 
+            Prime - Extension Manager - FXSLTemplate as "custom_load_local"
+            and make changes as suggested below in example
+    -->
+    
+    <xsl:template name="customized_user_actions">
+            <xsl:param name="custom_load" />
+        
+            <!--Add if statements as below to call different user defined templates
+			based on Custom Load specified.
+            -->
+            <xsl:if test="$custom_load = 'RATINGS_FITCHINDO'">
+                <xsl:call-template name="RATINGS_FITCHINDO"/>
+            </xsl:if> 
+            <xsl:if test="$custom_load = 'RATINGS_PEFINDO'">
+                <xsl:call-template name="RATINGS_PEFINDO"/>
+            </xsl:if>    
+            
+    </xsl:template>
+	
+    <!--User defined template to update 60 Day Volalitity.
+            The template name should exactly match with Custom Load action name 
+            specified at Prime - Extension Manager - FXSLTemplate "request_fields_custom_load"
+            Add needed logic to map any Front Arena field to the defined template.
+    -->
+  <xsl:template name="RATINGS_FITCHINDO">
+    <!--Add mapping logic here -->
+    <xsl:variable name="fitchindo">
+        <xsl:value-of select="RTG_FITCH_NATIONAL_LT"/>
+    </xsl:variable>
+    <ADDITIONALINFO>
+    <ADDINF_SPECNBR.FIELD_NAME>Fitch_Indonesia</ADDINF_SPECNBR.FIELD_NAME>
+    <xsl:choose>        
+        <xsl:when test="$fitchindo != '' and $fitchindo != 'N.A.' and $fitchindo != 'N.D.'">
+            <VALUE><xsl:value-of select="RTG_FITCH_NATIONAL_LT"/></VALUE>
+        </xsl:when>
+    </xsl:choose>
+    </ADDITIONALINFO>
+</xsl:template>
+<xsl:template name="RATINGS_PEFINDO">
+    <!--Add mapping logic here -->
+    <xsl:variable name="fitchindo">
+        <xsl:value-of select="RTG_PEF_LONG_TERM"/>
+    </xsl:variable>
+    <ADDITIONALINFO>
+    <ADDINF_SPECNBR.FIELD_NAME>Pefindo</ADDINF_SPECNBR.FIELD_NAME>
+    <xsl:choose>        
+        <xsl:when test="$fitchindo != '' and $fitchindo != 'N.A.' and $fitchindo != 'N.D.'">
+            <VALUE><xsl:value-of select="RTG_PEF_LONG_TERM"/></VALUE>
+        </xsl:when>
+    </xsl:choose>
+    </ADDITIONALINFO>
+</xsl:template>
+		    
+    
+</xsl:stylesheet>
+
+...
+
+  model_instype_local
+<xsl:stylesheet version = '1.0' 
+xmlns:xsl='http://www.w3.org/1999/XSL/Transform'>
+    <xsl:import href="./model_instype.xsl"/>
+    
+    <xsl:template match="/">
+        <xsl:apply-imports/>
+    </xsl:template>
+    
+    <xsl:template name="customized_instype">
+        <xsl:if test="COLLAT_TYP = 'CERT OF DEPOSIT'">
+            <xsl:value-of select="'bill'"/>
+        </xsl:if>
+    </xsl:template>
+</xsl:stylesheet>
+
+...
+
+}
+

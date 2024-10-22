@@ -1,0 +1,54 @@
+#
+# Front Arena exported extension module.
+# source          ""
+# timestamp (utc) "2021-03-05 09:54:43.1"
+# ***** DO NOT EDIT! *****
+#
+name        "PS_StaticAnalysis"
+description ""
+
+groups {
+}
+
+decls[FCommandExtension] {
+  "StaticAnalysis" ( "active commands" ) "";
+}
+
+clx FSessionManagerFrame [FCommandExtension] {
+  StaticAnalysis =
+  icon=Agent
+  LargeIcon=No
+  RibbonLabel=Static Analysis
+
+
+}
+
+decls[FMenuExtension] {
+}
+
+clx FSessionManagerFrame [FMenuExtension] {
+  StaticAnalysis =
+  Function=StaticAnalysisMenuItem.static_analysis_clicked
+  MenuType=Application
+  ParentMenu=Tools/Linting
+  RibbonPosition=Project/Quality Assurance
+
+
+}
+
+decls[FPythonCode] {
+}
+
+clx FObject [FPythonCode] {
+  StaticAnalysisMenuItem
+import acm
+
+
+def static_analysis_clicked(eii):
+    acm.RunModuleWithParametersAndData('AnalyzeProject', 'Standard', None)
+
+
+...
+
+}
+

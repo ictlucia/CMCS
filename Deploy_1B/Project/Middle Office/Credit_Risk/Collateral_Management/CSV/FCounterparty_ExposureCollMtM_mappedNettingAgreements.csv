@@ -1,0 +1,10 @@
+PARTY,,PARTYMASTERAGRMTLINK,,,,/PARTYMASTERAGRMTLINK,/PARTY
+FULLNAME,PTYID,ACQUIRER_PTYNBR.PTYID,APPLICABLE_PRODUCTS.NAME,APPLICABLE_PRODUCTS.TYPE,MASTER_AGREEMENT_SEQNBR.NAME,,
+Counterparty 1,Counterparty 1,Acquirer 1,,,Exposure=GMRA Int.- Purchase Price + Accr Method,,
+,,Acquirer 1,,,Exposure=GMRA Indonesia,,
+,,Acquirer 1,,,Exposure=GMRA Int.- Purchase Price Method,,
+,,Acquirer 1,,,Exposure=GMRA Int.- Repurchase Price Method,,
+,,Acquirer 1,,,Exposure=MtMYest and CollVal=MtMYest,,
+,,Acquirer 1,,,Exposure=MtMYest and CollVal=GMRA Int Dirty Price Method,,
+,,Acquirer 1,,,Exposure=MtMYest and CollVal=GMRA Indonesia: Clean Price Method,,
+,,Acquirer 1,,,Exposure=MtMYest and CollVal=GMRA Indonesia: Dirty Price Method,,

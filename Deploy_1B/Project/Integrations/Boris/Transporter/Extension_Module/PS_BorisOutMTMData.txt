@@ -1,0 +1,147 @@
+#
+# Front Arena exported extension module.
+# source          ""
+# timestamp (utc) "2022-12-07 03:52:59.5"
+# ***** DO NOT EDIT! *****
+#
+name        "PS_BorisOutMTMData"
+description "$Id$"
+
+groups {
+}
+
+decls[FParameters] {
+}
+
+clx FObject [FParameters] {
+  MTMDataParams =
+  mtmLogFilename=BORIS_OUT_MTM_LOG_{}.txt
+  mtmOutputFilename=BORIS_OUT_MTM_DATA_{}.csv
+
+
+}
+
+decls[FPythonCode] {
+}
+
+clx FObject [FPythonCode] {
+  BorisOutMTMData
+"""----------------------------------------------------------------------------------------------------
+MODULE:
+    BorisOutMTMData
+
+DESCRIPTION:
+    Entry point to invoke the Boris out mtm data run task gui.
+-------------------------------------------------------------------------------------------------------"""
+
+import acm, ael, traceback
+from datetime import datetime
+import ParametersReader
+import BorisUtils
+from InterfaceUtils import getMtMPrice, time_from_datetime, date_from_datetime
+import FLogger, FRunScriptGUI
+
+# get value from FParameter
+BorisParams = ParametersReader.get_params('MTMDataParams')
+outputFile = BorisParams['mtmOutputFilename'].format(acm.Time.TimeNow().replace(' ', '_').replace('-', '').replace(':', '')[:-7])
+log_file_name = BorisParams['mtmLogFilename'].format(acm.Time.DateToday().replace('-', ''))
+
+class MTMData(FRunScriptGUI.AelVariablesHandler):
+
+    def __init__(self):
+        query = [query.Name() for query in acm.FStoredASQLQuery.Select("subType='FInstrument'")]
+        query.sort() 
+        mtmmquery = [mtmmquery.Name() for mtmmquery in acm.FMTMMarket.Select("")]
+        mtmmquery.sort() 
+        logLevels = [FLogger.FLogger.INFO, FLogger.FLogger.ERROR, FLogger.FLogger.WARNING, FLogger.FLogger.DEBUG]
+        folderPicker = FRunScriptGUI.DirectorySelection()
+
+        gui_vars = [
+            ['queryName', 'Stored Query Name_Input', 'string', query, None, 1, 0, 'Stored query', None, 1],
+            ['queryMTMMarket', 'MTMMarket_Input', 'string', mtmmquery, None, 1, 0, 'MTM Market', None, 1],
+            ['outputFolder', 'Folder Path_Output', folderPicker, None, folderPicker, 1, 1,
+             'The file path where summary result will be generated.', None, 1],
+            ['logToConsole', 'Log to console_Logging', 'int', [1, 0], 1, 1, 0,
+             'Whether logging should be done in the Log Console or not.'],
+            ['log_folder', 'Log folder_Logging', folderPicker, None, folderPicker, 0, 1,
+             'Select where to store the log file',
+             0, None],
+            ['log_level', 'Log level_Logging', 'string', logLevels, FLogger.FLogger.DEBUG, 1, 0]
+        ]
+
+        self._logger = None
+        FRunScriptGUI.AelVariablesHandler.__init__(self, gui_vars)
+
+    def set_logger(self, logger):
+        """
+        This function sets the logger
+        :param logger: FLogger
+        :return: None
+        """
+        self._logger = logger
+
+    def generate_mtm_data(self, params):
+        """
+        This function fetches all bond instruments from the saved query 
+        :param : params
+        :return: None
+        """
+        self._logger.LOG('Start generateMTMData')
+        outputFolder = params['outputFolder'].SelectedDirectory().AsString()
+        stored_query_name = params['queryName']
+        self._logger.LOG('Stored query name is {} '.format(stored_query_name))
+        mtmMarket = params['queryMTMMarket']
+        self._logger.LOG('mtm Market name is {} .'.format(mtmMarket))
+
+        stored_query = acm.FStoredASQLQuery[stored_query_name]
+        if stored_query:
+            bond_ins = stored_query.Query().Select().Sort()
+            file_row = list()
+
+            for ins in bond_ins:
+                isincode = ins.Isin()  # ISIN
+                secid = ins.Name()  # Security Identifier
+                mtmprice = getMtMPrice(ins, acm.Time.DateToday(), ins.Currency(), acm.FParty[mtmMarket])  # MTMT price (Historical price)
+                updatetime = datetime.fromtimestamp(ins.UpdateTime()).strftime('%Y-%m-%d %H:%M:%S')  # Last Updated DATETIME
+                row = isincode,secid,mtmprice,updatetime
+                row_list = ['"{}"'.format(row_item) if row_item is not None else '""' for row_item in row]
+                row_data = ';'.join(row_list)
+                #format of row_data = "'isincode'";"'secid'"...
+                file_row.append(row_data + '\n')
+
+            BorisUtils.generateFile(outputFolder, file_row, self._logger, outputFile)
+            self._logger.LOG(file_row)
+        else:
+            self._logger.ELOG('Stored query with name {} not found.'.format(stored_query_name))
+
+        self._logger.LOG('Finish generateMTMData')
+
+ael_gui_parameters = {'windowCaption': "Boris Out MTM Data"}
+ael_variables = MTMData()
+ael_variables.LoadDefaultValues(__name__)
+app_name = 'OutMTMData'
+
+def ael_main(params):
+    """
+    AEL main function
+    :param params: GUI parameters
+    :return: None
+    """
+    MTMData_loger = None
+    try:
+        mtm_data_loger = BorisUtils.initialize_logging(params, log_file_name, app_name)
+        if mtm_data_loger:
+            mtm_data_loger.LOG('Execution started.')
+            ael_variables.set_logger(mtm_data_loger)
+            ael_variables.generate_mtm_data(params)
+    except Exception as err:
+        if mtm_data_loger is not None:
+            mtm_data_loger.ELOG(str(err))
+        print(traceback.format_exc())
+        print('Error in ael main. {}'.format(err))
+
+
+...
+
+}
+

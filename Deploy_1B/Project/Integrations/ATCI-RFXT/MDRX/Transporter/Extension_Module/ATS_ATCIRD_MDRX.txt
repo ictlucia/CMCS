@@ -1,0 +1,29 @@
+#
+# Front Arena exported extension module.
+# source          ""
+# timestamp (utc) "2023-02-03 06:55:41.7"
+# ***** DO NOT EDIT! *****
+#
+name        "ATS_ATCIRD_MDRX"
+description ""
+
+groups {
+}
+
+decls[FParameters] {
+}
+
+clx FObject [FParameters] {
+  FRDAMBConfig =
+  FRD_AMB_SENDER='ATCI_RD_SENDER_MDRX' #AMB channel name on which we put our messages. Entry should be present in the amb system table
+
+
+  FRDConfig =
+  FRD_SERVER_HOST='10.243.198.51' #Hostname/IP of the RD TOF source
+  FRD_SERVER_PORT='2508'
+  FRD_TCID='MDRX' #The TCID for this instance
+  FRD_ADDITIONAL_REQUEST='1'
+  FRD_LAST_DEAL_ID=''
+
+}
+

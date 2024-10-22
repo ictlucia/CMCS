@@ -1,0 +1,8 @@
+CONTEXT,CONTEXTLINK,,,,,/CONTEXTLINK,/CONTEXT
+NAME,ATTRIBUTE0,ATTRIBUTE_TYPE0,MAPPING_TYPE,NAME,TYPE,,
+MTM PRICE FINDING,Curr,Instrument Type,Attribute1,SprAvg FX Rate,Price Finding,,
+,Bond,Instrument Type,Attribute1,Bid Price,Price Finding,,
+,Bill,Instrument Type,Attribute1,Bid Price,Price Finding,,
+,MBS/ABS,Instrument Type,Attribute1,Bid Price,Price Finding,,
+,Fund,Instrument Type,Attribute1,Bid Price,Price Finding,,
+,FRN,Instrument Type,Attribute1,Bid Price,Price Finding,,

@@ -1,0 +1,128 @@
+/*---------------------------- TradeCaptureReport ----------------------------*/
+
+#define _CM_ExecutionReport2Trade \
+    Type                                "INSERT_TRADE"\
+    if (SecurityType == "CASH"){\
+        _MM \
+    }\
+    else if (SecurityType == 'OPT') \
+    {\
+        UseTransaction 	1 \
+        _FX_OPTION \
+    }\
+    else{\
+        dummy = System.error("Instrument not supported", SecurityType)\
+    }\
+
+/*---------------------------- Mappings ----------------------------*/
+
+
+#define _MM\
+    UseTransaction                      "1"\
+    _MMGENERALINFO\
+    TRADE.QUANTITY                      getDepositQuantity()\
+    TRADE.VALUE_DAY                     SettlDate\
+    TRADE.ACQUIRE_DAY                   SettlDate\
+    TRADE.CURR.INSID                    Currency\
+    TRADE.INSADDR.EXTERN_ID1            append2(EXECID)\
+    TRADE.PRICE                         LastQty\
+    TRADE.PREMIUM                       getDepositPremium()\
+    _MMInstrument\
+    
+#define _MMGENERALINFO\
+    TRADE.STATUS                        "Simulated"\
+    TRADE.COUNTERPARTY_PTYNBR.PTYID     getCustomizedCounterpartyID()\
+    TRADE.ACQUIRER_PTYNBR.PTYID         "Acquirer 1" \
+    TRADE.TRADER_USRNBR.USERID          getCustomizedTraderID()\
+    TRADE.TEXT1                         Text\
+    TRADE.QUANTITY_IS_DERIVED           "No"\
+    TRADE.ORDER_UUID                    append2(OrderID)\
+    TRADE.PRICE                         LastQty\
+    
+#define _MMInstrument\
+    INSTRUMENT.EXTERN_ID1               append2(EXECID)\
+    INSTRUMENT.INSID                    ""\
+    INSTRUMENT.INSTYPE                  "DEPOSIT" \
+    INSTRUMENT.CURR.INSID               Currency\
+    INSTRUMENT.SPOT_BANKING_DAYS_OFFSET "2" \
+    INSTRUMENT.CONTR_SIZE               LastQty \
+    INSTRUMENT.START_DAY                SettlDate\
+    INSTRUMENT.EXP_DAY                  MaturityDate\
+    INSTRUMENT.EXP_TIME                 append2(MaturityDate, " 19:00:00") \
+    INSTRUMENT.PAY_DAY_OFFSET           getPaydayOffset()\
+    INSTRUMENT.PAY_OFFSET_METHOD        "DATEPERIOD_CALENDAR_DAYS" \
+    INSTRUMENT.QUOTATION_SEQNBR.NAME    "Per Contract"\
+    _MMInstrumentLeg\
+    
+#define _MMInstrumentLeg\
+    INSTRUMENT.LEG[0].FIXED_RATE           LastPx\
+    INSTRUMENT.LEG[0].START_DAY            SettlDate\
+    INSTRUMENT.LEG[0].END_DAY              MaturityDate\
+    INSTRUMENT.LEG[0].CURR.INSID           Currency \
+    INSTRUMENT.LEG[0].NOMINAL_AT_END       "Yes" \
+    INSTRUMENT.LEG[0].Type                 "LEG_FIXED" \
+    INSTRUMENT.LEG[0].PAYLEG               "No" \
+    INSTRUMENT.LEG[0].ROLLING_BASE_DAY     MaturityDate\
+
+#define _FX_OPTION \
+	TRADE.INSADDR.INSID 					"" \
+	TRADE.VALUE_DAY                     MaturityDate\
+	TRADE.ACQUIRE_DAY                   MaturityDate\
+	TRADE.CURR.INSID					StrikeCurrency \
+	TRADE.COUNTERPARTY_PTYNBR.PTYID     getCustomizedCounterpartyID()\
+	TRADE.ACQUIRER_PTYNBR.PTYID         "Acquirer 1" \
+	TRADE.TRADER_USRNBR.USERID          getCustomizedTraderID()\
+	INSTRUMENT.CURR.INSID					StrikeCurrency \
+	TRADE.INSADDR.EXTERN_ID1				ExecID \
+	INSTRUMENT.INSTYPE					"INS_OPTION" \
+	INSTRUMENT.QUOTE_TYPE					"QUOTE_OTHER" \
+	INSTRUMENT.OTC						"Yes" \
+	INSTRUMENT.SPOT_BANKING_DAYS_OFFSET   			"2" \
+	INSTRUMENT.CONTR_SIZE    				"1" \
+    	INSTRUMENT.PAYTYPE					"PAY_SPOT" \
+	INSTRUMENT.EXP_DAY					getDate(MaturityDate) \
+	INSTRUMENT.DATE_TO					getDate(ExDate) \
+	INSTRUMENT.PAY_DAY_OFFSET				"2" \
+	INSTRUMENT.QUOTATION_SEQNBR.NAME			"Points of UndCurr" \
+	INSTRUMENT.STRIKE_CURR.INSID				StrikeCurrency \
+	INSTRUMENT.STRIKE_PRICE					StrikePrice \
+	INSTRUMENT.STRIKE_TYPE					"STRIKE_ABSOLUTE" \
+	INSTRUMENT.EXTERN_ID1					ExecID \
+	INSTRUMENT.EXERCISE_TYPE				getExercise(CFICode) \
+	INSTRUMENT.CALL_OPTION					getCallOption(CFICode) \
+	INSTRUMENT.UND_INSTYPE					"INS_CURR" \
+	if (INSTRUMENT.CURR.INSID == getCurrencyOne()) \
+	{ \
+		INSTRUMENT.UND_INSADDR.INSID			getCurrencyTwo() \
+	} \
+	else \
+	{ \
+		INSTRUMENT.UND_INSADDR.INSID			getCurrencyOne() \
+	} \
+	if(getCurrencyOne() == StrikeCurrency) \
+	{ \
+		INSTRUMENT.STRIKE_QUOTATION_SEQNBR.NAME		"Per Unit Inverse" \
+	} \
+	else \
+	{ \
+		INSTRUMENT.STRIKE_QUOTATION_SEQNBR.NAME		"Per Unit" \
+	} \
+	curr1Qty = OrderQty \
+	if (Side == 2) \
+	{ \
+		curr1Qty = mul(OrderQty, -1) \
+	} \
+	if(getCurrencyOne() != Currency) \
+	{ \
+		curr1Qty = div(curr1Qty, StrikePrice) \
+	} \
+	if(getCurrencyOne() == StrikeCurrency) \
+	{ \
+		curr1Qty = mul(curr1Qty, StrikePrice) \
+	} \
+	TRADE.QUANTITY						curr1Qty \
+	TRADE.PREMIUM						OrderQty2 \
+	if(curr1Qty > 0) \
+	{ \
+		TRADE.PREMIUM					mul(OrderQty2, -1) \
+	} \

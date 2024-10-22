@@ -1,0 +1,172 @@
+#
+# Front Arena exported extension module.
+# source          ""
+# timestamp (utc) "2024-06-12 02:30:21"
+# ***** DO NOT EDIT! *****
+#
+name        "PS_BorisOutRecap"
+description "$Id$"
+
+groups {
+}
+
+decls[FParameters] {
+}
+
+clx FObject [FParameters] {
+  BorisOutRecapParams =
+  recapLogFilename=BORIS_OUT_RECAP_LOG_{}.txt
+  recapOutputFilename=BORIS_OUT_RECAP_DATA_{}.csv
+  safeKeepingAcct={'IDR':'BI CUSTODY','USD':'EUROCLEAR'}
+
+
+}
+
+decls[FPythonCode] {
+}
+
+clx FObject [FPythonCode] {
+  BorisOutRecapData
+"""----------------------------------------------------------------------------------------------------
+MODULE:
+    RecapData
+
+DESCRIPTION:
+    Entry point to invoke the Boris out recap data run task gui.
+
+-------------------------------------------------------------------------------------------------------"""
+import acm, ael, traceback, ast
+from datetime import datetime
+import ParametersReader
+import BorisUtils
+from InterfaceUtils import time_from_datetime, date_from_datetime
+
+# get value from FParameter
+BorisParams = ParametersReader.get_params('BorisOutRecapParams')
+
+outputFile = BorisParams['recapOutputFilename'].format(acm.Time.TimeNow().replace(' ', '_').replace('-', '')
+                                                        .replace(':', '')[:-7])
+log_file_name = BorisParams['recapLogFilename'].format(acm.Time.DateToday().replace('-', ''))
+
+safe_keeping_acct = ast.literal_eval(BorisParams['safeKeepingAcct'])
+
+
+class RecapData(BorisUtils.ExportData):
+    def __init__(self):
+        """
+        Initialize member variables
+        """
+        boris_config = BorisUtils.Parameters('BorisInConfig')
+        self._port_mapper = ast.literal_eval(getattr(boris_config,'PortfolioMapper'))
+        query = [query.Name() for query in acm.FStoredASQLQuery.Select("subType='FTrade'")]
+        query.sort()
+        super(RecapData, self).__init__(query)
+        
+        
+    def map_portfolio(self, portfolio_id):
+        ret_val = ''
+        for item_key, item_val in self._port_mapper.items():
+            if item_val == portfolio_id:
+                ret_val = item_key
+                break
+        
+        return ret_val       
+        
+    def translate_secsacct(self,curr):
+
+        return safe_keeping_acct.get(curr, None)
+        
+
+    def generate_recap_data(self, params):
+        """
+        This function generates recap data
+        :param params: parameters
+        :return:None
+        """
+        self._logger.LOG('Start generateCustomerData')
+        outputFolder = params['outputFolder'].SelectedDirectory().AsString()
+
+        stored_query_name = params['queryName']
+        
+        stored_query = acm.FStoredASQLQuery[stored_query_name]
+        if stored_query:
+            bond_trades = stored_query.Query().Select().Sort()
+            file_row = list()
+
+            for trd in bond_trades:
+                try:
+                    fedealno = trd.OptionalKey()  # BORIS Unique ID / Blank if it's not from BORIS
+                    dealno = trd.Oid()  # FIS Unique ID
+                    br = trd.AdditionalInfo().BR() if trd.AdditionalInfo().BR() else '01' #Brach code
+                    seq = trd.VersionId()  # Sequence Number
+                    cno = trd.Counterparty().HostId() if trd.Counterparty() else ''  # trade counterparty alias
+                    secsacct = self.translate_secsacct(trd.Instrument().Currency().Name()) # Safekeeping Account. ToDo: Mapping
+                    ps = 'P' if trd.Quantity() > 0 else 'S'  # Purchase/Sale Indicator
+                    inv = trd.AdditionalInfo().InvestmentType() if trd.AdditionalInfo().InvestmentType() else 'T' # Investment type
+                    port = self.map_portfolio(trd.PortfolioId())  # FULL NAME / Customer Full Name 1 / NCHAR(70) done
+                    trad = trd.TraderId()  # ADDITIONAL FULL NAME / Customer Full Name 2 / NCHAR(70) done
+                    secid = trd.Instrument().Name()  # Security Identifier
+                    isincode = trd.Instrument().Isin()  # ISIN
+                    origqty = abs(trd.Quantity())  # Trade quantity**
+                    price_8 = trd.Price()  # Trade price**
+                    settdate = date_from_datetime(trd.ValueDay(), format_str='%m-%d-%Y  12:00:00 AM')  # Settlement date
+                    cost = trd.AdditionalInfo().CostCenter() if trd.AdditionalInfo().CostCenter() else '51001' # Cost Center.
+                    dealdate = date_from_datetime(trd.TradeTime(), format_str='%m-%d-%Y  12:00:00 AM')  # zipcode / Customer Postal Code / CHAR(10) done
+                    dealtime = time_from_datetime(trd.TradeTime(), format_str='%I:%M:%S %p')  # Ultimate Risk Country Code CHAR(2)
+                    dealtext = trd.Text1()  # Deal Text.
+                    verind = acm.FEnumeration['enum(TradeStatus)'].Enumeration(trd.Status())  # Verify Indicator
+                    standinstr = trd.AdditionalInfo().StandingInstruction() if trd.AdditionalInfo().StandingInstruction() else 'N' # Standing Instructions. ToDo: Mapping
+                    settccy = trd.Currency().Name()  # Settlement Currency
+                    cmne = BorisUtils.get_party_mnemonic(trd.Counterparty())  # Customer Mnemonic. Filled with DUMMY if it comes from TOMS
+                    updatetime = datetime.fromtimestamp(trd.UpdateTime()).strftime('%Y-%m-%d %H:%M:%S')  # Last Updated DATETIME
+
+                    row = fedealno,dealno,br,seq,cno,secsacct,ps,inv,port,trad,secid,isincode,origqty,price_8,settdate,cost,dealdate,dealtime,dealtext,verind,standinstr,settccy,cmne,updatetime
+                    row_list = ['"{}"'.format(row_item) if row_item is not None else '""' for row_item in row]
+                    row_data = ';'.join(row_list)
+                    #format of row_data = "'fedealno'";"'dealno'"...
+
+                    file_row.append(row_data + '\n')
+                except Exception as err:
+                    self._logger.ELOG('Error occurred during extracting data for Trade {}. Error {}'.format(trd.Oid(), str(err)))
+                    print(traceback.format_exc())
+                    
+            if file_row:
+                BorisUtils.generateFile(outputFolder, file_row, self._logger, outputFile)
+            
+        else:
+            self._logger.ELOG('Stored query with name {} not found.'.format(stored_query_name))
+        self._logger.LOG('Finish generateRecapData')
+
+
+
+ael_gui_parameters = {'windowCaption': "Boris Out Recap Data"}
+
+ael_variables = RecapData()
+ael_variables.LoadDefaultValues(__name__)
+app_name = 'OutRecapData'
+
+
+def ael_main(params):
+    """
+    AEL main function
+    :param params: GUI parameters
+    :return: None
+    """
+    recap_data_loger = None
+    try:
+        recap_data_loger = BorisUtils.initialize_logging(params, log_file_name, app_name)
+        if recap_data_loger:
+            recap_data_loger.LOG('Execution started.')
+            ael_variables.set_logger(recap_data_loger)
+            ael_variables.generate_recap_data(params)
+
+    except Exception as err:
+        if recap_data_loger is not None:
+            recap_data_loger.ELOG(str(err))
+        print(traceback.format_exc())
+        print('Error in ael main. {}'.format(err))
+
+...
+
+}
+

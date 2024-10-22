@@ -1,0 +1,361 @@
+#
+# Front Arena exported extension module.
+# source          ""
+# timestamp (utc) "2024-05-21 08:16:11.7"
+# ***** DO NOT EDIT! *****
+#
+name        "PS_EXIMBILLBookRate"
+description ""
+
+groups {
+}
+
+decls[FParameters] {
+}
+
+clx FObject [FParameters] {
+  BookRateParams =
+  baseCurrencies=['IDR']
+  logFilename=EXIMBILL_BOOKRATE_LOG_{}.txt
+  outputFilename=BOOKRT_{}_{}.txt
+
+
+}
+
+decls[FPythonCode] {
+}
+
+clx FObject [FPythonCode] {
+  EncoderUtils
+"""----------------------------------------------------------------------------------------------------
+MODULE:
+    EncoderUtils
+
+DESCRIPTION:
+    This modules contains utils to encode/decode user strings.
+
+-------------------------------------------------------------------------------------------------------"""
+import base64
+
+
+def set_encrypted_password(content, key):
+    """set the encoded value for the given content"""
+    enc = []
+    for i in range(len(content)):
+        key_c = key[i % len(key)]
+        enc_c = chr((ord(content[i]) + ord(key_c)) % 256)
+        enc.append(enc_c)
+    enc_string = "".join(enc)
+    enc_encoded = enc_string.encode('UTF-8')
+    encoded_value = base64.urlsafe_b64encode(enc_encoded)
+    encoded_value = b'0x4' + encoded_value
+    return encoded_value.decode('utf-8')
+
+
+def get_decrypted_password(content, key):
+    """get the encoded value for the given content"""
+    dec = []
+    content = content[3:]
+    enc = base64.urlsafe_b64decode(content).decode('UTF-8')
+    for i in range(len(enc)):
+        key_c = key[i % len(key)]
+        dec_c = chr((256 + ord(enc[i]) - ord(key_c)) % 256)
+        dec.append(dec_c)
+    return "".join(dec)
+
+    
+
+...
+
+  EXIMBILLBookRate
+"""----------------------------------------------------------------------------------------------------
+MODULE:
+    EXIMBILLBookRate
+
+DESCRIPTION:
+    Entry point to invoke the broker data run task gui.
+
+-------------------------------------------------------------------------------------------------------"""
+import acm, ael, traceback, os, ast
+import datetime, InterfaceUtils
+import ParametersReader, FRunScriptGUI, FLogger
+import FFTPOperations, FSFTPOperations
+import EncoderUtils, InterfaceSettingUtils, PS_FTPUtils
+
+# get value from FPArameter
+book_rate_params = ParametersReader.get_params('BookRateParams')
+
+log_file_name = book_rate_params['logFilename'].format(acm.Time.DateToday().replace('-', ''))
+g_key = 'HTJM7751'
+
+def initialize_logging(params, logfile_name, app_name):
+    """
+    Initialize logger
+    :param params: parameters
+    :return: FLogger object
+    """
+    logger = None
+    try:
+        logFolder = params['log_folder']
+        logfolderString = logFolder.SelectedDirectory().AsString()
+        logfile = os.path.join(logfolderString, logfile_name)
+        if logfile == '':
+            logfile = None
+
+        logLevel = params['log_level']
+        level = InterfaceUtils.LogLevelNameToNumber(logLevel)
+        print('level: ', level)
+        logger = FLogger.FLogger(level=level,
+                                 name=app_name,
+                                 logToPrime=True,
+                                 logToFileAtSpecifiedPath=logfile,
+                                 logToConsole=False)
+    except Exception as err:
+        print('Error in initializing logger {}'.format(err))
+        print(traceback.format_exc())
+    return logger
+
+class BookRate(FRunScriptGUI.AelVariablesHandler):
+    def __init__(self, book_rate_params):
+        """
+        This function initializes the object
+        """
+        logLevels = [FLogger.FLogger.INFO, FLogger.FLogger.ERROR, FLogger.FLogger.WARNING, FLogger.FLogger.DEBUG]
+        
+
+        folderPicker = FRunScriptGUI.DirectorySelection()
+
+        # NAME = 0  # internal name
+        # TEXT = 1  # GUI Text
+        # TYPE = 2  # object type
+        # VALUES = 3  # valid values
+        # DEFAULT = 4  # default
+        # MANDATORY = 5  # mandatory
+        # MULTI = 6  # multiple selection
+        # TIP = 7  # floating tip
+        # CB = 8  # callback
+        # ENABLED = 9  # enabled
+
+        query = [pty.Name() for pty in acm.FMTMMarket.Select('')]
+        base_curr = ast.literal_eval(book_rate_params['baseCurrencies'])
+        
+        
+
+        gui_vars = [
+            ['mtm_market', 'MTM Market', 'string', query, None, 1, 0, 'Select the Market.', None, 1],
+            ['currency_pair', 'Currency pair', 'string', '', 'ALL', 1, 1, 'Select the currency pairs.',
+             None, 1],
+            ['base_curr_name', 'Base currency', 'string', base_curr, 'IDR', 1, 0, 'Select the overseas branch name.',
+             self.on_currency_change, 1]]
+             
+        if InterfaceSettingUtils.get_env_name() != 'HO':
+            gui_vars.extend(
+            [['is_acu', 'ACU', 'int', [1, 0], 1, 1, 0, 'Is ACU?', self.on_currency_change, 1]])
+             
+        gui_vars.extend([['outputFolder', 'Folder Path_Output', folderPicker, None, folderPicker, 1, 1, 'The file path where summary result will be generated.', None, 1]])
+        gui_vars.extend([['outputFile', 'Output File Name_Output', 'string', None, 'BOOKRT.txt', 0, 0, 'Specify output file name', None, 1]])
+
+        gui_vars.extend([['ftp_dest_dir', 'Destination folder_FTP', 'string', None, None, 1, 0, 'The destination folder at FTP server.', None, 1]])
+        gui_vars.extend([['ftp_host', 'Host_FTP', 'string', None, None, 1, 0, 'FTP host.', None, 1]])
+        gui_vars.extend([['ftp_port', 'Port_FTP', 'string', None, None, 1, 0, 'FTP port.', None, 1]])
+        gui_vars.extend([['ftp_user', 'User_FTP', 'string', None, None, 1, 0, 'FTP user.', None, 1]])
+        gui_vars.extend([['ftp_password', 'Password_FTP', 'string', None, None, 0, 0, 'FTP password.', None, 1]])
+        gui_vars.extend([['sftp_conn', 'SFTP_FTP', 'int', [1, 0], 1, 1, 0, 'Is connection SFTP?', None, 1]])
+        gui_vars.extend([['logToConsole', 'Log to console_Logging', 'int', [1, 0], 1, 1, 0,'Whether logging should be done in the Log Console or not.']])
+        gui_vars.extend([['log_folder', 'Log folder_Logging', folderPicker, None, folderPicker, 0, 1,'Select where to store the log file',0, None]])
+        gui_vars.extend([['log_level', 'Log level_Logging', 'string', logLevels, FLogger.FLogger.DEBUG, 1, 0]])
+        
+        self._logger = None
+        date_time_now = datetime.datetime.now()
+        date_today = date_time_now.strftime('%Y%m%d')
+        time_now = date_time_now.strftime('%H%M%S%f')[:7]
+        FRunScriptGUI.AelVariablesHandler.__init__(self, gui_vars)
+        
+        
+    def init_currency_pair(self, params):
+        base_curr = params['base_curr_name']
+        curr_pair = params['currency_pair']
+        
+        
+        if 'ALL' in curr_pair:        
+            curr_pair_query1 = acm.FCurrencyPair.Select("currency2 = '{}'".format(base_curr))
+            self.curr_pair = [curr_pair.Name() for curr_pair in curr_pair_query1]
+            
+            if InterfaceSettingUtils.get_env_name() != 'HO':
+                curr_pair_query2 = acm.FCurrencyPair.Select("currency1 = '{}'".format(base_curr))
+                self.curr_pair.extend([curr_pair.Name() for curr_pair in curr_pair_query2])
+            
+            self.curr_pair.append('{0}/{0}'.format(base_curr))
+            if InterfaceSettingUtils.get_env_name() != 'HO':
+                is_acu = params['is_acu']  
+                if is_acu:
+                    self.curr_pair.append('{0}/{0}'.format('ACU')) # Add ACU for rate 1
+        else:
+            self.curr_pair = curr_pair
+        
+    def on_currency_change(self, changeIndex, fieldValues):
+        curr = fieldValues[2]
+        
+        curr_pair_query1 = acm.FCurrencyPair.Select("currency2 = '{}'".format(curr))
+        curr_pair = [curr_pair.Name() for curr_pair in curr_pair_query1]
+        
+        if InterfaceSettingUtils.get_env_name() != 'HO':
+            curr_pair_query2 = acm.FCurrencyPair.Select("currency1 = '{}'".format(curr))
+            curr_pair.extend([curr_pair.Name() for curr_pair in curr_pair_query2])
+            is_acu = int(fieldValues[3])  
+            if is_acu:
+                curr_pair.append('{0}/{0}'.format('ACU')) # Add ACU for rate 1
+        
+        curr_pair.append('{0}/{0}'.format(curr)) # Add currency for rate 1
+        
+        curr_pair.append('ALL')
+        self.ael_variables[1][3] = curr_pair
+        
+        return fieldValues
+
+    def upload_files_to_server(self, destination_dir, host, port, user, password, source_dir, sftp_conn):
+        """ This function uploads the file to FTP"""
+        ret_val = False
+        password = EncoderUtils.get_decrypted_password(password, g_key)
+        connstr = '{}:{}:{}:{}'.format(host, port, user, password)
+        if sftp_conn:            
+            ret_val = FSFTPOperations.write_to_sftp(app_name, source_dir, connstr, destination_dir)
+        else:
+            ret_val = PS_FTPUtils.write_to_ftp_ASCII_mode(source_dir, connstr, destination_dir)
+        return ret_val
+
+    def generate_book_rate(self, params):
+        """
+        This function generates the broker data
+        :param params: parameters
+        :return: None
+        """
+        self._logger.LOG('Start generate_book_rate')
+        
+        self.init_currency_pair(params)
+
+        mtm_market = params['mtm_market']
+        price_date = acm.Time.DateToday()
+        
+
+        destination_dir = params['ftp_dest_dir']
+        host = params['ftp_host']
+        port = params['ftp_port']
+        user = params['ftp_user']
+        password = params['ftp_password']
+        sftp_conn = params['sftp_conn']
+        base_curr_name = params['base_curr_name']
+                
+        
+        output_folder = params['outputFolder'].SelectedDirectory().AsString()
+        param_file_name = params['outputFile']
+        if sftp_conn: # If Eximbill
+            output_file = book_rate_params['outputFilename']
+            date_time_now = datetime.datetime.now()
+            date_today = date_time_now.strftime('%Y%m%d')
+            time_now = date_time_now.strftime('%H%M%S%f')[:7]
+            param_file_name = output_file.format(date_today, time_now)
+            #param_file_name = '{}_{}{}'.format(os.path.splitext(param_file_name)[0], acm.Time.DateToday(), os.path.splitext(param_file_name)[1])
+            
+        if len(param_file_name.strip()) > 0 : 
+            full_file_path = os.path.join(output_folder, param_file_name.strip())
+            
+        bookrate_entries = list()
+        log_curr_pair = list()
+        for curr_pair_name in self.curr_pair:
+            try:
+                curr1_name, curr2_name = curr_pair_name.split('/')
+                if curr1_name == curr2_name:
+                    padded_book_price_integer = '{:0>6}'.format(1)
+                    padded_book_price_decimal = '{:0<7}'.format(0)
+                    book_entry = '{0} {1}{2}{1}{2}{1}{2}'.format(curr1_name, padded_book_price_integer, padded_book_price_decimal)
+                    bookrate_entries.append(book_entry)
+                    bookrate_entries.append("\n")
+                    log_curr_pair.append(curr_pair_name)                    
+                else:
+                    curr_pair = acm.FCurrencyPair[curr_pair_name]
+                    if curr_pair:
+                        curr1 = curr_pair.Currency1()
+                        curr2 = curr_pair.Currency2()
+                            
+                        price_record = acm.FPrice.Select01(
+                            "instrument={} and currency={} and market='{}' and day='{}'".format(curr1.Oid(), curr2.Oid(),
+                                                                                                           mtm_market,
+                                                                                                           price_date), None)
+                        if price_record:
+                            if curr1.Name() == base_curr_name:
+                                curr1 = curr_pair.Currency2() # Use the name of the target currency
+                                book_price = '{:.7f}'.format(1/price_record.Settle()) # and invert the rate
+                            else:
+                                book_price = str(price_record.Settle())
+                            book_price_integer, book_price_decimal = book_price.split('.')
+                            padded_book_price_integer = '{:0>6}'.format(book_price_integer)
+                            padded_book_price_decimal = '{:0<7}'.format(book_price_decimal)
+                            book_entry = '{0} {1}{2}{1}{2}{1}{2}'.format(curr1.Name(), padded_book_price_integer,
+                                                                         padded_book_price_decimal)
+                            bookrate_entries.append(book_entry)
+                            bookrate_entries.append("\n")
+                            log_curr_pair.append(curr_pair_name)
+                        else:
+                            self._logger.LOG('Price entry not found for currency pair {}'.format(curr_pair_name))
+                            log_curr_pair.append(curr_pair_name)
+                        
+            except Exception as err:
+                self._logger.LOG('Error creating file for {}. {}'.format(curr_pair_name, err))
+                
+
+        if bookrate_entries:
+            bookrate_entries.pop(-1)  # remove the last new line char
+        with open(full_file_path, 'w') as fp:
+            fp.writelines(bookrate_entries)
+
+        self._logger.LOG('Created file {} for book rate for {}.'.format(full_file_path, ', '.join(
+            log_curr_pair) if log_curr_pair else 'no currency pair'))
+
+        if self.upload_files_to_server(destination_dir, host, port, user, password, full_file_path, sftp_conn):
+            self._logger.LOG('Uploaded file {} to FTP.'.format(full_file_path))
+        else:
+            self._logger.LOG('Error uploading file {} to FTP.'.format(full_file_path))
+
+        self._logger.LOG('Finish generate_book_rate')
+
+    def set_logger(self, logger):
+        """
+        This function sets the logger
+        :param logger: FLogger
+        :return: None
+        """
+        self._logger = logger
+
+
+ael_gui_parameters = {'windowCaption': "EXIMBILL Book Rate"}
+
+ael_variables = BookRate(book_rate_params)
+ael_variables.LoadDefaultValues(__name__)
+app_name = 'BookRate'
+
+
+def ael_main(params):
+    """
+    AEL main function
+    :param params: GUI parameters
+    :return: None
+    """
+    bookrate_loger = None
+    try:
+        bookrate_loger = initialize_logging(params, log_file_name, app_name)
+        if bookrate_loger:
+            bookrate_loger.LOG('Execution started.')
+            ael_variables.set_logger(bookrate_loger)
+            ael_variables.generate_book_rate(params)
+
+    except Exception as err:
+        if bookrate_loger is not None:
+            bookrate_loger.ELOG(str(err))
+        print(traceback.format_exc())
+        print('Error in ael main. {}'.format(err))
+
+...
+
+}
+

@@ -1,0 +1,9 @@
+ADDITIONALINFOSPEC,,,,,/ADDITIONALINFOSPEC
+DATA_TYPE.TYPE,DESCRIPTION,FIELD_NAME,DATA_TYPE.GRP,REC_TYPE,
+String,,CustomerType,Standard,Party,
+String,TD reference id from SInvest,TDReferenceID,Standard,Trade,
+String,TD download status,TD_DownloadStatus,Standard,Trade,
+String,TD response status,TD_ResponseStatus,Standard,Trade,
+String,TC reference id from SInvest,TCReferenceID,Standard,Trade,
+String,TC download status,TC_DownloadStatus,Standard,Trade,
+String,TC response status,TC_ResponseStatus,Standard,Trade,

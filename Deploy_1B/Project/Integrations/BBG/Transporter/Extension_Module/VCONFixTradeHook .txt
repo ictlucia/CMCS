@@ -1,0 +1,854 @@
+#
+# Front Arena exported extension module.
+# source          ""
+# timestamp (utc) "2024-07-17 08:13:01.2"
+# ***** DO NOT EDIT! *****
+#
+name        "VCONFixTradeHook"
+description ""
+
+groups {
+}
+
+decls[FParameters] {
+}
+
+clx FObject [FParameters] {
+  PS_VCONCustomConfig =
+  MANDATORY_FIELDS=['COUNTERPARTY_PTYNBR.PTYID', 'TRADER_USRNBR.USERID', 'PRFNBR.PRFID', 'ACQUIRER_PTYNBR.PTYID']
+
+
+  VCONFixIntegrationDefaults =
+  BasketRepoInsType=INS_BASKET_REPO
+  DefaultAcquirer=Mandiri TRS HO
+  DefaultDummyInstrument=DUMMY_UNDERLYING
+  DefaultPortfolio=TEST CHILD 1
+  PartyAlias=BB_FIRM_NUMBER
+  REPOTradeMapping=BASKET_REPO
+
+
+  VCONFixIntegrationTradeStatus =
+  Amend=Reserved
+  Cancel=Void
+  Error=Reserved
+  Reject=Void
+  Ticket Submitted=Reserved
+  Trade Affirmed=FO Confirmed
+  Unmatch=Reserved
+
+
+}
+
+decls[FPythonCode] {
+}
+
+clx FObject [FPythonCode] {
+  PS_VCONCustomUtils
+import ast
+import acm
+import ParametersReader
+import AmbaHelpers
+
+params = ParametersReader.get_params('PS_VCONCustomConfig')
+MandetoryFields = ast.literal_eval(params['MANDATORY_FIELDS'])
+
+
+'''
+As per PDR workflow
+'''
+
+def GetMandetoryFieldList():
+    return MandetoryFields
+
+def CheckFieldValuesPresent(mt, fieldList):
+    allMandetoryFieldsPresent = True
+    
+    try:
+        for field in fieldList:
+            fieldValue = AmbaHelpers.getValue(mt, field)
+            if fieldValue is None:
+                allMandetoryFieldsPresent = False
+                break
+
+    except Exception as e:
+        print(f'Failed to process mandetory Field List.')
+        allMandetoryFieldsPresent = False
+    
+    return allMandetoryFieldsPresent
+    
+def GetTradeStatus(mt):
+    fieldList = GetMandetoryFieldList()
+    isMandetoryFieldsPresent = CheckFieldValuesPresent(mt, fieldList)
+    if not isMandetoryFieldsPresent:
+        status = 'Simulated'
+    else:
+        status = 'Reserved'
+    return status
+
+def GetProductTypeAndCat(mt):
+    prodType = None
+    cat = None
+    isin = AmbaHelpers.getValue(mt, 'insaddr.isin')
+    ins = acm.FInstrument[isin] if isin else None
+    if ins:
+        prodType = ins.ProductTypeChlItem().Name() if ins.ProductTypeChlItem() else None
+        cat = ins.CategoryChlItem().Name() if ins.CategoryChlItem() else None
+    else:
+        print('Instrument not found {}'.format(isin))
+    return (prodType, cat)
+
+...
+
+  VCONIntegrationHook
+import AmbaHelpers
+import acm
+import FBusinessProcessUtils
+import VCONStateChart
+import amb
+import ael
+from PS_VCONCustomUtils import GetTradeStatus, GetProductTypeAndCat
+
+try:
+    import FFpMLRecFileImport
+    import FBBGFpML
+except ImportError:
+    print('BBGFpML module not imported, IRS will not work')
+
+STATE_CHART = 'VCON'
+defaults = acm.GetDefaultContext().GetExtension('FParameters', 'FObject', 'VCONFixIntegrationDefaults').Value()
+statuses = acm.GetDefaultContext().GetExtension('FParameters', 'FObject', 'VCONFixIntegrationTradeStatus').Value()
+
+
+if not acm.FStateChart[STATE_CHART]:
+    VCONStateChart.CreateStateChart()
+
+def create_object_from_data(data):
+    """ Get mbf object from list"""
+    outBuffer = amb.mbf_create_buffer_from_data(data) 
+    outObject = outBuffer.mbf_read()  
+    return outObject
+    
+def _getTempTrade(mt, external_id):
+    """ Create temporary trade to attach Business Process to """
+    trade = acm.FTrade()
+    trade.OptionalKey(external_id)
+    trade.Status('Simulated')
+    ins = acm.FInstrument[defaults.At('DefaultDummyInstrument').Text()]
+    trade.Instrument(ins)
+    trade.Currency(AmbaHelpers.getValue(mt, 'curr.insid'))
+    trade.TradeTime(AmbaHelpers.getValue(mt, 'time'))
+    trade.ValueDay(trade.TradeTime())
+    trade.Commit()
+    return trade
+
+def _getTraderByPrincipal(uuid, principal_type):
+    principal = acm.FPrincipalUser.Select01('principal = "{0}" and type = "{1}"'.format(uuid, principal_type), 'More than one user with same Bloomberg Principal')
+    if principal:
+        return principal.User()
+            
+def _getPartyByAlias(alias, alias_type):
+    party_alias = acm.FPartyAlias.Select01('alias="{0}" and type="{1}"'.format(alias, alias_type), 'More than one Party found with same Alias type')
+    if party_alias:
+        return party_alias.Party().Name()
+# ------------------------------------------------------------------------------------------------------------
+# AMB helper functions
+# ------------------------------------------------------------------------------------------------------------
+def getValue(m, n, obj = None):
+    """ Get value for key n"""
+    val = None
+    if obj:
+        m = m.mbf_find_object(obj, 'MBFE_BEGINNING')
+    if m:
+        x = m.mbf_find_object(n, 'MBFE_BEGINNING')
+        if x:
+            val = x.mbf_get_value()
+    return val
+# ------------------------------------------------------------------------------------------------------------
+#TCSTCSPBDT-437211
+def setValue(m, n, v, obj = None):
+    """ Set value for key n and val n"""
+    if obj: 
+        m = m.mbf_find_object(obj, 'MBFE_BEGINNING')
+    x = m.mbf_find_object(n, 'MBFE_BEGINNING')
+    if x and v:
+        m.mbf_replace_string(n, v) 
+    else:
+        if v:
+            m.mbf_add_string(n, v)        
+# ------------------------------------------------------------------------------------------------------------
+""" Delete object with key n"""
+def deleteObject(m, n, obj=None):
+    if obj:
+        m = m.mbf_find_object(obj, 'MBFE_BEGINNING')
+    if m: 
+        x = m.mbf_find_object(n, 'MBFE_BEGINNING')
+        if x:
+            m.mbf_remove_object( )
+
+# ------------------------------------------------------------------------------------------------------------
+    """ create mbf object from list"""
+def create_object_from_list(inList):
+    outBuffer = amb.mbf_create_buffer() 
+    inList.mbf_generate(outBuffer)
+    outObject = outBuffer.mbf_read()  
+    return outObject    
+# ------------------------------------------------------------------------------------------------------------
+def is_repo_open_ended(data):
+    return data["enddate"] in ('',None) 
+# ------------------------------------------------------------------------------------------------------------    
+#calculate spot days offset from startDate
+def calculate_spot_days_offset(date):
+    nbrDays = "2" 
+    today = ael.date_today()
+    dateObj = ael.date_from_string(date)
+    spotDays = today.days_between(dateObj)
+    if spotDays < 2 :
+        spotDays = nbrDays
+    return spotDays
+# ------------------------------------------------------------------------------------------------------------    
+#calculate Leg endDate for open Repo
+def calculate_end_date_for_open_repo(currency,spot_days,date):
+    dateObj = ""
+    ins = acm.FInstrument[currency]
+    if ins:
+        calendar = ins.Calendar()
+    dateObj = calendar.AdjustBankingDays(ael.date_from_string(date), int(spot_days))
+    return dateObj    
+# ------------------------------------------------------------------------------------------------------------    
+#function use to find rateIndex instrument from ADS for float type of Repo
+def find_rateIndex_insid_from_ads(instrumentAliasType,instrumentAliasValue):
+    insid = ""
+    if instrumentAliasType and instrumentAliasType.strip() == 'ISIN':
+        instrument = ins = acm.FInstrument.Select01("isin = '%s'" % instrumentAliasValue,'')
+        if instrument:
+            print ('RateIndex Instrument with Insid %s found for securityID : %s ' %(insid,str(instrumentAliasValue)))
+            insid = instrument.Name()
+        else:
+            print ('RateIndex Instrument is not found for BenchmarksecurityID : %s repo will be mapped to float ref based on trade currency.' %instrumentAliasValue)
+    elif instrumentAliasType:
+        alias_type = acm.FInstrAliasType[instrumentAliasType]
+        if alias_type:
+            query = 'type=%d and alias="%s"' % (alias_type.Oid(), str(instrumentAliasValue))
+            insSel = acm.FInstrumentAlias.Select01(query,'')
+            if insSel:
+                instrument = insSel.Instrument()
+                if instrument:
+                    insid = instrument.Name()
+                    print ('RateIndex Instrument with Insid %s found for securityID : %s ' %(insid,str(instrumentAliasValue)))
+            else:
+                print ('RateIndex Instrument is not found for securityID : %s repo will be mapped to float ref based on trade currency.' %instrumentAliasValue)
+    return insid
+# ------------------------------------------------------------------------------------------------------------    
+#function use to create data object to store all details related to repo instrument
+def get_repo_ins_data(mt):
+    #Extracting Instrument Details from AFG_AMB TRADE message
+    open_end = getValue(mt,"insaddr.open_end")
+
+    insid = ""
+    enddate = "" 
+    haircut = "0.0"
+    BenchmarkSecuritySource = ""
+    BenchmarkSecurityId = ""
+    BenchmarkCurvePoint = ""
+    startDate = getValue(mt,"connected_trdnbr.acquire_day")
+    repoRate = getValue(mt,"free_text_4")
+    repoType = getValue(mt,"free_text_3")
+    insCurr = getValue(mt, "insaddr.curr.insid")
+    
+    if open_end != "Open End":
+        enddate = getValue(mt,"connected_trdnbr.re_acquire_day")
+        sDate = startDate[2:]
+        eDate = enddate[2:]
+        if repoType == "REVERSE":
+            insid = '%s/BREPO_R/%s-%s/%s' %(insCurr, sDate,eDate, repoRate)
+        else:
+            insid = '%s/BREPO/%s-%s/%s' %(insCurr, sDate,eDate, repoRate)
+    elif open_end == "Open End":
+        sDate = startDate[2:]
+        if repoType == "REVERSE":
+            insid = '%s/BREPO/%s/OPEN END/%s' %(insCurr, sDate, repoRate)
+        else:
+            insid = '%s/BREPO_R/%s/OPEN END/%s' %(insCurr, sDate, repoRate)
+    
+    insQuoteType = getValue(mt, "insaddr.quote_type")
+    insOtc= getValue(mt, "insaddr.otc")
+    isin = getValue(mt, 'insaddr.isin')
+    insBankingOffset = getValue(mt, "insaddr.spot_banking_days_offset")
+    insContractSize = float(getValue(mt, "insaddr.contr_size"))
+    insPayOffsetMethod = getValue(mt, "insaddr.pay_offset_method")
+    insLegDaycountMethod = getValue(mt,"insaddr.daycount_method")
+    insRefValue = getValue(mt,"insaddr.free_text_1")
+    insResetFixingValue = getValue(mt,"free_text_5")
+    
+    #Extracting Main Trade details from AFG_AMB TRADE message
+    haircutType = getValue(mt,"haircut_type")
+    haircut = getValue(mt,"haircut")
+    acquirer = defaults.At('DefaultAcquirer').Text()
+    counterParty = getValue(mt, "counterparty_ptynbr.ptyid")
+    premium = float(getValue(mt,"premium"))
+    status = getValue(mt,"status")
+    trader = getValue(mt,"trader_usrnbr.userid")
+    optional_key = getValue(mt,"optional_key")
+    time = getValue(mt,"time")
+    isin = getValue(mt,"connected_trdnbr.insaddr.isin")
+    
+    #calculate SPOT days from startDate
+    insBankingOffset = calculate_spot_days_offset(startDate)
+    
+    #FLOAT repo details like RateIndex instrumentID, tenor etc
+    BenchmarkSecurity = getValue(mt,"INSADDR.FREE_TEXT_2")
+    if BenchmarkSecurity == "FLOAT":
+        BenchmarkSecurityId = getValue(mt,"INSADDR.FREE_TEXT_3")
+        BenchmarkSecuritySource = getValue(mt,"INSADDR.FREE_TEXT_4")
+        BenchmarkCurvePoint = getValue(mt,"INSADDR.FREE_TEXT_5")
+    
+    #Extracting Collateral/underlying details from AFG_AMB TRADE message
+    netMoneyQty = float(getValue(mt,"quantity"))#NetMoney Or Start Cash 
+    quantity = float(getValue(mt,"connected_trdnbr.quantity"))
+    
+    price = getValue(mt,"connected_trdnbr.price")
+    boFxRate = getValue(mt,"connected_trdnbr.bo_fx_rate")
+    
+    if isin:
+        instrument = acm.FInstrument[isin]
+        if not instrument:
+            print('No instrument found with isin : %s' %isin)
+            insContractSize = 1.0
+        else:
+            insContractSize = abs(instrument.ContractSize())
+     
+    tradeQuantity = netMoneyQty/insContractSize
+    collateralQuantity = quantity/insContractSize
+    
+    repo_data = { "insid": insid,"underlyingIsin":isin,
+                  "startDate": startDate, "enddate": enddate, 
+                  "repoRate":repoRate,"insRefValue": insRefValue,
+                  "insCurr": insCurr, "insContractSize": insContractSize, 
+                  "insBankingOffset": insBankingOffset, "insPayOffsetMethod": insPayOffsetMethod,
+                  "insLegDaycountMethod": insLegDaycountMethod, "insQuoteType": insQuoteType,
+                  "insResetFixingValue": insResetFixingValue,
+                  "haircutType": haircutType, "acquirer":acquirer,
+                  "counterParty": counterParty, "premium": premium,
+                  "trader": trader, "status": status,
+                  "optional_key": optional_key, "time": time,
+                  "haircut": haircut,"open_end": open_end,
+                  "quantity": quantity, "price": price,
+                  "boFxRate": boFxRate, "BenchmarkSecurity": BenchmarkSecurity, 
+                  "BenchmarkSecuritySource": BenchmarkSecuritySource ,"BenchmarkCurvePoint" : BenchmarkCurvePoint, 
+                  "BenchmarkSecurityId" : BenchmarkSecurityId,
+                  "tradeQuantity":tradeQuantity,
+                  "collateralQuantity":collateralQuantity,
+                  "repoType":repoType}
+    return repo_data
+# ------------------------------------------------------------------------------------------------------------
+#function use to create Bakset repo/reverse instrument from data object
+def create_repo_ins_from_data(data):
+    open_end = data["open_end"]
+    
+    m_insObj=amb.mbf_start_list("INSTRUMENT")
+    basketRepoInsType = "INS_BASKET_REPO"
+    basketRepoInsType = defaults.At('BasketRepoInsType').Text()
+    #BasketRepo instrument mapping
+    setValue(m_insObj,"INSID", "")
+    setValue(m_insObj,"EXTERN_ID1", data["insid"])
+    setValue(m_insObj,"INSTYPE", basketRepoInsType)
+    setValue(m_insObj,"CURR.INSID",data["insCurr"])
+    setValue(m_insObj,"QUOTE_TYPE",data["insQuoteType"])
+    setValue(m_insObj,"OTC","YES")
+    setValue(m_insObj,"SPOT_BANKING_DAYS_OFFSET",str(data["insBankingOffset"]))
+    setValue(m_insObj,"CONTR_SIZE",str(data["insContractSize"]))
+    
+    #LEG mapping
+    m_legObj = m_insObj.mbf_start_list("LEG")
+    
+    #check if repo is fixed or float
+    if data["BenchmarkSecurity"] == "FIXED":
+        setValue(m_legObj,"TYPE","LEG_FIXED")
+        setValue(m_legObj,"PAYLEG","NO")
+        setValue(m_legObj,"DAYCOUNT_METHOD",data["insLegDaycountMethod"])
+        setValue(m_legObj,"CURR.INSID",data["insCurr"])
+        setValue(m_legObj,"NOMINAL_FACTOR","1")
+        setValue(m_legObj,"START_DAY",data["startDate"])
+        setValue(m_legObj,"END_DAY",data["enddate"])
+        setValue(m_legObj,"ROLLING_BASE_DAY",data["enddate"])
+        setValue(m_legObj,"FIXED_RATE",data["repoRate"])
+        setValue(m_legObj,"NOMINAL_AT_END","Yes")
+        
+        #If REPO is open end 
+        if open_end == "Open End":
+            setValue(m_insObj,"OPEN_END","Open End")
+            setValue(m_legObj,"TYPE","LEG_FIXED_ADJUSTABLE")
+            setValue(m_legObj,"ROLLING_BASE_DAY",data["startDate"])
+            endDateOpen = calculate_end_date_for_open_repo(data["insCurr"],data["insBankingOffset"],data["startDate"])
+            setValue(m_legObj,"END_DAY",str(endDateOpen))
+        
+    elif data["BenchmarkSecurity"] == "FLOAT":
+        #Find Rate index instrument in ADS for FLOAT REPO
+        rateIndexInsid = find_rateIndex_insid_from_ads(data["BenchmarkSecuritySource"],data["BenchmarkSecurityId"])
+        
+        setValue(m_legObj,"TYPE","LEG_FLOAT")
+        setValue(m_legObj,"PAYLEG","NO")
+        setValue(m_legObj,"FLOAT_RATE.INSID",rateIndexInsid)
+        setValue(m_legObj,"DAYCOUNT_METHOD",data["insLegDaycountMethod"])
+        setValue(m_legObj,"CURR.INSID",data["insCurr"])
+        setValue(m_legObj,"NOMINAL_FACTOR","1")
+        setValue(m_legObj,"START_DAY",data["startDate"])
+        setValue(m_legObj,"END_DAY",data["enddate"])
+        setValue(m_legObj,"ROLLING_PERIOD",data["BenchmarkCurvePoint"])
+        setValue(m_legObj,"ROLLING_BASE_DAY",data["enddate"])
+        setValue(m_legObj,"SPREAD",data["repoRate"])
+        setValue(m_legObj,"NOMINAL_AT_END","Yes")
+        setValue(m_legObj,"RESET_TYPE","SINGLE")
+        
+        if data["insResetFixingValue"] :
+            setValue(m_legObj,"RESET_FIXING_VALUE",data["insResetFixingValue"])
+        
+        #If REPO is open end 
+        if open_end == "Open End":
+            setValue(m_insObj,"OPEN_END","Open End")
+            setValue(m_legObj,"ROLLING_BASE_DAY",data["startDate"])
+            endDateOpen = calculate_end_date_for_open_repo(data["insCurr"],data["insBankingOffset"],data["startDate"])
+            setValue(m_legObj,"END_DAY",str(endDateOpen))
+            
+    m_legObj.mbf_end_list()
+    m_insObj.mbf_end_list()
+    repoInsObj = create_object_from_list(m_insObj)
+    
+    return repoInsObj
+# ------------------------------------------------------------------------------------------------------------
+#function use to create Bakset repo/reverse trade and corresponding collateral trade
+def createBasketRepoTrade(data):
+    #Main trade mapping
+    optionalKey = ""
+    
+    m_mainTrade = amb.mbf_start_list("TRADE")
+    
+    instrument =  acm.FInstrument.Select01("externalId1 = '%s'" % data["insid"],'')
+    tradeUpdated = False
+    
+    if instrument:
+        query = 'instrument=%d' % instrument.Oid()
+        trade =  acm.FTrade.Select01(query,'')
+        if trade:
+            print ('Basket Repo Trade and Instrument with External ID %s found,updating quatity and premium values of existing trade' %data["insid"])
+            premium = trade.Premium()
+            Quantity = trade.Quantity()
+            optionalKey = trade.OptionalKey()
+            premium += data["premium"]
+            Quantity += data["tradeQuantity"]
+            setValue(m_mainTrade,"INSADDR.EXTERN_ID1",data["insid"])
+            setValue(m_mainTrade,"TIME",data["time"])
+            setValue(m_mainTrade,"QUANTITY",str(Quantity))
+            setValue(m_mainTrade,"PREMIUM",str(premium))
+            setValue(m_mainTrade,"OPTIONAL_KEY",optionalKey)
+            tradeUpdated = True
+
+    if tradeUpdated == False:
+        setValue(m_mainTrade,"PRFNBR.PRFID",defaults.At('DefaultPortfolio').Text())
+        setValue(m_mainTrade,"INSADDR.EXTERN_ID1",data["insid"])
+        setValue(m_mainTrade,"ACQUIRE_DAY",data["startDate"])
+        setValue(m_mainTrade,"ACQUIRER_PTYNBR.PTYID",data["acquirer"])
+        setValue(m_mainTrade,"CURR.INSID",data["insCurr"])
+        setValue(m_mainTrade,"VALUE_DAY",data["startDate"])
+        setValue(m_mainTrade,"TIME",data["time"])
+        setValue(m_mainTrade,"QUANTITY",str(data["tradeQuantity"]))
+        setValue(m_mainTrade,"PRICE",str(100.0))
+        setValue(m_mainTrade,"PREMIUM",str(data["premium"]))
+        setValue(m_mainTrade,"STATUS",data["status"])
+        setValue(m_mainTrade,"COUNTERPARTY_PTYNBR.PTYID",data["counterParty"])
+        setValue(m_mainTrade,"TRADER_USRNBR.USERID",data["trader"])
+        setValue(m_mainTrade,"HAIRCUT_TYPE",data["haircutType"])
+        setValue(m_mainTrade,"OPTIONAL_KEY",data["optional_key"])
+        optionalKey = data["optional_key"]
+        
+    m_mainTrade.mbf_end_list()
+    
+    #collateral trade mapping
+    m_collateralTrade = amb.mbf_start_list("TRADE")
+    setValue(m_collateralTrade,"PRFNBR.PRFID",defaults.At('DefaultPortfolio').Text())
+    setValue(m_collateralTrade,"INSADDR.ISIN",data["underlyingIsin"])
+    setValue(m_collateralTrade,"ACQUIRE_DAY",data["startDate"])
+    setValue(m_collateralTrade,"ACQUIRER_PTYNBR.PTYID",data["acquirer"])
+    setValue(m_collateralTrade,"VALUE_DAY",data["startDate"])
+    setValue(m_collateralTrade,"TIME",data["time"])
+    setValue(m_collateralTrade,"QUANTITY",str(data["collateralQuantity"]))
+    setValue(m_collateralTrade,"PRICE",data["price"])
+    setValue(m_collateralTrade,"PREMIUM",str(0.0))
+    setValue(m_collateralTrade,"COUNTERPARTY_PTYNBR.PTYID",data["counterParty"])
+    setValue(m_collateralTrade,"TRADER_USRNBR.USERID",data["trader"])
+    setValue(m_collateralTrade,"HAIRCUT_TYPE",data["haircutType"])
+    setValue(m_collateralTrade,"HAIRCUT",data["haircut"])
+    setValue(m_collateralTrade,"CATEGORY","COLLATERAL")
+    setValue(m_collateralTrade,"RE_ACQUIRE_DAY",data["enddate"])
+    setValue(m_collateralTrade,"CONNECTED_TRDNBR.OPTIONAL_KEY",optionalKey)
+
+    m_collateralTrade.mbf_end_list()
+
+    basketTradeObj = create_object_from_list(m_mainTrade)
+    collatralTradeObj = create_object_from_list(m_collateralTrade)
+    
+    return basketTradeObj, collatralTradeObj
+# ------------------------------------------------------------------------------------------------------------
+# Create Basket Repo/Reverse Instrument ,trade and collateral object from incoming message 'm'. 
+def create_BasketRepoReverseTrade(m,mt):
+    
+    repo_ins_data = get_repo_ins_data(mt)
+    basket_traed ,collateral_list  = createBasketRepoTrade(repo_ins_data)
+    
+    deleteObject(m, 'TRADE')
+    
+    m_txnObj = m.mbf_start_list("TRANSACTION")
+    instrument =  acm.FInstrument.Select01("externalId1 = '%s'" % repo_ins_data["insid"],'')
+    if not instrument:
+        ins_List = create_repo_ins_from_data(repo_ins_data)
+        m_txnObj.mbf_insert_object(ins_List)
+    
+    m_txnObj.mbf_insert_object(basket_traed)
+    m_txnObj.mbf_insert_object(collateral_list)
+    
+    m_txnObj.mbf_end_list( )    
+
+    m.mbf_end_message()
+    
+# ------------------------------------------------------------------------------------------------------------
+# Create Repo/ReverseInstrument and trade from incoming message 'm'
+def create_RepoReverseTrade(m,mt):
+
+    #Extracting Trade details from AFG_AMB TRADE message
+    insdata = get_repo_ins_data(mt)
+    
+    insRefValue = getValue(mt,"insaddr.free_text_1")
+    startDate = insdata["startDate"]
+    endDate = insdata["enddate"]
+    insid = '%s/REPO/%s/%s-%s/%s' %(insdata["insCurr"], insdata["underlyingIsin"],startDate,endDate, insdata["repoRate"])
+    open_end = insdata["open_end"]
+    if open_end == "Open End":
+        insid = '%s/REPO/%s/%s/OPEN END/%s' %(insdata["insCurr"], insdata["underlyingIsin"],startDate,insdata["repoRate"])
+        
+    deleteObject(m, 'TRADE')
+    m_txnObj=m.mbf_start_list("TRANSACTION")
+    m_insObj=m_txnObj.mbf_start_list("INSTRUMENT")
+    
+    #Repo/Reverse instrument mapping
+    setValue(m_insObj,"INSID", insid)
+    setValue(m_insObj,"INSTYPE", "INS_REPO")
+    setValue(m_insObj,"CURR.INSID",insdata["insCurr"])
+    setValue(m_insObj,"QUOTE_TYPE",insdata["insQuoteType"])
+    setValue(m_insObj,"OTC","YES")
+    setValue(m_insObj,"SPOT_BANKING_DAYS_OFFSET",str(insdata["insBankingOffset"]))
+    setValue(m_insObj,"CONTR_SIZE",str(insdata["insContractSize"]))
+    setValue(m_insObj,"UND_INSADDR.ISIN",insdata["underlyingIsin"])
+    setValue(m_insObj,"EXP_DAY",insdata["enddate"])
+    setValue(m_insObj,"REF_PRICE",insdata["price"])
+    setValue(m_insObj,"REF_VALUE",insRefValue)
+    
+    #BasketRepo LEG mapping
+    m_legObj = m_insObj.mbf_start_list("LEG")
+    
+    if insdata["BenchmarkSecurity"] == "FIXED":
+        setValue(m_legObj,"TYPE","LEG_FIXED")
+        setValue(m_legObj,"PAYLEG","NO")
+        setValue(m_legObj,"DAYCOUNT_METHOD",insdata["insLegDaycountMethod"])
+        setValue(m_legObj,"CURR.INSID",insdata["insCurr"])
+        setValue(m_legObj,"NOMINAL_FACTOR","1")
+        setValue(m_legObj,"START_DAY",insdata["startDate"])
+        setValue(m_legObj,"END_DAY",insdata["enddate"])
+        setValue(m_legObj,"ROLLING_BASE_DAY",insdata["enddate"])
+        setValue(m_legObj,"FIXED_RATE",insdata["repoRate"])
+        setValue(m_legObj,"NOMINAL_AT_END","Yes")
+        
+        if open_end == "Open End":
+            setValue(m_insObj,"OPEN_END","Open End")
+            setValue(m_legObj,"ROLLING_BASE_DAY",insdata["startDate"])
+            endDateOpen = calculate_end_date_for_open_repo(insdata["insCurr"],insdata["insBankingOffset"],insdata["startDate"])
+            setValue(m_legObj,"END_DAY",str(endDateOpen))
+
+    elif insdata["BenchmarkSecurity"] == "FLOAT":
+        #Find Rate index instrument in ADS for FLOAT REPO
+        rateIndexInsid = find_rateIndex_insid_from_ads(insdata["BenchmarkSecuritySource"],insdata["BenchmarkSecurityId"])
+        
+        setValue(m_legObj,"TYPE","LEG_FLOAT")
+        setValue(m_legObj,"PAYLEG","NO")
+        setValue(m_legObj,"FLOAT_RATE.INSID",rateIndexInsid)
+        setValue(m_legObj,"DAYCOUNT_METHOD",insdata["insLegDaycountMethod"])
+        setValue(m_legObj,"CURR.INSID",insdata["insCurr"])
+        setValue(m_legObj,"NOMINAL_FACTOR","1")
+        setValue(m_legObj,"START_DAY",insdata["startDate"])
+        setValue(m_legObj,"END_DAY",insdata["enddate"])
+        setValue(m_legObj,"ROLLING_PERIOD",insdata["BenchmarkCurvePoint"])
+        setValue(m_legObj,"ROLLING_BASE_DAY",insdata["enddate"])
+        setValue(m_legObj,"SPREAD",insdata["repoRate"])
+        setValue(m_legObj,"NOMINAL_AT_END","Yes")
+        setValue(m_legObj,"RESET_TYPE","SINGLE")
+        
+        if insdata["insResetFixingValue"] :
+            setValue(m_legObj,"RESET_FIXING_VALUE",insdata["insResetFixingValue"])
+        
+        if open_end == "Open End":
+            setValue(m_insObj,"OPEN_END","Open End")
+            setValue(m_legObj,"ROLLING_BASE_DAY",insdata["startDate"])
+            endDateOpen = calculate_end_date_for_open_repo(insdata["insCurr"],insdata["insBankingOffset"],insdata["startDate"])
+            setValue(m_legObj,"END_DAY",str(endDateOpen))
+        
+    m_legObj.mbf_end_list()
+    m_insObj.mbf_end_list()
+    
+    #Main trade mapping
+    m_mainTrade=m_txnObj.mbf_start_list("TRADE")
+    setValue(m_mainTrade,"PRFNBR.PRFID",defaults.At('DefaultPortfolio').Text())
+    setValue(m_mainTrade,"INSADDR.INSID",insid)
+    setValue(m_mainTrade,"ACQUIRE_DAY",insdata["startDate"])
+    setValue(m_mainTrade,"ACQUIRER_PTYNBR.PTYID",insdata["acquirer"])
+    setValue(m_mainTrade,"CURR.INSID",insdata["insCurr"])
+    setValue(m_mainTrade,"VALUE_DAY",insdata["startDate"])
+    setValue(m_mainTrade,"TIME",insdata["time"])
+    setValue(m_mainTrade,"QUANTITY",str(insdata["tradeQuantity"]))
+    setValue(m_mainTrade,"PRICE",str(100.0))
+    setValue(m_mainTrade,"PREMIUM",str(insdata["premium"]))
+    setValue(m_mainTrade,"STATUS",insdata["status"])
+    setValue(m_mainTrade,"COUNTERPARTY_PTYNBR.PTYID",insdata["counterParty"])
+    setValue(m_mainTrade,"TRADER_USRNBR.USERID",insdata["trader"])
+    setValue(m_mainTrade,"HAIRCUT_TYPE",insdata["haircutType"])
+    setValue(m_mainTrade,"HAIRCUT",insdata["haircut"])
+    setValue(m_mainTrade,"OPTIONAL_KEY",insdata["optional_key"])
+    m_mainTrade.mbf_end_list()
+    m_txnObj.mbf_end_list()
+    m.mbf_end_message()
+# ------------------------------------------------------------------------------------------------------------
+
+def modify_VCON_object(m, insObject, tradeObject):
+    # Add instrument and trade object in TRANSACTION
+    m_tr = m.mbf_start_list("TRANSACTION")
+
+    if insObject:
+        ins = create_object_from_data(insObject.mbf_object_to_string())
+        deleteObject(m, 'INSTRUMENT')
+        m_tr.mbf_insert_object(ins)
+        
+    if tradeObject:
+        trd = create_object_from_data(tradeObject.mbf_object_to_string())
+        deleteObject(m, 'TRADE')
+        m_tr.mbf_insert_object(trd)
+    
+    m_tr.mbf_end_list()
+    m.mbf_end_message()
+    
+def ValidateAndSetCounterParty(mt):
+    #Validate Counterparty
+    partyAlias = AmbaHelpers.getValue(mt, 'counterparty_ptynbr.ptyid')
+    print(f'Setting counterparty for counterparty_ptynbr.ptyid : {partyAlias}')
+    counterpartyname = _getPartyByAlias(partyAlias, defaults.At('PartyAlias').Text())
+    if counterpartyname:
+        AmbaHelpers.setValue(mt, 'counterparty_ptynbr.ptyid', counterpartyname)
+    else:
+        print(f"Removing {counterpartyname} : Counterparty not present in FA")
+        AmbaHelpers.deleteObject(mt, 'counterparty_ptynbr.ptyid')
+
+def ValidateAndSetTraderPortfolio(mt):
+    #Get Trader
+    trader = _getTraderByPrincipal(AmbaHelpers.getValue(mt, 'trader_usrnbr.userid'), 'Bloomberg')
+    #Set Trader and Portfolio
+    try:
+        if trader:
+            AmbaHelpers.setValue(mt, 'trader_usrnbr.userid', trader.Name())
+        else:
+            AmbaHelpers.deleteObject(mt, 'trader_usrnbr.userid')
+    except TypeError:
+        print('Unable to get trader information')
+
+
+def ValidateAndSetProductTypeOnTrade(mt):
+    prodType, cat = GetProductTypeAndCat(mt)
+    if prodType:
+        setValue(mt, 'OPTKEY3_CHLNBR.ENTRY', prodType)
+    if cat:
+        setValue(mt, 'OPTKEY4_CHLNBR.ENTRY', cat)
+
+
+def SetFields(mt):
+    ValidateAndSetCounterParty(mt)
+    ValidateAndSetTraderPortfolio(mt)
+    ValidateAndSetProductTypeOnTrade(mt)
+    AmbaHelpers.setValue(mt, 'OPTKEY2_CHLNBR.ENTRY', 'BBG_VCON')
+    AmbaHelpers.setValue(mt, 'ACQUIRER_PTYNBR.PTYID', defaults.At('DefaultAcquirer').Text())
+    status = GetTradeStatus(mt)
+    AmbaHelpers.setValue(mt, 'status', status)
+
+# ------------------------------------------------------------------------------------------------------------
+def receiver_modify(m):
+    print('Entering receiver modify (VCON)')
+    print(m.mbf_object_to_string())
+    mt = m.mbf_find_object ('TRADE', 'MBFE_BEGINNING')
+    SetFields(mt)       #Cutomized
+    
+    #Flag to indicate mapping of Repo trades to Front arena module Repo or Basket repo
+    repoTradeMappingFlag = defaults.At('REPOTradeMapping').Text()
+    productType = getValue(mt, "free_text_2")
+    
+    #create repo trade when product_type is REPO
+    if productType == 'REPO':
+        if repoTradeMappingFlag == 'BASKET_REPO':
+            create_BasketRepoReverseTrade(m,mt)
+        elif repoTradeMappingFlag == 'REPO' :
+            create_RepoReverseTrade(m,mt)
+    else:
+        event = None
+        bp = None
+        external_id = AmbaHelpers.getValue(mt, 'optional_key')
+        traderAlias = AmbaHelpers.getValue(mt, 'trader_usrnbr.userid')
+        partyAlias = AmbaHelpers.getValue(mt, 'counterparty_ptynbr.ptyid')
+        status = AmbaHelpers.getValue(mt, 'status')
+        
+        trade = acm.FTrade[external_id]     
+        # ------- If trade is new, creates Business Process and a temp trade to attach it to ----------------
+        # ---------------------------------- CUSTOMIZATION START ----------------------------------------------------- 
+        if not trade:  
+            trade = _getTempTrade(mt, external_id)
+            bp = acm.BusinessProcess.InitializeProcess(trade, acm.FStateChart[STATE_CHART])
+            print('Business Process created')
+            #AmbaHelpers.setValue(mt, 'prfnbr.prfid', defaults.At('DefaultPortfolio').Text()) 
+            #AmbaHelpers.setValue(mt, 'acquirer_ptynbr.ptyid', defaults.At('DefaultAcquirer').Text())
+        else:
+            print ('Got trade ', trade.Oid())
+            # FIX : For trade update get handle of existing bp
+            bpObjs = acm.BusinessProcess.FindBySubjectAndStateChart(trade, STATE_CHART)
+            if len(bpObjs) > 0:
+                bp = bpObjs[0]
+            else:
+                bp = acm.BusinessProcess.InitializeProcess(trade, acm.FStateChart[STATE_CHART])
+                print('Business Process created')
+        
+        if AmbaHelpers.getValue(mt, 'status') == 'New or Modify':
+            event = 'Ticket Submitted'
+        
+ 
+
+        # ---------------------------------- CUSTOMIZATION END  -----------------------------------------------------    
+            
+        # ------- When FpML is used the AMBA-message is created from FpML with BBGFpML ----------------------
+        if AmbaHelpers.getValue(mt, 'FPML'):
+            fpml = AmbaHelpers.getValue(mt, 'FPML')
+            try:
+                newMsg = FBBGFpML.BBGFpMLToAmbaMessage(fpml)[0]
+            except IndexError:
+                print('No AMBA-message generated from FpML. No trade created')
+                return
+                
+            trader = AmbaHelpers.getValue(mt, 'trader_usrnbr.userid')
+            counterparty = AmbaHelpers.getValue(mt, 'counterparty_ptynbr.ptyid')
+            
+            m = create_object_from_data(str(newMsg))
+            mt = m.mbf_find_object ('TRADE', 'MBFE_BEGINNING')
+            
+            AmbaHelpers.setValue(mt, 'optional_key', external_id)
+            AmbaHelpers.setValue(mt, 'trader_usrnbr.userid', trader)
+            AmbaHelpers.setValue(mt, 'counterparty_ptynbr.ptyid', counterparty)
+            
+            #Ensures no new instrument is created when matching and unmatching
+            if trade.Instrument() != acm.FInstrument[defaults.At('DefaultDummyInstrument').Text()]:
+                AmbaHelpers.setValue(m, 'TYPE', 'UPDATE_INSTRUMENT')
+                mi = m.mbf_find_object ('INSTRUMENT', 'MBFE_BEGINNING')
+                AmbaHelpers.setValue(mi, 'INSID', trade.Instrument().Name())
+            
+        # Sometimes no FpML is sent when updating status if IRS. Quantity must be overridden since BBG sends nominal as quantity
+        if trade.Instrument().IsKindOf(acm.FSwap):
+            AmbaHelpers.setValue(mt, 'quantity', str(trade.Quantity()))
+            
+        # --------------- Handle mapping of instrument, trader and counterparty -------------------------------
+        isin = AmbaHelpers.getValue(mt, 'insaddr.isin')
+        if isin and not trade.Instrument().IsKindOf(acm.FSwap):
+            instrument = acm.FInstrument[isin]
+            if not instrument:
+                print('No instrument found with isin %s' %isin)
+                FBusinessProcessUtils.SetBusinessProcessToError(bp, 
+                        'No instrument found with ISIN: {0}\nCan\'t calculate quantity from nominal {1} since contract size is unknown'.format(isin, AmbaHelpers.getValue(mt, 'quantity')))
+                event = 'Error'
+            else:    # Bloomberg sends nominal instead of quantity
+                nominal = AmbaHelpers.getValue(mt, 'quantity')
+                AmbaHelpers.setValue(mt, 'quantity', str(float(nominal) / instrument.ContractSize()))
+        
+        '''
+        try:
+            trader = _getTraderByPrincipal(traderAlias, 'Bloomberg').Name()
+            AmbaHelpers.setValue(mt, 'trader_usrnbr.userid', trader)
+        except TypeError:
+            print('No trader found with id %s' %traderAlias)
+            FBusinessProcessUtils.SetBusinessProcessToError(bp, 'No trader found with Bloomberg Principal: %s' %traderAlias)
+            event = 'Error'
+        
+        try:
+            counterparty = _getPartyByAlias(partyAlias, defaults.At('PartyAlias').Text())
+            AmbaHelpers.setValue(mt, 'counterparty_ptynbr.ptyid', counterparty)
+        except TypeError:
+            print('No party found with alias %s.' %partyAlias)
+            FBusinessProcessUtils.SetBusinessProcessToError(bp, 'No counterparty found with Bloomberg Firm Number: %s' %partyAlias)
+            event = 'Error'
+        '''
+        
+        # -------------- Handle transitions of Business Process -----------------------------
+        if not event:
+            if status == 'New or Modify':
+                event = 'Amend'
+            else:
+                event = status 
+        try:
+            bp = acm.BusinessProcess.FindBySubjectAndStateChart(trade, STATE_CHART)[0]
+            if bp.CurrentStep().IsInErrorState():
+                bp.HandleEvent('Revert')
+                bp.Commit()
+            try:
+                if not event == 'Amend' and not bp.CurrentStep().IsInErrorState():
+                    bp.HandleEvent(event)
+                bp.Commit()
+            except RuntimeError:
+                print('Illegal event "%s" for state "%s"' %(bp.CurrentStep().State().Name(), event))
+        except IndexError:
+            print('No Business Process Found')
+        
+        '''
+        # ------------- Set Trade Status based on event and update defaults -----------------------
+        if not trade.Acquirer():
+            AmbaHelpers.setValue(mt, 'acquirer_ptynbr.ptyid', defaults.At('DefaultAcquirer').Text())
+        if not trade.Portfolio():
+            AmbaHelpers.setValue(mt, 'prfnbr.prfid', defaults.At('DefaultPortfolio').Text())
+        
+        #AmbaHelpers.setValue(mt, 'status', statuses.At(event).Text())
+        '''
+    
+        insObject = m.mbf_find_object('INSTRUMENT', 'MBFE_BEGINNING')
+        tradeObject = m.mbf_find_object('TRADE', 'MBFE_BEGINNING')
+        modify_VCON_object(m, insObject, tradeObject)
+        
+    return m
+
+
+
+
+...
+
+  VCONStateChart
+
+import acm
+
+def CreateStateChart():
+    limit = 'Single'
+    layout = 'Unmatched,268,215;Rejected,504,218;Matched,268,77;Cancelled,512,77;Affirmed,269,52;Ready,47,148;Awaiting Affirmation,269,209;'
+    definition = {
+        'Ready':            {'Ticket Submitted':'Unmatched',
+                            'Trade Affirmed':'Matched'},
+        'Matched':          {'Unmatch':'Unmatched',
+                            'Cancel':'Cancelled'},
+        'Unmatched':        {'Trade Affirmed':'Matched',
+                            'Cancel':'Cancelled',
+                            'Reject':'Rejected'},
+        'Cancelled':        {},
+        'Rejected':         {}
+        }
+        
+    import FStateChartUtils
+    FStateChartUtils.CreateStateChart('VCON', definition, layout, limit)
+
+...
+
+}
+

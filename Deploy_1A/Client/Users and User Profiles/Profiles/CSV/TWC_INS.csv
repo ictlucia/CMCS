@@ -1,0 +1,12 @@
+USERPROFILE,,PROFILECOMPONENT,,,,/PROFILECOMPONENT,/USERPROFILE
+DESCRIPTION,PROFID,ALLOW_CREATE,ALLOW_WRITE,COMPNBR.COMPNAME,COMPNBR.TYPE,,
+TWC Instrument,TWC_INS,,,Commodity,Application,,
+,,,,FX Cash,Application,,
+,,,,FX Option,Application,,
+,,Yes,Yes,Commodity,DBObject,,
+,,Yes,Yes,DealPackage,DBObject,,
+,,Yes,Yes,Fx Forward Rate,DBObject,,
+,,Yes,Yes,Fx Rate,DBObject,,
+,,Yes,Yes,FxSwap,DBObject,,
+,,,,Curr Swap,Application,,
+,,,,Base Yield Curve Def,Application,,

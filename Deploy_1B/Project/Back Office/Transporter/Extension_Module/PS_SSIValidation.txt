@@ -1,0 +1,68 @@
+#
+# Front Arena exported extension module.
+# source          ""
+# timestamp (utc) "2024-01-22 07:21:03.5"
+# ***** DO NOT EDIT! *****
+#
+name        "PS_SSIValidation"
+description ""
+
+groups {
+}
+
+decls[FPythonCode] {
+}
+
+clx FObject [FPythonCode] {
+  FValidationSecuritySettlementInstruction
+"""----------------------------------------------------------------------------
+  FValidationSecuritySettlementInstruction : Validation script to not to allow user delete SSI    
+----------------------------------------------------------------------------"""
+
+import acm
+
+def GetOperationComponentType():
+    """ Get Operation component type"""
+    componentTypes = acm.FEnumeration['enum(ComponentType)']
+    return componentTypes.Enumeration('Operation')
+
+def UserHasOperationPermission(user, operation):
+    """ Returns True if user has permission else False"""
+    return user.IsAllowed(operation, GetOperationComponentType())
+
+
+def OperationExists(operation):
+    """ Returns true if given operation exists else False"""
+    is_operation_exist = True
+    compType = 'Operation'
+    queryString = 'name=\'%s\' and type=\'%s\'' % (operation, compType)
+    op = acm.FComponent.Select01(queryString, '')
+    if op == None:
+        is_operation_exist = False
+    return is_operation_exist
+    
+def HasUserDeleteRights():
+    """ Check if the calling user has the permission to perform operation"""
+    has_right = False
+    operationName = 'DeleteSSI'
+    if OperationExists(operationName):
+        if UserHasOperationPermission(acm.User(), operationName):
+            has_right = True
+    return has_right
+
+def validate_transaction(transaction_list, *rest):   
+    """ Validate the delete operation on SSI"""
+    for (e, op) in transaction_list:
+        if op in ("Update") and e.record_type == "Party":
+            if len(e.original().settle_instructions()) > len(e.settle_instructions()):
+                if not HasUserDeleteRights():
+                    raise UserWarning('FValidationSecuritySettlementInstruction : Deleting Settlement Instruction is not allowed. Try disabling it instead.')
+    
+    return transaction_list
+
+
+
+...
+
+}
+

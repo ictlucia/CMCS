@@ -1,0 +1,4 @@
+ADDITIONALINFOSPEC,,,,,,/ADDITIONALINFOSPEC
+SUBREC_MASK2,DESCRIPTION,DATA_TYPE.GRP,DATA_TYPE.TYPE,FIELD_NAME,REC_TYPE,
+32768,Repo Adjusted Market Price,Standard,Double,Repo Adj MktPrice,Trade,
+32768,Repo Unadjusted Market Price,Standard,Double,Repo UnAdj MktPrice,Trade,

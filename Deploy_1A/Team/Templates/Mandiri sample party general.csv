@@ -1,0 +1,11 @@
+PARTY,,,,,,,,,,,,,,,/PARTY
+FULLNAME,NOT_TRADING,CORRESPONDENT_BANK,NOTIFY_RECEIPT,TIME_ZONE,INTERNAL_CUTOFF,SWIFT,BIS_STATUS,EXTERNAL_CUTOFF,TYPE,PTYID,ADDRESS,CITY,RISK_COUNTRY_CHLNBR.ENTRY,RISK_COUNTRY_CHLNBR.LIST,
+Dummy Acquirer 1,,,,Asia/Jakarta,,ACQIIDJAXXX,OECD Bank,,Intern Dept,Dummy_Acquirer1,,,,Country of Risk,
+Dummy Acquirer 2,,,,,,,OECD Bank,,Intern Dept,Dummy_Acquirer2,,,,Country of Risk,
+Dummy Client 1,,,,,,CLNIIDJAXXX,OECD Bank,,Client,Dummy_Client1,,,,Country of Risk,
+Dummy Correspondent Bank 1,,Yes,Yes,Asia/Jakarta,100,CORIIDJAXXX,OECD Bank,1800,Counterparty,Dummy_CorrBank1,TestAddress,TestCity,,Country of Risk,
+Dummy Correspondent Bank 2,,Yes,,Asia/Jakarta,100,CORWIDJAXXX,OECD Bank,1800,Counterparty,Dummy_CorrBank2,TestAddress,TestCity,,Country of Risk,
+Dummy Correspondent Bank 3,,Yes,Yes,Asia/Jakarta,100,CORHIDJAXXX,OECD Bank,1800,Counterparty,Dummy_CorrBank3,TestAddress,TestCity,,Country of Risk,
+Dummy Correspondent Bank 4,Yes,Yes,,,,,OECD Bank,,Counterparty,Dummy_CorrBank4,TestAddress,TestCity,,Country of Risk,
+Dummy Counterparty 1,,,,Asia/Jakarta,,CPTIIDJAXXX,OECD Bank,,Counterparty,Dummy_Counterparty1,,,,Country of Risk,
+Dummy Counterparty 2,,,,,,CPTWIDJAXXX,OECD Bank,,Counterparty,Dummy_Counterparty2,,,US,Country of Risk,

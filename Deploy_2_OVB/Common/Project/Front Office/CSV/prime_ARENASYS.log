@@ -1,0 +1,9 @@
+﻿231103 125421 I 3390 [last log message repeated 7 times]
+231103 125421 I 3390 CSV Upload is waiting for input (click to activate).
+231103 125421 W 3390 UxControlApi Calling ctrl_remove_callback with null MGH_Control
+231103 125423 I 3390 [last log message repeated 1 times]
+231103 125423 I 3390 Closing application 'FX Option'
+231103 153444 I EAA0 CSV Upload is waiting for input (click to activate).
+231103 153444 W EAA0 UxControlApi Calling ctrl_remove_callback with null MGH_Control
+231106 092309 I 54DC FExtensionAttribute - Extension Editor is waiting for input (click to activate).
+231106 092309 W 54DC UxControlApi Calling ctrl_remove_callback with null MGH_Control

@@ -1,0 +1,2372 @@
+#
+# Front Arena exported extension module.
+# source          ""
+# timestamp (utc) "2024-09-25 11:38:35"
+# ***** DO NOT EDIT! *****
+#
+name        "PS_LimitsUtils"
+description "$Id$"
+
+groups {
+}
+
+decls[FParameters] {
+}
+
+clx FObject [FParameters] {
+  ComplianceRulesNotificationSettings =
+  AlertTemplate="%THRESHOLD_TYPE%" alert %ALERT_OID% for rule "%RULE%" is in state %ALERT_STATE% for %ALERT_SUBJECT_TYPE% "%ALERT_SUBJECT%". Condition: is %ALERT_INFORMATION% %THRESHOLD_COMPARISON% %THRESHOLD_VALUE%.
+  EmailPeriodicity=1
+  SenderAddress=ntcs_uat@devmandiri.co.id
+  SMTPPassword=
+  SMTPPort=25
+  SMTPServer=
+  SMTPTimeout=60
+  SMTPTLS=False
+  SMTPUsername=
+  Subject=Compliance Rule Alert Message
+
+
+}
+
+decls[FPythonCode] {
+}
+
+clx FObject [FPythonCode] {
+  ComplianceCheckPreloader
+""" Compiled: 2024-06-26 09:35:28 """
+
+"""--------------------------------------------------------------------------
+MODULE
+    ComplianceCheckPreloader
+
+    (c) Copyright 2018,2022 FIS Group/Fidelity Information Services Front Arena AB. All rights reserved.
+
+DESCRIPTION
+    
+    Script the preloads the compliance rules to be checked in PACE so that the results are available when the ATS starts.
+-----------------------------------------------------------------------------"""
+
+import acm, ael
+from FLogger import FLogger
+import PS_PriceCopyPerform
+import os
+import ComplianceCheckServerBase
+from FLogger import FLogger
+
+logFileName = 'PreloadRules_%s.log' % acm.Time.DateToday().replace('-', '')
+
+log = FLogger.GetLogger('RulePreloader')
+logLevels = [ FLogger.INFO, FLogger.ERROR, FLogger.WARNING, FLogger.DEBUG ]
+
+
+class RulePreloader(ComplianceCheckServerBase.RuleChecker):
+    def start(self):
+        self.logger.info('Initiating calculations...')
+        try:
+            self.InitializeRules()
+        except Exception as e:
+            self.logger.info('Calculation initalization failed! Reason: {0}'.format(str(e)))
+    
+    def InitializeRules(self):
+        preloadRules = self._preloadQuery.Select()
+        self.logger.info('Identified {0} rules for preload'.format(preloadRules.Size()))
+        
+        appliedRules = [ar for ar in preloadRules if ar.Target()]
+        self.logger.info(f'appliedRules: {len(appliedRules)}')
+        
+        self.preloadComplete = len(appliedRules) == 0
+        asyncTask = acm.AsyncTask.WhenAll([ar.Check() for ar in appliedRules])
+        
+        asyncTask.ContinueWith(self._HandlePreloadComplete)\
+    
+    def _HandlePreloadComplete(self, asyncTask):
+        self.logger.info('Preloading finished')
+        
+        tasks = asyncTask.Result()
+        
+        self.logger.info('Initializing ATS rule checking...')
+
+        #self._tradeSubscription = self._bindFunction(self.trade_table_cb)
+        #ael.Trade.subscribe(self._tradeSubscription, None)
+        
+        self.logger.info('Calculation initialization finished')
+        self.logger.info('Initializing ATS done.')
+        self.preloadComplete = True
+        
+
+def LogLevelNameToNumber(level):
+    if level == FLogger.INFO:    return 1
+    if level == FLogger.DEBUG:   return 2
+    if level == FLogger.WARNING: return 3
+    if level == FLogger.ERROR:   return 4   
+    return 1
+
+def PickFolder():
+    res = acm.FFileSelection()
+    res.PickDirectory(True)
+    return res
+
+def GetRuleInsertItemQueries():
+    q = acm.CreateFASQLQuery(acm.FStoredASQLQuery, 'AND')
+    q.AddOpNode('AND').AddAttrNode('Name', 'RE_LIKE_NOCASE', None)
+    q.AddOpNode('AND').AddAttrNode('SubType', 'RE_LIKE_NOCASE', 'FAppliedRule')
+    return [qf.Name() for qf in q.Select()]
+
+# ## Tool Tip
+tt_PreLoadRuleQueries = 'Select the insert item query containing rules to preload.'
+tt_LogLevel = 'Select the verbosity of logging output by the compliance engine task.'
+ttLogFolder     = "Select where to store the log file"
+ttLogToConsole  = "Whether logging should be done in the Log Console or not."
+
+
+ael_variables = [
+        # [VariableName,
+        #       DisplayName,
+        #       Type, CandidateValues, Default,
+        #       Mandatory, Multiple, Description, InputHook, Enabled]
+        ['PreloadRuleQuery', 'Preload Rule Query_General', 'FStoredASQLQuery', GetRuleInsertItemQueries(), None, True, False, tt_PreLoadRuleQueries, None, True],
+        ['logToConsole', 'Log to console_Logging', 'int', [1, 0], 1, 1, 0, ttLogToConsole],
+        ['logfolder', 'Log folder_Logging', PickFolder(), None, PickFolder(), 0, 1, ttLogFolder, 0, None],
+        ['logLevel', 'Log level_Logging', 'string', logLevels, FLogger.INFO, 2, 0]
+    ]
+
+
+def ael_main(params):
+    logger = FLogger(__name__)
+    
+    eventsToWatch = ['insert', 'update']
+    secondsForPerformanceWarning = 2
+    ruleQuery = None
+    #preloadQuery = acm.FStoredASQLQuery['Transaction-PreDeal'].Query()
+    preloadQuery = params['PreloadRuleQuery'].Query()
+    tradeQuery = acm.Filter.SimpleOrQuery('FTrade',['Status'],['EQUAL'],['Reserved'])
+
+    preloader = RulePreloader(tradeQuery,
+                           ruleQuery,
+                           preloadQuery,
+                           secondsForPerformanceWarning,
+                           eventsToWatch, logger)
+                           
+    #preloader.InitializeRules()
+    preloader.start()
+
+...
+
+  FAlertGenerator
+""" Compiled: 2024-08-20 12:33:17 """
+
+#__src_file__ = "extensions/ComplianceRules/etc/FAlertGenerator.py"
+"""--------------------------------------------------------------------------
+MODULE
+    FAlertGenerator
+
+    (c) Copyright 2018,2022 FIS Group/Fidelity Information Services Front Arena AB. All rights reserved.
+
+DESCRIPTION
+        
+-----------------------------------------------------------------------------"""
+
+"""
+2024 09 12 [FIS Richard]: includes fix for TCSTCSPBDT-438673, based on TS3460581 AR28005 PRIME110308
+"""
+
+import acm
+
+from FComplianceRulesUtils import GetInterface, ObjectName, IsIterable, IsString, logger
+
+from collections import defaultdict
+
+
+def Create(rule, params=None):
+    interface = GetInterface(rule.ComplianceRule())
+    if hasattr(interface, 'CreateAlertGenerator'):
+        return interface().CreateAlertGenerator(params)
+    return DefaultGenerator(params)
+    
+def GetOrCreateAlert(result):
+    attrs = {'CreateWhenCompliant': lambda x: True}
+    params = type('Params', (object,), attrs)()
+    g = Create(result.AppliedRule(), params)
+    return g.AlertFromResult(result)
+    
+
+class GeneratorParams(object):
+
+    def __init__(self, params=None):
+        self._params = params
+        
+    def CreateWhenCompliant(self):
+        try:
+            return self._params.CreateWhenCompliant()
+        except AttributeError:
+            return False
+
+    def CreateWhenError(self):
+        try:
+            return self._params.CreateWhenError()
+        except AttributeError:
+            return True
+        
+    def RecedeNotFound(self):
+        try:
+            return self._params.RecedeNotFound()
+        except AttributeError:
+            return True
+            
+    def SaveAlerts(self):
+        try:
+            return self._params.SaveAlerts()
+        except AttributeError:
+            return False
+            
+    def HandleBreaches(self):
+        try:
+            return self._params.HandleBreaches()
+        except AttributeError:
+            return False
+        
+        
+class Interface(object):
+
+    def ToSubject(self, entity):
+        raise NotImplementedError
+        
+    def AlertsFromResults(self, results):
+        raise NotImplementedError
+        
+    def AlertFromResult(self, result):
+        raise NotImplementedError
+    
+    
+class Generator(Interface):
+
+    STATES = {
+        'Unknown': 'Receded',
+        'Compliant': 'Receded',
+        'Breached': 'Active',
+        'Error': 'Error'
+        }
+    
+    def __init__(self, params=None):
+        self._params = GeneratorParams(params)
+    
+    def AlertsFromResults(self, results):
+        alerts = AlertCollection(results)
+        self._GetOrCreateAlerts(alerts)
+        if self._params.HandleBreaches():
+            self._HandleBreaches(alerts)
+        if self._params.RecedeNotFound():
+            self._RecedeNotFound(alerts)
+        if self._params.SaveAlerts():
+            self.CommitAlerts(alerts)
+            return alerts.Originators()
+        return alerts
+        
+    def HistoryFromResults(self, results):
+        histCollection = HistoryCollection(results)
+        self._GetOrCreateResultsHist(histCollection)
+        if self._params.SaveAlerts():
+            self.CommitAlerts(histCollection)
+        return histCollection.Originators()
+
+    def AlertFromResult(self, result):
+        if not self._HasEntity(result):
+            return None
+        alert, breach = self._GetOrCreateAlert(result), None
+        if alert and self._params.HandleBreaches():
+            self._HandleBreach(alert, result)
+        if alert and self._params.SaveAlerts():
+            self.CommitAlerts([alert])
+            alert = alert.Originator()
+        return alert
+        
+    def HistoryFromResult(self, result):
+        if not (result.ThresholdValue().Threshold().IsParent() and 
+                self._HasEntity(result)):
+            return None
+            
+        resultHist = self._GetOrCreateResultHist(result)
+        self._HandleValuesHist(resultHist, result)
+        if self._params.SaveAlerts():
+            self.CommitAlerts([resultHist])
+        return resultHist.Originator()
+        
+    def AlertsAndValuesFromResults(self, results):
+        alerts = AlertCollection(results)
+        self._GetOrCreateAlerts(alerts)
+        if self._params.HandleBreaches():
+            self._HandleBreaches(alerts)
+        if self._params.RecedeNotFound():
+            self._RecedeNotFound(alerts)
+        if self._params.SaveAlerts():
+            self.CommitAlerts(alerts)
+            
+        return [(alert.Originator(), result) for
+                alert, result in alerts.Values() if alert and result]
+    
+    def AlertsAndValuesFromResultsPreDeal(self, results):
+        alertsAndResults = []
+        for result in results:
+            alert = self._CreateAlert(result)
+            tup = (alert, result)
+            alertsAndResults.append(tup)
+        return alertsAndResults
+        
+    @classmethod
+    def CommitAlerts(cls, alerts):
+        cls._CommitSubjects(alerts)
+        cls._CommitAlerts(alerts)
+        
+    def Info(self, result):
+        return result.Info() or result.RuleValue().Info()
+
+    @staticmethod
+    def _ValidateSubject(alert):
+        subject = alert.Subject()
+        if subject is None or subject.IsDeleted():
+            logger.warn('{} {} should be deleted ("{}" targeting "{}"). The subject has been deleted.'
+                        ''.format(alert.ClassName(),
+                                  alert.Originator().Oid(),
+                                  alert.ThresholdValue().AppliedRule().ComplianceRule().Name(), 
+                                  alert.ThresholdValue().AppliedRule().TargetName()))
+            return False
+        return True
+
+    @classmethod
+    def _CommitSubjects(cls, alerts):
+        for alert in alerts:
+            if cls._ValidateSubject(alert):
+                subject = alert.Subject()
+                if subject.Originator().IsInfant():
+                    try:
+                        subject.Commit()
+                    except RuntimeError as err:
+                        logger.error('Failed to commit subject(s): {}'.format(err))
+            
+    @classmethod
+    def _CommitAlerts(cls, alerts):
+        for alert in alerts:
+            if cls._ValidateSubject(alert):
+                subject = alert.Subject().Originator()
+                alert.Subject(subject)
+                try:
+                    alert.Commit()
+                    logger.debug('Saved {} {} for rule {} and target {}.'
+                                 ''.format(alert.ClassName(),
+                                           alert.Originator().Oid(),
+                                           alert.ThresholdValue().AppliedRule().ComplianceRule().Name(), 
+                                           alert.ThresholdValue().AppliedRule().TargetName()))
+                except RuntimeError as err:
+                    logger.error('Failed to commit {} for rule {} and target {}. Reason: {}.'
+                                 ''.format(alert.ClassName(),
+                                           alert.ThresholdValue().AppliedRule().ComplianceRule().Name(), 
+                                           alert.ThresholdValue().AppliedRule().TargetName(),
+                                           err))
+
+    @classmethod
+    def _UpdateWatermark(cls, breach, result):
+        rv = result.RuleValue().Value()
+        if cls._IsMoreSignificant(rv, breach):
+            breach.WatermarkValue(rv)                       
+
+    @staticmethod
+    def _HasEntity(result):
+        entity = result.RuleValue().Entity()
+        return entity and not entity.IsDeleted()
+
+    @staticmethod
+    def _IsMoreSignificant(ruleValue, breach):
+        cmpType = breach.Alert().Threshold().ComparisonType()
+        watermark = breach.WatermarkValue() or 0
+        # TODO: Replace with object compare.
+        rv = float(ruleValue)
+        wv = float(watermark)
+        if cmpType in ('Less or Equal', 'Less'):
+            return rv < wv
+        return rv > wv
+        
+    @classmethod
+    def _OpenBreach(cls, alert, anObject=None):
+        breach = alert.NewBreach()
+        breach.Start(acm.Time.TimeNow())
+        if not cls._IsNull(anObject):
+            comment = f'{cls._GetComment(anObject)} potentially caused this breach'
+            alert.Breaches().Add(breach)
+            alert.AddToDiary([comment], breach)
+        return breach
+        
+    @classmethod
+    def _Close(cls, breach, anObject=None):
+        breach.End(acm.Time.TimeNow())
+        if not cls._IsNull(anObject):
+            comment = f'{cls._GetComment(anObject)} potentially ended this breach'
+            breach.Alert().AddToDiary([comment], breach)
+            
+    @classmethod
+    def _GetComment(cls, anObject):
+        if IsString(anObject): return anObject
+        return f'{ObjectName(anObject)}: {cls._GetStringKeys(anObject)}'
+
+    @staticmethod
+    def _GetStringKeys(anObject):
+        if IsIterable(anObject):
+            asSet = {o.Originator() for o in anObject}
+            return ', '.join(o.StringKey() for o in asSet)
+        return anObject.Originator().StringKey()
+        
+    @staticmethod
+    def _IsNull(anObject):
+        anObject = anObject[0] if hasattr(anObject, '__iter__') and len(anObject) else anObject
+        return anObject is None
+
+    @staticmethod            
+    def _GetBreach(alert):
+        if alert.Breaches():
+            breach = alert.Breaches().Last()
+            return breach
+            
+    @staticmethod
+    def _IsClosed(breach):
+        return breach.End() > breach.Start()
+        
+    @staticmethod
+    def _StorageImage(alert):
+        if (not alert.IsStorageImage() and 
+            not alert.IsInfant()):
+            return alert.StorageImage()
+        return alert
+        
+    def _GetOrCreateAlerts(self, alerts):
+        for result in alerts.Results():
+            if self._HasEntity(result):
+                self._GetOrCreateAlert(result, alerts)
+                
+    def _GetOrCreateResultsHist(self, histCollection):
+        for result in histCollection.Results():
+            if (result.ThresholdValue().Threshold().IsParent() and 
+                self._HasEntity(result)):
+                hist = self._GetOrCreateResultHist(result, histCollection)
+                self._HandleValuesHist(hist, result)
+                    
+    def _HandleBreaches(self, alerts):
+        for alert, result in alerts.Values():
+            self._HandleBreach(alert, result)
+
+    def _RecedeNotFound(self, alerts):
+        for alert in alerts.NotFound():
+            if alert.State() != 'Inactive':
+                receded = self._RecedeAlert(alert)
+                if self._params.HandleBreaches():
+                    self._HandleBreach(receded)
+                alerts.Add(receded)
+            
+    def _CreateRequired(self, result):
+        if result.State() == 'Error':
+            return self._params.CreateWhenError()
+        if result.State() == 'Compliant':
+            return self._params.CreateWhenCompliant()
+        return True
+
+    def _CreateAlert(self, result):
+        # FThresholdUtilization
+        alert = acm.FAlert()
+        alert.RegisterInStorage()
+        alert.ThresholdValue(result.ThresholdValue())
+        alert.State(self.STATES[result.State()])
+        subject = self.ToSubject(result.RuleValue().Entity())
+        alert.Subject(subject)
+        return alert
+        
+    def _CreateResultHist(self, result):
+        resultHist = acm.FRuleResultHistory()
+        resultHist.RegisterInStorage()
+        resultHist.ThresholdValue(result.ThresholdValue())
+        subject = self.ToSubject(result.RuleValue().Entity())
+        resultHist.Subject(subject)
+        return resultHist
+
+    def _UpdateRequired(self, alert, result):
+        if alert.State() != 'Inactive':
+            state = self.STATES[result.State()] 
+            resultTV = result.ThresholdValue()
+            alertTV = alert.ThresholdValue()
+            if (resultTV.IsGreaterThan(alertTV) and
+                state == 'Active'):
+                return True
+            if resultTV == alertTV:
+                return True
+            if alert.State() != 'Active':
+                return True
+        return False
+
+    def _UpdateAlert(self, alert, result):
+        image = self._StorageImage(alert)
+        state = self.STATES[result.State()]
+        if image.State() != state:
+            image.State(state)
+            image.Acknowledged(False)
+        resultTV = result.ThresholdValue()
+        if image.ThresholdValue() != resultTV:
+            image.ThresholdValue(resultTV)
+            image.Acknowledged(False)
+        return image
+
+    def _GetOrCreateAlert(self, result, alerts=None):
+        alerts = AlertCollection() if alerts is None else alerts
+        alert = alerts.At(result, self.ToSubject)
+        if alert and self._UpdateRequired(alert, result):
+            alert = self._UpdateAlert(alert, result)
+        elif not alert and self._CreateRequired(result):
+            alert = self._CreateAlert(result)
+        if alert: alert.CheckedValue(result.RuleValue().Value())
+        return alerts.Add(alert, result)
+        
+    def _GetOrCreateResultHist(self, result, histCollection=None):
+        histCollection = HistoryCollection() if histCollection is None else histCollection
+        resultHist = histCollection.At(result, self.ToSubject) or self._CreateResultHist(result)
+        resultHist = self._StorageImage(resultHist)
+        return histCollection.Add(resultHist, result)
+
+    def _RecedeAlert(self, alert):
+        image = self._StorageImage(alert)
+        image.State('Receded')
+        return image
+        
+    def _HandleBreach(self, alert, result=None):
+        breach = None
+        if (alert.State() == 'Active' and
+            alert.ThresholdValue().Threshold().IsParent()):
+            breach = self._GetBreach(alert)
+            if not breach or self._IsClosed(breach):
+                breach = self._OpenBreach(alert, self._GetObject(result))
+            if result is not None:
+                self._UpdateWatermark(breach, result)
+        elif alert.State() in ('Active', 'Receded'):
+            breach = self._GetBreach(alert)
+            if breach and not self._IsClosed(breach):
+                self._Close(breach, self._GetObject(result))
+        return breach
+        
+    def _HandleValuesHist(self, resultHist, result):
+        valueHist = resultHist.NewValue()
+        valueHist.WatermarkValue(result.RuleValue().Value())
+        valueHist.ThresholdValue(result.ThresholdValue().ValueAdjusted())
+        timeNow = acm.Time.TimeNow()
+        valueHist.Start(timeNow)
+        valueHist.End(timeNow)
+        
+    @staticmethod
+    def _GetObject(result):
+        return result.RuleValue().Object() if result else None
+
+
+class DefaultGenerator(Generator):
+
+    def ToSubject(self, entity):
+        return entity
+        
+        
+class Collection:
+
+    def __init__(self, elementType, results=None):
+        self._elemType = elementType
+        self._results = results
+        self._originals = None
+        self._rest = {}
+        self._Init()
+        
+    def Add(self, alert, result=None):
+        if not alert: return
+        pThreshold = alert.ThresholdValue().Threshold().ParentOrSelf()
+        key = (alert.Subject(), pThreshold)
+        self._rest[key] = (alert, result)
+        return alert
+            
+    def At(self, result, toSubject=None):
+        alert = None
+        entity = result.RuleValue().Entity()
+        # First search in rest
+        threshold = result.Threshold()
+        subject = entity if toSubject is None else toSubject(entity)
+        key = (subject, threshold.ParentOrSelf())
+        default = (None, None)
+        alert, _ = self._rest.get(key, default)
+        if alert is None:
+            # If not found search in originals
+            # otherwise read from db
+            if self._originals is not None:
+                alert = self._originals.get(key)
+            else:
+                group = self._GetAlertGroup(result, subject)
+                alert = self._Select01(group)
+        return alert
+        
+    def Results(self):
+        return self._results
+        
+    def __iter__(self):
+        alerts = (a for a, r in self._rest.values())
+        return iter(alerts)
+        
+    def Values(self):
+        return self._rest.values()
+
+    def Originators(self):
+        return (a.Originator() for a in self)
+        
+    def NotFound(self):
+        return set(self._originals.values()) - set(self.Originators())
+        
+    def _Init(self):
+        if self._results is not None: 
+            self._originals = {}
+            tvs = self._GetThresholdValues(self._results)
+            alerts = (a for tv in tvs for a in self._GetAlerts(tv))
+            for alert in alerts:
+                pThreshold = alert.ThresholdValue().Threshold().ParentOrSelf()
+                key = (alert.Subject(), pThreshold)
+                if key in self._originals: 
+                    logger.warn(f'More than one alert ({alert.Oid()}) per threshold group!')
+                self._originals[key] = alert
+                
+    def _GetAlerts(self, tv):
+        return tv.Alerts() if self._elemType is acm.FAlert else tv.ResultsHistory()
+                
+    @staticmethod
+    def _GetThresholdValues(results):
+        if results.IsEmpty():
+            return results.AppliedRule().ThresholdValues()
+        return {r.ThresholdValue() for r in results}
+
+    def _GetAlertGroup(self, result, subject):
+        q = acm.CreateFASQLQuery(self._elemType, 'AND')
+        q.AddAttrNodeEnum('ThresholdValue.Threshold.Oid', [t.Oid() for t in result.Threshold().Group()])
+        q.AddAttrNode('ThresholdValue.AppliedRule.Oid', 'EQUAL', result.AppliedRule().Oid())
+        q.AddAttrNode('SubjectId', 'EQUAL', subject.Oid())
+        q.AddAttrNode('SubjectType', 'EQUAL', subject.RecordType())
+        return q.Select()
+
+    @staticmethod
+    def _Select01(group):
+        size = group.Size()
+        if size == 0:
+            return None
+        if size == 1:
+            return group.At(0)
+        if size > 1:
+            raise Exception('More than one alert per threshold group!')
+            
+            
+class AlertCollection(Collection):
+
+    def __init__(self, results=None):
+        super().__init__(acm.FAlert, results)
+        
+
+class HistoryCollection(Collection):
+
+    def __init__(self, results=None):
+        super().__init__(acm.FRuleResultHistory, results)
+
+...
+
+  FAppliedRuleAttributeDefinition
+""" Compiled: 2022-08-20 22:20:51 """
+
+#__src_file__ = "extensions/ComplianceRules/etc/FAppliedRuleAttributeDefinition.py"
+"""--------------------------------------------------------------------------
+MODULE
+    FAppliedRuleAttributeDefinition
+
+    (c) Copyright 2018 FIS FRONT ARENA. All rights reserved.
+
+DESCRIPTION
+    
+-----------------------------------------------------------------------------"""
+import acm
+from DealPackageDevKit import (CompositeAttributeDefinition, 
+                               Action, 
+                               Object, 
+                               UXDialogsWrapper, 
+                               ContextMenu, 
+                               ContextMenuCommand, 
+                               ReturnDomainDecorator)
+
+
+class AppliedRuleAttributeDefinition(CompositeAttributeDefinition):
+    
+    def OnInit(self, rule):
+        self._rule = rule
+        self._appliedRules = None
+        self.selectedAppliedRule = None
+    
+    def Attributes(self):
+        return {
+                'appliedRuleslist'    : Object( label='',
+                                                objMapping='Rule.AppliedRules',
+                                                elementDomain='FAppliedRule',
+                                                columns=self.UniqueCallback('@ListColumns'),
+                                                onSelectionChanged=self.UniqueCallback('@SetSelectedAppliedRule'),
+                                                onRightClick=ContextMenu(self.UniqueCallback('@EnableAppliedRuleCB'),
+                                                                         self.UniqueCallback('@RemoveAppliedRuleCB'),
+                                                                         self.UniqueCallback('@AddInfoRuleCB'),
+                                                                         )),
+                'dialogButton'        : Action( label='Apply to...',
+                                                action=self.UniqueCallback("@ApplySelectedItems"),
+                                                dialog=self.UniqueCallback("@ShowSelectQueryFolderDialog"),
+                                                enabled=self.UniqueCallback('@HasPersistedComplianceRule')),
+                'addInfoAppliedRule'  : Action( dialog=self.UniqueCallback('@OpenAddInfoAppliedRule'),
+                                                enabled=self.UniqueCallback('@HasSelectedAppliedRule')),
+                'removeAppliedRule'   : Action( action=self.UniqueCallback('@DoRemoveAppliedRule'),
+                                                enabled=self.UniqueCallback('@HasSelectedAppliedRule')),
+                'enableAppliedRule'   : Action( action=self.UniqueCallback('@EnableAppliedRule'),
+                                                enabled=self.UniqueCallback('@HasSelectedAppliedRule')),                
+                'selectedAppliedRule' : Object( domain='FAppliedRule'),
+            }
+    
+    def Rule(self):
+        return self.GetMethod(self._rule)()
+        
+    def Original(self):
+        return self.Rule().DecoratedObject().Originator()
+        
+    # ************************* Attribute Callbacks *************************
+    def ApplySelectedItems(self, *args):
+        items = args[1]
+        if items != None:
+            for item in items:
+                if item not in self.GetTargets():
+                    self.CreateAppliedRule(item)
+    
+    def HasPersistedComplianceRule(self, *args):
+        return False if self.Rule().DecoratedObject().Originator().IsInfant() else True
+    
+    def ListColumns(self, *args):
+        return [{'methodChain': 'Target', 'label': 'Target'},
+                {'methodChain': 'Target.RecordType', 'label': 'Target type'},
+                {'methodChain': 'ActiveAsString', 'label': 'Active/Inactive'}]
+        
+    def RemoveAppliedRuleCB(self, attrName):
+        return ContextMenuCommand(commandPath='Remove', 
+                                  invoke=self.UniqueCallback('@DoRemoveAppliedRule'),
+                                  enabled=self.UniqueCallback('@HasSelectedAppliedRule'),
+                                  default=False)
+    
+    def EnableAppliedRuleCB(self, attrName):
+        return ContextMenuCommand(commandPath=self.EnableAppliedRuleLabel(), 
+                                  invoke=self.UniqueCallback('@EnableAppliedRule'),
+                                  enabled=self.UniqueCallback('@HasSelectedAppliedRule'),
+                                  default=False)
+                                  
+    def AddInfoRuleCB(self, attrName):
+        return ContextMenuCommand(commandPath='View Additional Info', 
+                                  dialog=self.UniqueCallback('@OpenAddInfoAppliedRule'),
+                                  enabled=self.UniqueCallback('@HasSelectedAppliedRule'),
+                                  default=False)
+        
+    def DoRemoveAppliedRule(self, *args):
+        if self.selectedAppliedRule != None:
+            self.Rule().AppliedRules().Remove(self.selectedAppliedRule)
+            self.selectedAppliedRule.Unsimulate()
+    
+    def EnableAppliedRuleLabel(self, *args):
+        return 'Activate' if self.selectedAppliedRule.Inactive() else 'Inactivate'
+    
+    def OpenAddInfoAppliedRule(self, *args):
+        return UXDialogsWrapper(acm.UX().Dialogs().EditAdditionalInfo, self.selectedAppliedRule)
+    
+    def EnableAppliedRule(self, *args):     
+        if self.selectedAppliedRule.Inactive():
+            self.selectedAppliedRule.Inactive(False)
+        else:
+            self.selectedAppliedRule.Inactive(True)
+        self.Rule().Changed()
+                
+    def SetSelectedAppliedRule(self, attrName, selectedObj, *rest):
+        self.selectedAppliedRule = selectedObj
+    
+    def HasSelectedAppliedRule(self, *args):
+        return self.selectedAppliedRule != None
+    
+    # ************************* Convenience Methods  *************************
+    def CreateAppliedRule(self, target):
+        ar = acm.FAppliedRule()
+        ar.RegisterInStorage()
+        ar.ComplianceRule(self.Rule())
+        ar.Target(target)
+        self.CreateThresholdValues(ar)
+        self.Rule().AppliedRules().Add(ar)
+
+    def CreateThresholdValues(self, appliedRule):
+        for t in self.Rule().Thresholds():
+            tv = appliedRule.NewThresholdValue()
+            tv.Threshold(t)
+
+    def ShowSelectQueryFolderDialog(self, *args):
+        return UXDialogsWrapper(acm.UX().Dialogs().SelectObjectsInsertItemsWithProviders, self.GetInsertItems(), True)
+    
+    def GetTargets(self):
+        return [appliedRule.Target() for appliedRule in self.Rule().AppliedRules()]
+        
+    def GetInsertItems(self):
+        arr = acm.FArray()
+        for clsObject in self.Rule().Definition().Class().ApplicableTo():
+            arr.Add(clsObject)
+        return arr
+    
+    def GetLayout(self):
+        return self.UniqueLayout("""
+                    vbox(;
+                        appliedRuleslist;
+                        dialogButton;
+                    );
+               """)
+               
+
+def ActiveAsString(appliedRule):
+    return 'Inactive' if appliedRule.Inactive() else 'Active'
+	
+def GetValue(self):
+    return self.RuleValue().Value()
+
+...
+
+  FComplianceCheck
+""" Compiled: 2023-10-13 14:14:54 """
+
+#__src_file__ = "extensions/ComplianceRules/etc/FComplianceCheck.py"
+"""--------------------------------------------------------------------------
+MODULE
+    FComplianceCheck
+
+    (c) Copyright 2018,2022 FIS Group/Fidelity Information Services Front Arena AB. All rights reserved.
+
+DESCRIPTION
+    Runscript for checking compliance rules and creating alerts. New alerts will
+    be created and existing ones will be updated if their state has changed.
+    Can check for a list of rules or a query of rules.
+    
+-----------------------------------------------------------------------------"""
+from  collections import namedtuple, defaultdict
+
+import acm
+import FRunScriptGUI
+import FSheetUtils
+import FAlertGenerator
+import ast
+
+from FComplianceNotifications import SendEmail, SendMessage
+from FKeyValueMapDlg import User, ThresholdType, UsersByThresholdTypeDlg
+from FComplianceRulesUtils import logger
+
+# ----------------------------------------------- Display Alerts -----------------------------------------------
+
+def Sheet(workbook, sheetTemplate):
+    if sheetTemplate:
+        workbook.InsertSheet(sheetTemplate)
+        return workbook.ActiveSheet()
+    else:
+        return workbook.NewSheet('AlertSheet')
+
+def InsertAlerts(sheet, alerts):
+    folder = acm.FItemsFolder(acm.FAlert)
+    folder.Name('Alerts')
+    folder.AddAll(alerts)
+    sheet.InsertObject(folder, 'IOAP_REPLACE')
+        
+def ApplyGrouper(sheet, sheetTemplate): # Workaround since Initial Grouper currently doesn't work in Alert Sheet.
+    if sheetTemplate:
+        grouper = sheetTemplate.FromArchive('TradingSheet').FromArchive('InitialGrouper')
+        FSheetUtils.ApplyGrouperInstanceToSheet(sheet, grouper)
+    FSheetUtils.ExpandTree(sheet)
+    
+def DisplayInAlertSheet(alerts, sheetTemplate=None):
+    frame = acm.StartApplication('Operations Manager', None)
+    sheet = Sheet(frame.ActiveWorkbook(), sheetTemplate)
+    InsertAlerts(sheet, alerts)
+    ApplyGrouper(sheet, sheetTemplate)
+
+# ----------------------------------------------- Runscript -----------------------------------------------
+
+
+class ComplianceCheckRunscript(FRunScriptGUI.AelVariablesHandler):
+
+    GUI_PARAMETERS = {
+        'runButtonLabel':   '&&Run',
+        'hideExtraControls': False,
+        'windowCaption' : __name__
+        }
+    LOG_LEVELS = {
+        '1. Normal': 1,
+        '2. Warnings/Errors': 3,
+        '3. Debug': 2
+        }
+
+    def __init__(self):
+        FRunScriptGUI.AelVariablesHandler.__init__(self, self._GetVariableDefinitions())
+
+    @staticmethod
+    def GetParameters(params):
+        paramClass = namedtuple('RuleParameters', list(params.keys()))
+        return paramClass(**params)
+
+    @classmethod
+    def GetLoggingLevel(cls, logLevel):
+        return cls.LOG_LEVELS.get(logLevel, 1)
+        
+    def _NotificationsSetEnabled(self, index, fieldValues):
+        if self.ael_variables[index][FRunScriptGUI.Controls.NAME] in ['SendEmail', 'SendMessage']:
+            enabled = fieldValues[index] == 'true'
+            self.ael_variables[index+1][FRunScriptGUI.Controls.ENABLED] = enabled
+        return fieldValues
+        
+    def _GetVariableDefinitions(self):
+        logLevels = sorted(self.LOG_LEVELS)
+        environments = acm.FStoredCalculationEnvironment.Select('')
+        
+        tt_Rules = 'Select the individual rules(s) to check.'
+        tt_RuleQueries = 'Select the insert item query or queries containing rules to check.'
+        tt_Auditing = 'Breaches will be created for active alerts on leading thresholds.'
+        tt_History = 'History will be created for each result on leading thresholds.'
+        tt_TestMode = 'In this mode alerts will not be stored in ADS. They will be calculated and simulated in the session only.'
+        tt_DisplayAlerts = 'Generated alerts will be displayed in the Operations Manager.'
+        tt_SheetTemplate = 'Set the sheet template that will be used when displaying the alerts.'
+        tt_SendEmail = 'Send notification via email.'
+        tt_EmailRecipients = 'Select users by threshold types.'
+        tt_SendMessage = 'Send notification as a message.'
+        tt_MessageRecipients = 'Select users by threshold types.'
+        tt_LogLevel = 'Select the verbosity of logging output by the compliance engine task.'
+        tt_KeepLastResultValue = 'Keep last resut value in Alert.Information'
+        tt_PartitionKey = 'Partition key.'
+        tt_Environment = 'Select calculation environment.'        
+        
+        return (('Rules', 'Rules_General', 'FComplianceRule', None, self._GetRuleOidQuery(), True, True, tt_Rules, None, True), 
+                ('RuleQueries', 'Rule query_General', 'FStoredASQLQuery', None, self._GetRuleInsertItemQueries(), True, True, tt_RuleQueries, None, True),
+                ('Auditing', 'Enable auditing_General', 'bool', [True, False], True, False, False, tt_Auditing, None , True),
+                ('History', 'Enable history_General', 'bool', [True, False], True, False, False, tt_History, None , True),
+                ('TestMode', 'Do not store alerts_General', 'bool', [True, False], False, False, False, tt_TestMode, None , True),
+                ('DisplayAlerts', 'Display alerts in Operations Manager_General', 'bool', [True, False], False, False, False, tt_DisplayAlerts, self._DisplayAlertsCallback, True),
+                ('SheetTemplate', 'SheetTemplate_General', 'FTradingSheetTemplate', self._GetSheetTemplates(), None, False, 0, tt_SheetTemplate, None, True),
+             
+                ('SendEmail', 'Send email_Notifications', 'bool', [True, False], False, False, False, tt_SendEmail, self._NotificationsSetEnabled, True),
+                ('EmailRecipients', 'Recipients_Notifications', 'string', [], None, 0, 1, tt_EmailRecipients, None, 0, self._UsersByThresholdTypeDlg),
+                ('SendMessage', 'Send user message_Notifications', 'bool', [True, False], False, False, False, tt_SendMessage, self._NotificationsSetEnabled, True),
+                ('MessageRecipients', 'Recipients_Notifications', 'string', [], None, 0, 1, tt_MessageRecipients, None, 0, self._UsersByThresholdTypeDlg),
+            
+                ('LogLevel', 'Logging Level_Logging', 'string', logLevels, logLevels[0], 2, 0, tt_LogLevel),)
+    
+    def _UsersByThresholdTypeDlg(self, shell, fieldValues):
+        selected = fieldValues.At('selected')
+        selectedDict = dict(ast.literal_eval(pair) for pair in selected)
+        
+        result = defaultdict(list)
+        for k, vs in selectedDict.items():
+            result[ThresholdType(k)].extend(User(acm.FUser[v]) for v in vs)
+            
+        dlg = UsersByThresholdTypeDlg(result)
+        return acm.UX().Dialogs().ShowCustomDialogModal(shell, dlg.CreateLayout(), dlg)
+    
+    def _DisplayAlertsCallback(self, index, fieldValues):
+        self._SheetTemplateSetEnabled(fieldValues)
+        return fieldValues
+    
+    def _VariableIndex(self, varName):
+        for i, var in enumerate(self.ael_variables):
+            if var[FRunScriptGUI.Controls.NAME] == varName:
+                return i
+    
+    def _SheetTemplateSetEnabled(self, fieldValues):
+        displayAlerts = fieldValues[self._VariableIndex('DisplayAlerts')]
+        enabled = 'true' in [displayAlerts]
+        self.ael_variables[self._VariableIndex('SheetTemplate')][FRunScriptGUI.Controls.ENABLED] = enabled
+        
+    @staticmethod
+    def _GetRuleOidQuery():
+        q = acm.CreateFASQLQuery(acm.FComplianceRule, 'AND')
+        op = q.AddOpNode('AND')
+        op.AddAttrNode('Name', 'RE_LIKE_NOCASE', None)
+        op = q.AddOpNode('AND')
+        op.AddAttrNode('RuleCategory.Name', 'EQUAL', None)
+        return q
+
+    @staticmethod
+    def _GetRuleInsertItemQueries():
+        q = acm.CreateFASQLQuery(acm.FStoredASQLQuery, 'AND')
+        q.AddOpNode('AND').AddAttrNode('Name', 'RE_LIKE_NOCASE', None)
+        q.AddOpNode('AND').AddAttrNode('SubType', 'RE_LIKE_NOCASE', 'FComplianceRule')
+        return q
+        
+    @staticmethod
+    def _GetSheetTemplates():
+        return acm.FTradingSheetTemplate.Select('subType = FAlertSheet').SortByProperty('Name')
+    
+
+class ComplianceCheck(object):
+    
+    def __init__(self, options):
+        self._options = options
+        self._params = None
+        self._alerts = []
+        self._util = []
+        self._appliedRules = self._UnpackRules()
+                                        
+    def Run(self):
+        if not self._appliedRules:
+            self._OnRulesChecked() 
+        self._Check()
+
+    def _Check(self):
+        acm.AsyncTask.WhenAll([ar.Check() for ar in self._appliedRules]).ContinueWith(self._HandleAlerts)
+
+    def _DisplayAlerts(self):
+        return acm.IsSessionUserInteractive() and self._options.DisplayAlerts
+    
+    def _Generator(self, rule):
+        return FAlertGenerator.Create(rule, self._Params())
+    
+    def _Params(self):
+        if self._params is None:
+            attrs = {'SaveAlerts': lambda x: not self._options.TestMode,
+                     'HandleBreaches': lambda x: self._options.Auditing}
+            self._params = type('Params', (object,), attrs)()
+        return self._params
+
+    def _HandleAlerts(self, asyncTask):
+        try:
+            for task in asyncTask.Result():
+                results = task.Result()
+                if not results.IsKindOf(acm.ERuleError):
+                    generator = FAlertGenerator.Create(results.AppliedRule(), self._Params())
+                    alerts = generator.AlertsAndValuesFromResults(results)
+                    if self._options.History:
+                        generator.HistoryFromResults(results)
+                    self._alerts.extend(alerts)          
+                else:
+                    logger.error(results.Message())
+            self._OnRulesChecked()            
+        except Exception as err:
+            self.DisplayErrorMessage(err)
+            
+    def _OnRulesChecked(self):
+        if self._alerts:
+            alerts = [alertAndValue[0] for alertAndValue in self._alerts]
+            if self._DisplayAlerts():
+                DisplayInAlertSheet(alerts, self._options.SheetTemplate)
+            if self._options.SendEmail:
+                SendEmail(self._alerts, self._options)
+            if self._options.SendMessage:
+                SendMessage(alerts, self._options)
+        elif acm.IsSessionUserInteractive():
+            shell = acm.UX.SessionManager().Shell()
+            msg = 'No alerts were created for this compliance check'
+            logger.debug(msg)
+            acm.UX.Dialogs().MessageBoxInformation(shell, msg)
+        logger.info('Compliance check completed...')
+        
+    def _UnpackRules(self):
+        rules = []
+        cRules = acm.FArray()
+        cRules.AddAll([cRule for cRule in self._options.Rules])    
+        for query in self._options.RuleQueries:
+            cRules.AddAll(query.Query().Select())
+        for cRule in cRules:
+            if self._HasDefinition(cRule):
+                for rule in cRule.AppliedRules():
+                    if rule.Inactive():
+                        logger.debug('Rule target "{0}" for rule "{1}" is inactive and won\'t '
+                                     'be checked'.format(rule.TargetName(), cRule.Name()))
+                    else:
+                        rules.append(rule)
+            else:
+                logger.debug('Rule definition "{0}" for rule "{1}" can\'t be found '
+                             'and won\'t be checked'.format(cRule.DefinitionInfo(), cRule.Name()))
+        return rules
+
+    def DisplayErrorMessage(self, message):
+        logger.error(message)
+        shell = acm.UX.SessionManager().Shell()
+        acm.UX.Dialogs().MessageBoxInformation(shell, message, 'Error when checking rule')
+    
+    @staticmethod
+    def _HasDefinition(complianceRule):
+        info = complianceRule.DefinitionInfo()
+        return bool(acm.GetDefaultContext().GetExtension('FRuleDefinitionInfo', 'FObject', info))
+        
+        
+                
+ael_variables = ComplianceCheckRunscript()
+ael_gui_parameters = ael_variables.GUI_PARAMETERS
+
+def ael_main(params):
+    options = ComplianceCheckRunscript.GetParameters(params)
+    logger.Reinitialize(level=ComplianceCheckRunscript.GetLoggingLevel(options.LogLevel))
+    logger.info('Running compliance check ...')
+    complianceCheck = ComplianceCheck(options)
+    complianceCheck.Run()
+
+...
+
+  FComplianceMonitor
+""" Compiled: 2021-06-07 16:07:02 """
+
+#__src_file__ = "extensions/ComplianceRules/etc/FComplianceMonitor.py"
+"""--------------------------------------------------------------------------
+MODULE
+    FComplianceMonitor
+
+    (c) Copyright 2018 FIS FRONT ARENA. All rights reserved.
+
+DESCRIPTION
+    Runscript for monitoring compliance rules and creating alerts.
+    New alerts will be created and existing ones will be updated 
+    if their state has changed. Can monitor a list of rules or a 
+    query of rules.
+    
+-----------------------------------------------------------------------------"""
+from collections import namedtuple, defaultdict
+
+import acm
+import FRunScriptGUI
+import FAlertGenerator
+import ast
+
+from FComplianceNotifications import SendEmail, SendMessage
+from FKeyValueMapDlg import User, ThresholdType, UsersByThresholdTypeDlg
+from FRuleMonitoringEngine import Engine
+from FComplianceRulesUtils import logger
+
+
+class ComplianceMonitorRunscript(FRunScriptGUI.AelVariablesHandler):
+
+    GUI_PARAMETERS = {
+        'runButtonLabel':   '&&Run',
+        'hideExtraControls': False,
+        'windowCaption' : __name__
+        }
+    LOG_LEVELS = {
+        '1. Normal': 1,
+        '2. Warnings/Errors': 3,
+        '3. Debug': 2
+        }
+
+    def __init__(self):
+        FRunScriptGUI.AelVariablesHandler.__init__(self, self._GetVariableDefinitions())
+
+    @staticmethod
+    def GetParameters(params):
+        paramClass = namedtuple('RuleParameters', list(params.keys()))
+        return paramClass(**params)
+
+    @classmethod
+    def GetLoggingLevel(cls, logLevel):
+        return cls.LOG_LEVELS.get(logLevel, 1)
+        
+    def _NotificationsSetEnabled(self, index, field_values):
+        if self.ael_variables[index][FRunScriptGUI.Controls.NAME] in ['SendEmail', 'SendMessage']:
+            enabled = field_values[index] == 'true'
+            self.ael_variables[index+1][FRunScriptGUI.Controls.ENABLED] = enabled
+        return field_values
+
+    def _GetVariableDefinitions(self):
+        logLevels = sorted(self.LOG_LEVELS)
+        environments = acm.FStoredCalculationEnvironment.Select('')        
+        
+        tt_Rules = 'Select the individual rules(s) to check.'
+        tt_RuleQueries = 'Select the insert item query or queries containing rules to check.'
+        tt_Auditing = 'Breaches will be created for active alerts on leading thresholds.'
+        tt_SendEmail = 'Send notification via email.'
+        tt_EmailRecipients = 'Select users by threshold types.'
+        tt_SendMessage = 'Send notification as a message.'
+        tt_MessageRecipients = 'Select users by threshold types.'
+        tt_LogLevel = 'Select the verbosity of logging output by the compliance engine task.'
+        
+        return (('Rules', 'Rules_General', 'FComplianceRule', None, self._GetRuleOidQuery(), True, True, tt_Rules, None, True), 
+                ('RuleQueries', 'Rule query_General', 'FStoredASQLQuery', None, self._GetRuleInsertItemQueries(), True, True, tt_RuleQueries, None, True),
+                ('Auditing', 'Enable auditing_General', 'bool', [True, False], True, False, False, tt_Auditing, None , True),
+             
+                ('SendEmail', 'Send email_Notifications', 'bool', [True, False], False, False, False, tt_SendEmail, self._NotificationsSetEnabled, True),
+                ('EmailRecipients', 'Recipients_Notifications', 'string', [], None, 0, 1, tt_EmailRecipients, None, 0, self._UsersByThresholdTypeDlg),
+                ('SendMessage', 'Send user message_Notifications', 'bool', [True, False], False, False, False, tt_SendMessage, self._NotificationsSetEnabled, True),
+                ('MessageRecipients', 'Recipients_Notifications', 'string', [], None, 0, 1, tt_MessageRecipients, None, 0, self._UsersByThresholdTypeDlg),
+
+                ('LogLevel', 'Logging Level_Logging', 'string', logLevels, logLevels[0], 2, 0, tt_LogLevel),)
+                
+    def _UsersByThresholdTypeDlg(self, shell, fieldValues):
+        selected = fieldValues.At('selected')
+        selectedDict = dict(ast.literal_eval(pair) for pair in selected)
+
+        result = defaultdict(list)
+        for k, vs in selectedDict.items():
+            result[ThresholdType(k)].extend(User(acm.FUser[v]) for v in vs)
+            
+        dlg = UsersByThresholdTypeDlg(result)
+        return acm.UX().Dialogs().ShowCustomDialogModal(shell, dlg.CreateLayout(), dlg)
+    
+    @staticmethod
+    def _GetRuleOidQuery():
+        q = acm.CreateFASQLQuery(acm.FComplianceRule, 'AND')
+        op = q.AddOpNode('AND')
+        op.AddAttrNode('Name', 'RE_LIKE_NOCASE', None)
+        op = q.AddOpNode('AND')
+        op.AddAttrNode('RuleCategory.Name', 'EQUAL', None)
+        return q
+
+    @staticmethod
+    def _GetRuleInsertItemQueries():
+        q = acm.CreateFASQLQuery(acm.FStoredASQLQuery, 'AND')
+        q.AddOpNode('AND').AddAttrNode('Name', 'RE_LIKE_NOCASE', None)
+        q.AddOpNode('AND').AddAttrNode('SubType', 'RE_LIKE_NOCASE', 'FComplianceRule')
+        return q
+        
+
+class QuerySource(object):
+
+    def __init__(self, params):
+        self._rules = params.Rules
+        self._storedQueries = params.RuleQueries
+
+    @staticmethod
+    def HasDefinition(rule):
+        return bool(acm.GetDefaultContext().GetExtension('FRuleDefinitionInfo', 
+                                                         'FObject', 
+                                                         rule.DefinitionInfo()))
+
+    @classmethod
+    def IsValid(cls, appliedRule):
+        rule = appliedRule.ComplianceRule()
+        if appliedRule.Inactive():
+            logger.debug('Rule target "{0}" for rule "{1}" is inactive and won\'t '
+                         'be monitored'.format(appliedRule.TargetName(), rule.Name()))
+            return False
+        if not cls.HasDefinition(rule):
+            logger.debug('Rule definition "{0}" for rule "{1}" can\'t be found '
+                         'and won\'t be monitored'.format(rule.DefinitionInfo(), rule.Name()))
+            return False
+        return True
+
+    def AppliedRules(self):
+        rules = set(rule for rule in self._rules)
+        for stored in self._storedQueries:
+            rules.update(stored.Query().Select())
+
+        appliedRules = []
+        for rule in rules:
+            for appliedRule in rule.AppliedRules():
+                if appliedRule.Target() is None:
+                    logger.error('Applied rule on Complaince Rule "%s" has no target' % appliedRule.ComplianceRule().Name())
+                    continue
+                if self.IsValid(appliedRule):
+                    appliedRules.append(appliedRule)
+        return appliedRules
+
+    def Select(self):
+        return self.AppliedRules()
+
+    def IsSatisfiedBy(self, obj):
+        if not self.IsValid(obj):
+            return False
+        rule = obj.ComplianceRule()
+        if rule in self._rules:
+            return True
+        for stored in self._storedQueries:
+            if stored.Query().IsSatisfiedBy(rule):
+                return True
+        return False
+
+    def ObjectClass(self):
+        return acm.FAppliedRule
+ 
+
+class Handler(object):
+
+    def __init__(self, params):
+        self._params = params
+        attrs = {'SaveAlerts': lambda x: True,
+                 'HandleBreaches': lambda x: self._params.Auditing,
+                 'LastCheck': lambda x: False}
+        self._generatorParams = type('Params', (object,), attrs)()
+        self._cache = {}
+
+    def OnFRuleResults(self, results, aspect):
+        rule = results.AppliedRule()
+        self._UpdateCache(rule)
+        generator = self.CreateGenerator(rule)
+        alerts = generator.AlertsAndValuesFromResults(results)
+        self.Notify(alerts)
+        self._UpdateCache(rule)
+
+    def OnFRuleResult(self, result, aspect): 
+        rule = result.AppliedRule()
+        self._UpdateCache(rule)
+        generator = self.CreateGenerator(rule)
+        alert = generator.AlertFromResult(result)
+        if alert: self.Notify([alert], [result])
+        self._UpdateCache(rule)
+
+    def Notify(self, alerts, results = None):
+        if results is None:
+            alerts_copy = alerts.copy()
+            alerts = [alert[0] for alert in alerts_copy]
+            results = [alert[1] for alert in alerts_copy]
+        filtered = self._Filter(alerts, self._NotifyRequired)
+        alerts = list()
+        for alert in filtered:
+            alerts.append(alert)
+        if alerts:
+            if self._params.SendEmail:
+                SendEmail(zip(alerts, results), self._params)
+            if self._params.SendMessage:
+                SendMessage(alerts, self._params)
+
+    def CreateGenerator(self, appliedRule):
+        return FAlertGenerator.Create(appliedRule, self._generatorParams)
+
+    def _Filter(self, alerts, fun):
+        return (filter(fun, alerts) if
+                self._params.SendEmail or self._params.SendMessage else [])
+
+    def _NotifyRequired(self, alert):
+        rule = alert.AppliedRule()
+        val = (alert.State(), alert.ThresholdValue())
+        if rule not in self._cache:
+            self._UpdateCache(rule)
+            return True
+        if (alert not in self._cache[rule] or
+            self._cache[rule][alert] != val):
+            self._cache[rule][alert] = val
+            return True
+        return False
+
+    def _UpdateCache(self, rule):
+        if rule not in self._cache:
+            alertsDict = {a:(a.State(), a.ThresholdValue()) for a in rule.Alerts()}
+            self._cache[rule] = alertsDict
+
+ael_variables = ComplianceMonitorRunscript()
+ael_gui_parameters = ael_variables.GUI_PARAMETERS
+
+engine = None
+
+def start_ex(params):
+    params = ComplianceMonitorRunscript.GetParameters(params)
+    logger.Reinitialize(ComplianceMonitorRunscript.GetLoggingLevel(params.LogLevel))
+
+    source = QuerySource(params)
+    handler = Handler(params)
+
+    global engine
+    engine = Engine(handler, source)
+    engine.Start()
+    logger.info('Compliance monitor started.')
+
+def work():
+    engine.Work()
+
+def stop():
+    engine.Stop()
+    logger.info('Compliance monitor stopped.')
+
+...
+
+  FComplianceNotifications
+""" Compiled: 2023-08-18 09:35:28 """
+
+#__src_file__ = "extensions/ComplianceRules/etc/FComplianceNotifications.py"
+"""--------------------------------------------------------------------------
+MODULE
+    FComplianceNotifications
+
+    (c) Copyright 2018,2022 FIS Group/Fidelity Information Services Front Arena AB. All rights reserved.
+
+DESCRIPTION
+
+-----------------------------------------------------------------------------"""
+import collections
+import datetime
+import ast
+
+import acm
+import LimitEmailTemplate
+from FComplianceRulesUtils import logger
+from FParameterSettings import ParameterSettingsCreator
+
+EMAIL_REGEX = r'^[_a-z0-9-]+(\.[_a-z0-9-]+)*@[a-z0-9-]+(\.[a-z0-9-]+)*(\.[a-z]{2,4})$'
+SMTP_SETTINGS = ParameterSettingsCreator.FromRootParameter('SMTPSettings')
+SETTINGS = ParameterSettingsCreator.FromRootParameter('ComplianceRulesNotificationSettings')
+THRESHOLD_MAPPING = {'Violation' : 'Breach', 'Warning' : 'Warning' } 
+
+def SendEmail(alerts, options):
+    import smtplib
+    smtp_server = FEmailTransfer.SMTPServer(SMTP_SETTINGS.SMTPServer(),
+                                            SMTP_SETTINGS.SMTPPort(),
+                                            SMTP_SETTINGS.SMTPUsername(),
+                                            SMTP_SETTINGS.SMTPPassword(),
+                                            SMTP_SETTINGS.SMTPTLS())
+    alerts_copy = list(alerts).copy()
+    alerts = [alert[0] for alert in alerts_copy]
+    
+    limitTypeAlerts = [(alert, result) for alert, result in alerts_copy if getLimitTypeAddInfo(alert) != None and alert.State() == 'Active']
+    alerts= [alert for alert in alerts if not getLimitTypeAddInfo(alert)]
+    email_sent_applied_rules = []
+    for alert, result in limitTypeAlerts:
+        send_email = checkEmailPeriodicity(alert)
+        if not send_email:
+            continue
+        limit_type = getLimitType(alert, result)
+        limitTypeData = LimitEmailTemplate.LimitEmailMapping.get(limit_type)
+        if limitTypeData:
+            if hasattr(result, 'IsKindOf') and result.IsKindOf('FRuleResult'):
+                percentageOfUtilization = result.RuleValue().Value()
+                try:
+                    parameterizedPercentage = getCalcValueRuleResult(result, 'Rule Result Utilization %') * 100.0
+                except Exception as e:
+                    parameterizedPercentage = getPercentageOfUtilization(alert, result.RuleValue().Value())
+            else:
+                percentageOfUtilization = result
+                parameterizedPercentage = getPercentageOfUtilization(alert, result)
+            
+            body = eval("f'{}'".format(limitTypeData.get("Email Body", '')))
+            subject = eval("f'{}'".format(limitTypeData.get("Subject", '')))
+            recipients = getRecipients(limitTypeData.get("Recipient", ''), alert.AppliedRule())
+            message = FEmailTransfer.Message(recipients, subject, SMTP_SETTINGS.SenderAddress(), body)
+            try:
+                logger.debug("Sending email for rule <{0}> and target <{1}> with limit type <{2}> ".format(alert.AppliedRule().ComplianceRule().Name(), alert.AppliedRule().TargetName(), limit_type))
+                FEmailTransfer(smtp_server, message).Send()
+                if alert.AppliedRule() not in email_sent_applied_rules:
+                    email_sent_applied_rules.append(alert.AppliedRule())
+
+            except (smtplib.SMTPException, smtplib.socket.error, IOError, ValueError) as e:
+                logger.error('Failed to send email message. Reason:' + str(e))
+        else:
+            if alert.Threshold().Type().Name() != 'Reporting':
+                logger.error('Limit type <{0}> email configuration is missing in extension LimitEmailTemplate, target <{1}>'.format(limit_type, alert.AppliedRule().TargetName()))
+
+        [updateTargetEmailSentTime(applied_rule) for applied_rule in email_sent_applied_rules]
+
+    if alerts:
+        usersByThresholdType = dict(ast.literal_eval(pair) for pair in options.EmailRecipients)
+        for thresholdType, users in usersByThresholdType.items():
+            filtered_alerts = _get_filtered_alerts(alerts, thresholdType)
+            if filtered_alerts:
+                subject = _get_notification_subject_string(SETTINGS.Subject(), options)
+                body = '\n'.join([_get_notification_message_string(SETTINGS.AlertTemplate(), alert) for alert in filtered_alerts])
+                recipients = _get_email_addresses(users)
+                message = FEmailTransfer.Message(recipients, subject, SMTP_SETTINGS.SenderAddress(), body)
+
+                try:
+                    FEmailTransfer(smtp_server, message).Send()
+                    [updateTargetEmailSentTime(alert.AppliedRule()) for alert in alerts]
+                except (smtplib.SMTPException, smtplib.socket.error, IOError, ValueError) as e:
+                    logger.error('Failed to send email message. Reason:' + str(e))
+
+def getLimitType(alert, result):
+    thresholdType = THRESHOLD_MAPPING.get(alert.Threshold().Type().Name(), '')
+    limitType = alert.AppliedRule().ComplianceRule().AdditionalInfo().ComplianceLimitType()
+    targetLimitType = alert.AppliedRule().AdditionalInfo().TargetLimitType()
+    utilizationAddinfo = alert.AppliedRule().ComplianceRule().AdditionalInfo().UtilizationPercent()
+    
+    if hasattr(result, 'IsKindOf') and result.IsKindOf('FRuleResult'):
+        try:
+            utilizationPerValue = getCalcValueRuleResult(result, 'Rule Result Utilization %') * 100.0
+        except Exception as e:
+            utilizationPerValue = getPercentageOfUtilization(alert, result.RuleValue().Value())
+    else:
+        utilizationPerValue = getPercentageOfUtilization(alert, result)
+    
+    #override the applied rule limit type value
+    if targetLimitType:
+        limitType = targetLimitType
+
+    if utilizationAddinfo and utilizationPerValue > utilizationAddinfo and thresholdType == 'Breach' :
+        logger.debug("Utilization percentage calcluated {0}>{1} for rule {2} target {3}, threshold type is exceed".format(utilizationPerValue, utilizationAddinfo, alert.AppliedRule().ComplianceRule().Name(), alert.AppliedRule().TargetName()))
+        thresholdType = 'Exceed'
+
+    if thresholdType and limitType:
+        limitType = limitType + ' ' + thresholdType
+    return limitType
+
+
+def getLimitTypeAddInfo(alert):
+    limit_type = None
+    try:
+        limit_type = alert.AppliedRule().AdditionalInfo().TargetLimitType()
+        if not limit_type:
+            limit_type = alert.AppliedRule().ComplianceRule().AdditionalInfo().ComplianceLimitType()
+        return limit_type
+
+    except:
+        return
+
+
+def getRecipients(recipients, appliedRule):
+    groupEmail = appliedRule.AdditionalInfo().CompGroupEmail() if appliedRule else ''
+    if groupEmail:
+        recipients = groupEmail
+    return [email_id.strip() for email_id in recipients.split(',')]
+
+def getPercentageOfUtilization(alert, value):
+    perUlilization = 0
+    if alert.ThresholdValue().Value() == 0:
+        perUlilization = 100
+    else:
+        perUlilization = (value/alert.ThresholdValue().ValueAdjusted())*100
+    return perUlilization
+
+def getCalcValueRuleResult(obj, columnId):
+    context = acm.GetDefaultContext()
+    sheetType = 'FRuleResultSheet'
+    
+    cs = acm.Calculations().CreateCalculationSpace(context, sheetType)
+    value = cs.CalculateValue(obj, columnId)
+    return value
+    
+    
+def checkEmailPeriodicity(alert):
+    """function to check the time diff based on the last email sent"""
+    send_email = True
+    email_sent_time = alert.AppliedRule().AdditionalInfo().EmailSentAt()
+    email_freq = SETTINGS.EmailPeriodicity()
+    date_time_now = datetime.datetime.now()
+    if email_sent_time and date_time_now:
+        date_time_then = datetime.datetime.strptime(email_sent_time[:19], '%Y-%m-%d %H:%M:%S')
+        date_time_now = datetime.datetime.strptime(date_time_now.strftime('%Y-%m-%d %H:%M:%S'), '%Y-%m-%d %H:%M:%S')
+        delta =  date_time_now-date_time_then
+        time_diff_hrs = divmod(delta.seconds, 3600)[0]
+        if time_diff_hrs < int(email_freq):
+            logger.info("Last email sent at: {0} with periodicity of {1}hour".format(email_sent_time, email_freq))
+            send_email = False
+    return send_email
+
+def updateTargetEmailSentTime(applied_rule):
+    applied_rule.AdditionalInfo().EmailSentAt(acm.Time.TimeNow()[:19])
+    applied_rule.Commit()
+
+
+def SendMessage(alerts, options):
+    usersByThresholdType = dict(ast.literal_eval(pair) for pair in options.MessageRecipients)
+    for thresholdType, users in usersByThresholdType.items():
+        filtered_alerts = _get_filtered_alerts(alerts, thresholdType)
+        if filtered_alerts:
+            subject = _get_notification_subject_string(SETTINGS.Subject(), options)
+            message = '\n'.join([
+                _get_notification_message_string(SETTINGS.AlertTemplate(), alert)
+                for alert in filtered_alerts])
+            acm_users = _get_acm_users(users)
+            if acm_users:
+                status = acm.SendUserMessage(acm_users, subject, message, None)
+                if not status:
+                    logger.error("Error in sending User Message.")
+
+
+def _get_notification_message_string(txt, alert):
+    variables = (
+        ('%THRESHOLD_TYPE%', alert.Threshold().Type().Name()),
+        ('%THRESHOLD_COMPARISON%', alert.Threshold().ComparisonType()),
+        ('%THRESHOLD_VALUE%', str(alert.ThresholdValue().Value())),
+        ('%RULE%', alert.AppliedRule().ComplianceRule().Name()),
+        ('%ALERT_STATE%', alert.State()),
+        ('%ALERT_RULE_TARGET%', alert.AppliedRule().TargetName()),
+        ('%ALERT_SUBJECT%', alert.AppliedRule().Name()),
+        ('%ALERT_SUBJECT_TYPE%', alert.Threshold().ComplianceRule().DefinitionInfo()),
+        ('%ALERT_INFORMATION%', alert.Information()),
+        ('%ALERT_OID%', str(alert.Oid())),
+    )
+    for variable, value in variables:
+        txt = txt.replace(variable, value)
+    return txt
+
+
+def _get_notification_subject_string(txt, options):
+    now = datetime.datetime.now()
+    variables = (
+        ('%DATE%', now.strftime('%Y-%m-%d')),
+        ('%TIME%', now.strftime('%H:%M:%S')),
+        ('%RULES%', options.Rules.AsString()),
+        ('%RULE_QUERIES%', options.RuleQueries.AsString()),
+    )
+    for variable, value in variables:
+        txt = txt.replace(variable, value)
+    return txt
+    
+def _get_email_addresses(recipients):
+    import re
+    emails = []
+    for rec in recipients:
+        recipient = rec.strip()
+        user = acm.FUser[recipient]
+        if user:
+            email = user.Email()
+            if email:
+                emails.append(email)
+            else:
+                logger.warn("User {} doesn't have email address.".format(recipient))
+        elif re.match(EMAIL_REGEX, recipient):
+            emails.append(recipient)
+        else:
+            logger.error("{} is not valid user nor email address.".format(recipient))
+        
+    return emails
+    
+def _get_acm_users(recipients):
+    return [acm.FUser[u] for u in recipients if acm.FUser[u]]
+    
+def _get_filtered_alerts(alerts, thresholdType):
+    alerts = [alert for alert in alerts if alert.State() == 'Active']
+    filtered_alerts = []
+    if thresholdType == 'All': return alerts
+    for alert in alerts:
+        send_email = checkEmailPeriodicity(alert)
+        if not send_email:
+            continue
+        if str(alert.Threshold().Type().Name()) == thresholdType:
+            filtered_alerts.append(alert)
+    return filtered_alerts
+    
+
+class FEmailTransfer(object):
+
+    class SMTPServer(object):
+        """Stores SMTP server details."""
+        def __init__(self, hostname, port=25, username=None, password=None, tls_mode=False):
+            self.hostname = hostname
+            self.port = int(port)
+            self.username = username
+            self.password = password
+            self.tls_mode = tls_mode
+
+    class Message(object):
+        """Stores common email message details."""
+        def __init__(self, recipients, subject, sender, body):
+            self.recipients = recipients
+            self.subject = subject
+            self.sender = sender
+            self.body = body
+
+    def __init__(self, server, message):
+        self._ValidateSMTPServer(server)
+        self._server = server
+        self._ValidateMessage(message)
+        self._message = message
+        if not isinstance(self._message.recipients, collections.Iterable):
+            self._message.recipients = [self._message.recipients, ]
+
+    def Send(self):
+        import smtplib
+        server = smtplib.SMTP(self._server.hostname, self._server.port)
+        if self._server.tls_mode:
+            server.starttls()
+        if self._server.username:
+            server.login(self._server.username, self._server.password)
+        server.verify(self._message.recipients)
+        msg = self._GetEmailMessage(self._message.recipients, self._message)
+        server.sendmail(self._message.sender, self._message.recipients, msg.as_string())
+        server.quit()
+        logger.info("Email notification successfully sent to: {}".format(self._message.recipients))
+
+    @staticmethod
+    def _ValidateSMTPServer(server):
+        if (not server or
+                server.hostname is None or
+                not isinstance(server.port, int)):
+            raise ValueError('Invalid SMTP server: ' + str(vars(server)))
+
+    @staticmethod
+    def _ValidateMessage(message):
+        if (not message or
+            not message.recipients or
+                message.sender is None):
+            raise ValueError('Invalid email message: ' + str(vars(message)))
+
+    @classmethod
+    def _GetEmailMessage(cls, recipients, message):
+        from email.mime.multipart import MIMEMultipart
+        from email.mime.text import MIMEText
+
+        msg = MIMEMultipart()
+        msg['To'] = ', '.join(recipients)
+        msg['Subject'] = message.subject
+        msg['From'] = message.sender
+        msg.attach(MIMEText(message.body, 'plain'))
+        return msg
+
+...
+
+  FValidationLimitPartyTarget
+from AddInfoUtils import set_addinfo
+
+def get_addinfo(obj, addInfoName):
+    for ai in obj.additional_infos():
+        if ai.addinf_specnbr.field_name == addInfoName:
+            return ai.value
+    return None
+
+def validate_transaction(transaction_list, *rest):
+    for (e, op) in transaction_list:
+        if e.record_type == 'Trade' and op in ['Insert','Update']:
+            if e.category == 'Collateral' and e.insaddr.instype in ['Bill', 'Bond', 'Deposit', 'FRN', 'MBS/ABS', 'Fund']:
+                if e.counterparty_ptynbr is not None:
+                    set_addinfo(e, 'LimitPartyTarget', e.counterparty_ptynbr.ptyid)
+            elif e.insaddr.instype in ['Bill', 'Bond', 'FRN', 'MBS/ABS', 'Fund']:
+                if e.insaddr.issuer_ptynbr is not None:
+                    set_addinfo(e, 'LimitPartyTarget', e.insaddr.issuer_ptynbr.ptyid)
+            elif e.counterparty_ptynbr is not None:
+                set_addinfo(e, 'LimitPartyTarget', e.counterparty_ptynbr.ptyid)
+    return transaction_list
+
+...
+
+  limit_filters
+
+import acm
+
+
+def trade_tenor(trade):
+    if trade.IsFxSwap():
+        if trade.IsFxSwapNearLeg():
+            farLegTrade = trade.FxSwapFarLeg()
+            end_date = farLegTrade.ValueDay()
+        else:
+            end_date = trade.ValueDay()
+    elif trade.Instrument().InsType() == 'Curr':
+        end_date = trade.ValueDay()
+    else:
+        end_date = trade.Instrument().ExpiryDate()
+    return max(acm.Time.DateDifference(end_date, trade.TradeTime()), 0)
+
+...
+
+  LimitEmailTemplate
+
+
+LimitEmailMapping = {
+                     'NOP Limit Intraday Breach': {'Subject': 'Intraday NOP Limit Breach - {alert.AppliedRule().TargetName()}',
+                                                   'Email Body': 'You breach your Intraday NOP limit utilisation. Please report reason and action plan.',
+                                                   'Recipient': 'trading.risk@bankmandiri.co.id'},
+                                                   
+                     'NOP Limit Intraday Warning': {'Subject': 'Intraday NOP Limit Warning - {alert.AppliedRule().TargetName()}',
+                                                    'Email Body': 'Your Intraday NOP limit utilisation has reached {parameterizedPercentage}%. Please maintain your position within your designated limit',
+                                                    'Recipient': 'trading.risk@bankmandiri.co.id'},
+                                                    
+                     'NOP Limit Overnight Breach': {'Subject': 'Overnight NOP Limit Breach - {alert.AppliedRule().TargetName()}',
+                                                    'Email Body': 'You breach your Overnight NOP limit utilisation. Please report reason and action plan.',
+                                                    'Recipient': 'trading.risk@bankmandiri.co.id'},
+                                                    
+                     'NOP Limit Overnight Warning': {'Subject': 'Overnight NOP Limit Warning - {alert.AppliedRule().TargetName()}',
+                                                     'Email Body': 'Your Overnight NOP limit utilisation has reached {parameterizedPercentage}%. Please maintain your position within your designated limit',
+                                                     'Recipient': 'trading.risk@bankmandiri.co.id'},
+                                                     
+                     'Monthly Loss Limit Breach': {'Subject': 'Monthly Loss Limit Breach - {alert.AppliedRule().TargetName()}',
+                                                   'Email Body': 'You breach your Monthly Loss limit utilisation. Please report reason and action plan.',
+                                                   'Recipient': 'trading.risk@bankmandiri.co.id'},
+                                                   
+                     'Monthly Loss Limit Warning': {'Subject': 'Monthly Loss Limit Warning - {alert.AppliedRule().TargetName()}',
+                                                    'Email Body': 'Your Overnight Monthly Loss limit utilisation has reached {parameterizedPercentage}%. Please maintain your position within your designated limit',
+                                                    'Recipient': 'trading.risk@bankmandiri.co.id'},
+                                                    
+                     'Yearly Loss Limit Breach': {'Subject': 'Yearly Loss Limit Breach - {alert.AppliedRule().TargetName()}',
+                                                  'Email Body': 'You breach your Yearly Loss limit utilisation. Please report reason and action plan.',
+                                                  'Recipient': 'trading.risk@bankmandiri.co.id'},
+                                                  
+                     'Yearly Loss Limit Warning': {'Subject': 'Yearly Loss Limit Warning - {alert.AppliedRule().TargetName()}',
+                                                   'Email Body': 'Your Overnight Yearly Loss limit utilisation has reached {parameterizedPercentage}%. Please maintain your position within your designated limit',
+                                                   'Recipient': 'trading.risk@bankmandiri.co.id'},
+                                                   
+                     'Delta Limit Breach': {'Subject': 'Delta Limit Breach - {alert.AppliedRule().TargetName()}',
+                                            'Email Body': 'You breach your Delta limit utilisation. Please report reason and action plan.',
+                                            'Recipient': 'trading.risk@bankmandiri.co.id'},
+                                            
+                     'Delta Limit Warning': {'Subject': 'Delta Limit Warning - {alert.AppliedRule().TargetName()}',
+                                             'Email Body': 'Your Overnight Delta limit utilisation has reached {parameterizedPercentage}%. Please maintain your position within your designated limit',
+                                             'Recipient': 'trading.risk@bankmandiri.co.id'},
+
+                     'Bond Cut Loss Limit Breach': {'Subject': 'Bond Cut Loss Limit Breach - {alert.AppliedRule().TargetName()}',
+                                                    'Email Body': 'Market price for your portfolio {alert.Subject().Name()} goes lower for more than {str(alert.ThresholdValue().Value())}. Please report reason and action plan.',
+                                                    'Recipient': 'trading.risk@bankmandiri.co.id'},
+
+                     'Bond Cut Loss Limit Warning': {'Subject': 'Bond Cut Loss Limit Warning - {alert.AppliedRule().TargetName()}',
+                                                     'Email Body': 'Market price for your portfolio {alert.Subject().Name()} goes lower for more than {str(alert.ThresholdValue().Value())}. Please maintain your portfolio within the designated limit.',
+                                                     'Recipient': 'trading.risk@bankmandiri.co.id'},
+
+                     'Non-Bank Derivative Transactions CEM Warning': {
+                         'Subject': 'Treasury Line Non-Bank Derivative  Utilization WARNING - {alert.AppliedRule().TargetName()}',
+                         'Email Body': 'Treasury Line Non-Bank Derivative Utilization for Group ID - {alert.AppliedRule().TargetName()} has reached {percentageOfUtilization} , {parameterizedPercentage}%. Please maintain transaction within the designated limit.',
+                         'Recipient': 'trading.risk@bankmandiri.co.id'},
+
+                     'Non-Bank Derivative Transactions CEM Exceed': {
+                         'Subject': 'Treasury Line Non-Bank Derivative  Utilization EXCEED - {alert.AppliedRule().TargetName()}',
+                         'Email Body': 'Treasury Line Non-Bank Derivative Utilization for Group ID - {alert.AppliedRule().TargetName()} has reached {percentageOfUtilization},  , {parameterizedPercentage}%. Please input exceed reason.',
+                         'Recipient': 'trading.risk@bankmandiri.co.id'},
+
+                     'Non-Bank Derivative Transactions CEM Breach': {
+                         'Subject': 'Treasury Line Non-Bank Derivative  Utilization BREACH - {alert.AppliedRule().TargetName()}',
+                         'Email Body': 'Treasury Line Non-Bank Derivative Utilization for Group ID  - {alert.AppliedRule().TargetName()} has reached {percentageOfUtilization} , {parameterizedPercentage}%. Please input breach reason and report action plan to mitigate the risk of this issue',
+                         'Recipient': 'trading.risk@bankmandiri.co.id'},
+
+                     'Non-Bank FX Transactions CEM Warning': {
+                         'Subject': 'Treasury Line Non-Bank FX Utilization WARNING - {alert.AppliedRule().TargetName()}',
+                         'Email Body': 'Treasury Line Non-Bank FX Utilization for Group ID - {alert.AppliedRule().TargetName()} has reached {percentageOfUtilization} , {parameterizedPercentage}%. Please maintain transaction within the designated limit.',
+                         'Recipient': 'trading.risk@bankmandiri.co.id'},
+
+                     'Non-Bank FX Transactions CEM Exceed': {
+                         'Subject': 'Treasury Line Non-Bank FX Utilization EXCEED - {alert.AppliedRule().TargetName()}',
+                         'Email Body': 'Treasury Line Non-Bank FX Utilization for Group ID - {alert.AppliedRule().TargetName()} has reached {percentageOfUtilization} , {parameterizedPercentage}%. Please input exceed reason.',
+                         'Recipient': 'trading.risk@bankmandiri.co.id'},
+
+                     'Non-Bank FX Transactions CEM Breach': {
+                         'Subject': 'Treasury Line Non-Bank FX Utilization BREACH - {alert.AppliedRule().TargetName()}',
+                         'Email Body': 'Treasury Line Non-Bank FX Utilization for Group ID  - {alert.AppliedRule().TargetName()} has reached {percentageOfUtilization} , {parameterizedPercentage}%.  Please input breach reason and report action plan to mitigate the risk of this issue',
+                         'Recipient': 'trading.risk@bankmandiri.co.id'},
+
+                     'Bank Counterparty Exposure Limit (CEM) Warning': {
+                         'Subject': 'Treasury Line Total Bank Utilization WARNING - {alert.AppliedRule().TargetName()}',
+                         'Email Body': 'Treasury Line Total Bank Utilization for Group ID - {alert.AppliedRule().TargetName()} has reached {percentageOfUtilization} , {parameterizedPercentage}%. Please maintain transaction within the designated limit.',
+                         'Recipient': 'trading.risk@bankmandiri.co.id'},
+
+                     'Bank Counterparty Exposure Limit (CEM) Exceed': {
+                         'Subject': 'Treasury Line Total Bank Utilization EXCEED - {alert.AppliedRule().TargetName()}',
+                         'Email Body': 'Treasury Line Total Bank Utilization for Group ID - {alert.AppliedRule().TargetName()} has reached {percentageOfUtilization} , {parameterizedPercentage}%. Please input exceed reason.',
+                         'Recipient': 'trading.risk@bankmandiri.co.id'},
+
+                     'Bank Counterparty Exposure Limit (CEM) Breach': {
+                         'Subject': 'Treasury Line Total Bank Utilization BREACH - {alert.AppliedRule().TargetName()}',
+                         'Email Body': 'Treasury Line Total Bank Utilization for Group ID  - {alert.AppliedRule().TargetName()} has reached {percentageOfUtilization} , {parameterizedPercentage}%.  Please input breach reason and report action plan to mitigate the risk of this issue',
+                         'Recipient': 'trading.risk@bankmandiri.co.id'},
+
+                     'Non-Bank Derivative Notional Limit Warning': {
+                         'Subject': 'Notional Non-Bank Derivative Limit Utilization WARNING - {alert.AppliedRule().TargetName()}',
+                         'Email Body': 'Notional Non-Bank Derivative Limit Utilization for Group ID - {alert.AppliedRule().TargetName()} has reached {percentageOfUtilization} , {parameterizedPercentage}%. Please maintain transaction within the designated limit.',
+                         'Recipient': 'trading.risk@bankmandiri.co.id'},
+
+                     'Non-Bank Derivative Notional Limit Exceed': {
+                         'Subject': 'Notional Non-Bank Derivative Limit Utilization EXCEED - {alert.AppliedRule().TargetName()}',
+                         'Email Body': 'Notional Non-Bank Derivative Limit Utilization for Group ID - {alert.AppliedRule().TargetName()} has reached {percentageOfUtilization} , {parameterizedPercentage}%. Please input exceed reason.',
+                         'Recipient': 'trading.risk@bankmandiri.co.id'},
+
+                     'Non-Bank Derivative Notional Limit Breach': {
+                         'Subject': 'Notional Non-Bank Derivative Limit Utilization BREACH - {alert.AppliedRule().TargetName()}',
+                         'Email Body': ' Notional Non-Bank Derivative Limit Utilization for Group ID  - {alert.AppliedRule().TargetName()} has reached {percentageOfUtilization} , {parameterizedPercentage}%.  Please input breach reason and report action plan to mitigate the risk of this issue',
+                         'Recipient': 'trading.risk@bankmandiri.co.id'},
+
+                     'Non-Bank FX Notional Transactions Warning': {
+                         'Subject': 'Notional Non-Bank FX Limit Utilization WARNING - {alert.AppliedRule().TargetName()}',
+                         'Email Body': 'Notional Non-Bank FX Limit Utilization for Group ID - {alert.AppliedRule().TargetName()} has reached {percentageOfUtilization} , {parameterizedPercentage}%. Please maintain transaction within the designated limit.',
+                         'Recipient': 'trading.risk@bankmandiri.co.id'},
+
+                     'Non-Bank FX Notional Transactions Exceed': {
+                         'Subject': 'Notional Non-Bank FX Limit Utilization EXCEED - {alert.AppliedRule().TargetName()}',
+                         'Email Body': 'Notional Non-Bank FX Limit Utilization for Group ID - {alert.AppliedRule().TargetName()} has reached {percentageOfUtilization} , {parameterizedPercentage}%. Please input exceed reason.',
+                         'Recipient': 'trading.risk@bankmandiri.co.id'},
+
+                     'Non-Bank FX Notional Transactions Breach': {
+                         'Subject': 'Notional Non-Bank FX Limit Utilization BREACH - {alert.AppliedRule().TargetName()}',
+                         'Email Body': 'Notional Non-Bank FX Limit Utilization for Group ID  - {alert.AppliedRule().TargetName()} has reached {percentageOfUtilization} , {parameterizedPercentage}%.  Please input breach reason and report action plan to mitigate the risk of this issue.',
+                         'Recipient': 'trading.risk@bankmandiri.co.id'}, 
+
+                     'Non Bank Issuer Limit Warning': {
+                         'Subject': 'Issuer Non-Bank Limit Utilization WARNING - {alert.AppliedRule().TargetName()}',
+                         'Email Body': 'Issuer Non-Bank Limit Utilization for Group ID - {alert.AppliedRule().TargetName()} has reached {percentageOfUtilization} , {parameterizedPercentage}%. Please maintain transaction within the designated limit.',
+                         'Recipient': 'trading.risk@bankmandiri.co.id'}, 
+
+                     'Non Bank Issuer Limit Exceed': {
+                          'Subject': 'Issuer Non-Bank Limit Utilization EXCEED - {alert.AppliedRule().TargetName()}',
+                          'Email Body': 'Issuer Non-Bank Limit Utilization for Group ID - {alert.AppliedRule().TargetName()} has reached {percentageOfUtilization} , {parameterizedPercentage}%. Please input exceed reason.',
+                          'Recipient': 'trading.risk@bankmandiri.co.id'}, 
+
+                     'Non Bank Issuer Limit Breach': {
+                          'Subject': 'Issuer Non-Bank Limit Utilization BREACH - {alert.AppliedRule().TargetName()}t',
+                          'Email Body': ' Issuer Non-Bank Limit Utilization for Group ID  - {alert.AppliedRule().TargetName()} has reached {percentageOfUtilization} , {parameterizedPercentage}%.  Please input breach reason and report action plan to mitigate the risk of this issue.',
+                          'Recipient': 'trading.risk@bankmandiri.co.id'},
+
+                     'Country Limit Warning': {'Subject': 'Country Limit Utilization WARNING - {alert.AppliedRule().TargetName()}',
+                                                    'Email Body': 'Country Limit Utilization for Group ID - {alert.AppliedRule().TargetName()} has reached {percentageOfUtilization} , {parameterizedPercentage}%. Please maintain transaction within the designated limit.',
+                                                    'Recipient': 'trading.risk@bankmandiri.co.id'},
+
+                     'Country Limit Exceed': {'Subject': 'Country Limit Utilization EXCEED - {alert.AppliedRule().TargetName()}',
+                                                   'Email Body': 'Country Limit Utilization for Group ID - {alert.AppliedRule().TargetName()} has reached {percentageOfUtilization} , {parameterizedPercentage}%. Please input exceed reason.',
+                                                   'Recipient': 'trading.risk@bankmandiri.co.id'},
+
+                     'Country Limit Breach': {'Subject': 'Country Limit Utilization BREACH - {alert.AppliedRule().TargetName()}',
+                                                   'Email Body': 'Country Limit Utilization for Group ID  - {alert.AppliedRule().TargetName()} has reached {percentageOfUtilization} , {parameterizedPercentage}%.  Please input breach reason and report action plan to mitigate the risk of this issue.',
+                                                   'Recipient': 'trading.risk@bankmandiri.co.id'},
+
+                     'VaR Total Limit Warning': {'Subject': 'VaR Total Limit Utilization WARNING',
+                                                      'Email Body': 'VaR Total Limit Utilization has reached {percentageOfUtilization} , {parameterizedPercentage}%. Please maintain transaction within the designated limit.',
+                                                      'Recipient': 'trading.risk@bankmandiri.co.id,treasury.sbbm@bankmandiri.co.id,FX.Trading@bankmandiri.co.id,treasury.irt@bankmandiri.co.id,tas@bankmandiri.co.id'},
+
+                     'VaR Total Limit Breach': {'Subject': 'VaR Total Limit Utilization BREACH',
+                                                     'Email Body': 'VaR Total Limit Utilization has reached {percentageOfUtilization} , {parameterizedPercentage}%.  Please input breach reason and report action plan to mitigate the risk of this issue.',
+                                                     'Recipient': 'trading.risk@bankmandiri.co.id,treasury.sbbm@bankmandiri.co.id,FX.Trading@bankmandiri.co.id,treasury.irt@bankmandiri.co.id,tas@bankmandiri.co.id'},
+                     'VaR IRT Department Limit Warning': {
+                         'Subject': 'VaR IRT Department Limit Utilization WARNING',
+                         'Email Body': 'VaR IRT Department Limit Utilization has reached {percentageOfUtilization} , {parameterizedPercentage}%. Please maintain transaction within the designated limit.',
+                         'Recipient': 'trading.risk@bankmandiri.co.id,treasury.irt@bankmandiri.co.id'},
+
+                     'VaR IRT Department Limit Breach': {'Subject': 'VaR IRT Department Limit Utilization BREACH',
+                                                              'Email Body': 'VaR IRT Department Limit Utilization has reached {percentageOfUtilization} , {parameterizedPercentage}%.  Please input breach reason and report action plan to mitigate the risk of this issue.',
+                                                              'Recipient': 'trading.risk@bankmandiri.co.id,treasury.irt@bankmandiri.co.id'},
+
+                     'VaR FXT Department Limit Warning': {
+                         'Subject': 'VaR FXT Department Limit Utilization WARNING',
+                         'Email Body': 'VaR FXT Department Limit Utilization has reached {percentageOfUtilization} , {parameterizedPercentage}%. Please maintain transaction within the designated limit.',
+                         'Recipient': 'trading.risk@bankmandiri.co.id,FX.Trading@bankmandiri.co.id'},
+
+                     'VaR FXT Department Limit Breach': {'Subject': 'VaR FXT Department Limit Utilization BREACH',
+                                                              'Email Body': 'VaR FXT Department Limit Utilization has reached {percentageOfUtilization} , {parameterizedPercentage}%.  Please input breach reason and report action plan to mitigate the risk of this issue.',
+                                                              'Recipient': 'trading.risk@bankmandiri.co.id,FX.Trading@bankmandiri.co.id'},
+
+                     'VaR Client Team Department Limit Warning': {
+                         'Subject': 'VaR Client Team Department Limit Utilization WARNING',
+                         'Email Body': 'VaR Client Team Department Limit Utilization has reached {percentageOfUtilization} , {parameterizedPercentage}%. Please maintain transaction within the designated limit.',
+                         'Recipient': 'trading.risk@bankmandiri.co.id,tas@bankmandiri.co.id'},
+
+                     'VaR Client Team Department Limit Breach': {
+                         'Subject': 'VaR Client Team Department Limit Utilization BREACH',
+                         'Email Body': 'VaR Client Team Department Limit Utilization has reached {percentageOfUtilization} , {parameterizedPercentage}%.  Please input breach reason and report action plan to mitigate the risk of this issue.',
+                         'Recipient': 'trading.risk@bankmandiri.co.id,tas@bankmandiri.co.id'},
+
+                     'VaR Bankwide Limit Warning': {'Subject': 'VaR Bankwide Limit Utilization WARNING',
+                                                         'Email Body': 'VaR Bankwide Limit Utilization has reached {percentageOfUtilization} , {parameterizedPercentage}%. Please maintain transaction within the designated limit.',
+                                                         'Recipient': 'trading.risk@bankmandiri.co.id,treasury.sbbm@bankmandiri.co.id,FX.Trading@bankmandiri.co.id,treasury.irt@bankmandiri.co.id,tas@bankmandiri.co.id'},
+                     'VaR Bankwide Limit Breach': {'Subject': 'VaR Bankwide Limit Utilization BREACH',
+                                                        'Email Body': 'VaR Bankwide Limit Utilization has reached {percentageOfUtilization} , {parameterizedPercentage}%.  Please input breach reason and report action plan to mitigate the risk of this issue.',
+                                                        'Recipient': 'trading.risk@bankmandiri.co.id,treasury.sbbm@bankmandiri.co.id,FX.Trading@bankmandiri.co.id,treasury.irt@bankmandiri.co.id,tas@bankmandiri.co.id'},
+
+                     'VaR BMSG FX Related Limit Warning': {
+                         'Subject': 'VaR BMSG FX Related Limit Limit Utilization WARNING',
+                         'Email Body': 'VaR BMSG FX Related Limit Limit Utilization has reached {percentageOfUtilization} , {parameterizedPercentage}%. Please maintain transaction within the designated limit.',
+                         'Recipient': 'trading.risk@bankmandiri.co.id'}, 
+
+                     'VaR BMSG FX Related Limit Breach': {
+                            'Subject': 'VaR BMSG FX Related Limit Limit Utilization BREACH',
+                            'Email Body': 'VaR BMSG FX Related Limit Limit Utilization has reached {percentageOfUtilization} , {parameterizedPercentage}%.  Please input breach reason and report action plan to mitigate the risk of this issue.',
+                            'Recipient': 'trading.risk@bankmandiri.co.id'}, 
+
+                     'VaR BMSG IR Related Limit Warning': {
+                            'Subject': 'VaR BMSG FX Related Limit Limit Utilization WARNING',
+                            'Email Body': 'VaR BMSG IR Related Limit Limit Utilization has reached {percentageOfUtilization} , {parameterizedPercentage}%. Please maintain transaction within the designated limit.',
+                            'Recipient': 'trading.risk@bankmandiri.co.id'},
+
+                     'VaR BMSG IR Related Limit Breach': {
+                            'Subject': 'VaR BMSG IR Related Limit Limit Utilization BREACH',
+                            'Email Body': 'VaR BMSG IR Related Limit Limit Utilization has reached {percentageOfUtilization} , {parameterizedPercentage}%.  Please input breach reason and report action plan to mitigate the risk of this issue.',
+                            'Recipient': 'trading.risk@bankmandiri.co.id'},
+
+                     'VaR BMSH FX Related Limit Warning': {
+                            'Subject': 'VaR BMSH FX Related Limit Limit Utilization WARNING',
+                            'Email Body': 'VaR BMSH FX Related Limit Limit Utilization has reached {percentageOfUtilization} , {parameterizedPercentage}%. Please maintain transaction within the designated limit.',
+                            'Recipient': 'trading.risk@bankmandiri.co.id'}, 
+
+                     'VaR BMSH FX Related Limit Breach': {
+                            'Subject': 'VaR BMSH FX Related Limit Limit Utilization BREACH',
+                            'Email Body': 'VaR BMSH FX Related Limit Limit Utilization has reached {percentageOfUtilization} , {parameterizedPercentage}%.  Please input breach reason and report action plan to mitigate the risk of this issue.',
+                            'Recipient': 'trading.risk@bankmandiri.co.id'},
+
+                     'VaR BMSH IR Related Limit Warning': {
+                            'Subject': 'VaR BMSH FX Related Limit Limit Utilization WARNING',
+                            'Email Body': 'VaR BMSH IR Related Limit Limit Utilization has reached {percentageOfUtilization} , {parameterizedPercentage}%. Please maintain transaction within the designated limit.',
+                            'Recipient': 'trading.risk@bankmandiri.co.id'},
+
+                     'VaR BMSH IR Related Limit Breach': {
+                            'Subject': 'VaR BMSH IR Related Limit Limit Utilization BREACH',
+                            'Email Body': 'VaR BMSG IR Related Limit Limit Utilization has reached {percentageOfUtilization} , {parameterizedPercentage}%.  Please input breach reason and report action plan to mitigate the risk of this issue.',
+                            'Recipient': 'trading.risk@bankmandiri.co.id'},
+
+                     'VaR BMHK FX Related Limit Warning': {
+                            'Subject': 'VaR BMHK FX Related Limit Limit Utilization WARNING',
+                            'Email Body': 'VaR BMHK FX Related Limit Limit Utilization has reached {percentageOfUtilization} , {parameterizedPercentage}%. Please maintain transaction within the designated limit.',
+                            'Recipient': 'trading.risk@bankmandiri.co.id'},
+
+                     'VaR BMHK FX Related Limit Breach': {
+                            'Subject': 'VaR BMHK FX Related Limit Limit Utilization BREACH',
+                            'Email Body': 'VaR BMHK FX Related Limit Limit Utilization has reached {percentageOfUtilization} , {parameterizedPercentage}%.  Please input breach reason and report action plan to mitigate the risk of this issue.',
+                            'Recipient': 'trading.risk@bankmandiri.co.id'},
+
+                     'VaR BMHK IR Related Limit Warning': {
+                            'Subject': 'VaR BMHK FX Related Limit Limit Utilization WARNING',
+                            'Email Body': 'VaR BMHK IR Related Limit Limit Utilization has reached {percentageOfUtilization} , {parameterizedPercentage}%. Please maintain transaction within the designated limit.',
+                            'Recipient': 'trading.risk@bankmandiri.co.id'},
+
+                     'VaR BMHK IR Related Limit Breach': {
+                            'Subject': 'VaR BMHK IR Related Limit Limit Utilization BREACH',
+                            'Email Body': 'VaR BMSG IR Related Limit Limit Utilization has reached {percentageOfUtilization} , {parameterizedPercentage}%.  Please input breach reason and report action plan to mitigate the risk of this issue.',
+                            'Recipient': 'trading.risk@bankmandiri.co.id'},
+
+                     'VaR BMCI FX Related Limit Warning': {
+                            'Subject': 'VaR BMCI FX Related Limit Limit Utilization WARNING',
+                            'Email Body': 'VaR BMCI FX Related Limit Limit Utilization has reached {percentageOfUtilization} , {parameterizedPercentage}%. Please maintain transaction within the designated limit.',
+                            'Recipient': 'trading.risk@bankmandiri.co.id'},
+
+                     'VaR BMCI FX Related Limit Breach': {
+                            'Subject': 'VaR BMCI FX Related Limit Limit Utilization BREACH',
+                            'Email Body': 'VaR BMCI FX Related Limit Limit Utilization has reached {percentageOfUtilization} , {parameterizedPercentage}%.  Please input breach reason and report action plan to mitigate the risk of this issue.',
+                            'Recipient': 'trading.risk@bankmandiri.co.id'},
+
+                     'VaR BMCI IR Related Limit Warning': {
+                            'Subject': 'VaR BMCI FX Related Limit Limit Utilization WARNING',
+                            'Email Body': 'VaR BMCI IR Related Limit Limit Utilization has reached {percentageOfUtilization} , {parameterizedPercentage}%. Please maintain transaction within the designated limit.',
+                            'Recipient': 'trading.risk@bankmandiri.co.id'},
+                     'VaR BMCI IR Related Limit Breach': {
+                            'Subject': 'VaR BMCI IR Related Limit Limit Utilization BREACH',
+                            'Email Body': 'VaR BMSG IR Related Limit Limit Utilization has reached {percentageOfUtilization} , {parameterizedPercentage}%.  Please input breach reason and report action plan to mitigate the risk of this issue.',
+                            'Recipient': 'trading.risk@bankmandiri.co.id'},
+
+                     'VaR BMDI/TL FX Related Limit Warning': {
+                            'Subject': 'VaR BMDI/TL FX Related Limit Limit Utilization WARNING',
+                            'Email Body': 'VaR BMDI/TL FX Related Limit Limit Utilization has reached {percentageOfUtilization} , {parameterizedPercentage}%. Please maintain transaction within the designated limit.',
+                            'Recipient': 'trading.risk@bankmandiri.co.id'},
+
+                     'VaR BMDI/TL FX Related Limit Breach': {
+                            'Subject': 'VaR BMDI/TL FX Related Limit Limit Utilization BREACH',
+                            'Email Body': 'VaR BMDI/TL FX Related Limit Limit Utilization has reached {percentageOfUtilization} , {parameterizedPercentage}%.  Please input breach reason and report action plan to mitigate the risk of this issue.',
+                            'Recipient': 'trading.risk@bankmandiri.co.id'},
+
+                     'VaR BMDI/TL IR Related Limit Warning': {
+                            'Subject': 'VaR BMDI/TL FX Related Limit Limit Utilization WARNING',
+                            'Email Body': 'VaR BMDI/TL IR Related Limit Limit Utilization has reached {percentageOfUtilization} , {parameterizedPercentage}%. Please maintain transaction within the designated limit.',
+                            'Recipient': 'trading.risk@bankmandiri.co.id'},
+
+                     'VaR BMDI/TL IR Related Limit Breach': {
+                            'Subject': 'VaR BMDI/TL IR Related Limit Limit Utilization BREACH',
+                            'Email Body': 'VaR BMSG IR Related Limit Limit Utilization has reached {percentageOfUtilization} , {parameterizedPercentage}%.  Please input breach reason and report action plan to mitigate the risk of this issue.',
+                            'Recipient': 'trading.risk@bankmandiri.co.id'},
+
+                     'PV01 IRT Department Limit Warning': {
+                            'Subject': 'PV01 IRT Department Limit Utilization WARNING',
+                            'Email Body': 'PV01 IRT Department Limit Utilization has reached {percentageOfUtilization} , {parameterizedPercentage}%. Please maintain transaction within the designated limit.',
+                            'Recipient': 'treasury.irt@bankmandiri.co.id'},
+
+                     'PV01 IRT Department Limit Breach': {
+                            'Subject': 'PV01 IRT Department Limit Utilization BREACH',
+                            'Email Body': 'PV01 IRT Department Limit Utilization has reached {percentageOfUtilization}, {parameterizedPercentage}% .  Please input breach reason and report action plan to mitigate the risk of this issue.',
+                            'Recipient': 'treasury.irt@bankmandiri.co.id'},
+
+                     'PV01 FXT Department Limit Warning': {
+                            'Subject': 'PV01 FXT Department Limit Utilization WARNING',
+                            'Email Body': 'PV01 FXT Department Limit Utilization has reached {percentageOfUtilization} , {parameterizedPercentage}%. Please maintain transaction within the designated limit.',
+                            'Recipient': 'FX.Trading@bankmandiri.co.id'},
+
+                     'PV01 FXT Department Limit Breach': {
+                            'Subject': 'PV01 FXT Department Limit Utilization BREACH',
+                            'Email Body': 'PV01 FXT Department Limit Utilization has reached {percentageOfUtilization} , {parameterizedPercentage}%.  Please input breach reason and report action plan to mitigate the risk of this issue.',
+                            'Recipient': 'FX.Trading@bankmandiri.co.id'},
+
+                     'PV01 Client Team Department Limit Warning': {
+                            'Subject': 'PV01 Client Team Department Limit Utilization WARNING',
+                            'Email Body': 'PV01 Client Team Department Limit Utilization has reached {percentageOfUtilization} , {parameterizedPercentage}%. Please maintain transaction within the designated limit.',
+                            'Recipient': 'tas@bankmandiri.co.id'},
+
+                     'PV01 Client Team Department Limit Breach': {
+                            'Subject': 'PV01 Client Team Department Limit Utilization BREACH',
+                            'Email Body': 'PV01 Client Team Department Limit Utilization has reached {percentageOfUtilization} , {parameterizedPercentage}%.  Please input breach reason and report action plan to mitigate the risk of this issue.',
+                            'Recipient': 'tas@bankmandiri.co.id'},
+
+                     'FVOCI portfolio UPL Breach': {
+                            'Subject': 'FVOCI portfolio UPL compared with bank capital Breach',
+                            'Email Body': 'FVOCI portfolio UPL compared with bank capital has reached {percentageOfUtilization} , {parameterizedPercentage}%.',
+                            'Recipient': 'ALMMKR@bankmandiri.co.id'},
+
+                     'FVOCI portfolio UPL Warning': {
+                            'Subject': 'FVOCI portfolio UPL compared with bank capital Warning',
+                            'Email Body': 'FVOCI portfolio UPL compared with bank capital has reached {percentageOfUtilization} , {parameterizedPercentage}%.',
+                            'Recipient': 'ALMMKR@bankmandiri.co.id'},
+
+                     }
+
+    
+
+...
+
+  LimitsUtils
+from itertools import chain
+
+import acm
+import FComplianceRulesUtils
+
+def ThresholdComparator(name1):
+    levels = ['Reporting', 'Warning', 'Violation']
+    return levels.index(name1)
+
+def CompositeQuery(queryClass, queries, operator='AND'):
+    """ Creates a combined query of all queries that are passed in using either the AND or the OR operator. """
+    if queries:
+        compQuery = queries[0]
+        for query in queries[1:]:
+            if operator == 'AND':
+                compQuery = acm.Filter.CompositeAndQuery(queryClass, compQuery, query)
+            elif operator == 'OR':
+                compQuery = acm.Filter.CompositeOrQuery(queryClass, compQuery, query)
+            else:
+                raise ValueError('Unknown operator: {0}. Must be AND or OR'.format(operator))
+        return compQuery
+
+        base_applied_rules = self._appliedRuleQuery.Select()
+        return [applied_rule for applied_rule in base_applied_rules if applied_rule.TargetType() == 'TextObject' and applied_rule.TargetSubtype() == 30]
+
+def ConvertCompound(node, out_query):
+    if node.IsKindOf(acm.FASQLOpNode):
+        if len(node.AsqlNodes()) == 1 and node.AsqlNodes()[0].IsKindOf(acm.FASQLAttrNode):
+            pass
+        else:
+            out_query.AddOpNode(node.AsqlOperator())
+        for child in node.AsqlNodes():
+            out_query = ConvertCompound(child, out_query)
+    elif node.IsKindOf(acm.FASQLAttrNode):
+        val = node.AsqlValue()
+        temp = acm.FStoredASQLQuery[str(val)]
+        out_query = CompositeQuery(acm.FTrade, [temp.Query(), out_query], operator='AND' if node.AsqlOperator() == 0 else 'OR')
+    return out_query
+
+base_applied_rules = acm.FAppliedRule.Select('')
+query_targets =  [applied_rule for applied_rule in base_applied_rules if applied_rule.TargetType() == 'TextObject' and applied_rule.TargetSubtype() == 30]
+
+today = acm.Time.DateToday()
+
+class AppliedRuleFinder():
+    CL_ATTRS = ['RiskCountry']#, 'Free1ChoiceList', 'Free2ChoiceList', 'Free3ChoiceList', 'Free4ChoiceList']#, 'Free5ChoiceList']
+    TRADE_MAP = {
+           'CreditEntity':         'Instrument.Issuer',
+           'CreditEntityParent':   'Instrument.Issuer.Parent',
+           'Issuer':               'Instrument.Issuer',
+           'IssuerParent':         'Instrument.Issuer.Parent',
+           'Guarantor':            'Guarantor',
+           'Counterparty':         'Counterparty',
+           'CounterpartyParent':   'Counterparty.Parent',
+           'Portfolio':            'Portfolio',
+           'MasterAgreement':      'MasterAgreement',
+           'LimitPartyTargetRisk': 'AdditionalInfo.LimitPartyTarget.RiskCountry',
+           }
+
+    @classmethod
+    def yieldObject(cls, object):
+        yield object
+        if object.IsKindOf(acm.FParty):
+            for c in cls.CL_ATTRS:
+                target = acm.FMethodChain(c).Call([object])
+                if target:
+                    return target
+
+    @classmethod
+    def DeriveRuleEntitiesFromTrade(cls, trade):
+        for m in set(cls.TRADE_MAP.values()):
+            methodChain = acm.FMethodChain(m)
+            object = methodChain.Call([trade])
+            if object is None: continue
+            if hasattr(object, 'IsKindOf') and object.IsKindOf(acm.FCollection):
+                for sub_object in object:
+                    yield next(cls.yieldObject(sub_object))
+            else:
+                yield next(cls.yieldObject(object))
+
+    @classmethod
+    def RuleApplicable(cls, applied_rule, trade):
+        if applied_rule.Inactive():
+            return False
+        start_date = applied_rule.StartDate()
+        if start_date and acm.Time.DateDifference(start_date, today) > 0:
+            return False
+        end_date = applied_rule.EndDate()
+        if end_date and acm.Time.DateDifference(today, end_date) > 0:
+            return False
+        compliance_rule = applied_rule.ComplianceRule()
+        interface = FComplianceRulesUtils.GetInterface(compliance_rule)()
+        if not interface:
+            return False
+
+        if interface.IsAffectedBy(applied_rule, trade):
+            return True
+        return False
+
+    @classmethod
+    def GetAppliedRulesFromTrades(cls, trades):
+        rules = set()
+        for trade in trades:
+            portfolios = cls.AllPortfoliosForTrades(trade)
+            for rule in chain.from_iterable(FComplianceRulesUtils.GetAppliedRules(p) for p in portfolios):
+                if cls.RuleApplicable(rule, trade):
+                    rules.add(rule)
+            for rule in query_targets:
+                target = rule.Target()
+                if target.IsSatisfiedBy(trade):
+                    if rule.Inactive() is False:
+                        rules.add(rule)
+            for entity in cls.DeriveRuleEntitiesFromTrade(trade):
+                for rule in FComplianceRulesUtils.GetAppliedRules(entity):
+                    if rule.Inactive() is True:
+                        continue
+                    if entity.IsKindOf(acm.FCreditBalance) and trade in entity.BalancePortfolio().Trades():
+                        rules.add(rule)
+                    elif cls.RuleApplicable(rule, trade):
+                        rules.add(rule)
+        return rules
+
+    @classmethod
+    def _AllOwnerPortfolios(cls, portfolio):
+        portfolios = []
+        for link in portfolio.MemberLinks():
+            if link.OwnerPortfolio():
+                portfolios.append(link.OwnerPortfolio())
+                portfolios.extend(cls._AllOwnerPortfolios(link.OwnerPortfolio()))
+            else:
+                portfolios.append(portfolio)
+        return portfolios
+
+    @classmethod
+    def AllPortfoliosForTrades(cls, trade):
+        if trade.Portfolio():
+            portfolios = {trade.Portfolio()}
+            portfolios.update(cls._AllOwnerPortfolios(trade.Portfolio()))
+            return portfolios
+        return []
+
+class AsyncComplianceCheckerNotWith(FComplianceRulesUtils.AsyncComplianceChecker):
+    def Check(self):
+        if self._appliedRules:
+            for appliedRule in self._appliedRules:
+                partitionKey = self._GetPartitionKey(appliedRule)
+                appliedRule.CheckAsync(self._objects, partitionKey).ContinueWith(self._OnResultReturned)
+        else: # Immediately call ContinueWith-function if there are no applied rules.
+            self._CallContinueWithFunction()
+
+...
+
+  PreDealUtils
+import acm
+import FAlertGenerator
+import ComplianceCheckReport
+
+import LimitsUtils
+
+class ComplianceRuleProcessor:
+
+    BREACHED_LEVELS = ('Level 1', 'Level 2', 'Level 3')
+
+    def __init__(self, objects):
+        self.objects = objects
+        self.alerts = list()
+        self.applied_rules = list()
+        self.max_level = 0
+        self.max_level_name = 'Report'
+        self.alerts = list()
+        self.max_done = False
+        self.trades = set()
+
+    def ProcessTrades(self):
+        self.AppliedRulesFromTrades()
+        self.CheckAppliedRules()
+
+    def AppliedRulesFromTrades(self):
+        self.applied_rules = LimitsUtils.AppliedRuleFinder.GetAppliedRulesFromTrades(self.Trades())
+
+    def Trades(self):
+        if not self.trades:
+            for object in self.objects:
+                self.trades.update([object, self._OtherFxSwapLeg(object)] if object.IsFxSwap() else [object])
+        return self.trades
+
+    def CheckAppliedRules(self):
+        alerts = list()
+        self.alerts = list()
+        if self.applied_rules:
+            for applied_rule in self.applied_rules:
+                ruleCheck = applied_rule.Check()
+                alertGenerator = FAlertGenerator.Create(ruleCheck.AppliedRule())
+                alertsAndValues = alertGenerator.AlertsAndValuesFromCheck(ruleCheck)
+                alerts.extend(alertsAndValues)
+        for alert, value in alerts:
+            if alert.State() != 'Active':
+                continue
+            if alert.SubjectType() != 'Trade':
+                self.alerts.append((alert, value))
+                continue
+            if alert.Subject() in self.objects:
+                self.alerts.append((alert, value))
+        self.max_done = False
+
+    def MaxLevelName(self):
+        if self.max_done is False:
+            for alert, _ in self.alerts:
+                threshold_level_name = alert.Threshold().Type().Name()
+                threshold_level = LimitsUtils.ThresholdComparator(threshold_level_name)
+                if threshold_level > self.max_level:
+                    self.max_level = threshold_level
+                    self.max_level_name = threshold_level_name
+            self.max_done = True
+        return self.max_level_name
+
+    def CommitAlerts(self):
+        acm.BeginTransaction()
+        try:
+            for tup in self.alerts:
+                for alert, _ in tup:
+                    alert.Commit()
+            acm.CommitTransaction()
+            return True
+        except Exception as e:
+            acm.AbortTransaction()
+            raise e
+            return False
+
+    def GenerateReportCaption(self, trade, isBreached):
+        ids = list()
+        includeAttrs = ('Trade', 'Instrument', 'Trader', 'Counterparty', 'Portfolio', 'Acquirer')
+        for attr in includeAttrs:
+            val = getattr(trade, attr)()
+            ids.append(attr + ': ' + (val.StringKey() if val else ''))
+        ids.append('Compliance check: ' + ('Failed' if isBreached else 'Passed'))
+        return ' | '.join(ids)
+
+    def CreateReport(self, trade, isBreached):
+        output = ComplianceCheckReport.XmlReportOutput(trade.Status() + '_' + trade.StringKey())
+        reportName = self.GenerateReportCaption(trade, isBreached)
+        report = ComplianceCheckReport.ComplianceCheckReport(output.Writer())
+        report._reportName = reportName
+        report.Generate(self.alerts)
+
+    @staticmethod
+    def _OtherFxSwapLeg(trade):
+        if trade.IsFxSwapNearLeg():
+            return trade.FxSwapFarLeg()
+        if trade.IsFxSwapFarLeg():
+            return trade.FxSwapNearLeg()
+
+def CheckTrade(trade):
+    if trade.Status() in ('Reserved', 'Internal', 'Simulated'):
+        processor = ComplianceRuleProcessor([trade])
+        processor.ProcessTrades()
+        is_breached = False
+        if processor.MaxLevelName() in processor.BREACHED_LEVELS:
+            is_breached = True
+        processor.CreateReport(trade, is_breached)
+    else:
+        acm.StartApplication('Compliance Check Report Viewer', trade)
+
+...
+
+}
+
+decls[FRuleDefinitionInfo] {
+  "PositionAndRiskControl" ( "active rules" ) "";
+}
+
+clx FObject [FRuleDefinitionInfo] {
+  PositionAndRiskControl
+
+Properties =
+  ApplicableTo=FCounterParty;FIssuer;FHierarchyNode;FChoiceList("Country of Risk");FClient;
+  DisplayName=Position&Risk Control
+  InheritsFrom=Exposure
+  Interface=FPositionAndRiskRuleInterface.PositionAndRiskRuleInterface
+
+Attribute RelationType =
+  DefaultValue=Explicit
+  Domain=EnumRelationType
+
+Attribute TradeRelation =
+  DefaultValue=
+  Domain=string
+
+<end>
+
+}
+

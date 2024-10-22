@@ -1,0 +1,223 @@
+#
+# Front Arena exported extension module.
+# source          ""
+# timestamp (utc) "2024-01-02 09:44:19.2"
+# ***** DO NOT EDIT! *****
+#
+name        "BM_TPSReturn"
+description ""
+
+groups {
+}
+
+decls[FParameters] {
+}
+
+clx FObject [FParameters] {
+  TPSReturnParams =
+  base_url=https://tpsgateway.corp.devmandiri.co.id:20003/TPSGateway
+  branch_code=99120
+  channel_id=154
+  db_name=NTCSSTGDB
+  host_db=10.243.212.162,1434
+  pass_db=P@ssw0rd
+  token_base=Bearer eyJhbGciOiJIUzI1NiJ9.eyJBY2Nlc3MiOnsiY3JlYXRlZCI6IjIwMjMtMTAtMTEtMDk6NDY6NDcuNjIyIiwiSWQiOiIyNTIiLCJ1c2VybmFtZSI6IlVzZXJOVENTQWNrIn0sImV4cCI6MTcwNDc5ODQwN30.Vb41b0kSaEDD_aeJnIPotNI2mEarvZvaWcJAQEG-1xU
+  user_db=sa
+
+
+}
+
+decls[FPythonCode] {
+}
+
+clx FObject [FPythonCode] {
+  TPSReturn
+
+import requests
+import json
+import pyodbc
+import traceback
+import datetime as libdt
+from datetime import datetime
+import ParametersReader
+import acm
+import FRunScriptGUI
+import ael
+import FLogger
+import os
+import InterfaceUtils
+from BM_JWT import get_token
+
+folderPicker = FRunScriptGUI.DirectorySelection()
+
+TPSReturnParamAPI  = ParametersReader.get_params('TPSReturnParams')
+base_url= TPSReturnParamAPI['base_url']
+host_db = TPSReturnParamAPI['host_db']
+user_db = TPSReturnParamAPI['user_db']
+pass_db = TPSReturnParamAPI['pass_db']
+db_name = TPSReturnParamAPI['db_name']
+token_base = TPSReturnParamAPI['token_base']
+branch_code=TPSReturnParamAPI['branch_code']
+channel_id=TPSReturnParamAPI['channel_id']
+
+
+ael_gui_parameters = {'windowCaption' : 'TPS Return'}
+logLevels = [FLogger.FLogger.INFO, FLogger.FLogger.ERROR, FLogger.FLogger.WARNING, FLogger.FLogger.DEBUG]
+
+
+ael_variables=  [['log_level', 'Log Level_Logging', 'string', logLevels, FLogger.FLogger.DEBUG, 1, 0],
+                 ['log_to_console', 'Log to console_Logging', 'int', [1, 0], 1, 1, 0,'Whether logging should be done in the Log Console or not.']]
+
+
+LOG_PARAM = 'TPS RETURN' 
+log_file_name = 'TPS RETURN'.format(acm.Time.DateToday().replace('-', ''))
+app_name = 'TPS RETURN'
+
+
+
+def generate_value_dt_today():
+    # getting the current date and time
+    current_datetime = libdt.date.today()
+    
+    return current_datetime.strftime('%d%m%y')
+
+    
+def insert_table(conn,cursor,data):
+    cursor.execute("""INSERT INTO NTCS_TPS_TRX_RETURN (data_id,inc_remit_no,val_dt,val_dt_jul,
+proc_dt,sender_bk_nm,sender_bic,sender_cust_acct_no,
+sender_cust_nm,receiver_cust_acct_no,receiver_cust_nm,receiver_bk_nm,
+receiver_bic,remark_retur_extrct,orig_remark_retur_1,orig_remark_retur_2,
+orig_remark_retur_3,out_remit_no,crdt_acct,trx_amt,
+trx_curr,branch_no,reference_ticket,sender_ref,
+teller_id,journal_seq,extracted_dt,extracted_tm,
+trx_id,orig_crdt_acct,channel_id,proc_scheme,
+flag) 
+VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,
+?,?,?,?,?,?,?,?,?,?,?)
+""",data['dataId'],data['incRemittanceNo'],data['valueDate'],data['valuedateJUL'],
+data['processedDate'],data['senderBankName'],data['senderBIC'],data['senderCustAcctNo'],data['senderCustName'],data['receiverCustAcctNo'],data['receiverCustName'],data['receiverBankName'],data['receiverBIC'],data['remarkReturExtract'],data['origRemarkRetur1'],data['origRemarkRetur2'],data['origRemarkRetur3'],
+data['outgoingRemittanceNo'],data['creditAccount'],data['transferamount'],data['transferCurr'],data['branchNo'],data['referenceTicket'],data['senderRef'],data['tellerID'],data['journalSeq'],data['extractedDate'],data['extractedTime'],data['transactionID'],data['originalCreditAccount'],data['channelID'],data['processingScheme'],data['flag'])
+    conn.commit()
+
+
+def select_db_by_out_remit_no(conn,cursor,out_remit_no,value_dt):
+    query = """SELECT * FROM NTCS_TPS_TRX_RETURN t WHERE t.out_remit_no = ? AND t.val_dt= ?"""
+    values = (out_remit_no, value_dt)
+    
+    cursor.execute(query, values)
+    rows = cursor.fetchall()
+    
+    print(query, values)
+    
+    if(len(rows) > 0):
+        return False
+    
+    return True
+
+
+def get_items_by_page_number(conn,cursor,url, page_number,value_dt,token):
+    full_url = url + "&pageNumber=" + str(page_number)
+    print(full_url)
+    external_id = generate_external_id()
+    result_str = ''.join(random.choice(string.digits) for i in range(5))
+    header={
+                'Accept':'application/json',
+                'Authorization': f"Bearer {token}",
+                'externalID' : f"{channel_id}-{result_str}-{external_id}"}
+    print(f"Full URL {full_url}")
+    print(f"headers {header}")
+    r = requests.get(full_url, headers=header, verify=False)
+    
+    if(r.status_code != 200):
+        print(full_url, r.status_code)
+        return
+    
+    data = r.json()
+    for item in data['items']:
+        if(select_db_by_out_remit_no(conn,cursor,item['outgoingRemittanceNo'],value_dt)):
+            insert_table(conn,cursor,item)
+
+
+def get_milli_second(current_datetime):
+    ms = current_datetime.microsecond % 1000
+    result = "{:03d}".format(ms)
+    return result
+
+
+def generate_external_id():
+    current_datetime = datetime.now() 
+    ms = get_milli_second(current_datetime)
+    
+    dt = current_datetime.strftime('%Y%m%d%H%M%S')
+    return f'{dt}{ms}'
+
+    
+def start():
+    try:
+        conn_str = "Driver={};Server={};DATABASE={};UID={};PWD={};".format("{SQL SERVER}",host_db,db_name,user_db,pass_db)
+        
+        conn = pyodbc.connect(conn_str)
+        cursor = conn.cursor()
+        
+        token = get_token()
+        
+        value_dt_today = generate_value_dt_today()
+        url = base_url + '/OutgoingRetur/?valueDate=' + generate_value_dt_today() + '&channelID=' + channel_id
+
+        print(url)
+        external_id = generate_external_id()
+        dict_headers={
+            'Accept':'application/json',
+            'Authorization': f"Bearer {token}",
+            'externalID' : f"{channel_id}-00002-{external_id}"
+        }
+        print(f"url {url}")
+        print(f"headers {dict_headers}")
+        r = requests.get(url, headers=dict_headers, verify=False)
+        
+        if(r.status_code != 200):
+            print(url, r.status_code)
+            return
+    
+        data = r.json()
+        
+        print(data)
+        
+        if(data.get("Body") is not None):
+            print('message ',data['Body']['responseMessage'])
+            return
+        
+        iNumberOfPages = data['numberOfPages']
+        
+        if(iNumberOfPages <= 0):
+            print('tidak ada data')
+            return
+        
+        i = 1
+        while i <= iNumberOfPages:
+            get_items_by_page_number(conn,cursor,url, i,value_dt_today,token)
+            print('---')
+            i += 1    
+    except:
+        traceback.print_exc()
+    finally:
+        cursor.close()
+        conn.close()
+
+        
+def ael_main(params):
+    print('-----')
+    print('start')
+    print('-----')
+    start()
+    print('-----')
+    print('done')
+    print('-----')
+
+
+
+
+...
+
+}
+

@@ -1,0 +1,9 @@
+Windows Registry Editor Version 5.00
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Front\Front Arena\ATS\FA_INSTANCE_NAME]
+"username"="ATS_EOD_LIMITS_FCOMP"
+"group"="EOD_LIMITS_FCOMPLIANCECHECK"
+"password"="intas"
+"unicode"="1"
+
+

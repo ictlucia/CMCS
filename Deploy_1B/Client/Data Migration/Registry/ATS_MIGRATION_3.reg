@@ -1,0 +1,7 @@
+Windows Registry Editor Version 5.00
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Front\Front Arena\ATS\FA_INSTANCE_NAME]
+"username"="ATS_MIGRATION_3"
+"password"="intas"
+"group"="MIGRATION_3"
+"Unicode"="1"

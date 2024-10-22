@@ -1,0 +1,837 @@
+#
+# Front Arena exported extension module.
+# source          ""
+# timestamp (utc) "2024-03-07 05:19:36.6"
+# ***** DO NOT EDIT! *****
+#
+name        "PS_eMASHoldAmount"
+description ""
+
+groups {
+}
+
+decls[FParameters] {
+}
+
+clx FObject [FParameters] {
+  eMASHoldAmountParams =
+  ApiKey=1f89ab3b-e75b-4154-b532-b86435ccd5a4
+  BranchNumber=10
+  ChannelId=11
+  DefaultTellerId=9925501
+  FailedTradeStatus=Pending FO Verification
+  LogFilename=eMAS_HoldAmount_LOG_{}.txt
+  MessageSender=NTCS
+  SuccessTradeStatus=BO-BO Confirmed
+  Timeout=30
+  TradeFilter=eMASHoldAmount
+  TypeOfEntry=SC
+  Url=/gateway/CoreBankHoldRelease/1.0/holdRelease
+
+
+}
+
+decls[FPythonCode] {
+}
+
+clx FObject [FPythonCode] {
+  eMAS_HoldAmount
+"""----------------------------------------------------------------------------------------------------
+MODULE:
+    eMAS_HoldAmount
+
+DESCRIPTION:
+    Entry point to invoke the eMAS HoldAmount Inquiry run task gui.
+
+-------------------------------------------------------------------------------------------------------"""
+import acm, ael, traceback, os
+import FLogger, FRunScriptGUI
+import ParametersReader, InterfaceUtils
+import eMAS_CommonUtils
+# get value from FParameter
+eMASAccInqParams = ParametersReader.get_params('eMASHoldAmountParams')
+log_file_name = eMASAccInqParams['LogFilename'].format(acm.Time.DateToday().replace('-', ''))
+
+class HoldAmount(FRunScriptGUI.AelVariablesHandler):
+    def __init__(self):
+        """
+        Initialize member variables
+        """
+        # NAME = 0  # internal name
+        # TEXT = 1  # GUI Text
+        # TYPE = 2  # object type
+        # VALUES = 3  # valid values
+        # DEFAULT = 4  # default
+        # MANDATORY = 5  # mandatory
+        # MULTI = 6  # multiple selection
+        # TIP = 7  # floating tip
+        # CB = 8  # callback
+        # ENABLED = 9  # enabled
+
+        logLevels = [FLogger.FLogger.INFO, FLogger.FLogger.ERROR, FLogger.FLogger.WARNING, FLogger.FLogger.DEBUG]
+
+        query = [query.Name() for query in acm.FStoredASQLQuery.Select("subType='FTrade'")]
+        query.sort()
+
+        folderPicker = FRunScriptGUI.DirectorySelection()
+
+        gui_vars = [
+            ['col_trade_query', 'Collateral Trades_Input', 'string', query, 'eMASHoldAmount', 1, 0,
+             'Collateral Trades', None, 1],
+            ['logToConsole', 'Log to console_Logging', 'int', [1, 0], 1, 1, 0,
+             'Whether logging should be done in the Log Console or not.'],
+            ['log_folder', 'Log folder_Logging', folderPicker, None, folderPicker, 0, 1,
+             'Select where to store the log file',
+             0, None],
+            ['log_level', 'Log level_Logging', 'string', logLevels, FLogger.FLogger.DEBUG, 1, 0]
+        ]
+
+        self._logger = None
+        FRunScriptGUI.AelVariablesHandler.__init__(self, gui_vars)
+
+    def set_logger(self, logger):
+        """
+        This function sets the logger
+        :param logger: FLogger
+        :return: None
+        """
+        self._logger = logger
+
+    def send_hold_amount_inquiry(self, params):
+        """
+        This function generates recap data
+        :param params: parameters
+        :return:None
+        """
+        self._logger.LOG('Start send_hold_amount_inquiry')
+        collateral_trades_query = params['col_trade_query']
+        collateral_trades = acm.FStoredASQLQuery[collateral_trades_query]
+        if collateral_trades:
+            collateral_trades = collateral_trades.Query().Select().Sort()
+            for counter, trade in enumerate(collateral_trades):
+                try:
+                    trade.AddInfoValue(eMAS_CommonUtils.ADD_INFO_REQ_MOD_SPEC, eMAS_CommonUtils.ADD_INFO_REQ_MOD_HOLD)
+                    trade.Touch()
+                    trade.Commit()
+                    self._logger.DLOG('Updated add info on trade {}'.format(trade.Oid()))
+                except Exception as err:
+                    self._logger.LOG('Error while updating trade {}. Error {}'.format(trade.Oid(), err))
+
+        self._logger.LOG('Finish generateRecapData')
+
+
+ael_gui_parameters = {'windowCaption': "eMAS Hold Amount"}
+
+ael_variables = HoldAmount()
+ael_variables.LoadDefaultValues(__name__)
+app_name = 'eMAS Hold Amount'
+
+
+def initialize_logging(params, logfile_name, app_name):
+    """
+    Initialize logger
+    :param params: parameters
+    :return: FLogger object
+    """
+    logger = None
+    try:
+        logFolder = params['log_folder']
+        logfolderString = logFolder.SelectedDirectory().AsString()
+        logfile = os.path.join(logfolderString, logfile_name)
+        if logfile == '':
+            logfile = None
+
+        logLevel = params['log_level']
+        level = InterfaceUtils.LogLevelNameToNumber(logLevel)
+        logger = FLogger.FLogger(level=level,
+                                 name=app_name,
+                                 logToPrime=True,
+                                 logToFileAtSpecifiedPath=logfile,
+                                 logToConsole=False)
+    except Exception as err:
+        print('Error in initializing logger {}'.format(err))
+        print(traceback.format_exc())
+    return logger
+
+
+def ael_main(params):
+    """
+    AEL main function
+    :param params: GUI parameters
+    :return: None
+    """
+    eMAS_loger = None
+    try:
+        eMAS_loger = initialize_logging(params, log_file_name, app_name)
+        if eMAS_loger:
+            eMAS_loger.LOG('Execution started.')
+            ael_variables.set_logger(eMAS_loger)
+            ael_variables.send_hold_amount_inquiry(params)
+
+    except Exception as err:
+        if eMAS_loger is not None:
+            eMAS_loger.ELOG(str(err))
+        print(traceback.format_exc())
+        print('Error in ael main. {}'.format(err))
+
+
+...
+
+  eMAS_HoldAmountAPI
+"""----------------------------------------------------------------------------------------------------
+MODULE:
+    eMAS_HoldAmountAPI
+
+DESCRIPTION:
+    API to be used to invoke the eMAS Hold Amount.
+
+-------------------------------------------------------------------------------------------------------"""
+import requests, acm
+import datetime
+import InterfaceUtils
+import eMAS_HoldAmountRequest
+import eMAS_CommonUtils
+
+SEQ_NUM_ADD = '0'
+RECORD_ID_ADD = 'A'
+RECORD_ID_DELETE = 'D'
+TYPE_OF_ENTRY = 'TR'
+ACTION_ADD = "*ADD"
+ACTION_DELETE = "*DELETE"
+RESPONSE_CODE_FAILED = "2"
+RESPONSE_CODE_TIMEOUT = "3"
+EXCEPTION_CODE_MDR_500 = "MDR_500"
+EXCEPTION_CODE_MDR_503 = "MDR_503"
+
+def create_hold_amount_request(trade_object, account_object, channel_id, teller_id, journal_sequence, message_sender, type_of_entry, tracking_id_counter, recordId=RECORD_ID_ADD, action=ACTION_ADD, sequence=SEQ_NUM_ADD):
+    """
+    Create the inquiry request and send it to web address.
+    """
+    ret_val = None
+    collateral_amount = trade_object.Premium()
+    #collateral_amount  = g_space.CalculateValue(trade_object, "Margining Security Value")
+    if collateral_amount:
+        #collateral_amount = collateral_amount.Number()
+        formatter = acm.Get('formats/InstrumentDefinitionNominal')
+        collateral_amount = formatter.Format(collateral_amount)
+        collateral_amount = abs(formatter.Parse(collateral_amount))
+
+    request_object = eMAS_HoldAmountRequest.HoldAmountReleaseObjectBase()
+    current_time = eMAS_CommonUtils.get_emas_common_time_stamp()
+    tracking_id = "{}{:03}{:08}".format(datetime.datetime.now().strftime("%Y%m%d"), int(channel_id), tracking_id_counter)
+    request_object.set_soaHeader(messageSender=message_sender, messageTimeStamp=current_time,
+                                 initiatedTimeStamp=current_time, trackingID=tracking_id)
+
+    eMAS_account_type = account_object.AdditionalInfo().EMASAccountType() if account_object.AdditionalInfo().EMASAccountType() else ""
+    transaction_code = '2210'
+    request_object.set_property_list(tellerId=teller_id,
+                                     journalSequence=journal_sequence,
+                                     transactionCode=transaction_code)
+
+    request_object.set_payLoad_channelId(channelId=channel_id)
+    request_object.set_payLoad_accountInfo(accountNumber=account_object.Account(), accountType=eMAS_account_type,
+                                           referenceNumber=eMAS_CommonUtils.get_unique_ref_number(journal_sequence),
+                                           sequence=sequence, recordId=recordId,
+                                           typeOfEntry=type_of_entry, checkAmount=collateral_amount, lowCheckNumber="",
+                                           highCheckNumber="", stopCharge="", payeeName="TEST", stopHoldRemark="Jaminan Tunai",
+                                           checkRTNumber="", userId=teller_id, workstationId="NTCS",
+                                           timeChangeMade=eMAS_CommonUtils.get_current_time('%H%M%S'),
+                                           action=action)
+    request_object.set_payLoad_dateInfo(checkDate=InterfaceUtils.date_from_datetime(trade_object.ValueDay(), '%Y-%m-%d'),
+                                        checkDateDDMMYYYY=InterfaceUtils.date_from_datetime(trade_object.ValueDay(), '%d%m%Y'),
+                                        dateLastMaintenance="",
+                                        expirationDate=InterfaceUtils.date_from_datetime(trade_object.ReAcquireDay(), '%Y-%m-%d'),
+                                        expirationDateDDMMYYYY=InterfaceUtils.date_from_datetime(trade_object.ReAcquireDay(), '%d%m%Y'),
+                                        datePlaced=InterfaceUtils.date_from_datetime(trade_object.ValueDay(), '%Y-%m-%d'),
+                                        placeDateDDMMYYYY=InterfaceUtils.date_from_datetime(trade_object.ValueDay(), '%d%m%Y'))
+
+    json_obj = request_object.get_base_json_object()
+
+    return json_obj
+    
+def create_hold_amount_release_request(trade_object, account_object, channel_id, teller_id, journal_sequence, sequence_no, message_sender, type_of_entry, tracking_id_counter):
+    """
+    Create the inquiry request and send it to web address.
+    """
+    return create_hold_amount_request(trade_object, account_object, channel_id, teller_id, journal_sequence, message_sender, type_of_entry, tracking_id_counter, recordId=RECORD_ID_DELETE, action=ACTION_DELETE,
+                                      sequence=sequence_no)
+
+
+def capture_hold_amount_response(json_obj):
+    """ Capture the response from the eMAS server"""
+    response_obj = eMAS_HoldAmountRequest.ResponseBody(json_obj)
+    response_obj.populate_object()
+    return response_obj
+
+
+
+...
+
+  eMAS_HoldAmountProcessor
+"""----------------------------------------------------------------------------------------------------
+MODULE:
+    eMAS_HoldAmountProcessor
+
+DESCRIPTION:
+    Module to process the hold amount flow.
+
+-------------------------------------------------------------------------------------------------------"""
+
+import acm, ast, traceback
+import ParametersReader
+import eMAS_HoldAmountAPI, eMAS_CommonUtils, eMAS_ProcessorBase
+
+eMASHoldAmtParams = ParametersReader.get_params('eMASHoldAmountParams')
+SUCCESS_TRADE_STATUS = eMASHoldAmtParams['SuccessTradeStatus']
+FAILED_TRADE_STATUS = eMASHoldAmtParams['FailedTradeStatus']
+
+MODULE_NAME = "HoldAmount"
+
+
+class HoldAmountProcessor(eMAS_ProcessorBase.eMASProcessorBase):
+    def __init__(self):
+        """
+        Initializes the member variables
+        """
+        eMAS_api_key = eMASHoldAmtParams['ApiKey']
+        eMAS_url = eMASHoldAmtParams['Url']
+        _timeout = eMASHoldAmtParams['Timeout']
+        default_tellerd_id = eMASHoldAmtParams['DefaultTellerId']
+
+        super(HoldAmountProcessor, self).__init__(default_tellerd_id, MODULE_NAME, eMAS_api_key, eMAS_url, _timeout)
+
+        self._channel_id = eMASHoldAmtParams['ChannelId']
+        self._messageSender = eMASHoldAmtParams['MessageSender']
+        self._typeOfEntry = eMASHoldAmtParams['TypeOfEntry']
+        self._add_info_spec_hold_amount = acm.FAdditionalInfoSpec['EMASHoldAmountSeqNo']
+        self._add_info_spec_hold_amount_resp = acm.FAdditionalInfoSpec['EMASHoldAmtResponse']
+
+    def process(self, trade):
+        """
+        This function processes the hold amount flow
+        :param trade: FTrade
+        :return: None
+        """
+        trade_status = None
+        seq_num = None
+        account_obj = None
+        error_description = ''
+        log_string = 'Trade - {}. eMASHoldAmountRelease ADD request with tellerId {} and journalSequence {} .'.format(
+            trade.Oid(), self._tellerId, self._journalSeqNo)
+        try:
+            account_obj = eMAS_CommonUtils.get_account_number(trade)
+            if account_obj:
+                ovb_channel_id=self._channel_id
+                eMAS_system = getattr(account_obj.AdditionalInfo(),'EMASSystem', None)
+                if eMAS_system:
+                    ovb_channel_id = eMAS_CommonUtils.get_emas_system_channel_id(eMAS_system())
+                    if not ovb_channel_id:
+                        log_string += " Error - No channel id found for {} .".format(eMAS_system())
+                        
+                
+                json_obj = eMAS_HoldAmountAPI.create_hold_amount_request(trade_object=trade,
+                                                                         account_object=account_obj,
+                                                                         channel_id=ovb_channel_id,
+                                                                         journal_sequence=self._journalSeqNo,
+                                                                         teller_id=self._tellerId,
+                                                                         message_sender=self._messageSender,
+                                                                         type_of_entry=self._typeOfEntry,
+                                                                         tracking_id_counter = self._tracking_id_counter)
+                                                                         
+                log_string += "\nHold Amount Request JSON - {}\n".format(json_obj)
+                try:
+                    response_object = self._connection_object.post_request(json_obj)
+                    log_string += "\nHold Amount Response - {}\n".format(response_object)
+                    if response_object and response_object.status_code == eMAS_CommonUtils.HTTP_CODE_SUCCESS:
+                        response_json = response_object.json()
+                        log_string += "\nHold Amount Response JSON - {}\n".format(response_json)
+                        if response_json:
+                            general_posting_response_obj = eMAS_CommonUtils.get_general_posting_response(response_json)
+                            if general_posting_response_obj:
+                                exception_code = general_posting_response_obj.get_attribute_value("exceptionCode")
+                                error_description = general_posting_response_obj.get_attribute_value(
+                                    "exceptionDescription")
+                                if error_description:
+                                    log_string += " Error - {}".format(error_description)
+                                if exception_code == eMAS_CommonUtils.EXCEPTION_CODE_TELLER_ID_IN_USE:
+                                    self.assign_new_tellerId()
+                            else:
+                                response_obj = eMAS_HoldAmountAPI.capture_hold_amount_response(response_json)
+                                if response_obj.get_attribute_value(
+                                        "responseCode") == eMAS_CommonUtils.RESPONSE_CODE_SUCCESS:
+                                    seq_num = response_obj.get_attribute_value("sequence")
+                                    trade_status = SUCCESS_TRADE_STATUS
+                                    log_string += " Successful."
+                                else:
+                                    trade_status = FAILED_TRADE_STATUS
+                                    exception_code = response_obj.get_attribute_value("exceptionCode")
+                                    if exception_code:
+                                        error_description = response_obj.get_attribute_value("exceptionDescription")
+                                        if not error_description:
+                                            error_description = response_obj.get_attribute_value("responseMessage")
+                                        log_string += " Error - {} {}".format(exception_code, error_description)
+                                    else:
+                                        error_description = response_obj.get_attribute_value("Exception")
+                                        log_string += " Error - {}".format(error_description)
+                        else:
+                            log_string += ' Failed to get a response for trade id {}'.format(trade.Oid())
+                    else:
+                        log_string += 'Server return code {}. {} '.format(response_object.status_code,
+                                                                          response_object.reason)
+
+                except Exception as err:
+                    log_string += 'Internal exception handler' + str(err)
+                self.save_counters()
+            else:
+                log_string += ' Account with EMAS network not found for trade {}'.format(trade.Oid())
+
+        except Exception as err:
+            log_string += 'Outer exception handler' + str(err)
+            print(traceback.format_exc())
+
+        if trade_status:
+            try:
+                if trade_status:
+                    trade.Status(trade_status)
+                    if seq_num:
+                        trade.AddInfoValue(self._add_info_spec_hold_amount, str(seq_num))
+                    if error_description:
+                        trade.AddInfoValue(self._add_info_spec_hold_amount_resp, error_description)
+                    trade.Commit()
+            except Exception as err:
+                print(traceback.format_exc())
+                log_string += str(err)
+
+        print(log_string)
+
+...
+
+  eMAS_HoldAmountRequest
+"""--------------------------------------------------------------------------------------------------
+MODULE:
+    eMAS_HoldAmountRequest : Module handling the classes for hold amount request.
+
+DESCRIPTION: This module contains classes for wrapping the JSON request and response.
+-------------------------------------------------------------------------------------------------------"""
+import json
+
+
+class HoldAmountReleaseObjectBase(object):
+    def __init__(self):
+        """Initialize member variables"""
+        self._messageVersion = "1.0"
+        self._messageType = "JSON"
+        self._messageSubType = "holdRelease"
+        self._messageSender = ""
+        self._senderDomain = "OMNI"
+        self._messageTimeStamp = ""
+        self._initiatedTimeStamp = ""
+        self._trackingID = ""
+        self._captureSystem = "SOA"
+
+        self._tellerId = ""
+        self._journalSequence = ""
+        self._transactionCode = ""
+        self._timestamp = ""
+
+        self._channelId = ""
+        self._accountNumber = ""
+        self._accountType = ""
+        self._sequence = ""
+        self._referenceNumber = ""
+        self._recordId = ""
+        self._typeOfEntry = ""
+        self._checkAmount = ""
+        self._lowCheckNumber = ""
+        self._highCheckNumber = ""
+        self._stopCharge = ""
+        self._payeeName = ""
+        self._stopHoldRemark = ""
+        self._checkRTNumber = ""
+        self._userId = ""
+        self._workstationId = ""
+        self._timeChangeMade = ""
+        self._action = ""
+
+        self._checkDate = ""
+        self._checkDateDDMMYYYY = ""
+        self._dateLastMaintenance = ""
+        self._expirationDate = ""
+        self._expirationDateDDMMY = ""
+        self._datePlaced = ""
+        self._placeDateDDMMYYYY = ""
+
+
+    def _set_object(self):
+        """Set the member variables in the object"""
+        self._soaHeader = {
+            "messageVersion": self._messageVersion,
+            "messageType": self._messageType,
+            "messageSubType": self._messageSubType,
+            "messageSender": self._messageSender,
+            "senderDomain": self._senderDomain,
+            "messageTimeStamp": self._messageTimeStamp,
+            "initiatedTimeStamp": self._initiatedTimeStamp,
+            "trackingID": self._trackingID,
+            "captureSystem": self._captureSystem,
+        }
+
+        self.property_list = [
+            {"propertyKey": "tellerId", "propertyValue": self._tellerId},
+            {"propertyKey": "journalSequence", "propertyValue": self._journalSequence},
+            {"propertyKey": "transactionCode", "propertyValue": self._transactionCode},
+        ]
+        self._messageHeader = {"property": self.property_list}
+
+        self._dateInfo = {
+            "checkDate": self._checkDate,
+            "checkDateDDMMYYYY": self._checkDateDDMMYYYY,
+            "dateLastMaintenance": self._dateLastMaintenance,
+            "expirationDate": self._expirationDate,
+            "expirationDateDDMMYYYY": self._expirationDateDDMMY,
+            "datePlaced": self._datePlaced,
+            "placeDateDDMMYYYY": self._placeDateDDMMYYYY,
+        }
+        self._accountInfo = {
+            "accountNumber": self._accountNumber,
+            "accountType": self._accountType,
+            "referenceNumber": self._referenceNumber,
+            "sequence": self._sequence,
+            "recordId": self._recordId,
+            "typeOfEntry": self._typeOfEntry,
+            "checkAmount": self._checkAmount,
+            "lowCheckNumber": self._lowCheckNumber,
+            "highCheckNumber": self._highCheckNumber,
+            "stopCharge": self._stopCharge,
+            "payeeName": self._payeeName,
+            "stopHoldRemark": self._stopHoldRemark,
+            "checkRTNumber": self._checkRTNumber,
+            "userId": self._userId,
+            "workstationId": self._workstationId,
+            "timeChangeMade": self._timeChangeMade,
+            "action": self._action,
+            "dateInfo": self._dateInfo
+
+        }
+
+        self._payload = {
+            "channelId": self._channelId,
+            "accountInfo": self._accountInfo,
+        }
+
+        self._base_object = {
+            "holdReleaseRequest":
+                {
+                    "soaHeader": self._soaHeader,
+                    "messageHeader": self._messageHeader,
+                    "payload": self._payload
+                }
+        }
+
+
+    def set_property_list(self, tellerId, journalSequence, transactionCode):
+        """
+        Set the property list in the object
+        """
+        self._tellerId = tellerId
+        self._journalSequence = journalSequence
+        self._transactionCode = transactionCode
+
+
+    def set_soaHeader(self, messageSender, messageTimeStamp,
+                      initiatedTimeStamp, trackingID):
+        """
+        Set the soaHeader in the object
+        """
+        self._messageSender = messageSender
+        self._messageTimeStamp = messageTimeStamp
+        self._initiatedTimeStamp = initiatedTimeStamp
+        self._trackingID = trackingID
+        
+
+
+    def set_payLoad_channelId(self, channelId):
+        """
+        Set the payload in the object
+        """
+        self._channelId = channelId
+
+
+    def set_payLoad_accountInfo(self, accountNumber, accountType, referenceNumber, sequence, recordId, typeOfEntry,
+                                checkAmount, lowCheckNumber, highCheckNumber, stopCharge, payeeName, stopHoldRemark,
+                                checkRTNumber, userId, workstationId, timeChangeMade, action):
+        """
+        Set the payload in the object
+        """
+        self._accountNumber = accountNumber
+        self._accountType = accountType
+        self._referenceNumber = referenceNumber
+        self._sequence = sequence
+        self._recordId = recordId
+        self._typeOfEntry = typeOfEntry
+        self._checkAmount = checkAmount
+        self._lowCheckNumber = lowCheckNumber
+        self._highCheckNumber = highCheckNumber
+        self._stopCharge = stopCharge
+        self._payeeName = payeeName
+        self._stopHoldRemark = stopHoldRemark
+        self._checkRTNumber = checkRTNumber
+        self._userId = userId
+        self._workstationId = workstationId
+        self._timeChangeMade = timeChangeMade
+        self._action = action
+
+
+    def set_payLoad_dateInfo(self, checkDate, checkDateDDMMYYYY, dateLastMaintenance, expirationDate,
+                             expirationDateDDMMYYYY, datePlaced, placeDateDDMMYYYY):
+        """
+        Set the payload dateinfo in the object
+        """
+        self._checkDate = checkDate
+        self._checkDateDDMMYYYY = checkDateDDMMYYYY
+        self._dateLastMaintenance = dateLastMaintenance
+        self._expirationDate = expirationDate
+        self._expirationDateDDMMY = expirationDateDDMMYYYY
+        self._datePlaced = datePlaced
+        self._placeDateDDMMYYYY = placeDateDDMMYYYY
+
+
+    def get_base_json_object(self):
+        """
+        Returns the main json object.
+        """
+        self._set_object()
+        return json.dumps(self._base_object)
+
+
+class ResponseBody(object):
+    def __init__(self, json_obj):
+        """Initialize member variables"""
+        self._json_object = json_obj
+
+        self._messageVersion = ""
+
+        # soaHeader
+        self._messageType = ""
+        self._messageSubType = ""
+        self._messageSender = ""
+        self._senderDomain = ""
+        self._messageTimeStamp = ""
+        self._initiatedTimeStamp = ""
+        self._trackingID = ""
+        self._captureSystem = ""
+        self._exceptionCode = ""
+        self._exceptionDescription = ""
+
+        # messageHeader
+        self._tellerId = ""
+        self._journalSequence = ""
+        self._transactionCode = ""
+        self._branchNumber = ""
+        self._timestamp = ""
+        self._internalId = ""
+        self._retrievalReferenceNumber = ""
+        self._acquirerReferenceNumber = ""
+
+        # payload
+        self._responseCode = ""
+        self._responseMessage = ""
+        self._responseTimestamp = ""
+
+        # Exception
+        self._Exception = ""
+
+    def get_attribute_value(self, attrib_name):
+        """
+        Get the attribute based on its name
+        """
+        member_name = "_{}".format(attrib_name)
+        return getattr(self, member_name)
+
+    def _extract_soaHeader(self, soaHeader):
+        """
+        Extract the soaHeader from the object
+        
+        +-----------+----------------------+
+        | soaHeader |                      |
+        +-----------+----------------------+
+        |           | messageVersion       |
+        +-----------+----------------------+
+        |           | messageType          |
+        +-----------+----------------------+
+        |           | messageSubType       |
+        +-----------+----------------------+
+        |           | messageSender        |
+        +-----------+----------------------+
+        |           | senderDomain         |
+        +-----------+----------------------+
+        |           | messageTimeStamp     |
+        +-----------+----------------------+
+        |           | initiatedTimeStamp   |
+        +-----------+----------------------+
+        |           | trackingID           |
+        +-----------+----------------------+
+        |           | exceptionCode        |
+        +-----------+----------------------+
+        |           | exceptionDescription |
+        +-----------+----------------------+
+        |           | CRBBAL               |
+        +-----------+----------------------+
+        |           | AVLBBAL              |
+        +-----------+----------------------+        
+
+        """
+        if soaHeader and isinstance(soaHeader, dict):
+            for soa_item, soa_val in soaHeader.items():
+                setattr(self, '_{}'.format(soa_item), soa_val)
+            
+
+    def _extract_messageHeader(self, messageHeader):
+        """
+        Extract the messageHeader from the object
+        +---------------+----------+---------------+------------------------------------+
+        | messageHeader |          |               |                                    |
+        +---------------+----------+---------------+------------------------------------+
+        |               | property |               |                                    |
+        +---------------+----------+---------------+------------------------------------+
+        |               |          | propertyKey   | tellerId                           |
+        +---------------+----------+---------------+------------------------------------+
+        |               |          | propertyValue | value of tellerId                  |
+        +---------------+----------+---------------+------------------------------------+
+        |               |          | propertyKey   | journalSequence                    |
+        +---------------+----------+---------------+------------------------------------+
+        |               |          | propertyValue | value of journalSequence           |
+        +---------------+----------+---------------+------------------------------------+
+        |               |          | propertyKey   | transactionCode                    |
+        +---------------+----------+---------------+------------------------------------+
+        |               |          | propertyValue | value of transactionCode           |
+        +---------------+----------+---------------+------------------------------------+
+        |               |          | propertyKey   | internalId                         |
+        +---------------+----------+---------------+------------------------------------+
+        |               |          | propertyValue | value of internalId                |
+        +---------------+----------+---------------+------------------------------------+
+        |               |          | propertyKey   | retrievalReferenceNumber           |
+        +---------------+----------+---------------+------------------------------------+
+        |               |          | propertyValue | value of retrievalReferenceNumber  |
+        +---------------+----------+---------------+------------------------------------+
+        |               |          | propertyKey   | acquirerReferenceNumber            |
+        +---------------+----------+---------------+------------------------------------+
+        |               |          | propertyValue | value of acquirerReferenceNumber   |
+        +---------------+----------+---------------+------------------------------------+
+        """
+        if messageHeader and isinstance(messageHeader, dict):
+            property_list = messageHeader.get("Property")
+            if property_list:
+                for prop_item in property_list:
+                    key_name = prop_item.get("propertyKey")
+                    key_value = prop_item.get("propertyValue")
+                    setattr(self, '_{}'.format(key_name), key_value)
+
+    def _extract_dateInfo(self, dateInfo):
+        """
+        +----------+-------------------------+
+        | dateInfo |                         |
+        +----------+-------------------------+
+        |          | expirationDate          |
+        +----------+-------------------------+
+        |          | checkDate               |
+        +----------+-------------------------+
+        |          | dateLastMaintenance     |
+        +----------+-------------------------+
+        |          | datePlaced              |
+        +----------+-------------------------+
+        |          | expirationDateDDMM YYYY |
+        +----------+-------------------------+
+        |          | checkDateDDMMYYYY       |
+        +----------+-------------------------+
+        |          | lastMaintainDate        |
+        +----------+-------------------------+
+        |          | placeDateDDMMYYYY       |
+        +----------+-------------------------+
+        :param dateInfo:
+        :return:
+        """
+        if dateInfo and isinstance(dateInfo, dict):
+            for tag_key, tag_value in dateInfo.items():
+                setattr(self, '_{}'.format(tag_key), tag_value)
+
+    def _extract_accountInfo(self, accountInfo):
+        """
+        Extract the accountInfo from the object
+        +-------------+--------------------+
+        | accountInfo |                    |
+        +-------------+--------------------+
+        |             |    accountNumber   |
+        +-------------+--------------------+
+        |             |    accountType     |
+        +-------------+--------------------+
+        |             |    referenceNumber |
+        +-------------+--------------------+
+        |             |    reasonCode      |
+        +-------------+--------------------+
+        |             |    holdByBranch    |
+        +-------------+--------------------+
+        |             |    sequence        |
+        +-------------+--------------------+
+        |             |    recordId        |
+        +-------------+--------------------+
+        |             |    typeOfEntry     |
+        +-------------+--------------------+
+        |             |    checkAmount     |
+        +-------------+--------------------+
+        |             |    lowCheckNumber  |
+        +-------------+--------------------+
+        |             |    highCheckNumber |
+        +-------------+--------------------+
+        |             |    stopCharge      |
+        +-------------+--------------------+
+        |             |    payeeName       |
+        +-------------+--------------------+
+        |             |    stopHoldRemark  |
+        +-------------+--------------------+
+        |             |    checkRTNumber   |
+        +-------------+--------------------+
+        |             |    userId          |
+        +-------------+--------------------+
+        |             |    workstationId   |
+        +-------------+--------------------+
+        |             |    timeChangeMade  |
+        +-------------+--------------------+
+        |             |    action          |
+        +-------------+--------------------+
+        |             |    dateInfo        |
+        +-------------+--------------------+
+        """
+        if accountInfo:
+            for tag_key, tag_value in accountInfo.items():
+                setattr(self, '_{}'.format(tag_key), tag_value)
+
+            dateInfo = accountInfo.get("dateInfo")
+            self._extract_dateInfo(dateInfo)
+
+    def _extract_payload(self, payLoad):
+        """
+        Extract the payLoad from the object
+        """
+        if payLoad and isinstance(payLoad, dict):
+            self._responseCode = payLoad.get("responseCode")
+            self._responseMessage = payLoad.get("responseMessage")
+            self._responseTimestamp = payLoad.get("responseTimestamp")
+            accountInfo = payLoad.get("accountInfo")
+            self._extract_accountInfo(accountInfo)
+
+    def populate_object(self):
+        """
+        Populate the object
+        """
+        self._base_object = self._json_object.get('holdReleaseResponse')
+        if self._base_object:
+            self._extract_soaHeader(self._base_object.get('soaHeader'))
+            self._extract_messageHeader(self._base_object.get('messageHeader'))
+            self._extract_payload(self._base_object.get("payload"))
+        self._Exception = self._json_object.get("Exception")
+
+...
+
+}
+

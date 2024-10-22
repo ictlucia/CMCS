@@ -1,0 +1,4 @@
+CHOICELIST,,,/CHOICELIST
+LIST,ENTRY,DESCRIPTION,
+MASTER,TransactionPurpose,TransactionPurpose,
+TransactionPurpose,Purpose1,,

@@ -1,0 +1,124 @@
+#
+# Front Arena exported extension module.
+# source          ""
+# timestamp (utc) "2024-10-16 11:45:45.6"
+# ***** DO NOT EDIT! *****
+#
+name        "BM_Quotations"
+description ""
+
+groups {
+}
+
+decls[FColumnDefinition] {
+  "Yield_at_Trade" ( "sheet columns.tradesheet" ) "";
+}
+
+clx FTradingSheet [FColumnDefinition] {
+  Yield_at_Trade =
+  Access=ReadWrite
+  Class=Trade
+  Description=437918 was about this issue
+  ExtensionAttribute=Price_custom
+  Format=SixDecimalDetailedTruncateTrailingZeroShowZero
+  GroupLabel=BM_Custom_Column
+  LabelList=
+  Name=Yield/ViceVersa
+
+
+}
+
+decls[FExtensionAttribute] {
+}
+
+clx FInstrument [FExtensionAttribute] {
+  defaultQuotations = py("Quotations", context).getDefaultQuotations(object);
+}
+
+clx FInstrumentAndTrades [FExtensionAttribute] {
+  Price_custom = ;
+}
+
+clx FTrade [FExtensionAttribute] {
+  Price_custom = py("Yield_Custom_Glen", context).giveYield(object);
+}
+
+clx FTradeRow [FExtensionAttribute] {
+  Price_custom = py("Yield_Custom_Glen", context).giveYield(object.Trade);
+}
+
+decls[FExtensionValue] {
+}
+
+clx CInsDef_BASKET_REPO [FExtensionValue] {
+  _InsDef_Pricing_DefaultColumns
+Price Theor.Theoretical Value Pricing.Portfolio Underlying Price.Portfolio Underlying Forward Price
+...
+
+}
+
+clx CInsDef_COLLATERAL [FExtensionValue] {
+  _InsDef_Pricing_DefaultColumns
+Price Theor.Theoretical Value Pricing.Portfolio Underlying Price.Portfolio Underlying Forward Price.Price x Face Value Margin CCY.Trade Price x Face Value
+...
+
+}
+
+decls[FPythonCode] {
+}
+
+clx FObject [FPythonCode] {
+  Quotations
+import acm
+def getDefaultQuotations(ins):
+    defQuotations = ins.DefaultQuotations()
+    myQuotation = ["Per 1000 Units"] ##add quotations here
+    for quotation in myQuotation:
+        defQuotations.Add(quotation)
+    return defQuotations
+
+...
+
+  Yield_Custom_Glen
+import acm, ael
+
+def giveYield(trade, justTrade=False):
+    if trade.Instrument().InsType() == 'BasketRepo/Reverse':
+        try:
+            agl = trade.AgreementLinks()[0]
+            mag = agl.MasterAgreement().Name()
+            ms = agl.MarginingSet().Name()
+            query = """
+            select al.trdnbr, mag.name, ms.name 
+            from TradeAgreementLink al, MarginingSet ms, MasterAgreement mag
+            where al.margining_set_seqnbr = ms.seqnbr
+            and al.master_agreement_seqnbr = mag.seqnbr
+            and mag.name = '{master_agreement}'
+            and ms.name = '{margining_set}'
+            """.format(master_agreement = mag, margining_set = ms)
+            for i in ael.asql(query)[1][0]:
+                trd_no = i[0]
+                t = acm.FTrade[trd_no]
+                if (trd_no != trade.Oid()) & (t.Instrument().InsType().lower() in ('collateral', 'bond', 'bill', 'frn', 'mbs/abs')):
+                    tradeLogicDecorator = acm.FTradeLogicDecorator(t, None)
+                    bb = tradeLogicDecorator.ViceVersa()
+                    return bb if justTrade else bb
+        except Exception as err:
+            Print('Error', err)
+            return 0
+    else:
+        try:
+            tradeLogicDecorator = acm.FTradeLogicDecorator(trade, None)
+            aa = tradeLogicDecorator.ViceVersa()
+            ##formatter = acm.Get('format/SixDecimalDetailedTruncateTrailingZeroShowZero')
+            ##as_formatted_string = formatter.Format(abs(tradeLogicDecorator.ViceVersa()))
+            ##return formatter.Parse(as_formatted_string)
+            return aa
+        except Exception as err:
+            print('Error in giveYield',err)
+            return 0
+
+...
+
+}
+

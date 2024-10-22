@@ -1,0 +1,2443 @@
+#
+# Front Arena exported extension module.
+# source          ""
+# timestamp (utc) "2024-10-14 05:17:06.5"
+# ***** DO NOT EDIT! *****
+#
+name        "PS_Reports"
+description "$Id$"
+
+groups {
+}
+
+decls[FColumnDefinition] {
+  "Constant Value" ( "sheet columns.journalsheet" "sheet columns.tradesheet" ) "";
+  "currencyPairCurrencyOne" ( "sheet columns.tradesheet" ) "";
+  "financialRelations" ( "sheet columns.tradesheet" ) "";
+  "Formatted Date" ( "sheet columns.journalsheet" "sheet columns.tradesheet" ) "";
+  "Formatted Date Method Chain" ( "sheet columns.tradesheet" ) "";
+  "groupCurrency" ( "sheet columns.journalsheet" "sheet columns.tradesheet" ) "";
+  "nonIDRCurrency" ( "sheet columns.tradesheet" ) "";
+  "nonIDRCurrencyAmount" ( "sheet columns.tradesheet" ) "";
+  "payerCategory" ( "sheet columns.tradesheet" ) "";
+  "payerIDNumber" ( "sheet columns.tradesheet" ) "";
+  "payerIDType" ( "sheet columns.tradesheet" ) "";
+  "payerName" ( "sheet columns.tradesheet" ) "";
+  "payerStatus" ( "sheet columns.tradesheet" ) "";
+  "plnAmount" ( "sheet columns.journalsheet" "sheet columns.tradesheet" ) "";
+  "plnAmountIDR" ( "sheet columns.journalsheet" "sheet columns.tradesheet" ) "";
+  "plnExchangeRate" ( "sheet columns.journalsheet" "sheet columns.tradesheet" ) "";
+  "plnExcludeRow" ( "sheet columns.journalsheet" "sheet columns.tradesheet" ) "";
+  "plnID" ( "sheet columns.tradesheet" ) "";
+  "plnInstrumentTerm" ( "sheet columns.tradesheet" ) "";
+  "portfolioName" ( "sheet columns.tradesheet" ) "";
+  "portfolioType" ( "sheet columns.tradesheet" ) "";
+  "receiptIDNumber" ( "sheet columns.tradesheet" ) "";
+  "receiptIDType" ( "sheet columns.tradesheet" ) "";
+  "recipientCategory" ( "sheet columns.tradesheet" ) "";
+  "recipientName" ( "sheet columns.tradesheet" ) "";
+  "recipientStatus" ( "sheet columns.tradesheet" ) "";
+  "specialAccountNumber" ( "sheet columns.tradesheet" ) "";
+  "specialAccountType" ( "sheet columns.tradesheet" ) "";
+  "transactionPurpose" ( "sheet columns.tradesheet" ) "";
+  "troTradeNumber" ( "sheet columns.tradesheet" ) "";
+}
+
+clx FTradingSheet [FColumnDefinition] {
+  Call Extension Attribute =
+  Description=The extension attribute to call when formatting
+  ExtensionAttribute=defaultExtensionAttribute
+  GroupLabel=Formatting
+  LabelList=ExtensionAttribute
+  Name=Called Extension Attribute
+
+
+  Constant Value =
+  Description=Used to create a column that returns a specified constant string
+  ExtensionAttribute=defaultConstantValue
+  GroupLabel=Formatting
+  LabelList=Constant
+  ParameterizationParameterGUIDefinition=ColumnParameterization
+  Parameters=ConstantValue
+
+
+  Constant Value Parameter =
+  Description=A constant value
+  ExtensionAttribute=defaultConstantValue
+  GroupLabel=Formatting
+  LabelList=Constant Value
+  Name=Constant Value
+
+
+  currencyPairCurrencyOne =
+  Access=ReadOnly
+  Description=Currency Pair Currency One
+  ExtensionAttribute=currencyPairCurrencyOne
+  GroupLabel=FieldCustom
+  LabelList=currencyPairCurrencyOne
+  Name=currencyPairCurrencyOne
+
+
+  financialRelations =
+  Access=ReadOnly
+  Description=Financial Relations
+  ExtensionAttribute=financialRelations
+  GroupLabel=FieldCustom
+  LabelList=financialRelations
+  Name=financialRelations
+
+
+  FormatDateMethodChain =
+  Description=The method chain to call when formatting dates
+  ExtensionAttribute=defaultMethodChain
+  GroupLabel=Formatting
+  LabelList=MethodChain
+  Name=Method Chain
+
+
+  Formatted Date =
+  Description=Format a date extension attribute to specified formatting string (datetime.datetime)
+  ExtensionAttribute=formattedDate
+  GroupLabel=Formatting
+  LabelList=Extension Attribute
+  ParameterizationParameterGUIDefinition=ColumnParameterization
+  Parameters=ReadFormat;WriteFormat;CallExtensionAttribute
+
+
+  Formatted Date Method Chain =
+  Description=Format a date method to specified formatting string (datetime.datetime)
+  ExtensionAttribute=formattedDateMethodChain
+  GroupLabel=Formatting
+  LabelList=Extension Attribute
+  ParameterizationParameterGUIDefinition=ColumnParameterization
+  Parameters=ReadFormat;WriteFormat;FormatDateMethodChain
+
+
+  groupCurrency =
+  Access=ReadOnly
+  Description=Currency if all children match
+  ExtensionAttribute=groupCurrency
+  GroupLabel=FieldCustom
+  LabelList=Currency
+  Name=groupCurrency
+
+
+  nonIDRCurrency =
+  Access=ReadOnly
+  Description=Non IDR Currency or currency pair currency one
+  ExtensionAttribute=nonIDRCurrency
+  GroupLabel=FieldCustom
+  LabelList=nonIDRCurrency
+  Name=nonIDRCurrency
+
+
+  nonIDRCurrencyAmount =
+  Access=ReadOnly
+  Description=amount of non IDR Currency or currency pair currency one
+  ExtensionAttribute=nonIDRCurrencyAmount
+  GroupLabel=FieldCustom
+  LabelList=nonIDRCurrencyAmount
+  Name=nonIDRCurrencyAmount
+
+
+  payerCategory =
+  Access=ReadOnly
+  Description=Payer Category
+  ExtensionAttribute=payerCategory
+  GroupLabel=FieldCustom
+  LabelList=payerCategory
+  Name=payerCategory
+
+
+  payerIDNumber =
+  Access=ReadOnly
+  Description=Payer ID Number
+  ExtensionAttribute=payerIDNumber
+  GroupLabel=FieldCustom
+  LabelList=payerIDNumber
+  Name=payerIDNumber
+
+
+  payerIDType =
+  Access=ReadOnly
+  Description=Payer ID Type
+  ExtensionAttribute=payerIDType
+  GroupLabel=FieldCustom
+  LabelList=payerIDType
+  Name=payerIDType
+
+
+  payerName =
+  Access=ReadOnly
+  Description=Payer Name
+  ExtensionAttribute=payerName
+  GroupLabel=FieldCustom
+  LabelList=payerName
+  Name=payerName
+
+
+  payerStatus =
+  Access=ReadOnly
+  Description=Payer Status
+  ExtensionAttribute=payerStatus
+  GroupLabel=FieldCustom
+  LabelList=payerStatus
+  Name=payerStatus
+
+
+  plnAmount =
+  Access=ReadOnly
+  Description=Absolute PLN Amount
+  ExtensionAttribute=plnAmount
+  Format=DetailedShowZero
+  GroupLabel=FieldCustom
+  LabelList=PLN Amount
+  Name=plnAmount
+
+
+  plnAmountIDR =
+  Access=ReadOnly
+  Description=Absolute PLN Amount in IDR
+  ExtensionAttribute=plnAmountIDRAbs
+  Format=DetailedShowZero
+  GroupLabel=FieldCustom
+  LabelList=PLN Amount IDR
+  Name=plnAmountIDR
+
+
+  plnExchangeRate =
+  Description=Rate used to convert non IDR to IDR
+  ExtensionAttribute=idrEquivalentFxRate
+  GroupLabel=FieldCustom
+  Label=PLN Exchange Rate
+  Name=plnExchangeRate
+
+
+  plnExcludeRow =
+  Description=Exclude row from report
+  ExtensionAttribute=plnExcludeRow
+  GroupLabel=FieldCustom
+  Label=Exclude Row
+  Name=plnExcludeRow
+
+
+  plnID =
+  Access=ReadOnly
+  Description=PLN ID
+  ExtensionAttribute=plnID
+  GroupLabel=FieldCustom
+  LabelList=PLN ID
+  Name=plnID
+
+
+  plnInstrumentTerm =
+  Access=ReadOnly
+  Description=Absolute PLN Intrument Term
+  ExtensionAttribute=plnInstrumentTerm
+  Format=Imprecise
+  GroupLabel=FieldCustom
+  LabelList=PLN Intrument Term
+  Name=plnInstrumentTerm
+
+
+  portfolioName =
+  Access=ReadOnly
+  Description=Portfolio Name
+  ExtensionAttribute=portfolioName
+  GroupLabel=FieldCustom
+  LabelList=portfolioName
+  Name=portfolioName
+
+
+  portfolioType =
+  Access=ReadOnly
+  Description=Portfolio Type
+  ExtensionAttribute=portfolioType
+  GroupLabel=FieldCustom
+  LabelList=portfolioType
+  Name=portfolioType
+
+
+  Read Format =
+  Description=Date format to read date
+  ExtensionAttribute=defaultReadFormat
+  GroupLabel=Formatting
+  LabelList=Read Format
+  Name=Read Format
+
+
+  receiptIDNumber =
+  Access=ReadOnly
+  Description=Receipt ID Number
+  ExtensionAttribute=receiptIDNumber
+  GroupLabel=FieldCustom
+  LabelList=receiptIDNumber
+  Name=receiptIDNumber
+
+
+  receiptIDType =
+  Access=ReadOnly
+  Description=Receipt ID Type
+  ExtensionAttribute=receiptIDType
+  GroupLabel=FieldCustom
+  LabelList=receiptIDType
+  Name=receiptIDType
+
+
+  recipientCategory =
+  Access=ReadOnly
+  Description=Recipient Category
+  ExtensionAttribute=recipientCategory
+  GroupLabel=FieldCustom
+  LabelList=recipientCategory
+  Name=recipientCategory
+
+
+  recipientName =
+  Access=ReadOnly
+  Description=Recipient Name
+  ExtensionAttribute=recipientName
+  GroupLabel=FieldCustom
+  LabelList=recipientName
+  Name=recipientName
+
+
+  recipientStatus =
+  Access=ReadOnly
+  Description=Recipient Status
+  ExtensionAttribute=recipientStatus
+  GroupLabel=FieldCustom
+  LabelList=recipientStatus
+  Name=recipientStatus
+
+
+  specialAccountNumber =
+  Access=ReadOnly
+  Description=Account Number
+  ExtensionAttribute=specialAccountNumber
+  GroupLabel=FieldCustom
+  LabelList=specialAccountNumber
+  Name=specialAccountNumber
+
+
+  specialAccountType =
+  Access=ReadOnly
+  Description=Account Type
+  ExtensionAttribute=specialAccountType
+  GroupLabel=FieldCustom
+  LabelList=specialAccountType
+  Name=specialAccountType
+
+
+  transactionPurpose =
+  Access=ReadOnly
+  Description=Transaction Purpose
+  ExtensionAttribute=transactionPurpose
+  GroupLabel=FieldCustom
+  LabelList=transactionPurpose
+  Name=transactionPurpose
+
+
+  troTradeNumber =
+  Access=ReadOnly
+  Description=Trade Number
+  ExtensionAttribute=troTradeNumber
+  GroupLabel=FieldCustom
+  LabelList=troTradeNumber
+  Name=troTradeNumber
+
+
+  Write Format =
+  Description=Date format to write date
+  ExtensionAttribute=defaultWriteFormat
+  GroupLabel=Formatting
+  LabelList=Write Format
+  Name=Write Format
+
+
+}
+
+decls[FColumnParameterDefinition] {
+}
+
+clx FObject [FColumnParameterDefinition] {
+  CallExtensionAttribute =
+  ColumnId=Call Extension Attribute
+  Domain=string
+  GroupLabel=Formatters
+  ValueType=static
+
+
+  ConstantValue =
+  ColumnId=Constant Value Parameter
+  Domain=string
+  GroupLabel=Formatters
+  ValueType=static
+
+
+  FormatDateMethodChain =
+  ColumnId=FormatDateMethodChain
+  Domain=string
+  GroupLabel=Formatters
+  ValueType=static
+
+
+  ReadFormat =
+  ColumnId=Read Format
+  Domain=string
+  GroupLabel=Formatters
+  ValueType=static
+
+
+  WriteFormat =
+  ColumnId=Write Format
+  Domain=string
+  GroupLabel=Formatters
+  ValueType=static
+
+
+}
+
+decls[FCustomFunction] {
+}
+
+clx FObject [FCustomFunction] {
+  getDaysBetweenJKT =
+  Definition=getDaysBetweenJKT(date endDate, date startDate): int read
+  Function=PSReportUtils.getDaysBetweenJKT
+
+
+}
+
+decls[FExtensionAttribute] {
+}
+
+clx FBasketRepo [FExtensionAttribute] {
+  plnAmount = sumOf(tradesInPosition :* "plnAmount");
+  plnInstrumentEndDate = object.EndDate;
+  plnInstrumentTerm = dateDifference(plnInstrumentEndDate, object.StartDate);
+}
+
+clx FCurrency [FExtensionAttribute] {
+  idrEquivalentFxRate = select(object.Name, 
+  "IDR"->1, 
+  default->py("PSReportUtils", context).idr_price_mtm_yesterday_from_currency(object.Name));
+}
+
+clx FDeposit [FExtensionAttribute] {
+  plnAmount = sumOf(tradesInPosition :* "plnAmount");
+  plnInstrumentEndDate = object.ExpiryDate;
+  plnInstrumentTerm = dateDifference(plnInstrumentEndDate, object.StartDate);
+}
+
+clx FInstrument [FExtensionAttribute] {
+  plnAmount = 0;
+  plnInstrumentEndDate = nil;
+  plnInstrumentTerm = nil;
+}
+
+clx FJournal [FExtensionAttribute] {
+  contractTrade = object.ContractTrade;
+  currency = object.Currency;
+  idrEquivalentFxRate = currency:idrEquivalentFxRate;
+  plnAmount = shunt(plnInstrumentTerm, 
+  nil->0, 
+  default->shunt(plnInstrumentTerm > 365, 
+    true->0, 
+    default->object.Amount));
+  plnAmountIDR = select(currency.Name, 
+  "IDR"->plnAmount, 
+  default->idrEquivalentFxRate * plnAmount);
+  plnAmountIDRAbs = plnAmountIDR;
+  plnExcludeRow = shunt(plnAmount == 0, 
+  true->"True", 
+  default->"False");
+  plnInstrumentTerm = shunt(trade, 
+  default->trade:plnInstrumentTerm, 
+  nil->shunt(contractTrade, 
+    default->contractTrade:plnInstrumentTerm, 
+    nil->nil));
+  trade = object.Trade;
+}
+
+clx FJournalMultiItem [FExtensionAttribute] {
+  groupCurrency = uniqueOrNil(journals, "Currency");
+  idrEquivalentFxRate = shunt(groupCurrency, 
+  default->groupCurrency :* "idrEquivalentFxRate", 
+  nil->nil);
+  plnAmount = abs(sumOf(journals :* "plnAmount"));
+  plnAmountIDRAbs = sumOf(journals :* "plnAmountIDRAbs");
+  plnExcludeRow = shunt(plnAmount == 0, 
+  true->"True", 
+  default->"False");
+}
+
+clx FMultiInstrumentAndTrades [FExtensionAttribute] {
+  groupCurrency = uniqueOrNil(trades, "Currency");
+  groupInstrumentType = uniqueOrNil(instruments, "InsType");
+  idrEquivalentFxRate = shunt(groupCurrency, 
+  default->groupCurrency :* "idrEquivalentFxRate", 
+  nil->nil);
+  plnAmount = shunt(groupCurrency, 
+  nil->nil, 
+  default->sumOf(openInstruments :* "plnAmount" [positionObject]));
+  plnAmountIDR = shunt(groupCurrency, 
+  nil->nil, 
+  default->idrEquivalentFxRate * plnAmount);
+  plnAmountIDRAbs = shunt(groupCurrency, 
+  nil->nil, 
+  default->abs(plnAmountIDR));
+  plnExcludeRow = shunt(plnAmount == 0, 
+  true->"True", 
+  default->"False");
+  plnID = select(groupInstrumentType, 
+  default->nil, 
+  "Deposit"->14, 
+  "BasketRepo/Reverse"->19);
+  plnInstrumentEndDate = nil;
+  portfolioType = uniqueOrNil(trades, "Portfolio.TypeChlItem.Name");
+  tradeDate = nil;
+  valueDay = nil;
+}
+
+clx FObject [FExtensionAttribute] {
+  calledExtensionAttribute = object :* defaultExtensionAttribute;
+  defaultConstantValue = nilObject:defaultConstantValue;
+  defaultExtensionAttribute = nilObject:defaultExtensionAttribute;
+  defaultMethodChain = nilObject:defaultAbsoluteValue;
+  defaultReadFormat = nilObject:defaultReadFormat;
+  defaultWriteFormat = nilObject:defaultWriteFormat;
+  formattedDate = switch(calledExtensionAttribute, 
+  nil->nil, 
+  default->py("PSReportUtils", context).formatDate(calledExtensionAttribute, defaultReadFormat, defaultWriteFormat));
+  formattedDateMethodChain = py("PSReportUtils", context).formatDateMethodChain(object, defaultMethodChain, defaultReadFormat, defaultWriteFormat);
+  idrCurrency = nilObject:idrCurrency;
+  premiumPremium2MoneyFlowFilter = simpleOrQuery("FMoneyFlow", ["Type", "Type"], ["EQUAL", "EQUAL"], ["Premium", "Premium 2"]);
+  specialAccountMoneyFlowFilter = compositeAndQuery("FMoneyFlow", premiumPremium2MoneyFlowFilter, specialCurrencyMoneyFlowFilter);
+  specialCurrencyMoneyFlowFilter = simpleAndQuery("FMoneyFlow", ["Currency"], ["EQUAL"], [specialCurrency]);
+}
+
+clx FParty [FExtensionAttribute] {
+  countryOfRisk = getClass("FChoiceList").Select01(object:countryOfRiskChoiceListFilter [countryName = partyAddInfo.LLD_SANDI_NEGARA], "More than one Country of Risk found");
+  countryOfRiskChoiceListFilter = "name = \'" + countryName + "\' and list = \'Country of Risk\'";
+  hubungan = getClass("FChoiceList").Select01(object:hubunganChoiceListFilter [relationName = partyAddInfo.LLD_HUBUNGAN], "More than one Relation found");
+  hubunganChoiceListFilter = "name = \'" + relationName + "\' and list = \'LLD_HUBUNGAN\'";
+  partyAddInfo = object.AdditionalInfo;
+  partyCountryOfRiskDescription = shunt(countryOfRisk, 
+  nil->nil, 
+  default->countryOfRisk.Description);
+  partyHununganDescription = shunt(hubungan, 
+  nil->nil, 
+  default->hubungan.Description);
+  partySandiPelakuDescription = shunt(sandiPelaku, 
+  nil->nil, 
+  default->sandiPelaku.Description);
+  sandiPelaku = getClass("FChoiceList").Select01(object:sandiPelakuChoiceListFilter [categoryName = partyAddInfo.LLD_SANDI_PELAKU], "More than one Category found");
+  sandiPelakuChoiceListFilter = "name = \'" + categoryName + "\' and list = \'LLD_SANDI PELAKU\'";
+}
+
+clx FSettlement [FExtensionAttribute] {
+  trade = object.Trade;
+}
+
+clx FTrade [FExtensionAttribute] {
+  acquirer = object.Acquirer;
+  acquirerAddInfo = acquirer:partyAddInfo;
+  counterpartyAddInfo = counterparty:partyAddInfo;
+  currencyPair = object.CurrencyPair;
+  currencyPairCurrencyOne = select(currencyPair, 
+  nil->nil, 
+  default->currencyPair.Currency1);
+  currencyPairCurrencyTwo = select(currencyPair, 
+  nil->nil, 
+  default->currencyPair.Currency2);
+  currencyPairDomesticCurrency = currencyPair:domesticCurrency;
+  currencyPairForeignCurrency = currencyPair:foreignCurrency;
+  filteredSpecialAccountMoneyFlows = object.MoneyFlows.Filter(specialAccountMoneyFlowFilter);
+  financialRelations = counterparty:partyHununganDescription;
+  idrEquivalentFxRate = currency:idrEquivalentFxRate;
+  nonIDRCurrency = select(currencyPair, 
+  nil->nil, 
+  default->select(currencyPairCurrencyOne == idrCurrency, 
+    true->currencyPairCurrencyTwo, 
+    default->currencyPairCurrencyOne));
+  nonIDRCurrencyAmount = select(nonIDRCurrency == currencyPairCurrencyTwo, 
+  true->abs(premium), 
+  default->abs(quantity));
+  payerCategory = select(tradeDirection, 
+  "Sell"->"C1", 
+  "Buy"->counterparty:partySandiPelakuDescription);
+  payerIDNumber = select(tradeDirection, 
+  "Sell"->"010611739093000", 
+  "Buy"->select(counterpartyAddInfo.NPWP, 
+    default->counterpartyAddInfo.NPWP, 
+    nil->select(counterpartyAddInfo.KTP, 
+      default->counterpartyAddInfo.KTP, 
+      nil->nil)));
+  payerIDType = select(tradeDirection, 
+  "Sell"->"A", 
+  "Buy"->select(counterpartyAddInfo.NPWP, 
+    default->"A", 
+    nil->select(counterpartyAddInfo.KTP, 
+      default->"B", 
+      nil->nil)));
+  payerName = select(tradeDirection, 
+  "Sell"->acquirer.FullName, 
+  "Buy"->counterparty.FullName);
+  payerStatus = select(tradeDirection, 
+  "Sell"->acquirer:partyCountryOfRiskDescription, 
+  "Buy"->counterparty:partyCountryOfRiskDescription);
+  plnAmount = select(plnInstrumentTerm, 
+  nil->0, 
+  default->select(plnInstrumentTerm > 365, 
+    true->0, 
+    default->select(instrument:insType, 
+      "Deposit"->abs(object.FaceValue), 
+      "BasketRepo/Reverse"->abs(object.FaceValue))));
+  plnInstrumentTerm = select(instrument.InsType, 
+  "Curr"->dateDifference(valueDay, date(tradeDateTime)), 
+  "Option"->dateDifference(instrument:expiryDate, date(tradeDateTime)), 
+  "Future/Forward"->select(instrument:underlyingType, 
+    "Curr"->dateDifference(valueDay, date(tradeDateTime)), 
+    default->dateDifference(valueDay, date(tradeDateTime))), 
+  "CurrSwap"->dateDifference(instrument:expiryDate, instrument:startDate), 
+  "Swap"->dateDifference(instrument:expiryDate, instrument:startDate), 
+  default->dateDifference(instrument:expiryDate, valueDay));
+  receiptIDNumber = select(tradeDirection, 
+  "Buy"->"010611739093000", 
+  "Sell"->select(counterpartyAddInfo.NPWP, 
+    default->counterpartyAddInfo.NPWP, 
+    nil->select(counterpartyAddInfo.KTP, 
+      default->counterpartyAddInfo.KTP, 
+      nil->nil)));
+  receiptIDType = select(tradeDirection, 
+  "Buy"->"A", 
+  "Sell"->select(counterpartyAddInfo.NPWP, 
+    default->"A", 
+    nil->select(counterpartyAddInfo.KTP, 
+      default->"B", 
+      nil->nil)));
+  recipientCategory = select(tradeDirection, 
+  "Sell"->counterparty:partySandiPelakuDescription, 
+  "Buy"->"C1");
+  recipientName = select(tradeDirection, 
+  "Sell"->counterparty.FullName, 
+  "Buy"->acquirer.FullName);
+  recipientStatus = select(tradeDirection, 
+  "Sell"->counterparty:partyCountryOfRiskDescription, 
+  "Buy"->acquirer:partyCountryOfRiskDescription);
+  specialAccount = select((currencyPairForeignCurrency == idrCurrency) or (currencyPairDomesticCurrency == idrCurrency), 
+  true->select(currencyPairForeignCurrency == idrCurrency, 
+    true->object:specialAccountFromCurrency [specialCurrency = currencyPairDomesticCurrency], 
+    default->specialAccountFromCurrency), 
+  default->specialAccountFromCurrency);
+  specialAccountFromCurrency = shunt(filteredSpecialAccountMoneyFlows.Size, 
+  1->filteredSpecialAccountMoneyFlows.First.CounterpartyAccount, 
+  default->nil);
+  specialAccountNumber = specialAccount.Account;
+  specialAccountType = shunt(specialAccountFromCurrency, 
+  nil->nil, 
+  default->shunt(specialAccountFromCurrency.AdditionalInfo.EMASAccountType, 
+    "S"->"5B", 
+    "D"->"5A"));
+  specialCurrency = currencyPairForeignCurrency;
+  tradeDirection = object.Direction;
+  transactionPurpose = select((object.IsFxForward or object.IsFxSpot), 
+  true->select(tradeDirection, 
+    "Sell"->1263, 
+    "Buy"->2263), 
+  false->select(object.IsFxSwap, 
+    false->nil, 
+    true->select(object.IsFxSwapNearLeg, 
+      true->select(tradeDirection, 
+        "Sell"->1277, 
+        "Buy"->2277), 
+      false->select(tradeDirection, 
+        "Sell"->1278, 
+        "Buy"->2278))));
+  troTradeNumber = "TRO." + object.Oid;
+  valueDay = object.ValueDay;
+}
+
+clx FTradeRow [FExtensionAttribute] {
+  currencyPair = trade:currencyPair;
+  currencyPairCurrencyOne = trade:currencyPairCurrencyOne;
+  currencyPairCurrencyTwo = trade:currencyPairCurrencyTwo;
+  currencyPairDomesticCurrency = trade:currencyPairDomesticCurrency;
+  currencyPairForeignCurrency = trade:currencyPairForeignCurrency;
+  financialRelations = trade:financialRelations;
+  idrEquivalentFxRate = trade:idrEquivalentFxRate;
+  nonIDRCurrency = trade:nonIDRCurrency;
+  nonIDRCurrencyAmount = trade:nonIDRCurrencyAmount;
+  payerCategory = trade:payerCategory;
+  payerIDNumber = trade:payerIDNumber;
+  payerIDType = trade:payerIDType;
+  payerName = trade:payerName;
+  payerStatus = trade:payerStatus;
+  plnAmount = trade:plnAmount;
+  plnAmountIDR = idrEquivalentFxRate * plnAmount;
+  plnAmountIDRAbs = abs(plnAmountIDR);
+  plnExcludeRow = shunt(plnInstrumentTerm > 365, 
+  true->"True", 
+  default->"False");
+  plnID = select(instrument:insType, 
+  default->nil, 
+  "Deposit"->14, 
+  "BasketRepo/Reverse"->19);
+  plnInstrumentEndDate = instrument:plnInstrumentEndDate;
+  plnInstrumentTerm = trade:plnInstrumentTerm;
+  receiptIDNumber = trade:receiptIDNumber;
+  receiptIDType = trade:receiptIDType;
+  recipientCategory = trade:recipientCategory;
+  recipientName = trade:recipientName;
+  recipientStatus = trade:recipientStatus;
+  specialAccount = trade:specialAccount;
+  specialAccountNumber = trade:specialAccountNumber;
+  specialAccountType = trade:specialAccountType;
+  tradeDirection = trade:tradeDirection;
+  transactionPurpose = trade:transactionPurpose;
+  troTradeNumber = trade:troTradeNumber;
+  valueDay = trade:valueDay;
+}
+
+clx FUndefinedObject [FExtensionAttribute] {
+  defaultConstantValue = nil;
+  defaultExtensionAttribute = nil;
+  defaultMethodChain = nil;
+  defaultReadFormat = "%Y-%m-%d";
+  defaultWriteFormat = "%Y%m%d";
+  idrCurrency = getObject("FCurrency", "IDR");
+}
+
+decls[FParameterGUIDefinition] {
+  "InsertItems_LastCalendarMonth" ( "insert items algorithm definition template" ) "";
+}
+
+clx FObject [FParameterGUIDefinition] {
+  InsertItems_LastCalendarMonth =
+  DisplayName=Last Calendar Month
+  Domain=datetime
+  FromDatePeriod=
+  FromTime=00:00:00
+  Module=InsertItems_AdjustPeriodLastCalendarMonth
+  ToDatePeriod=
+  ToTime=23:59:59
+
+
+}
+
+decls[FPythonCode] {
+}
+
+clx FObject [FPythonCode] {
+  BO62_Journals
+import os
+import acm
+
+from FAccountingCreation import CreateJournal
+from FAccountingEnums import DebitOrCredit, JournalCategory
+from ACMPyUtils import Transaction
+from FLogger import FLogger
+
+logger = FLogger(__name__)
+
+global ASSET_REVENUE_ACCOUNT
+global ASSET_REVENUE_CHART
+global ASSET_LIABILITY_ACCOUNT
+global ASSET_LIABILITY_CHART
+global DERIVATIVE_REVENUE_ACCOUNT
+global DERIVATIVE_REVENUE_CHART
+global DERIVATIVE_LIABILITY_ACCOUNT
+global DERIVATIVE_LIABILITY_CHART
+
+WRITE_BOOK = acm.FBook['Treasury']
+month_names = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember']
+BOa30_headers = ['DebitCreditPair', 'AMOUNT', 'BASE_AMOUNT', 'CATEGORY', 'CHART_OF_ACCOUNT_SEQNBR.BOOK.NAME', 'CHART_OF_ACCOUNT_SEQNBR.T_ACCOUNT.NUMBER', 'CURRENCY_INSADDR.INSID', 'DEBIT_OR_CREDIT', 
+                'EVENT_DATE', 'JOURNAL_TYPE', 'PROCESS_DATE', 'VALUE_DATE', 'TRADE_TRDNBR', 'ADDINF_SPECNBR.FIELD_NAME', 'VALUE',
+                'ADDINF_SPECNBR.FIELD_NAME', 'VALUE','ADDINF_SPECNBR.FIELD_NAME', 'VALUE','ADDINF_SPECNBR.FIELD_NAME', 'VALUE','ADDINF_SPECNBR.FIELD_NAME', 'VALUE',]
+fx_rates = dict()
+
+def defineAccounts():
+    global ASSET_REVENUE_ACCOUNT
+    global ASSET_REVENUE_CHART
+    global ASSET_LIABILITY_ACCOUNT
+    global ASSET_LIABILITY_CHART
+    global DERIVATIVE_REVENUE_ACCOUNT
+    global DERIVATIVE_REVENUE_CHART
+    global DERIVATIVE_LIABILITY_ACCOUNT
+    global DERIVATIVE_LIABILITY_CHART
+
+    ASSET_REVENUE_ACCOUNT = acm.FTAccount.Select01('number=14591102', None)
+    if ASSET_REVENUE_ACCOUNT:
+        asset_revenue_charts = ASSET_REVENUE_ACCOUNT.ChartOfAccounts()
+        assert asset_revenue_charts, 'No Chart Of Accounts linked to TAccount "%s"' % ASSET_REVENUE_ACCOUNT.Name()
+
+    ASSET_LIABILITY_ACCOUNT = acm.FTAccount.Select01('number=55011501', None)
+    if ASSET_LIABILITY_ACCOUNT:
+        asset_liability_charts = ASSET_LIABILITY_ACCOUNT.ChartOfAccounts()
+        assert asset_liability_charts, 'No Chart Of Accounts linked to TAccount "%s"' % ASSET_LIABILITY_ACCOUNT.Name()
+
+    DERIVATIVE_REVENUE_ACCOUNT = acm.FTAccount.Select01('number=13091102', None)
+    if DERIVATIVE_REVENUE_ACCOUNT:
+        derivative_revenue_charts = DERIVATIVE_REVENUE_ACCOUNT.ChartOfAccounts()
+        assert derivative_revenue_charts, 'No Chart Of Accounts linked to TAccount "%s"' % DERIVATIVE_REVENUE_ACCOUNT.Name()
+
+    DERIVATIVE_LIABILITY_ACCOUNT = acm.FTAccount.Select01('number=55011201', None)
+    if DERIVATIVE_LIABILITY_ACCOUNT:
+        derivative_liability_charts = DERIVATIVE_LIABILITY_ACCOUNT.ChartOfAccounts()
+        assert derivative_liability_charts, 'No Chart Of Accounts linked to TAccount "%s"' % DERIVATIVE_LIABILITY_ACCOUNT.Name()
+
+    for revenue_chart in asset_revenue_charts:
+        if revenue_chart.Book() == WRITE_BOOK:
+            ASSET_REVENUE_CHART = revenue_chart
+            break
+    for liability_chart in asset_liability_charts:
+        if liability_chart.Book() == WRITE_BOOK:
+            ASSET_LIABILITY_CHART = liability_chart
+            break
+    for revenue_chart in derivative_revenue_charts:
+        if revenue_chart.Book() == WRITE_BOOK:
+            DERIVATIVE_REVENUE_CHART = revenue_chart
+            break
+    for liability_chart in derivative_liability_charts:
+        if liability_chart.Book() == WRITE_BOOK:
+            DERIVATIVE_LIABILITY_CHART = liability_chart
+            break
+
+def getFxRate(currency_name, report_date):
+    price = acm.FPrice.Select01(f"instrument = '{currency_name}' and market = 'EOD_MtM' and currency = 'IDR' and day = '{report_date}'", None)
+    if price:
+        return price.Settle()
+    return 0
+
+def GenerateJournalData(asset_data, derivative_data, report_date):
+    journals_data = list()
+    year, month, _ = acm.Time.DateToYMD(report_date)
+    date_string = month_names[month - 1] + ' ' + str(year)
+    for currency in asset_data:
+        group = dict()
+        group['Currency'] = currency
+        group['Asset/Deriv'] = 'Asset'
+        group['Narrative'] = f'Penyesuaian PPAP EFEK. ({currency}) Bulan {date_string}'
+        totals = asset_data[currency]['totals']
+        ppap_current_month = totals['Bank Debit']
+        ppap_last_month = totals['PPAP M-1']
+        if ppap_last_month > ppap_current_month:
+            group['Debit'] = '14591102'
+            group['Credit'] = '55011501'
+        else:
+            group['Debit'] = '55011501'
+            group['Credit'] = '14591102'
+        group['Amount'] = ppap_current_month - ppap_last_month
+        journals_data.append(group)
+    for currency in derivative_data:
+        group = dict()
+        group['Currency'] = currency
+        group['Asset/Deriv'] = 'Deriv'
+        group['Narrative'] = f'Penyesuaian PPAP Deriv. ({currency}) Bulan - {date_string}'
+        totals = derivative_data[currency]['totals']
+        ppap_current_month = totals['Bank Debit']
+        ppap_last_month = totals['PPAP M-1']
+        if ppap_last_month > ppap_current_month:
+            group['Debit'] = '13091102'
+            group['Credit'] = '55011201'
+        else:
+            group['Debit'] = '55011201'
+            group['Credit'] = '13091102'
+        group['Amount'] = ppap_current_month - ppap_last_month
+        journals_data.append(group)
+    return journals_data
+
+def _createJournal(amount, chart, report_date, credit_or_debit, journal_link, currency_name, journal_info = None):
+    if journal_info is None:
+        journal_info = acm.FJournalInformation()
+        journal_info.Book(WRITE_BOOK)
+        journal_info.Commit()
+    accounting_period = WRITE_BOOK.FindPeriodByDate(report_date)
+    journal = CreateJournal(amount, amount, chart, currency_name, JournalCategory.STANDARD, journal_info, report_date, accounting_period, report_date, credit_or_debit)
+    journal.JournalLink(journal_link)
+    if currency_name == 'IDR':
+        journal.BaseAmount(amount)
+    else:
+        if currency_name not in fx_rates:
+            fx_rates[currency_name] = getFxRate(currency_name, report_date)
+        journal.BaseAmount(amount * fx_rates[currency_name])
+    return journal, journal_info
+
+def _createJournals(group, report_date):
+    defineAccounts()
+    journals = []
+    amount = group['Amount']
+    if amount == 0:
+        return
+    currency = group['Currency']
+    narrative =  group['Narrative']
+    if group['Asset/Deriv'] == 'Asset':
+        revenue_account = ASSET_REVENUE_ACCOUNT
+        liability_account = ASSET_LIABILITY_ACCOUNT
+        revenue_chart = ASSET_REVENUE_CHART
+        liability_chart = ASSET_LIABILITY_CHART
+    else:
+        revenue_account = DERIVATIVE_REVENUE_ACCOUNT
+        liability_account = DERIVATIVE_LIABILITY_ACCOUNT
+        revenue_chart = DERIVATIVE_REVENUE_CHART
+        liability_chart = DERIVATIVE_LIABILITY_CHART
+    if amount > 0:
+        debit_account, credit_account = [liability_account, revenue_account]
+        debit_chart, credit_chart = [liability_chart, revenue_chart]
+    else:
+        credit_account, debit_account = [liability_account, revenue_account]
+        credit_chart, debit_chart = [liability_chart, revenue_chart]
+    journal_link = acm.FJournalLink()
+    journal_link.Commit()
+    amount = abs(amount)
+    debit_journal, journal_info = _createJournal(amount, debit_chart, report_date, DebitOrCredit.DEBIT, journal_link, currency)
+    credit_journal, _ = _createJournal(-amount, credit_chart, report_date, DebitOrCredit.CREDIT, journal_link, currency, journal_info)
+    pair = [debit_journal, credit_journal]
+    for journal in pair:
+        journal.AdditionalInfo().JournalNarrative1(narrative)
+    journals.extend(pair)
+    with Transaction():
+        for journal in pair:
+            journal.Commit()
+
+def GenerateJournals(journals_data, report_date):
+    for journal_data in journals_data:
+        _createJournals(journal_data, report_date)
+    logger.LOG('Completed Generating Journals')
+
+def GenerateBOa30Report(journals_data, params):
+    report_date = params.ReportDate
+    file_name = params.BOa30FileName
+    file_directory = params.BOa30Directory.SelectedDirectory().AsString()
+    if not file_directory:
+        file_directory = os.getcwd()
+    file_path = os.path.join(file_directory, file_name)
+
+    output_list = list()
+    output_list.append(BOa30_headers)
+    pair_count = 1
+    for journal_data in journals_data:
+        debit_row = list()
+        credit_row = list()
+        debit_row.append(str(pair_count))
+        credit_row.append(str(pair_count))
+        currency = journal_data['Currency']
+        narrative = journal_data['Narrative']
+        amount = journal_data['Amount']
+        if amount == 0:
+            continue
+        debit_row.append(str(amount))
+        credit_row.append(str(-amount))
+        if currency == 'IDR':
+            fx_rate = 1
+        else:
+            if currency not in fx_rates:
+                fx_rates[currency] = getFxRate(currency, report_date)
+            fx_rate = fx_rates[currency]
+        debit_row.append(str(amount * fx_rate))
+        credit_row.append(str(-amount * fx_rate))
+        debit_row.append('Standard')
+        credit_row.append('Standard')
+        debit_row.append('Treasury')
+        credit_row.append('Treasury')
+        debit_row.append(journal_data['Debit'])
+        credit_row.append(journal_data['Credit'])
+        debit_row.append(currency)
+        credit_row.append(currency)
+        debit_row.append('Debit')
+        credit_row.append('Credit')
+        debit_row.append(report_date)
+        credit_row.append(report_date)
+        debit_row.append('Live')
+        credit_row.append('Live')
+        debit_row.append(report_date)
+        credit_row.append(report_date)
+        debit_row.append(report_date)
+        credit_row.append(report_date)
+        debit_row.append('')
+        credit_row.append('')
+        debit_row.append('JournalNarrative1')
+        credit_row.append('JournalNarrative1')
+        debit_row.append(narrative)
+        credit_row.append(narrative)
+        for a in range(2, 6):
+            debit_row.append(f'JournalNarrative{a}')
+            credit_row.append(f'JournalNarrative{a}')
+            debit_row.append('')
+            credit_row.append('')
+        output_list.append(debit_row)
+        output_list.append(credit_row)
+        pair_count += 1
+
+    with open(file_path, 'w') as out_file:
+        for row in output_list:
+            out_file.write(','.join(row))
+            out_file.write('\n')
+    logger.LOG('BOa30 written to %s' % file_path)
+
+...
+
+  BO62_Report
+import os
+import acm
+
+from FLogger import FLogger
+
+logger = FLogger(__name__)
+
+month_names = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember']
+bo62_headers = ['PERIODE', 'KOLEKTIBILITAS', 'ISSUER', 'Tipe', 'Nama', 'Baki Debet', 'PPAP M-1', 'PPAP M', 'PPAP S/H', 'U/K', 'Text35']
+asset_transaction_string = 'Surat Berharga Valuta '
+derivative_transaction_string = 'Tagihan Derivatif'
+
+def getCollectibility(collectilbility_code):
+    if collectilbility_code == '1':
+        collectibility = 1
+    elif collectilbility_code == '2':
+        collectibility = 5
+    elif collectilbility_code == '3':
+        collectibility = 15
+    elif collectilbility_code == '4':
+        collectibility = 50
+    elif collectilbility_code == '5':
+        collectibility = 100
+    else:
+        collectibility = 0
+    return collectibility
+
+def getProductAndCategory(trade):
+    product_type = trade.OptKey3()
+    category = trade.OptKey4()
+    return '_'.join([product_type.Name() if product_type else '', category.Name() if category else ''])
+
+def getCustomerAndInstrument(trade):
+    counterparty = trade.Counterparty()
+    customer_type = counterparty.Free2ChoiceList().Name() if counterparty.Free2ChoiceList() else ''
+    if customer_type != 'Bank':
+        customer_type = 'Non-Bank'
+    return '_'.join([customer_type, trade.Instrument().InsType()])
+
+def initiateTotalsDict():
+    totals = dict()
+    totals['Bank Debit'] = 0
+    totals['PPAP M-1'] = 0
+    totals['PPAP M'] = 0
+    return totals
+
+def generateRow(report_date = '', collectibility = None, issuer_name = '', type = '', name = '', current_value = 0, previous_value = 0, ppap = 0, uk = ''):
+    row_list = list()
+    row_list.append(report_date)
+    row_list.append('%i%%' % collectibility) if collectibility else row_list.append('')
+    row_list.append(issuer_name)
+    row_list.append(type)
+    row_list.append(name)
+    row_list.append(str(current_value))
+    row_list.append(str(previous_value))
+    row_list.append(str(ppap))
+    row_list.append(str(current_value - previous_value))
+    row_list.append(uk)
+    return row_list
+
+def generateHeaderRows(*args):
+    empty_array = [''] * len(bo62_headers)
+    output_list = list()
+    output_list.append(empty_array)
+    for header, value in zip(['CCY', 'TRX', 'PERIODE'], args):
+        empty_array_copy = empty_array.copy()
+        empty_array_copy[1] = header
+        empty_array_copy[2] = ':'
+        empty_array_copy[3] = value
+        output_list.append(empty_array_copy)
+    output_list.append(empty_array)
+    return output_list
+
+def getAssetData(asset_trades):
+    assets_data= dict()
+    for asset_trade in asset_trades:
+        currency = asset_trade.Currency().Name()
+        if currency not in assets_data:
+            assets_data[currency] = dict()
+        instrument = asset_trade.Instrument()
+        issuer = instrument.Issuer()
+        if issuer:
+            collectilbility_code = issuer.AdditionalInfo().LBUT_KOLEKTIBILITAS()
+            collectibility = getCollectibility(collectilbility_code)
+            issuer_name = issuer.Name()
+        else:
+            collectibility = 0
+            issuer_name = 'None'
+        if collectibility not in assets_data[currency]:
+            assets_data[currency][collectibility] = dict()
+        if issuer_name not in assets_data[currency][collectibility]:
+            assets_data[currency][collectibility][issuer_name] = dict()
+        if instrument not in assets_data[currency][collectibility][issuer_name]:
+            assets_data[currency][collectibility][issuer_name][instrument] = list()
+        assets_data[currency][collectibility][issuer_name][instrument].append(asset_trade)
+    return assets_data
+
+def getDerivativeData(derivative_trades):
+    derivatives_data = dict()
+    for derivative_trade in derivative_trades:
+        currency = derivative_trade.Currency().Name()
+        if currency not in derivatives_data:
+            derivatives_data[currency] = dict()
+        counterparty = derivative_trade.Counterparty()
+        if counterparty:
+            collectilbility_code = counterparty.AdditionalInfo().LBUT_KOLEKTIBILITAS()
+            collectibility = getCollectibility(collectilbility_code)
+            counterparty_name = counterparty.Name()
+        else:
+            collectibility = 0
+            counterparty_name = 'None'
+        if collectibility not in derivatives_data[currency]:
+            derivatives_data[currency][collectibility] = dict()
+        if counterparty_name not in derivatives_data[currency][collectibility]:
+            derivatives_data[currency][collectibility][counterparty_name] = dict()
+        customer_and_instrument = getCustomerAndInstrument(derivative_trade)
+        if customer_and_instrument not in derivatives_data[currency][collectibility][counterparty_name]:
+            derivatives_data[currency][collectibility][counterparty_name][customer_and_instrument] = list()
+        derivatives_data[currency][collectibility][counterparty_name][customer_and_instrument].append(derivative_trade)
+    return derivatives_data
+
+def GenerateBO62Report(params):
+    report_date = params.ReportDate
+    year, month, _ = acm.Time.DateToYMD(report_date)
+    date_string = month_names[month - 1] + '-' + str(year)
+    logger.LOG(f'Generating BO62 Report for date {report_date}')
+    file_name = params.BO62FileName
+    file_directory = params.BO62Directory.SelectedDirectory().AsString()
+    if not file_directory:
+        file_directory = os.getcwd()
+    file_path = os.path.join(file_directory, file_name)
+
+    assets_query = params.AssetQuery
+    asset_trades = assets_query.Query().Select() if assets_query else []
+
+    asset_previous_query = params.AssetPreviousQuery
+    asset_previous_trades = asset_previous_query.Query().Select() if asset_previous_query else []
+
+    derivatives_query = params.DerivativeQuery
+    derivative_trades = derivatives_query.Query().Select() if derivatives_query else []
+
+    derivatives_previous_query = params.DerivativePreviousQuery
+    derivative_previous_trades = derivatives_previous_query.Query().Select() if derivatives_previous_query else []
+
+    raw_asset_data = getAssetData(asset_trades)
+    raw_asset_previous_data = getAssetData(asset_previous_trades)
+
+    raw_derivatives_data = getDerivativeData(derivative_trades)
+    raw_derivatives_previous_data = getDerivativeData(derivative_previous_trades)
+
+    context = acm.GetDefaultContext()
+    sheet_type = 'FTradeSheet'
+    trade_sheet_calc_space = acm.Calculations().CreateCalculationSpace(context, sheet_type)
+    quantity_column = 'Portfolio Position'
+
+    asset_output = list()
+    asset_data = dict()
+    empty_array = [''] * len(bo62_headers)
+
+    for currency in raw_asset_data:
+        if currency not in asset_data:
+            asset_data[currency] = dict()
+        asset_data[currency]['totals'] = initiateTotalsDict()
+        asset_output.extend(generateHeaderRows(currency, asset_transaction_string + currency, date_string))
+        asset_output.append(bo62_headers)
+        previous_found = currency in raw_asset_previous_data.keys()
+        insert_index = len(asset_output)
+        for collectibility in raw_asset_data[currency]:
+            collectiblity_data = dict()
+            collectiblity_data['totals'] = initiateTotalsDict()
+            if previous_found is True:
+                previous_found = collectibility in raw_asset_previous_data[currency].keys()
+            if collectibility == 100:
+                uk = 'KHUSUS'
+            else:
+                uk = 'UMUM'
+            empty_array_copy = empty_array.copy()
+            empty_array_copy[1] = '%s%%' % collectibility
+            asset_output.append(empty_array_copy)
+            for issuer_name in raw_asset_data[currency][collectibility]:
+                if previous_found is True:
+                    previous_found = issuer_name in raw_asset_previous_data[currency][collectibility].keys()
+                for instrument in raw_asset_data[currency][collectibility][issuer_name]:
+                    group_data = dict()
+                    group_data['totals'] = initiateTotalsDict()
+                    if previous_found is True:
+                        previous_found = instrument in raw_asset_previous_data[currency][collectibility][issuer_name].keys()
+                    instrument_name = instrument.Name()
+                    adhoc_portfolio = raw_asset_data[currency][collectibility][issuer_name][instrument]
+                    if previous_found is True:
+                        adhoc_previous_portfolio = raw_asset_previous_data[currency][collectibility][issuer_name][instrument]
+                    else:
+                        adhoc_previous_portfolio = []
+                    product_and_category = getProductAndCategory(adhoc_portfolio[0])
+                    for asset_trade in adhoc_portfolio:
+                        calc = trade_sheet_calc_space.CreateCalculation(asset_trade, quantity_column).Value()
+                        current_value = calc.Number() if hasattr(calc, 'Number') else calc
+                        previous_value = 0
+                        if asset_trade in adhoc_previous_portfolio:
+                            calc = trade_sheet_calc_space.CreateCalculation(adhoc_previous_portfolio, quantity_column).Value()
+                            previous_value = calc.Number() if hasattr(calc, 'Number') else calc
+                        ppap = collectibility * current_value / 100
+                        group_data['totals']['Bank Debit'] += current_value
+                        group_data['totals']['PPAP M-1'] += previous_value
+                        group_data['totals']['PPAP M'] += ppap
+                        collectiblity_data['totals']['Bank Debit'] += current_value
+                        collectiblity_data['totals']['PPAP M-1'] += previous_value
+                        collectiblity_data['totals']['PPAP M'] += ppap
+                        asset_data[currency]['totals']['Bank Debit'] += current_value
+                        asset_data[currency]['totals']['PPAP M-1'] += previous_value
+                        asset_data[currency]['totals']['PPAP M'] += ppap
+                    row_list = generateRow('', '', issuer_name, product_and_category, instrument_name, group_data['totals']['Bank Debit'], group_data['totals']['PPAP M-1'], group_data['totals']['PPAP M'], uk)
+                    asset_output.append(row_list)
+            row_list = generateRow('', None, '', '', '', collectiblity_data['totals']['Bank Debit'], collectiblity_data['totals']['PPAP M-1'], collectiblity_data['totals']['PPAP M'], '')
+            asset_output.append(row_list)
+        row_list = generateRow(date_string, None, '', '', '', asset_data[currency]['totals']['Bank Debit'], asset_data[currency]['totals']['PPAP M-1'], asset_data[currency]['totals']['PPAP M'], '')
+        asset_output.insert(insert_index, row_list)
+
+    derivative_output = list()
+    derivative_data = dict()
+
+    for currency in raw_derivatives_data:
+        if currency not in derivative_data:
+            derivative_data[currency] = dict()
+        derivative_data[currency]['totals'] = initiateTotalsDict()
+        derivative_output.extend(generateHeaderRows(currency, derivative_transaction_string, date_string))
+        derivative_output.append(bo62_headers)
+        previous_found = currency in raw_derivatives_previous_data.keys()
+        insert_index = len(derivative_output)
+        for collectibility in raw_derivatives_data[currency]:
+            collectiblity_data = dict()
+            collectiblity_data['totals'] = initiateTotalsDict()
+            if previous_found is True:
+                previous_found = collectibility in raw_derivatives_previous_data[currency].keys()
+            if collectibility == 100:
+                uk = 'KHUSUS'
+            else:
+                uk = 'UMUM'
+            empty_array_copy = empty_array.copy()
+            empty_array_copy[1] = '%s%%' % collectibility
+            derivative_output.append(empty_array_copy)
+            for counterparty_name in raw_derivatives_data[currency][collectibility]:
+                if previous_found is True:
+                    previous_found = counterparty_name in raw_derivatives_previous_data[currency][collectibility].keys()
+                for customer_and_instrument in raw_derivatives_data[currency][collectibility][counterparty_name]:
+                    group_data = dict()
+                    group_data['totals'] = initiateTotalsDict()
+                    if previous_found is True:
+                        previous_found = customer_and_instrument in raw_derivatives_previous_data[currency][collectibility][counterparty_name].keys()
+                    adhoc_portfolio = raw_derivatives_data[currency][collectibility][counterparty_name][customer_and_instrument]
+                    if previous_found is True:
+                        adhoc_previous_portfolio = raw_derivatives_previous_data[currency][collectibility][counterparty_name][customer_and_instrument]
+                    else:
+                        adhoc_previous_portfolio = []
+                    product_and_category = getProductAndCategory(adhoc_portfolio[0])
+                    for asset_trade in adhoc_portfolio:
+                        calc = trade_sheet_calc_space.CreateCalculation(asset_trade, quantity_column).Value()
+                        current_value = calc.Number() if hasattr(calc, 'Number') else calc
+                        previous_value = 0
+                        if asset_trade in adhoc_previous_portfolio:
+                            calc = trade_sheet_calc_space.CreateCalculation(adhoc_previous_portfolio, quantity_column).Value()
+                            previous_value = calc.Number() if hasattr(calc, 'Number') else calc
+                        ppap = collectibility * current_value / 100
+                        group_data['totals']['Bank Debit'] += current_value
+                        group_data['totals']['PPAP M-1'] += previous_value
+                        group_data['totals']['PPAP M'] += ppap
+                        collectiblity_data['totals']['Bank Debit'] += current_value
+                        collectiblity_data['totals']['PPAP M-1'] += previous_value
+                        collectiblity_data['totals']['PPAP M'] += ppap
+                        derivative_data[currency]['totals']['Bank Debit'] += current_value
+                        derivative_data[currency]['totals']['PPAP M-1'] += previous_value
+                        derivative_data[currency]['totals']['PPAP M'] += ppap
+                    row_list = generateRow('', '', '', customer_and_instrument, counterparty_name, group_data['totals']['Bank Debit'], group_data['totals']['PPAP M-1'], group_data['totals']['PPAP M'], uk)
+                    derivative_output.append(row_list)
+            row_list = generateRow('', None, '', '', '', collectiblity_data['totals']['Bank Debit'], collectiblity_data['totals']['PPAP M-1'], collectiblity_data['totals']['PPAP M'], '')
+            derivative_output.append(row_list)
+        row_list = generateRow(date_string, None, '', '', '', derivative_data[currency]['totals']['Bank Debit'], derivative_data[currency]['totals']['PPAP M-1'], derivative_data[currency]['totals']['PPAP M'], '')
+        derivative_output.insert(insert_index, row_list)
+
+    with open(file_path, 'w') as out_file:
+        for row in asset_output:
+            out_file.write(','.join(row))
+            out_file.write('\n')
+        for row in derivative_output:
+            out_file.write(','.join(row))
+            out_file.write('\n')
+    logger.LOG('BO62 Data written to %s' % file_path)
+    return asset_data, derivative_data
+
+...
+
+  BO62_Runscript
+from collections import namedtuple
+import os
+import acm
+import FRunScriptGUI
+from FAccountingCreation import CreateJournal
+from FAccountingEnums import DebitOrCredit, JournalCategory
+from ACMPyUtils import Transaction
+from FLogger import FLogger
+
+logger = FLogger(__name__)
+
+from BO62_Report import GenerateBO62Report
+from BO62_Journals import GenerateJournalData, GenerateJournals, GenerateBOa30Report
+
+def PickFolder():
+    res = acm.FFileSelection()
+    res.PickDirectory(True)
+    return res
+
+class BO62Runscript(FRunScriptGUI.AelVariablesHandler):
+
+    GUI_PARAMETERS = {
+        'runButtonLabel':   '&&Run',
+        'hideExtraControls': False,
+        'windowCaption' : 'BO62 - PPAP'
+        }
+    LOG_LEVELS = {
+        '1. Normal': 1,
+        '2. Warnings/Errors': 3,
+        '3. Debug': 2
+        }
+
+    def __init__(self):
+        FRunScriptGUI.AelVariablesHandler.__init__(self, self._GetVariableDefinitions())
+
+    @staticmethod
+    def GetParameters(params):
+        params['ReportDate'] = acm.Time.AsDate(params['ReportDate'])
+        paramClass = namedtuple('RuleParameters', list(params.keys()))
+        return paramClass(**params)
+
+    @classmethod
+    def GetLoggingLevel(cls, logLevel):
+        return cls.LOG_LEVELS.get(logLevel, 1)
+
+    def BAo30CB(self, index, fieldValues):
+        new_value = fieldValues[index] == 'true'
+        for i in (1, 2):
+            self.ael_variables[index + i][FRunScriptGUI.Controls.ENABLED] = new_value
+        return fieldValues
+
+    def _GetVariableDefinitions(self):
+        logLevels = sorted(self.LOG_LEVELS)
+        
+        tt_TradeQueries = 'Select the insert item query or queries containing trades to check.'
+        tt_LogLevel = 'Select the verbosity of logging output by the compliance engine task.'
+        tt_ReportDate = 'Select date or enter a date in ISO format YYYY-MM-DD'
+        tt_DataFileDirectory = 'Directory to output BO62 file'
+        tt_DataFileName = 'Name of BO62 file'
+        tt_GenerateJournals = 'Automatically generate journals based on data from BO62'
+        tt_GenerateJournalsFile = 'Automatically generate journals file based on data from BO62'
+        tt_JournalsFileDirectory = 'Directory to output journals file'
+        tt_JournalsFileName = 'Name of journals file'
+        
+        return (('AssetQuery', 'Asset trade query_General', 'FStoredASQLQuery', self.TradesSelection(), None, True, False, tt_TradeQueries, None, True),
+                ('AssetPreviousQuery', 'Asset trade query (Previous)_General', 'FStoredASQLQuery', self.TradesSelection(), None, True, False, tt_TradeQueries, None, True),
+                ('DerivativeQuery', 'Derivative trade query_General', 'FStoredASQLQuery', self.TradesSelection(), None, True, False, tt_TradeQueries, None, True),
+                ('DerivativePreviousQuery', 'Derivative trade query (Previous)_General', 'FStoredASQLQuery', self.TradesSelection(), None, True, False, tt_TradeQueries, None, True),
+                ('ReportDate', 'Report Date_General', 'string', ['Today', 'Yesterday'], 'Today', True, False, tt_ReportDate, None, True),
+                ('BO62Directory', 'BO62 Output Directory_Output', PickFolder(), None, PickFolder(), True, True, tt_DataFileDirectory, 0, None),
+                ('BO62FileName', 'BO62 File Name_Output', 'string', None, 'BO62.csv', True, False, tt_DataFileName, None, True),
+                ('GenerateJournals', 'Generate Journals_Journals', 'bool', [True, False], False, True, False, tt_GenerateJournals, None, True),
+                ('GenerateBOa30', 'Generate BOa30 Report_Journals', 'bool', [True, False], False, True, False, tt_GenerateJournalsFile, self.BAo30CB, True),
+                ('BOa30Directory', 'BOa30 Output Directory_Journals', PickFolder(), None, PickFolder(), True, True, tt_JournalsFileDirectory, None, False),
+                ('BOa30FileName', 'BOa30 File Name_Journals', 'string', None, 'BAo30.csv', True, False, tt_JournalsFileName, None, False),
+                ('LogLevel', 'Logging Level_Logging', 'string', logLevels, logLevels[0], 2, 0, tt_LogLevel),)
+
+    @staticmethod
+    def TradesSelection():
+        return acm.FStoredASQLQuery.Select("subType='FTrade'").SortByProperty('Name')
+
+ael_variables = BO62Runscript()
+ael_gui_parameters = ael_variables.GUI_PARAMETERS
+
+def ael_main(params):
+    options = BO62Runscript.GetParameters(params)
+    report_date = options.ReportDate
+    logger.Reinitialize(level=BO62Runscript.GetLoggingLevel(options.LogLevel))
+    data = GenerateBO62Report(options)
+    genJournals = options.GenerateJournals
+    genBOa30 = options.GenerateBOa30
+    if genJournals is True or genBOa30 is True:
+        journals_data = GenerateJournalData(*data, report_date)
+    if genJournals is True:
+        logger.LOG('Generating Journals')
+        GenerateJournals(journals_data, report_date)
+    if genBOa30 is True:
+        logger.LOG('Generating BOa30 Report')
+        GenerateBOa30Report(journals_data, options)
+    logger.LOG('Complete')
+
+...
+
+  CombinePLN_Runscript
+from collections import namedtuple
+import os
+import time
+from xml.etree import ElementTree as ET
+import acm
+import FRunScriptGUI
+from FLogger import FLogger
+
+logger = FLogger(__name__)
+
+from BO62_Report import GenerateBO62Report
+from BO62_Journals import GenerateJournalData, GenerateJournals, GenerateBOa30Report
+
+def PickFolder():
+    res = acm.FFileSelection()
+    res.PickDirectory(True)
+    return res
+
+check_codecs = ['utf-8', 'utf-16']
+def getDateFormats():    
+    return ['%d%m%y', '%y%m%d', '%d%m%y%H%M', '%y%m%d%H%M']
+
+trueFalse = ['False','True']
+
+class CombinePLNRunscript(FRunScriptGUI.AelVariablesHandler):
+
+    GUI_PARAMETERS = {
+        'runButtonLabel':   '&&Run',
+        'hideExtraControls': False,
+        'windowCaption' : 'Combine PLN01'
+        }
+    LOG_LEVELS = {
+        '1. Normal': 1,
+        '2. Warnings/Errors': 3,
+        '3. Debug': 2
+        }
+
+    def __init__(self):
+        FRunScriptGUI.AelVariablesHandler.__init__(self, self._GetVariableDefinitions())
+
+    @staticmethod
+    def GetParameters(params):
+        paramClass = namedtuple('RuleParameters', list(params.keys()))
+        return paramClass(**params)
+
+    @classmethod
+    def GetLoggingLevel(cls, logLevel):
+        return cls.LOG_LEVELS.get(logLevel, 1)
+
+    def createDirectoryWithDatesCB(self, index, fieldValues):
+        new_value = fieldValues[index] == 'True'
+        self.ael_variables[index + 1][FRunScriptGUI.Controls.ENABLED] = new_value
+        self.ael_variables[index + 2][FRunScriptGUI.Controls.ENABLED] = new_value
+        return fieldValues
+
+    def _GetVariableDefinitions(self):
+        logLevels = sorted(self.LOG_LEVELS)
+        
+        tt_LogLevel = 'Select the verbosity of logging Input by the compliance engine task.'
+        tt_PLN01AFileDirectory = 'Directory to Input PLN01A file'
+        tt_PLN01AFileName = 'Name of PLN01A file'
+        tt_PLN01BFileDirectory = 'Directory to Input PLN01B file'
+        tt_PLN01BFileName = 'Name of PLN01B file'
+        tt_ObligoFileDirectory = 'Directory to Input Obligo PLN Non Derivatif file'
+        tt_ObligoFileName = 'Name of Obligo PLN Non Derivatif file'
+        tt_PLN01FileDirectory = 'Directory to Outut combined file'
+        tt_ObligoFileName = 'Name of combined file'
+        tt_DirectoryWithDate = 'Create a directory with the date included in the directory name'
+        tt_YearWithCentury = 'When using dates for filename and directory, year will be with or without century'
+        
+        return (('PLN01ADirectory', 'Input Directory_PLN01A', PickFolder(), None, PickFolder(), True, True, tt_PLN01AFileDirectory, 0, None),
+                ('PLN01AFileName', 'File Name_PLN01A', 'string', None, 'PLN01A.xls', True, False, tt_PLN01AFileName, None, True),
+                ('PLN01ADirectoryWithDate', 'Directory with Date_PLN01A', 'string', trueFalse, 'False', 1, 0, tt_DirectoryWithDate, self.createDirectoryWithDatesCB, True),
+                ('PLN01AYear', 'Year with century_PLN01A', 'string', trueFalse, 'False', 1, 0, tt_YearWithCentury, None, False),
+                ('PLN01ADateFormat', 'Date format_PLN01A', 'string', getDateFormats(), '%y%m%d', 0, 0, 'Date format', None, False),
+
+                ('PLN01BDirectory', 'Input Directory_PLN01B', PickFolder(), None, PickFolder(), True, True, tt_PLN01BFileDirectory, 0, None),
+                ('PLN01BFileName', 'File Name_PLN01B', 'string', None, 'PLN01B.xls', True, False, tt_PLN01BFileName, None, True),
+                ('PLN01BDirectoryWithDate', 'Directory with Date_PLN01B', 'string', trueFalse, 'False', 1, 0, tt_DirectoryWithDate, self.createDirectoryWithDatesCB, True),
+                ('PLN01BYear', 'Year with century_PLN01B', 'string', trueFalse, 'False', 1, 0, tt_YearWithCentury, None, False),
+                ('PLN01BDateFormat', 'Date format_PLN01B', 'string', getDateFormats(), '%y%m%d', 0, 0, 'Date format', None, False),
+
+                ('ObligoDirectory', 'Input Directory_Obligo', PickFolder(), None, PickFolder(), True, True, tt_ObligoFileDirectory, 0, None),
+                ('ObligoFileName', 'File Name_Obligo', 'string', None, 'Obligo PLN Non Derivatif.xls', True, False, tt_ObligoFileName, None, True),
+                ('ObligoDirectoryWithDate', 'Directory with Date_Obligo', 'string', trueFalse, 'False', 1, 0, tt_DirectoryWithDate, self.createDirectoryWithDatesCB, True),
+                ('ObligoYear', 'Year with century_Obligo', 'string', trueFalse, 'False', 1, 0, tt_YearWithCentury, None, False),
+                ('ObligoDateFormat', 'Date format_Obligo', 'string', getDateFormats(), '%y%m%d', 0, 0, 'Date format', None, False),
+
+                ('PLN01Directory', 'Output Directory_Output', PickFolder(), None, PickFolder(), True, True, tt_PLN01AFileDirectory, 0, None),
+                ('PLN01FileName', 'File Name_Output', 'string', None, 'PLN01.xls', True, False, tt_PLN01AFileName, None, True),
+                ('PLN01DirectoryWithDate', 'Create Directory with Date_Output', 'string', trueFalse, 'False', 1, 0, tt_DirectoryWithDate, self.createDirectoryWithDatesCB, True),
+                ('PLN01Year', 'Year with century_Output', 'string', trueFalse, 'False', 1, 0, tt_YearWithCentury, None, False),
+                ('PLN01DateFormat', 'Date format_Output', 'string', getDateFormats(), '%y%m%d', 0, 0, 'Date format', None, False),
+
+                ('LogLevel', 'Logging Level_Logging', 'string', logLevels, logLevels[0], 2, 0, tt_LogLevel),)
+
+def CombineFiles(params):
+    if isinstance(params.PLN01ADirectory, str):
+        pln01a_path = params.PLN01ADirectory
+    else:
+        pln01a_path = params.PLN01ADirectory.SelectedDirectory().AsString()
+    if isinstance(params.PLN01BDirectory, str):
+        pln01b_path = params.PLN01BDirectory
+    else:
+        pln01b_path = params.PLN01BDirectory.SelectedDirectory().AsString()
+    if isinstance(params.ObligoDirectory, str):
+        obligo_path = params.ObligoDirectory
+    else:
+        obligo_path = params.ObligoDirectory.SelectedDirectory().AsString()
+    
+    pln01a_file_name = params.PLN01AFileName
+    pln01b_file_name = params.PLN01BFileName
+    obligo_file_name = params.ObligoFileName
+
+    print(type(params.PLN01ADirectoryWithDate))
+    if params.PLN01ADirectoryWithDate == 'True':
+        theDateFormat = params.PLN01ADateFormat
+        if params.PLN01AYear == 'True':
+            theDateFormat = theDateFormat.replace('y', 'Y')
+        pln01a_path = os.path.join(pln01a_path, 'report'+ time.strftime(theDateFormat) + os.sep )
+    if params.PLN01BDirectoryWithDate == 'True':
+        theDateFormat = params.PLN01BDateFormat
+        if params.PLN01BYear == 'True':
+            theDateFormat = theDateFormat.replace('y', 'Y')
+        pln01b_path = os.path.join(pln01b_path, 'report'+ time.strftime(theDateFormat) + os.sep )
+    if params.ObligoDirectoryWithDate == 'True':
+        theDateFormat = params.ObligoDateFormat
+        if params.ObligoYear == 'True':
+            theDateFormat = theDateFormat.replace('y', 'Y')
+        obligo_path = os.path.join(obligo_path, 'report'+ time.strftime(theDateFormat) + os.sep )
+
+
+    pln01a_file_path = os.path.join(pln01a_path, pln01a_file_name)
+    pln01b_file_path = os.path.join(pln01b_path, pln01b_file_name)
+    obligo_file_path = os.path.join(obligo_path, obligo_file_name)
+
+    pln01a_tree = None
+    for codec in check_codecs:
+        xml_parser = ET.XMLParser(encoding = codec)
+        try:
+            pln01a_tree = ET.parse(pln01a_file_path, parser = xml_parser).getroot()
+        except UnicodeDecodeError:
+            continue
+        except Exception as e:
+            logger.ELOG('Cannot find or read PLN01A xls file at address: %s' % pln01a_file_path)
+            raise e
+        else:
+            break
+        logger.ELOG('Cannot find codec for %s' % pln01a_file_path)
+        return
+
+    obligo_tree = None
+    for codec in check_codecs:
+        xml_parser = ET.XMLParser(encoding = codec)
+        try:
+            obligo_tree = ET.parse(obligo_file_path, parser = xml_parser).getroot()
+        except UnicodeDecodeError:
+            continue
+        except Exception as e:
+            logger.ELOG('Cannot find or read Obligo PLN Non Derivatif xls file at address: %s' % obligo_file_path)
+            raise e
+        else:
+            break
+        logger.ELOG('Cannot find codec for %s' % plnObligo_file_path)
+        return
+
+    for codec in check_codecs:
+        xml_parser = ET.XMLParser(encoding = codec)
+        try:
+            pln01b_tree = ET.parse(pln01b_file_path, parser = xml_parser).getroot()
+        except UnicodeDecodeError:
+            continue
+        except Exception as e:
+            logger.ELOG('Cannot find or read PLN01B xls file at address: %s' % pln01b_file_path)
+            raise e
+        else:
+            break
+        logger.ELOG('Cannot find codec for %s' % pln01b_file_path)
+        return
+
+    for worksheet in pln01a_tree:
+        attrib_dict = worksheet.attrib
+        attrib_dict['{urn:schemas-microsoft-com:office:spreadsheet}Name'] = 'PLN01'
+        worksheet.attrib = attrib_dict
+        pln01a_table = worksheet.find('{urn:schemas-microsoft-com:office:spreadsheet}Table')
+
+    for worksheet in pln01b_tree:
+        for table in worksheet:
+            row_count = 0
+            for row in table:
+                if row_count == 0:
+                    row_count += 1
+                    continue
+                pln01a_table.append(row)
+    for worksheet in obligo_tree:
+        pln01a_tree.append(worksheet)
+
+    if isinstance(params.PLN01Directory, str):
+        output_path = params.PLN01Directory
+    else:
+        output_path = params.PLN01Directory.SelectedDirectory().AsString()
+
+    if params.PLN01DirectoryWithDate == 'True':
+        theDateFormat = params.PLN01DateFormat
+        if params.PLN01Year == 'True':
+            theDateFormat = theDateFormat.replace('y', 'Y')
+        output_path = os.path.join(output_path, 'report'+ time.strftime(theDateFormat) + os.sep )
+
+    output_file_name = params.PLN01FileName
+    output_file_path = os.path.join(output_path, output_file_name)
+
+    ET.indent(pln01a_tree)
+    output_str = str(ET.tostring(pln01a_tree, xml_declaration=True, encoding='UTF-8', ).decode())
+    added = output_str[:38] + r'<?mso-application progid="Excel.Sheet"?>' + output_str[38:]
+
+    with open(output_file_path, 'w') as output_file:
+        output_file.write(added)
+    logger.LOG('File combination complete. File saved to %s' % output_file_path)
+
+ael_variables = CombinePLNRunscript()
+ael_gui_parameters = ael_variables.GUI_PARAMETERS
+
+def ael_main(params):
+    options = CombinePLNRunscript.GetParameters(params)
+    CombineFiles(options)
+    logger.LOG('Complete')
+
+...
+
+  InsertItems_AdjustPeriodLastCalendarMonth
+import acm
+
+
+def DateTime(datePeriod, time):
+    if datePeriod in ('End', 'Start'):
+        try:
+            todayAt = acm.Time.DateToday()
+            
+            if datePeriod == 'Start':
+                todayAt = acm.Time.FirstDayOfMonth(acm.Time.DateAddDelta(todayAt,0,-1,0))
+            else:
+                todayAt = acm.Time.DateAddDelta( acm.Time.FirstDayOfMonth(todayAt),0,0,-1)
+            
+            
+        except Exception as e:
+            todayAt = acm.Time.DateToday()
+            print(e)
+            
+        return acm.Get('formats/MidDateField').Format(todayAt +' '+time )
+
+
+def ael_custom_dialog_main( parameters, dictExtra ):
+    eii = dictExtra.At('customData')
+    try:
+        #Get data from extension
+        definition = eii.Definition()
+        fromTime = definition.GetString('FromTime')
+        toTime = definition.GetString('ToTime')
+        
+        #Calculate periods
+        toDateTime = DateTime('End', toTime)
+        fromDateTime = DateTime('Start', fromTime)
+    except Exception as e:
+        toDateTime = None
+        fromDateTime = None
+    #Add nodes
+    queryDict = eii.ExtensionObject()
+    parentNode = queryDict['parentnode']
+    methodChainFull = queryDict['methodchainfull']
+    parentNode.AddAttrNode(methodChainFull,'GREATER_EQUAL', fromDateTime)
+    parentNode.AddAttrNode(methodChainFull,'LESS_EQUAL', toDateTime)
+    return parentNode
+
+    
+def ael_custom_dialog_show(shell, params):
+ #Not supported. DO NOTHING HERE!
+ pass
+
+...
+
+  PSReportUtils
+
+import xml.etree.ElementTree as Element
+from xml.etree import cElementTree as element_tree
+import datetime
+import time
+import os
+
+import acm
+import FFileUtils
+
+import FLogger
+logger = FLogger.FLogger(__name__)
+
+DEFAULT_TREE_DEPTH = 2
+DEFAULT_HEADER = 1
+DEFAULT_ROW_HEADER = 1
+
+def idr_price_mtm_yesterday_from_currency(currency_name):
+    if currency_name == "IDR":
+        return 1
+    jakarta = acm.FCalendar['Jakarta']
+    today = acm.Time.DateToday()
+    yesterday = acm.Time.DateAdjustPeriod(today, '-1d', jakarta,2)
+    prices = acm.FPrice.Select(f"instrument = '{currency_name}' and currency = 'IDR' and market = 'EOD_MtM' and day = '{yesterday}'")
+    for p in prices:
+        if p:
+            return p.Settle()
+
+def idr_price_mtm_yesterday(trade):
+    curr_name = trade.Currency().Name()
+    return idr_price_mtm_yesterday_from_currency(curr_name)
+
+def journalidramount(currname, amount):
+    price = idr_price_mtm_yesterday_from_currency(currname)
+    if price:
+        return price * amount
+    return None
+
+def preprocess_transform_XML_CustomHeader1(reportObj, param, XMLreport):
+
+    logger.LOG(40*'#')
+    logger.LOG('Adding custom tags in preprocess_transform_XML_CustomHeader1')
+    try:
+        XMLreportOutput = Element.fromstring(XMLreport)
+        
+        CustomHeader1 = Element.SubElement(XMLreportOutput, 'CustomHeader1')
+
+        ACMDate = Element.SubElement(CustomHeader1, 'ACMDate')
+        ACMDate.text = str(datetime.datetime.strptime(
+          acm.Time.DateToday(),'%Y-%m-%d').strftime('%b %d, %Y'))
+        logger.LOG('Finished adding custom tags '
+          'in preprocess_transform_XML_CustomHeader1')
+    except Exception as e:
+        logger.LOG('Error in preprocess_transform_XML_CustomHeader1 : %s'%str(e))
+    return Element.tostring(XMLreportOutput)
+
+
+def PrependReportDetails(report_generator, params, xml_string):
+    container_name = report_generator.params.workbook.Name()
+    xml_string = xml_string.replace(container_name+'-', '')
+    root = element_tree.fromstring(xml_string)
+    report_count = len(root)
+    report_name_found = False
+    add_counter = False
+    tree_depth_found = False
+    header_found = False
+    row_header_found = False
+    worksheet_name = None
+    column_name = None
+    count_depth = -1
+    count_length = None
+    count_sign = False
+    exclude_rows = False
+    exclusion_column = None
+    for param in params.split('|')[::-1]:
+        if not param: continue
+        name, val = param.split('=')
+        name = name.strip()
+        val = val.strip()
+        if name == 'ReportName':
+            report_name_found = True
+        elif name == 'IncludeCounter':
+            add_counter = val == 'True'
+            continue
+        elif name == 'WorksheetName':
+            worksheet_name = val
+            continue
+        elif name == 'ColumnName':
+            column_name = val
+            continue
+        elif name == 'CountDepth':
+            count_depth = val
+            continue
+        elif name == 'CountLength':
+            count_length = val
+            continue
+        elif name == 'CountSign':
+            if val is None:
+                continue
+            count_sign = val == 'True'
+            continue
+        elif name == 'treeDepth':
+            root = AddPerSheetData(root, val, 'treeDepth', DEFAULT_TREE_DEPTH)
+            tree_depth_found = val
+            continue
+        elif name == 'includeHeader':
+            root = AddPerSheetData(root, val, 'header', DEFAULT_HEADER)
+            header_found = True
+            continue
+        elif name == 'includeRowHeader':
+            root = AddPerSheetData(root, val, 'rowHeader', DEFAULT_ROW_HEADER)
+            row_header_found = True
+            continue
+        elif name == 'excludeRows':
+            exclude_rows = val == 'True'
+            continue
+        elif name == 'exclusionColumn':
+            exclusion_column = val
+            continue
+        child = element_tree.Element(name)
+        child.text = val
+        root.insert(0, child)
+    if report_name_found is False:
+        if container_name:
+            child = element_tree.Element('ReportName')
+            child.text = container_name
+            root.insert(0, child)
+    if tree_depth_found is False:
+        root = AddPerSheetData(root, [], 'treeDepth', DEFAULT_TREE_DEPTH)
+    if header_found is False:
+        root = AddPerSheetData(root, [], 'header', DEFAULT_HEADER)
+    if row_header_found is False:
+        root = AddPerSheetData(root, [], 'rowHeader', DEFAULT_ROW_HEADER)
+    if exclude_rows is True:
+        root = ExcludeData(root, exclusion_column, tree_depth_found)
+    if add_counter is True:
+        if worksheet_name and column_name:
+            root = UpdateDetailCount(root, worksheet_name, column_name, count_depth, count_length, count_sign)
+    return str(element_tree.tostring(root).decode())
+
+
+def AddPerSheetData(root, array, element_name, default_value):
+    if isinstance(array, str):
+        try:
+            array = array.replace('[', '').replace(']', '')
+            array = array.split(',')
+        except:
+            array = []
+    array_len = len(array)
+
+    count = 0
+    if root.tag == 'PRIMEReport':
+        child = element_tree.Element(element_name)
+        if count == array_len:
+            child.text = '%i' % default_value
+        else:
+            child.text = array[count]
+            count += 1
+        root.insert(0, child)
+        return root
+    
+    for prime_report in root:
+        if prime_report.tag != 'PRIMEReport':
+            continue
+        child = element_tree.Element(element_name)
+        if count == array_len:
+            child.text = '%i' % default_value
+        else:
+            child.text = array[count]
+            count += 1
+        prime_report.insert(0, child)
+    return root
+
+def CountLeaves(rows_node, counter, count_depth, depth):
+    if count_depth == depth:
+        return counter + 1
+    if not rows_node:
+        return counter
+    for row_node in rows_node:
+        children = row_node.findall('Rows')
+        for row in children:
+            counter =+ CountLeaves(row, counter, count_depth, depth + 1)
+    return counter 
+    
+def CountPrimeReports(root):
+    count = 0
+    if root.tag == 'PRIMEReport':
+        return 1
+    for prime_report in root:
+        if prime_report.tag != 'PRIMEReport':
+            continue
+        count += 1
+    return count
+
+def CountDepthArray(count_depth, root):
+    if isinstance(count_depth, int): # Ensure backwards compatibility
+        count = CountPrimeReports(root)
+        count_depth = '[%s%i]' % ('0, ' * (count - 1), count_depth)
+
+    if isinstance(count_depth, str):
+        if count_depth.isdigit():  # Ensure backwards compatibility
+            count = CountPrimeReports(root)
+            count_depth = '[%s%s]' % ('0, ' * (count - 1), count_depth)
+        try:
+            count_depth = str(count_depth).replace('[', '').replace(']', '')
+            count_depth = count_depth.split(',')
+        except:
+            count_depth = []
+    return count_depth
+
+def UpdateDetailCount(root, sheet_name, column_name, count_depth, count_length, count_sign):
+    sheet_found = False
+    if root.tag == 'PRIMEReport':
+        out_prime_report = root
+        name = out_prime_report.find('Name')
+        if name is not None or name.text == sheet_name:
+            sheet_found = True
+    else:
+        for out_prime_report in root.findall('PRIMEReport'):
+            name = out_prime_report.find('Name')
+            if name is not None and name.text == sheet_name:
+                sheet_found = True
+                break
+    if sheet_found is False:
+        raise Exception('No sheet of name "%s" found' % sheet_name)
+
+    count_depth = CountDepthArray(count_depth, root)
+    count_depth_len = len(count_depth)
+
+    total_counter = 0
+    count_depth_index = 0
+    if root.tag == 'PRIMEReport':
+        prime_report = root
+        top_rows = prime_report.find('ReportContents/Table/Rows')
+        counter = 0
+        leaves = CountLeaves(top_rows, counter, int(count_depth[count_depth_index]) + 1, 1)
+        total_counter += leaves
+    else:
+        for prime_report in root:
+            if prime_report.tag != 'PRIMEReport':
+                continue
+            if int(count_depth[count_depth_index]) == 0:
+                count_depth_index += 1
+                if count_depth_index == count_depth_len:
+                    break
+                continue
+            top_rows = prime_report.find('ReportContents/Table/Rows')
+            counter = 0
+            leaves = CountLeaves(top_rows, counter, int(count_depth[count_depth_index]) + 1, 1)
+            total_counter += leaves
+            count_depth_index += 1
+            if count_depth_index == count_depth_len:
+                break
+
+    top_rows = out_prime_report.find('ReportContents/Table/Rows')
+    
+    if count_length is not None:
+        leaves_length = len(str(total_counter))
+        pad_length = int(count_length) - leaves_length
+        if pad_length > 0:
+            total_counter = '0' * pad_length + str(total_counter)
+    if count_sign is True:
+        total_counter = '+' + str(total_counter)[1:]
+    counter = 0
+    column_found = False
+    for column in out_prime_report.findall('ReportContents/Table/Columns/Column'):
+        if column.find('Label').text == column_name:
+            column_found = True
+            break
+        counter += 1
+    if column_found is False:
+        raise Exception('No column with label "%s" found on sheet "%s"' % (column_name, sheet_name))
+    column_index = counter
+    counter = 0
+    for cell in top_rows.findall('Row/Cells/Cell'):
+        if counter == column_index:
+            break
+        counter += 1
+    raw_data = cell.find('RawData')
+    formatted_data = cell.find('FormattedData')
+    if raw_data is not None:
+        raw_data.text = str(total_counter)
+    if formatted_data is not None:
+        formatted_data.text = str(total_counter)
+    first = True
+    rows_list = list(top_rows)
+    for row in rows_list:
+        if first:
+            first = False
+            continue
+        top_rows.remove(row)
+    return root
+
+def ExcludeDataPerRow(rows_node, column_count, count_depth, depth):
+    cumulative = True
+    rows = rows_node.findall('Row')
+    for row_node in rows:
+        exclude_child = True
+        if depth < count_depth:
+            child_rows_node = row_node.find('Rows')
+            exclude_child = ExcludeDataPerRow(child_rows_node, column_count, count_depth, depth + 1)
+        row_label = row_node.find('Label').text
+        exclude_value = 'False'
+        cell_count = 0
+        cells = row_node.find('Cells')
+        for cell in cells.findall('Cell'):
+            if cell_count == column_count:
+                exclude_value = cell.find('FormattedData').text
+                cells.remove(cell)
+                break
+            cell_count += 1
+        exclude = exclude_value.strip() == 'True' and exclude_child is True
+        if exclude is True:
+            rows_node.remove(row_node)
+        else:
+            cumulative = False
+    return cumulative
+
+def ExcludeDataPerReport(prime_report, column_name, count_depth):
+    columns_node = prime_report.find('ReportContents/Table/Columns')
+    column_count = 0
+    column_found = False
+    for column in columns_node.findall('Column'):
+        if column.find('Label').text == column_name:
+            columns_node.remove(column)
+            column_found = True
+            break
+        column_count += 1
+    if column_found is False:
+        return
+    rows_node = prime_report.find('ReportContents/Table/Rows/Row/Rows/Row/Rows')
+    rows_node = prime_report.find('ReportContents/Table/Rows/Row/Rows')
+    rows_node = prime_report.find('ReportContents/Table/Rows')
+    ExcludeDataPerRow(rows_node, column_count, count_depth, 1)
+
+def ExcludeData(root, column_name, count_depth):
+    count_depth = CountDepthArray(count_depth, root)
+    if root.tag == 'PRIMEReport':
+        ExcludeDataPerReport(root, column_name, int(count_depth[0]))
+        return root
+    
+    count_depth_index = 0
+    for prime_report in root:
+        if prime_report.tag != 'PRIMEReport': continue
+        ExcludeDataPerReport(prime_report, column_name, int(count_depth[count_depth_index]))
+        count_depth_index += 1
+        
+    return root
+
+def getNewFilePath(fullFileName, fileDateFormat, yearWithCentury, fileDateBeginning, filePath, createDirectory, dateFormat, overwrite):
+    if not fullFileName:
+        fullFileName = 'export.csv'
+    if fullFileName.find('.') == -1:
+        fileName = fullFileName
+        ext = 'csv'
+    else:
+        fileName, ext = os.path.splitext(fullFileName)
+        ext = ext.replace('.', '')
+    if not ext:
+        ext = 'csv'
+    # Add date to file name?
+    fileName = fileName.replace('/', '_')
+    if fileDateFormat:
+        format = fileDateFormat
+        if yearWithCentury == 'True':
+            format = format.replace('%y', '%Y')
+        else:
+            format = format.replace('%Y', '%y')
+        if fileDateBeginning== 'True':
+            fileName = time.strftime(format) + fileName
+        else:
+            fileName = fileName + time.strftime(format)
+    if isinstance(filePath, str):
+        outputDir = filePath
+    else:
+        outputDir = filePath.AsString()
+
+    if createDirectory == 'True':
+        outputDir = createOutputDir(outputDir, createDirectory, dateFormat)
+
+    if overwrite == 'True':
+        return os.path.join(outputDir, fileName + '.' + ext)
+
+    i = 1
+    testFile = os.path.join(outputDir, fileName + '.' + ext)
+    while os.path.exists(testFile):
+        testFile = os.path.join(outputDir, fileName + '_' + str(i) + '.' + ext)
+        i = i + 1
+    return testFile
+
+def createOutputDir(outputDir, createDirectory, dateFormat):
+
+    if outputDir == "":
+        # Use current directory by default
+        outputDir = os.path.abspath(outputDir)
+
+    if createDirectory == 'True':
+        outputDir = os.path.join(outputDir, 'report' + time.strftime(dateFormat) + os.sep)
+
+    outputDir = FFileUtils.expandEnvironmentVar(outputDir)
+
+    if not os.path.exists(outputDir):
+        os.makedirs(outputDir)
+
+    return outputDir
+
+def formatValue(value, int_length, dec_length, include_sign, absolute, include_decimal):
+    original_int_length = int_length
+    zero_dec_length = dec_length if dec_length > 0 else 1
+    empty_return = ' ' * (int(original_int_length) + int(zero_dec_length))
+    if dec_length > 0 and include_decimal:
+        empty_return += ' '
+    if value is None:
+        return empty_return
+    if hasattr(value, 'IsKindOf') and value.IsKindOf(acm.FDenominatedValue):
+        value = value.Number()
+    if value != value: # NaN
+        return empty_return
+    if isinstance(value, str):
+        try:
+            value = float(value)
+        except ValueError:
+            return empty_return
+    try:
+        sign = ''
+        if absolute is True:
+            value = abs(value)
+        if include_sign is True:
+            sign = '+' if value >= 0 else '-'
+            int_length = max(int_length - 1, 0)
+            value = abs(value)
+        format_string = '%0' + str(int_length + dec_length + 1) + '.' + '0' + str(dec_length) + 'f'
+        val = format_string % value
+        if include_decimal is False:
+            val = val.replace('.', '')
+        return sign + val
+    except TypeError:
+        return empty_return
+
+def repeatString(string_value, repeats):
+    return string_value * int(repeats)
+
+def padValue(value, string_value, total_length, pad_left):
+    total_length = int(total_length)
+    if value is None:
+        return string_value * int(total_length)
+    if str(type(value)) == "<type 'EPythonError'>":
+        return string_value * int(total_length)
+    if hasattr(value, 'IsKindOf') and value.IsKindOf(acm.FDenominatedValue):
+        value = value.Number()
+    try:
+        value = str(value)
+        length = len(value)
+        repeat = total_length - length
+        if repeat <= 0:
+            return value[:total_length]
+        if pad_left is True:
+            return string_value * repeat + value
+        return value + string_value * repeat
+    except TypeError as e:
+        return string_value * int(total_length)
+
+def formatMethodChain(object, method_chain, *rest):
+    try:
+        method = acm.FMethodChain(acm.FSymbol(method_chain))
+        return formatValue(method.Call([object]), *rest)
+    except AttributeError:
+        return formatValue(None, *rest)
+
+def padMethodChain(object, method_chain, *rest):
+    try:
+        method = acm.FMethodChain(acm.FSymbol(method_chain))
+        return padValue(method.Call([object]), *rest)
+    except AttributeError:
+        return padValue('', *rest)
+
+def formatDate(value, read_format, write_format):
+    if value is None:
+        return datetime.datetime.strptime(acm.Time.DateToday(),'%Y-%m-%d').strftime(write_format)
+    if value == '':
+        return datetime.datetime.strptime(acm.Time.DateToday(),'%Y-%m-%d').strftime(write_format)
+    if ":" in value:
+        value = value.split(" ")[0]
+    try:
+        return datetime.datetime.strptime(str(value), read_format).strftime(write_format)
+    except Exception as e:
+        message = 'Error: in format_date'
+        logger.ELOG(message)
+        logger.ELOG(e)
+        logger.ELOG(traceback.format_exc( ))
+        return datetime.datetime.strptime(acm.Time.DateToday(),'%Y-%m-%d').strftime(write_format)
+
+def formatDateMethodChain(object, method_chain, *rest):
+    try:
+        method = acm.FMethodChain(acm.FSymbol(method_chain))
+        return formatDate(method.Call([object]), *rest)
+    except AttributeError:
+        return formatDate('', *rest)
+
+def getDaysBetweenJKT(endDate, startDate):
+    cal = acm.FCalendar['Jakarta']
+    cal_info = cal.CalendarInformation()
+    years = cal_info.YearsBetween(startDate, endDate, 'NL/365')
+    return int(years * 365)
+
+...
+
+}
+
+decls[FXSLTemplate] {
+  "csvTemplateWithCommaParam" ( "aef reporting.secondary templates" "aef reporting.secondary templates csv" ) "";
+  "xlsTemplateWithCommaParam" ( "aef reporting.secondary templates" "aef reporting.secondary templates xls" ) "";
+}
+
+clx FObject [FXSLTemplate] {
+  csvTemplateWithCommaParam
+<?xml version='1.0'?>
+<!DOCTYPE xsl:stylesheet [
+  <!ENTITY comma "<xsl:text>,</xsl:text>">
+  <!ENTITY lf "<xsl:text>&#10;</xsl:text>">
+  <!ENTITY tb "<xsl:text>&#x9;</xsl:text>">
+]>
+
+<xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
+<xsl:output method="text" encoding="UTF-8"/>
+<xsl:strip-space elements="*"/>
+    <xsl:variable name="bookName" >
+        <xsl:choose>
+            <xsl:when test="//ReportName" >
+                <xsl:value-of select="//ReportName" />
+            </xsl:when>
+            <xsl:otherwise>
+                <xsl:value-of select="substring-before(//PRIMEReport[1]/Name, '-')" />
+            </xsl:otherwise>
+        </xsl:choose>
+    </xsl:variable>
+
+<xsl:template match="/">
+    <xsl:choose>
+        <xsl:when test="printReportHeaders=1">
+            &comma;&comma;&comma;<xsl:value-of select="//Header1" />&lf;
+            &comma;&comma;&comma;<xsl:value-of select="//Header2" />&comma;
+            &comma;&comma;&comma;<xsl:value-of select="concat(substring(//PRIMEReport[1]/LocalTime,1,10),' ',substring(//PRIMEReport[1]/LocalTime,12,8),' (UTC', substring(//PRIMEReport[1]/LocalTime,20,6),')')" />&lf;
+            &comma;&comma;&comma;<xsl:value-of select="//Header3" />&comma;
+            &comma;&comma;&comma;Report:<xsl:value-of select="$bookName" />&lf;
+        </xsl:when>
+    </xsl:choose>
+    
+<!-- Reports -->
+    <xsl:for-each select="//PRIMEReport">
+        <xsl:choose>
+            <xsl:when test="printReportHeaders=1">
+                <xsl:value-of select="current()/Name"/>&lf;
+            </xsl:when>
+        </xsl:choose>
+        <xsl:apply-templates select="current()/ReportContents/Table">
+            <xsl:with-param name="printHeader" select="current()/header" />
+            <xsl:with-param name="printTreeDepth" select="current()/treeDepth" />
+            <xsl:with-param name="printRowHeader" select="current()/rowHeader" />
+        </xsl:apply-templates>
+     </xsl:for-each>
+</xsl:template>
+
+<xsl:template match="Table">
+    <xsl:param name="printHeader" />
+    <xsl:param name="printTreeDepth" />
+    <xsl:param name="printRowHeader" />
+    <xsl:choose>
+        <xsl:when test="$printRowHeader=1">
+            &comma;
+        </xsl:when>
+    </xsl:choose>
+    <xsl:choose>
+        <xsl:when test="$printHeader=1">
+            <xsl:for-each select="Columns/Column">
+                <xsl:value-of select="Label"/>&comma;
+            </xsl:for-each>
+            &lf;
+        </xsl:when>
+    </xsl:choose>
+    <xsl:apply-templates select="Rows/Row">
+        <xsl:with-param name="treeDepth" select="1" />
+        <xsl:with-param name="printTreeDepth" select="$printTreeDepth" />
+        <xsl:with-param name="printRowHeader" select="$printRowHeader" />
+    </xsl:apply-templates>
+</xsl:template>
+
+<xsl:template match="Row">
+    <xsl:param name="treeDepth" />
+    <xsl:param name="printTreeDepth" />
+    <xsl:param name="printRowHeader" />
+    <xsl:choose>
+        <xsl:when test="$treeDepth=$printTreeDepth">
+                <xsl:choose>
+                    <xsl:when test="$printRowHeader=1">
+                        <xsl:value-of select="Label"/>&comma;
+                    </xsl:when>
+                </xsl:choose>
+            <xsl:for-each select="Cells/Cell">
+                <xsl:call-template name="CellData" />&comma; 
+            </xsl:for-each>
+            &lf;
+        </xsl:when>
+        <xsl:otherwise>
+            <xsl:apply-templates select="Rows/Row">
+                <xsl:with-param name="treeDepth" select="$treeDepth + 1" />
+                <xsl:with-param name="printTreeDepth" select="$printTreeDepth" />
+                <xsl:with-param name="printRowHeader" select="$printRowHeader" />
+            </xsl:apply-templates>
+        </xsl:otherwise>
+    </xsl:choose>
+</xsl:template>
+
+<xsl:template name="CellData">
+        <xsl:choose>
+            <xsl:when test="RawData">
+                <xsl:value-of select="RawData"/>
+            </xsl:when>
+            <xsl:when test="FormattedData">
+                <xsl:value-of select="FormattedData"/>
+            </xsl:when>
+            <xsl:when test="DefaultData">
+                <xsl:choose>
+                        <xsl:when test="ValueType">
+                                <xsl:text>#</xsl:text>
+                        </xsl:when>
+                        <xsl:otherwise>
+                                <xsl:value-of select="DefaultData"/>
+                        </xsl:otherwise>
+                </xsl:choose>
+            </xsl:when>
+            <xsl:otherwise>
+                  <xsl:message terminate="yes"><xsl:text>No dataformat turned on</xsl:text></xsl:message>
+            </xsl:otherwise>
+        </xsl:choose>
+</xsl:template>
+
+</xsl:stylesheet>
+
+...
+
+  xlsTemplateWithCommaParam
+<?xml version="1.0" encoding="utf-16"?>
+<xsl:stylesheet version="1.0" xmlns:html="http://www.w3.org/TR/REC-html40" xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">
+    <xsl:output omit-xml-declaration="no" encoding="utf-8" method ="Text"/>
+    <xsl:strip-space elements="*"/>
+    <xsl:variable name="isMultiReport" select="count(/MultiReport)"/>
+    <xsl:variable name="bookName">
+        <xsl:choose>
+            <xsl:when test="//ReportName">
+                <xsl:value-of select="//ReportName"/>
+            </xsl:when>
+            <xsl:otherwise>
+                <xsl:value-of select="substring-before(//PRIMEReport[1]/Name, '-')"/>
+            </xsl:otherwise>
+        </xsl:choose>
+    </xsl:variable>
+    <xsl:template match="/">
+        <xsl:processing-instruction name="mso-application">progid="Excel.Sheet"</xsl:processing-instruction>
+        <Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">
+            <xsl:choose>
+                <xsl:when test="$isMultiReport = '1'">
+                    <xsl:for-each select="//PRIMEReport">
+                        <xsl:param name="tabName" select="current()/Name"/>
+                        <Worksheet ss:Name="{$tabName}">
+                            <Table>
+                                <xsl:apply-templates select="current()/ReportContents/Table">
+                                    <xsl:with-param name="printHeader" select="current()/header"/>
+                                    <xsl:with-param name="printTreeDepth" select="current()/treeDepth"/>
+                                    <xsl:with-param name="printRowHeader" select="current()/rowHeader"/>
+                                </xsl:apply-templates>
+                            </Table>
+                        </Worksheet>
+                    </xsl:for-each>
+                </xsl:when>
+                <xsl:otherwise>
+                    <xsl:param name="tabName" select="/PRIMEReport/Name"/>
+                    <Worksheet ss:Name="{$tabName}">
+                        <Table>
+                            <xsl:apply-templates select="/PRIMEReport/ReportContents/Table">
+                                <xsl:with-param name="printHeader" select="/PRIMEReport/header"/>
+                                <xsl:with-param name="printTreeDepth" select="/PRIMEReport/treeDepth"/>
+                                <xsl:with-param name="printRowHeader" select="/PRIMEReport/rowHeader"/>
+                            </xsl:apply-templates>
+                        </Table>
+                    </Worksheet>
+                </xsl:otherwise>
+            </xsl:choose>
+        </Workbook>
+    </xsl:template>
+    <xsl:template match="Table">
+        <xsl:param name="printHeader"/>
+        <xsl:param name="printTreeDepth"/>
+        <xsl:param name="printRowHeader"/>
+        <xsl:choose>
+            <xsl:when test="$printHeader=1">
+                <Row>
+                    <xsl:choose>
+                        <xsl:when test="$printRowHeader=1">
+                            <Cell>
+                                <Data ss:Type="String"/>
+                            </Cell>
+                        </xsl:when>
+                    </xsl:choose>
+                    <xsl:for-each select="Columns/Column">
+                        <Cell>
+                            <Data ss:Type="String">
+                                <xsl:value-of select="Label"/>
+                            </Data>
+                        </Cell>
+                    </xsl:for-each>
+                </Row>
+            </xsl:when>
+        </xsl:choose>
+        <xsl:apply-templates select="Rows/Row">
+            <xsl:with-param name="treeDepth" select="1"/>
+            <xsl:with-param name="printTreeDepth" select="$printTreeDepth"/>
+            <xsl:with-param name="printRowHeader" select="$printRowHeader"/>
+        </xsl:apply-templates>
+    </xsl:template>
+    <xsl:template match="Row">
+        <xsl:param name="treeDepth"/>
+        <xsl:param name="printTreeDepth"/>
+        <xsl:param name="printRowHeader"/>
+        <xsl:choose>
+            <xsl:when test="$treeDepth=$printTreeDepth">
+                <Row>
+                    <xsl:choose>
+                        <xsl:when test="$printRowHeader=1">
+                            <Cell>
+                                <Data ss:Type="String">
+                                    <xsl:value-of select="Label"/>
+                                </Data>
+                            </Cell>
+                        </xsl:when>
+                    </xsl:choose>
+                    <xsl:for-each select="Cells/Cell">
+                        <Cell>
+                            <Data ss:Type="String">
+                                <xsl:call-template name="CellData"/>
+                            </Data>
+                        </Cell>
+                    </xsl:for-each>
+                </Row>
+            </xsl:when>
+            <xsl:otherwise>
+                <xsl:apply-templates select="Rows/Row">
+                    <xsl:with-param name="treeDepth" select="$treeDepth + 1"/>
+                    <xsl:with-param name="printTreeDepth" select="$printTreeDepth"/>
+                    <xsl:with-param name="printRowHeader" select="$printRowHeader"/>
+                </xsl:apply-templates>
+            </xsl:otherwise>
+        </xsl:choose>
+    </xsl:template>
+    <xsl:template name="CellData">
+        <xsl:choose>
+            <xsl:when test="RawData">
+                <xsl:value-of select="RawData"/>
+            </xsl:when>
+            <xsl:when test="FormattedData">
+                <xsl:value-of select="FormattedData"/>
+            </xsl:when>
+            <xsl:when test="DefaultData">
+                <xsl:choose>
+                    <xsl:when test="ValueType">
+                        <xsl:text>#</xsl:text>
+                    </xsl:when>
+                    <xsl:otherwise>
+                        <xsl:value-of select="DefaultData"/>
+                    </xsl:otherwise>
+                </xsl:choose>
+            </xsl:when>
+            <xsl:otherwise>
+                <xsl:message terminate="yes">
+                    <xsl:text>No dataformat turned on</xsl:text>
+                </xsl:message>
+            </xsl:otherwise>
+        </xsl:choose>
+    </xsl:template>
+</xsl:stylesheet>
+
+...
+
+}
+

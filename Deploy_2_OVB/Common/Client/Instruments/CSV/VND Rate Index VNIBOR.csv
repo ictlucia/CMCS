@@ -1,0 +1,10 @@
+INSTRUMENT,,,,,,,,,,LEG,,,,,,,,,,,,,,/LEG,/INSTRUMENT
+PAY_OFFSET_METHOD,MTM_FROM_FEED,QUOTATION_SEQNBR.NAME,GENERIC,INSID,OTC,CONTR_SIZE,CURR.INSID,SPOT_BANKING_DAYS_OFFSET,INSTYPE,PAY_CALNBR.CALID,RESET_CALNBR.CALID,END_DATE_METHOD,TYPE,INTEREST_PAYMENT_TIME,DAYCOUNT_METHOD,PAYLEG,START_PERIOD,NOMINAL_AT_END,END_PERIOD,CURR.INSID,PAY_DAY_METHOD,NOMINAL_FACTOR,ROLLING_CONVENTION,,
+Business Days,Yes,Coupon,Yes,VND/VNIBOR/2W/C,Yes,1,VND,0,RateIndex,Ho Chi Minh City,,,Fixed,In Arrears,Act/365,No,0d,Yes,2w,VND,None,1,None,,
+Business Days,Yes,Coupon,Yes,VND/VNIBOR/1M/C,Yes,1,VND,0,RateIndex,Ho Chi Minh City,,,Fixed,In Arrears,Act/365,No,0d,Yes,1m,VND,None,1,None,,
+Business Days,Yes,Coupon,Yes,VND/VNIBOR/2M/C,Yes,1,VND,0,RateIndex,Ho Chi Minh City,,,Fixed,In Arrears,Act/365,No,0d,Yes,2m,VND,None,1,None,,
+Business Days,Yes,Coupon,Yes,VND/VNIBOR/3M/C,Yes,1,VND,0,RateIndex,Ho Chi Minh City,,,Fixed,In Arrears,Act/365,No,0d,Yes,3m,VND,None,1,None,,
+Business Days,Yes,Coupon,Yes,VND/VNIBOR/6M/C,Yes,1,VND,0,RateIndex,Ho Chi Minh City,,,Fixed,In Arrears,Act/365,No,0d,Yes,6m,VND,None,1,None,,
+Business Days,Yes,Coupon,Yes,VND/VNIBOR/9M/C,Yes,1,VND,0,RateIndex,Ho Chi Minh City,,,Fixed,In Arrears,Act/365,No,0d,Yes,9m,VND,None,1,None,,
+Business Days,Yes,Coupon,Yes,VND/VNIBOR/SW/C,Yes,1,VND,0,RateIndex,Ho Chi Minh City,Ho Chi Minh City,,Fixed,In Arrears,Act/365,No,0d,Yes,7d,VND,None,1,None,,
+Business Days,Yes,Coupon,Yes,VND/VNIBOR/ON/C,Yes,1,VND,0,RateIndex,Ho Chi Minh City,,,Fixed,In Arrears,Act/365,No,0d,Yes,1d,VND,None,1,None,,

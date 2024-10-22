@@ -1,0 +1,171 @@
+#
+# Front Arena exported extension module.
+# source          ""
+# timestamp (utc) "2024-06-19 03:08:59"
+# ***** DO NOT EDIT! *****
+#
+name        "PS_BorisInCTP"
+description "$Id$"
+
+groups {
+}
+
+decls[FParameters] {
+}
+
+clx FObject [FParameters] {
+  BorisInCTPParams =
+  ctpLogFilename=BORIS_IN_CTP_DATA_LOG_{}.txt
+
+
+}
+
+decls[FPythonCode] {
+}
+
+clx FObject [FPythonCode] {
+  BorisInCTP
+"""----------------------------------------------------------------------------------------------------
+MODULE:
+    BorisInCTP
+
+DESCRIPTION:
+    Entry point to invoke the Boris in CTP data run task gui.
+
+-------------------------------------------------------------------------------------------------------"""
+import acm, ael, traceback
+import csv, os
+from datetime import datetime
+import ParametersReader
+import BorisUtils
+import FLogger, FRunScriptGUI
+from InterfaceUtils import time_from_datetime, date_from_datetime
+
+# get value from FPArameter
+BorisParams = ParametersReader.get_params('BorisInCTPParams')
+
+log_file_name = BorisParams['ctpLogFilename'].format(acm.Time.DateToday().replace('-', ''))
+
+
+class CTPData(FRunScriptGUI.AelVariablesHandler):
+    def __init__(self):
+        logLevels = [FLogger.FLogger.INFO, FLogger.FLogger.ERROR, FLogger.FLogger.WARNING, FLogger.FLogger.DEBUG]
+        
+        folderPicker = FRunScriptGUI.DirectorySelection()
+
+        gui_vars = [
+            ['inputFolder', 'Folder Path_Input', folderPicker, None, folderPicker, 1, 1,
+             'The file path from where the CTP files will be picked.', None, 1],
+            ['archiveFolder', 'Folder Path_Archive', folderPicker, None, folderPicker, 1, 1,
+             'The file path from where the CTP files will be moved after processing.', None, 1],
+            ['logToConsole', 'Log to console_Logging', 'int', [1, 0], 1, 1, 0,
+             'Whether logging should be done in the Log Console or not.'],
+            ['log_folder', 'Log folder_Logging', folderPicker, None, folderPicker, 0, 1,
+             'Select where to store the log file',
+             0, None],
+            ['log_level', 'Log level_Logging', 'string', logLevels, FLogger.FLogger.DEBUG, 1, 0]
+        ]
+        self._logger = None
+        FRunScriptGUI.AelVariablesHandler.__init__(self, gui_vars)
+        
+        
+    def set_logger(self, logger):
+        """
+        This function sets the logger
+        :param logger: FLogger
+        :return: None
+        """
+        self._logger = logger
+        
+    def archive_file(self, ctp_file, archive_folder):
+        os.replace(ctp_file, os.path.join(archive_folder, ctp_file.name))
+
+    def process_CTP_data(self, params):
+        files_processed = list()
+        files_failed = list()
+        self._logger.LOG('Start process_CTP_data')
+        input_folder = params['inputFolder'].SelectedDirectory().AsString()
+        archive_folder = params['archiveFolder'].SelectedDirectory().AsString()
+        
+        if input_folder == archive_folder:
+            self._logger.LOG('Input and archive folders cannot be same.')
+        else:
+            with os.scandir(input_folder) as dir_iter:
+                for ctp_file in dir_iter:
+                    if ctp_file.name.endswith('.csv'):#process only CSV files.
+                        try:
+                            processed_successfully = True
+                            with open(ctp_file) as csvfile:
+                                csvreader = csv.reader(csvfile)
+                                for row in csvreader:
+                                    try:
+                                        ctpno, dealno, fedealno, last_updated = row[0].split(';')
+                                        dealno = dealno.strip('"')
+                                        fedealno = fedealno.strip('"')
+                                        trade = acm.FTrade[dealno]
+                                        if not trade:
+                                            trade = acm.FTrade.Select01("optionalKey='{}'".format(fedealno), None)                                            
+                                        if trade:
+                                            trade.AdditionalInfo().CTPNumber(ctpno)
+                                            trade.OptionalKey(fedealno)
+                                            trade.Commit()
+                                            self._logger.LOG('Trade with id {} found in ADS. File name {} data row {}.'.format(trade.Oid(), ctp_file.name, row[0]))
+                                        else:
+                                            self._logger.LOG('No trade with id {} or {} found in ADS. File name {} data row {}.'.format(dealno, fedealno, ctp_file.name, row[0]))
+                                            processed_successfully = False
+                                    except Exception as err:
+                                        processed_successfully = False
+                                        self._logger.LOG('Error while processing row {}. {}.'.format(row[0], err))
+                        except Exception as err:
+                            processed_successfully = False
+                            self._logger.LOG('Error while processing file {}. {}.'.format(ctp_file.name, err))
+                        
+                        if processed_successfully:
+                            self.archive_file(ctp_file, archive_folder)
+                            files_processed.append(ctp_file.name)
+                        else:
+                            files_failed.append(ctp_file.name)
+            
+        
+        
+        self._logger.LOG('--------------------------Stats Summary Start-------------------------------------------------')
+        self._logger.LOG('Files processed successfully. {}'.format('Zero' if not files_processed else ', '.join(files_processed)))
+        self._logger.LOG('Files failed. {}'.format('Zero' if not files_failed else ', '.join(files_failed)))
+        self._logger.LOG('--------------------------Stats Summary End-------------------------------------------------')
+        
+        self._logger.LOG('Finish process_CTP_data')
+    
+
+
+ael_gui_parameters = {'windowCaption': "Boris In CTP Data"}
+
+ael_variables = CTPData()
+ael_variables.LoadDefaultValues(__name__)
+app_name = 'OutCTPData'
+
+
+def ael_main(params):
+    """
+    AEL main function
+    :param params: GUI parameters
+    :return: None
+    """
+    ctp_data_loger = None
+    try:
+        ctp_data_loger = BorisUtils.initialize_logging(params, log_file_name, app_name)
+        if ctp_data_loger:
+            ctp_data_loger.LOG('Execution started.')
+            ael_variables.set_logger(ctp_data_loger)
+            ael_variables.process_CTP_data(params)
+
+    except Exception as err:
+        if ctp_data_loger is not None:
+            ctp_data_loger.ELOG(str(err))
+        print(traceback.format_exc())
+        print('Error in ael main. {}'.format(err))
+
+
+...
+
+}
+

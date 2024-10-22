@@ -1,0 +1,7082 @@
+#
+# Front Arena exported extension module.
+# source          ""
+# timestamp (utc) "2024-04-12 01:15:40.1"
+# ***** DO NOT EDIT! *****
+#
+name        "PS_FO_Customisation"
+description "$Id$"
+
+groups {
+}
+
+decls[FColumnDefinition] {
+  "ThPrice Undiscounted" ( "sheet columns.dealpackagesheet" "sheet columns.dealsheet" "sheet columns.portfoliosheet" ) "";
+  "ThVal Undiscounted" ( "sheet columns.dealpackagesheet" "sheet columns.dealsheet" "sheet columns.portfoliosheet" ) "";
+}
+
+clx FTradingSheet [FColumnDefinition] {
+  ThPrice Undiscounted =
+  Description=Undiscounted Theoretical Price
+  ExtensionAttribute=thPriceUndiscounted
+  Format=Price
+  GroupLabel=MMLD Custom Calculations
+  labellist=ThPrice Undiscounted
+  Name=ThPrice Undiscounted
+
+
+  ThVal Undiscounted =
+  Description=Undiscounted Theoretical Value
+  ExtensionAttribute=thValUndiscounted
+  Format=Price
+  GroupLabel=MMLD Custom Calculations
+  labellist=ThVal Undiscounted
+  Name=ThVal Undiscounted
+
+
+}
+
+decls[FExtensionAttribute] {
+}
+
+clx FSingleInstrumentAndTrades [FExtensionAttribute] {
+  discountFactorFromValuationModel = instrument:discountFactorFromValuationModel;
+  thPriceUndiscounted = theoreticalPrice / discountFactorFromValuationModel;
+  thValUndiscounted = theoreticalValue / discountFactorFromValuationModel;
+}
+
+clx FTradeRow [FExtensionAttribute] {
+  discountFactorFromValuationModel = instrument:discountFactorFromValuationModel;
+  thPriceUndiscounted = theoreticalPrice / discountFactorFromValuationModel;
+  thValUndiscounted = theoreticalValue / discountFactorFromValuationModel;
+}
+
+decls[FExtensionValue] {
+}
+
+clx CCompactTradeEntryAppFrame [FExtensionValue] {
+  CustomLayout_FrontOfficePane
+vbox(;
+  hbox(;
+    trade_insaddr;
+    trade_Quantity;
+    trade_Nominal;
+    hbox(;
+        trade_Price;
+        trade_ViceVersa;
+    );
+    trade_Currency;
+    trade_Counterparty;
+    trade_prfnbr;
+    trade_buy_sell;
+  );
+  hbox(;
+    trade_time;
+    trade_value_day;
+    trade_acquire_day;
+    trade_trader_usrnbr;
+    trade_acquirer_ptynbr;
+    trade_Broker;
+    trade_fee;
+    trade_Market;
+  );
+  hbox(;
+    trade_Premium;
+    trade_accrued_int;
+    trade_sales_person_usrnbr;
+    trade_sales_credit;
+    trade_Status;
+    trade_your_ref;
+    trade_trdnbr;
+  );
+  hbox(;
+    trade_optkey1_chlnbr;
+    trade_optkey2_chlnbr;
+    trade_optkey3_chlnbr;
+    trade_optkey4_chlnbr;
+    trade_Text1;
+    trade_Text2;
+  );
+);
+...
+
+}
+
+clx CInsDef_AUTOCALLABLE [FExtensionValue] {
+  CustomLayout_FrontOfficePane
+vbox(;
+  hbox(;
+    vbox{;
+      trade_Quantity;
+      trade_Nominal;
+      hbox(;
+        salescover_SalesMargin;
+        salescover_SalesCoverEnabled;
+      );
+      salescover_TraderPrice;
+      trade_Price;
+      trade_Premium;
+      trade_Currency;
+      hbox(;
+        trade_IndependentAmount;
+        trade_IndependentAmountAsPercentage;
+      );
+      trade_prfnbr;
+      trade_PositionPair;
+      trade_Broker;
+      trade_fee;
+    };
+    vbox{;
+      trade_Counterparty;
+      trade_hostid;
+      trade_MirrorPortfolio;
+      trade_your_ref;
+      trade_DiscountingType;
+      trade_value_day;
+      trade_acquire_day;
+      trade_time;
+      trade_acquirer_ptynbr;
+      trade_trader_usrnbr;
+      salescover_TraderPortfolio;
+      salescover_TraderAcquirer;
+      trade_SettleCategoryChlItem;      
+      trade_Market;      
+      trade_ordnbr;
+      trade_locked_info;      
+      trade_position;
+    };
+  );
+ vbox{;
+  hbox(;
+    vbox(;
+      hbox(;
+        premiumTranslation_FxRate;
+        trade_fx_get_rate;
+      );
+      premiumTranslation_FxPortfolio;
+    );
+    vbox(;
+      premiumTranslation_SettleCurrency;
+      premiumTranslation_FxAcquirer;
+    );
+    vbox(;
+      premiumTranslation_FxPrice;
+    );
+  );
+ };
+  hbox(;
+    vbox{;
+      trade_optkey1_chlnbr;
+      trade_optkey2_chlnbr;
+      trade_AdditionalInfo.DealerCode;
+      trade_AdditionalInfo.DocumentType;
+      trade_AdditionalInfo.TransactionPurpose;
+    };
+    vbox{;
+      trade_optkey3_chlnbr;
+      trade_optkey4_chlnbr;
+    };
+  );
+  hbox(;
+    vbox{;
+      trade_sales_credit;
+    };
+    vbox{;
+      trade_sales_person_usrnbr;
+    };
+  );
+  hbox(;
+    vbox{;
+      trade_trdnbr;
+      trade_Status;
+    };
+    vbox{;
+      trade_bo_trdnbr;
+      trade_payments;
+    };
+  );
+);
+
+...
+
+}
+
+clx CInsDef_AVERAGE_FORWARD [FExtensionValue] {
+  CustomLayout_FrontOfficePane
+vbox(;
+  hbox(;
+    vbox{;
+      trade_Quantity;
+      trade_Nominal;
+      trade_NominalInQuotation;
+      hbox(;
+        salescover_SalesMargin;
+        salescover_SalesCoverEnabled;
+      );
+      salescover_TraderPrice;
+      trade_Price;
+      trade_Currency;
+      hbox(;
+        trade_IndependentAmount;
+        trade_IndependentAmountAsPercentage;
+      );
+      trade_prfnbr;
+      trade_Broker;
+      trade_fee;
+      trade_Market;
+    };
+    vbox{;
+      trade_Counterparty;
+      trade_hostid;
+      trade_MirrorPortfolio;
+      trade_your_ref;
+      trade_DiscountingType;
+      trade_value_day;
+      trade_acquire_day;
+      trade_time;
+      trade_acquirer_ptynbr;
+      trade_trader_usrnbr;
+      salescover_TraderPortfolio;
+      salescover_TraderAcquirer;
+      trade_SettleCategoryChlItem;
+      trade_ordnbr;
+      trade_locked_info;
+    };
+  );
+ vbox{;
+  hbox(;
+    vbox(;
+      hbox(;
+        premiumTranslation_FxRate;
+        trade_fx_get_rate;
+      );
+      premiumTranslation_FxPortfolio;
+    );
+    vbox(;
+      premiumTranslation_SettleCurrency;
+      premiumTranslation_FxAcquirer;
+    );
+    vbox(;
+      premiumTranslation_FxPrice;
+    );
+  );
+ };
+  hbox(;
+    vbox{;
+      trade_optkey1_chlnbr;
+      trade_optkey2_chlnbr;
+      trade_AdditionalInfo.DealerCode;
+      trade_AdditionalInfo.DocumentType;
+      trade_AdditionalInfo.TransactionPurpose;
+    };
+    vbox{;
+      trade_optkey3_chlnbr;
+      trade_optkey4_chlnbr;
+    };
+  );
+  hbox(;
+    vbox{;
+      trade_sales_credit;
+    };
+    vbox{;
+      trade_sales_person_usrnbr;
+    };
+  );
+  hbox(;
+    vbox{;
+      trade_trdnbr;
+      trade_Status;     
+    };
+    vbox{;
+      trade_bo_trdnbr;
+      hbox(;
+        trade_payments;
+        trade_save_new;
+      );
+    };
+  );
+);
+...
+
+}
+
+clx CInsDef_AVERAGE_OPTION [FExtensionValue] {
+  CustomLayout_FrontOfficePane
+vbox(;
+  hbox(;
+    vbox{;
+      trade_Quantity;
+      trade_Nominal;
+      trade_NominalInQuotation;
+      hbox(;
+        salescover_SalesMargin;
+        salescover_SalesCoverEnabled;
+      );
+      hbox(;
+        vbox(;
+           salescover_TraderPrice;
+           trade_Price;
+        );
+      );
+      trade_Premium;
+      trade_ForwardPremium;
+      trade_Currency;
+      hbox(;
+        trade_IndependentAmount;
+        trade_IndependentAmountAsPercentage;
+      );
+      trade_prfnbr;
+      trade_PositionPair;
+      trade_Broker;
+      trade_fee;
+      trade_Market;
+    };
+    vbox{;
+      trade_Counterparty;
+      trade_hostid;
+      trade_MirrorPortfolio;
+      trade_your_ref;
+      trade_DiscountingType;
+      trade_ForwardValueDate;
+      trade_value_day;
+      trade_acquire_day;
+      trade_time;
+      trade_acquirer_ptynbr;
+      trade_trader_usrnbr;
+      salescover_TraderPortfolio;
+      salescover_TraderAcquirer;
+      trade_SettleCategoryChlItem;
+      trade_ordnbr;
+      trade_locked_info;
+    };
+  );
+ vbox{;
+  hbox(;
+    vbox(;
+      hbox(;
+        premiumTranslation_FxRate;
+        trade_fx_get_rate;
+      );
+      premiumTranslation_FxPortfolio;
+    );
+    vbox(;
+      premiumTranslation_SettleCurrency;
+      premiumTranslation_FxAcquirer;
+    );
+    vbox(;
+      premiumTranslation_FxPrice;
+    );
+  );
+ };
+  hbox(;
+    vbox{;
+      trade_optkey1_chlnbr;
+      trade_optkey2_chlnbr;
+      trade_AdditionalInfo.DealerCode;
+      trade_AdditionalInfo.DocumentType;
+      trade_AdditionalInfo.TransactionPurpose;
+    };
+    vbox{;
+      trade_optkey3_chlnbr;
+      trade_optkey4_chlnbr;
+    };
+  );
+  hbox(;
+    vbox{;
+      trade_sales_credit;
+    };
+    vbox{;
+      trade_sales_person_usrnbr;
+    };
+  );
+  hbox(;
+    vbox{;
+      trade_trdnbr;
+      trade_Status;     
+    };
+    vbox{;
+      trade_bo_trdnbr;
+      hbox(;
+        trade_payments;
+        trade_save_new;
+      );
+    };
+  );
+);
+...
+
+}
+
+clx CInsDef_BASKET_CLN [FExtensionValue] {
+  CustomLayout_FrontOfficePane
+vbox(;
+  hbox(;
+    vbox{;
+      trade_FaceValue;
+      trade_Quantity;
+      trade_Nominal;
+      salescover_SalesCoverEnabled;
+      hbox(;
+        vbox(;
+           salescover_SalesMargin;
+           salescover_TraderPrice;
+           trade_Price;
+        );
+        vbox(;
+           salescover_ViceVersaSalesMargin;
+           salescover_ViceVersaPrice;
+           trade_ViceVersa;
+        );
+      );
+      trade_accrued_int;
+      trade_Premium;
+      hbox(;
+        trade_IndependentAmount;
+        trade_IndependentAmountAsPercentage;
+      );
+      trade_Currency;
+      trade_prfnbr;
+      trade_PositionPair;
+      trade_Broker;
+      trade_fee;
+      trade_ordnbr;
+      trade_locked_info;
+    };
+    vbox{;
+      trade_Counterparty;
+      trade_hostid;
+      trade_MirrorPortfolio;
+      trade_your_ref;
+      trade_DiscountingType;
+      trade_value_day;
+      trade_acquire_day;
+      trade_time;
+      trade_acquirer_ptynbr;
+      trade_trader_usrnbr;
+      salescover_TraderPortfolio;
+      salescover_TraderAcquirer;
+      trade_SettleCategoryChlItem;
+      trade_Market;
+      trade_position;
+      trade_flat_accrued;
+    };
+  );
+ vbox{;
+  hbox(;
+    vbox(;
+      hbox(;
+        premiumTranslation_FxRate;
+        trade_fx_get_rate;
+      );
+      premiumTranslation_FxPortfolio;
+    );
+    vbox(;
+      premiumTranslation_SettleCurrency;
+      premiumTranslation_FxAcquirer;
+    );
+    vbox(;
+      premiumTranslation_FxPrice;
+    );
+  );
+ };
+  hbox(;
+    vbox{;
+      trade_optkey1_chlnbr;
+      trade_optkey2_chlnbr;
+      trade_AdditionalInfo.DealerCode;
+      trade_AdditionalInfo.DocumentType;
+      trade_AdditionalInfo.TransactionPurpose;
+    };
+    vbox{;
+      trade_optkey3_chlnbr;
+      trade_optkey4_chlnbr;
+    };
+  );
+  hbox(;
+    vbox{;
+      trade_sales_credit;
+    };
+    vbox{;
+      trade_sales_person_usrnbr;
+    };
+  );
+  hbox(;
+    vbox{;
+      trade_trdnbr;
+      trade_Status;     
+    };
+    vbox{;
+      trade_bo_trdnbr;
+      hbox(;
+        trade_payments;
+        trade_save_new;
+      );
+    };
+  );
+);
+...
+
+}
+
+clx CInsDef_BASKET_CREDIT_DEFAULT_SWAP [FExtensionValue] {
+  CustomLayout_FrontOfficePane
+vbox(;
+  hbox(;
+    vbox{;
+      trade_FaceValue;
+      trade_Quantity;
+      trade_Nominal;
+      trade_OpenNominal;
+      trade_Direction;
+      hbox(;
+        vbox(;
+            salescover_SalesMargin;
+            trade_Price;
+        );
+        vbox(;
+            salescover_ViceVersaSalesMargin;
+            trade_ViceVersa;
+        );
+      );
+      trade_dirty;
+      trade_accrued_int;
+      trade_Premium;
+      trade_Currency;
+      hbox(;
+        trade_IndependentAmount;
+        trade_IndependentAmountAsPercentage;
+      );
+      trade_prfnbr;
+      trade_PositionPair;
+    };
+    vbox{;
+      trade_Counterparty;
+      trade_hostid;
+      trade_MirrorPortfolio;
+      trade_your_ref;
+      trade_CollateralAgreement;
+      trade_DiscountingType;
+      trade_value_day;
+      trade_acquire_day;
+      trade_time;
+      trade_acquirer_ptynbr;
+      trade_trader_usrnbr;
+      trade_Broker;
+      trade_fee;
+      trade_SettleCategoryChlItem;
+    };
+  );
+  hbox(;
+    vbox{;
+      salescover_SalesCoverEnabled;
+      salescover_TraderPortfolio;
+    };
+    vbox{;
+     hbox(;
+        salescover_TraderPrice;
+        salescover_ViceVersaPrice;
+      );
+      salescover_TraderAcquirer;
+    };
+  );
+  hbox(;
+    vbox{;
+      trade_optkey1_chlnbr;
+      trade_optkey2_chlnbr;
+      trade_AdditionalInfo.DealerCode;
+      trade_AdditionalInfo.DocumentType;
+      trade_AdditionalInfo.TransactionPurpose;
+    };
+    vbox{;
+      trade_optkey3_chlnbr;
+      trade_optkey4_chlnbr;
+    };
+  );
+  hbox(;
+    vbox{;
+      trade_trdnbr;
+      trade_Status;
+      trade_CLS;
+    };
+    vbox{;
+      trade_bo_trdnbr;
+      trade_payments;
+    };
+  );
+);
+
+...
+
+}
+
+clx CInsDef_BASKET_REPO [FExtensionValue] {
+  CustomLayout_FrontOfficePane
+vbox(;
+  hbox(;
+    vbox{;
+      trade_prfnbr;
+      trade_PositionPair;
+      trade_Currency;
+      hbox(;
+        trade_IndependentAmount;
+        trade_IndependentAmountAsPercentagZe;
+      );
+      trade_SettleCategoryChlItem;
+      trade_flat_accrued;
+    };
+    vbox{;
+      trade_hostid;
+      trade_DiscountingType;
+      trade_value_day;
+      trade_acquire_day;
+      trade_time;
+      trade_acquirer_ptynbr;
+      trade_trader_usrnbr;
+      trade_Broker;
+      trade_fee;
+    };
+  );
+  hbox(;
+    vbox{;
+      trade_optkey1_chlnbr;
+      trade_optkey2_chlnbr;
+      trade_AdditionalInfo.DealerCode;
+      trade_AdditionalInfo.DocumentType;
+      trade_AdditionalInfo.TransactionPurpose;
+    };
+    vbox{;
+      trade_optkey3_chlnbr;
+      trade_optkey4_chlnbr;
+    };
+  );
+  hbox(;
+    vbox{;
+      trade_sales_credit;
+    };
+    vbox{;
+      trade_sales_person_usrnbr;
+    };
+  );
+  hbox(;
+    vbox{;
+      trade_trdnbr;
+      trade_Status;
+    };
+    vbox{;
+      trade_bo_trdnbr;
+      trade_payments;
+    };
+  );
+);
+...
+
+}
+
+clx CInsDef_BASKET_REPO_LEGACY [FExtensionValue] {
+  CustomLayout_FrontOfficePane
+vbox(;
+  hbox(;
+    vbox{;
+      trade_prfnbr;
+      trade_PositionPair;
+      trade_Premium;
+      trade_Currency;
+      hbox(;
+        trade_IndependentAmount;
+        trade_IndependentAmountAsPercentage;
+      );
+      trade_SettleCategoryChlItem;
+      trade_right_of_substitution;
+    };
+    vbox{;
+      trade_DiscountingType;
+      trade_value_day;
+      trade_acquire_day;
+      trade_time;
+      trade_acquirer_ptynbr;
+      trade_trader_usrnbr;
+    };
+  );
+  hbox(;
+    vbox{;
+      trade_optkey1_chlnbr;
+      trade_optkey2_chlnbr;
+      trade_AdditionalInfo.DealerCode;
+      trade_AdditionalInfo.DocumentType;
+      trade_AdditionalInfo.TransactionPurpose;
+    };
+    vbox{;
+      trade_optkey3_chlnbr;
+      trade_optkey4_chlnbr;
+    };
+  );
+  hbox(;
+    vbox{;
+      trade_sales_credit;
+    };
+    vbox{;
+      trade_sales_person_usrnbr;
+    };
+  );
+  hbox(;
+    vbox{;
+      trade_trdnbr;
+      trade_Status;
+    };
+    vbox{;
+      trade_bo_trdnbr;
+      hbox(;
+        trade_payments;
+        trade_save_new;
+      );  
+    };
+  );
+);
+...
+
+}
+
+clx CInsDef_BASKET_SEC_LOAN [FExtensionValue] {
+  CustomLayout_FrontOfficePane
+vbox(;
+  hbox(;
+    vbox{;
+      trade_prfnbr;
+      trade_PositionPair;
+      trade_Premium;
+      trade_Currency;
+      hbox(;
+        trade_IndependentAmount;
+        trade_IndependentAmountAsPercentage;
+      );
+      trade_SettleCategoryChlItem;
+      trade_right_of_substitution;
+    };
+    vbox{;
+      trade_DiscountingType;
+      trade_value_day;
+      trade_acquire_day;
+      trade_time;
+      trade_acquirer_ptynbr;
+      trade_trader_usrnbr;
+    };
+  );
+  hbox(;
+    vbox{;
+      trade_optkey1_chlnbr;
+      trade_optkey2_chlnbr;
+      trade_AdditionalInfo.DealerCode;
+      trade_AdditionalInfo.DocumentType;
+      trade_AdditionalInfo.TransactionPurpose;
+    };
+    vbox{;
+      trade_optkey3_chlnbr;
+      trade_optkey4_chlnbr;
+    };
+  );
+  hbox(;
+    vbox{;
+      trade_sales_credit;
+    };
+    vbox{;
+      trade_sales_person_usrnbr;
+    };
+  );
+  hbox(;
+    vbox{;
+      trade_trdnbr;
+      trade_Status;     
+    };
+    vbox{;
+      trade_bo_trdnbr;
+      hbox(;
+        trade_payments;
+        trade_save_new;
+      );
+    };
+  );
+);  
+...
+
+}
+
+clx CInsDef_BILL [FExtensionValue] {
+  CustomLayout_FrontOfficePane
+vbox(;
+  hbox(;
+    vbox{;
+      trade_FaceValue;
+      trade_Quantity;
+      trade_Nominal;
+      salescover_SalesCoverEnabled;
+      hbox(;
+        vbox(;
+           salescover_SalesMargin;
+           salescover_TraderPrice;
+           trade_Price;
+        );
+        vbox(;
+           salescover_ViceVersaSalesMargin;
+           salescover_ViceVersaPrice;
+           trade_ViceVersa;
+        );
+      );
+      trade_accrued_int;
+      trade_Premium;
+      trade_Currency;
+      hbox(;
+        trade_IndependentAmount;
+        trade_IndependentAmountAsPercentage;
+      );
+      trade_prfnbr;
+      trade_PositionPair;
+      trade_Broker;
+      trade_fee;
+    };
+    vbox{;
+      trade_Counterparty;
+      trade_hostid;
+      trade_MirrorPortfolio;
+      trade_your_ref;
+      trade_DiscountingType;
+      trade_value_day;
+      trade_acquire_day;
+      trade_time;
+      trade_acquirer_ptynbr;
+      trade_trader_usrnbr; 
+      salescover_TraderPortfolio;
+      salescover_TraderAcquirer;
+      trade_SettleCategoryChlItem;
+      trade_Market;
+      trade_ordnbr;
+      trade_locked_info;   
+      trade_position;
+    };
+  );
+ vbox{;
+  hbox(;
+    vbox(;
+      hbox(;
+        premiumTranslation_FxRate;
+        trade_fx_get_rate;
+      );
+      premiumTranslation_FxPortfolio;
+    );
+    vbox(;
+      premiumTranslation_SettleCurrency;
+      premiumTranslation_FxAcquirer;
+    );
+    vbox(;
+      premiumTranslation_FxPrice;
+    );
+  );
+ };
+  hbox(;
+    vbox{;
+      trade_optkey1_chlnbr;
+      trade_optkey2_chlnbr;
+      trade_AdditionalInfo.DealerCode;
+      trade_AdditionalInfo.DocumentType;
+      trade_AdditionalInfo.TransactionPurpose;
+    };
+    vbox{;
+      trade_optkey3_chlnbr;
+      trade_optkey4_chlnbr;
+    };
+  );
+  hbox(;
+    vbox{;
+      trade_sales_credit;
+    };
+    vbox{;
+      trade_sales_person_usrnbr;
+    };
+  );
+  hbox(;
+    vbox{;
+      trade_trdnbr;
+      trade_Status;     
+    };
+    vbox{;
+      trade_bo_trdnbr;
+      hbox(;
+        trade_payments;
+        trade_save_new;
+      );
+    };
+  );
+);
+...
+
+}
+
+clx CInsDef_BOND [FExtensionValue] {
+  CustomLayout_FrontOfficePane
+vbox(;
+  hbox(;
+    vbox{;
+      trade_FaceValue;
+      trade_Quantity;
+      trade_Nominal;
+      salescover_SalesCoverEnabled;
+      hbox(;
+        vbox(;
+           salescover_SalesMargin;
+           salescover_TraderPrice;
+           trade_Price;
+        );
+        vbox(;
+           salescover_ViceVersaSalesMargin;
+           salescover_ViceVersaPrice;
+           trade_ViceVersa;
+        );
+      );
+      hbox(;
+          trade_CorrespondingPrice;
+          trade_PriceAccrued;
+      );
+      hbox(;
+          trade_AccruedInterest;
+          trade_AccruedPeriod;
+      );
+      
+      trade_Premium;
+      trade_Currency;
+      hbox(;
+        trade_IndependentAmount;
+        trade_IndependentAmountAsPercentage;
+      );
+      trade_prfnbr;
+      trade_PositionPair;
+      trade_Broker;
+      trade_fee;
+    };
+    vbox{;
+      trade_Counterparty;
+      trade_hostid;
+      trade_MirrorPortfolio;
+      trade_your_ref;
+      trade_DiscountingType;
+      trade_value_day;
+      trade_acquire_day;
+      trade_time;
+      trade_acquirer_ptynbr;
+      trade_trader_usrnbr;
+      salescover_TraderPortfolio;
+      salescover_TraderAcquirer;
+      trade_SettleCategoryChlItem;      
+      trade_Market;      
+      trade_ordnbr;
+      trade_locked_info;      
+      trade_position;
+      trade_flat_accrued;
+    };
+  );
+ vbox{;
+  hbox(;
+    vbox(;
+      hbox(;
+        premiumTranslation_FxRate;
+        trade_fx_get_rate;
+      );
+      premiumTranslation_FxPortfolio;
+    );
+    vbox(;
+      premiumTranslation_SettleCurrency;
+      premiumTranslation_FxAcquirer;
+    );
+    vbox(;
+      premiumTranslation_FxPrice;
+    );
+  );
+ };
+  hbox(;
+    vbox{;
+      trade_optkey1_chlnbr;
+      trade_optkey2_chlnbr;
+      trade_AdditionalInfo.DealerCode;
+      trade_AdditionalInfo.DocumentType;
+      trade_AdditionalInfo.TransactionPurpose;
+    };
+    vbox{;
+      trade_optkey3_chlnbr;
+      trade_optkey4_chlnbr;
+    };
+  );
+  hbox(;
+    vbox{;
+      trade_sales_credit;
+    };
+    vbox{;
+      trade_sales_person_usrnbr;
+    };
+  );
+  hbox(;
+    vbox{;
+      trade_trdnbr;
+      trade_Status;
+    };
+    vbox{;
+      trade_bo_trdnbr;
+      trade_payments;
+    };
+  );
+);
+
+...
+
+}
+
+clx CInsDef_BUY_SELLBACK [FExtensionValue] {
+  CustomLayout_FrontOfficePane
+vbox(;
+  hbox(;
+    vbox{;
+      trade_prfnbr;
+      trade_Currency;
+      hbox(;
+        trade_IndependentAmount;
+        trade_IndependentAmountAsPercentage;
+      );
+      trade_PositionPair;
+      trade_SettleCategoryChlItem;
+    };
+    vbox{;
+      trade_DiscountingType;
+      trade_value_day;
+      trade_acquire_day;
+      trade_time;
+      trade_acquirer_ptynbr;
+      trade_trader_usrnbr;
+    };
+  );
+  hbox(;
+    vbox{;
+      trade_optkey1_chlnbr;
+      trade_optkey2_chlnbr;
+      trade_AdditionalInfo.DealerCode;
+      trade_AdditionalInfo.DocumentType;
+      trade_AdditionalInfo.TransactionPurpose;
+    };
+    vbox{;
+      trade_optkey3_chlnbr;
+      trade_optkey4_chlnbr;
+    };
+  );
+  hbox(;
+    vbox{;
+      trade_sales_credit;
+    };
+    vbox{;
+      trade_sales_person_usrnbr;
+    };
+  );
+  hbox(;
+    vbox{;
+      trade_trdnbr;
+      trade_Status;
+    };
+    vbox{;
+      trade_bo_trdnbr;
+      trade_payments;
+    };
+  );
+);
+...
+
+}
+
+clx CInsDef_CALL_DEPOSIT [FExtensionValue] {
+  CustomLayout_FrontOfficePane
+vbox(;
+  hbox(;
+    vbox{;
+      ins_Currency;
+      hbox(;
+        leg_StartDate;
+        leg_StartPeriod;
+      );
+      hbox(;
+        leg_EndDate;
+        leg_EndPeriod;
+      );
+      leg_LegType;
+      leg_FloatRateReference;
+      hbox(;
+        leg_Spread;
+        leg_SpreadBps;
+        leg_spread_unit;
+      );
+      hbox(;
+        leg_FixedRate;
+        leg_FixedRateBps;
+        leg_fixed_rate_unit;
+      );
+      leg_DayCountMethod;
+      leg_PayCalendar;
+      hbox(;
+        leg_RollingPeriod;
+        leg_RollingPeriodBase;
+      );
+      leg_RollingConv;
+      hbox(;
+        leg_pay_day_offset;
+        leg_PayDayMethod;
+      );
+    };
+    vbox{;
+      hbox(;
+        ins_TermType;
+        ins_NoticePeriod;
+        ins_TerminationDate;
+      );
+      ins_MinMaxBalance;
+      hbox(;
+        ins_initial_balance;
+        trade_call_money_loan;
+      );
+      ins_ValuationGrpChlItem;
+      hbox(;
+        ins_DiscountingType;
+        ins_suggest_discounting_type;
+      );
+      hbox[Additional;
+        vbox(;
+          leg_event;
+          leg_FixedCoupon;       
+        );
+        vbox(;
+          leg_Reinvest;
+          ins_exercise_events;
+        );
+        vbox(;
+          leg_reset;
+        );
+      ];
+    };
+  );
+  hbox(;
+    hbox{;
+      ins_PledgeFrozen;
+    };
+    hbox{;
+      ins_pf_cash_amount;
+    };
+    hbox{;
+      ins_full_amount;
+    };
+  );
+  hbox(;
+    vbox{;
+      trade_Counterparty;
+      trade_hostid;
+      trade_MirrorPortfolio;
+      trade_your_ref;
+      trade_CollateralAgreement;
+      trade_prfnbr;
+      trade_PositionPair;
+    };
+    vbox{;
+      trade_time;
+      trade_acquirer_ptynbr;
+      trade_trader_usrnbr;
+      trade_SettleCategoryChlItem;
+      trade_Broker;
+      trade_fee;
+    };
+  );
+  hbox(;
+    vbox{;
+      trade_optkey1_chlnbr;
+      trade_optkey2_chlnbr;
+      trade_AdditionalInfo.DealerCode;
+      trade_AdditionalInfo.DocumentType;
+      trade_AdditionalInfo.TransactionPurpose;
+    };
+    vbox{;
+      trade_optkey3_chlnbr;
+      trade_optkey4_chlnbr;
+    };
+  );
+  hbox(;
+    vbox{;
+      trade_sales_credit;
+    };
+    vbox{;
+      trade_sales_person_usrnbr;
+    };
+  );  
+  hbox(;
+    vbox{;
+      trade_trdnbr;
+      trade_Status;
+      trade_category;
+    };
+    vbox{;
+      trade_bo_trdnbr;
+      hbox(;
+        trade_payments;
+        trade_save_new;
+      );
+    };
+  );
+);
+...
+
+}
+
+clx CInsDef_CAP [FExtensionValue] {
+  CustomLayout_FrontOfficePane
+vbox(;
+  hbox(;
+    vbox{;
+      trade_Quantity;
+      trade_Nominal;
+      trade_OpenNominal;
+      hbox(;
+        salescover_SalesMargin;
+        salescover_SalesCoverEnabled;
+      );
+      salescover_TraderPrice;
+      trade_Price;
+      trade_Premium;
+      trade_Currency;
+      hbox(;
+        trade_IndependentAmount;
+        trade_IndependentAmountAsPercentage;
+      );
+      trade_prfnbr;
+      trade_PositionPair;
+      trade_Broker;
+      trade_fee;
+    };
+    vbox{;
+      trade_Counterparty;
+      trade_hostid;
+      trade_MirrorPortfolio;
+      trade_your_ref;
+      trade_CollateralAgreement;
+      trade_DiscountingType;
+      trade_value_day;
+      trade_acquire_day;
+      trade_time;
+      trade_acquirer_ptynbr;
+      trade_trader_usrnbr;
+      salescover_TraderPortfolio;
+      salescover_TraderAcquirer;
+      trade_SettleCategoryChlItem;
+    };
+  );
+ vbox{;
+  hbox(;
+    vbox(;
+      hbox(;
+        premiumTranslation_FxRate;
+        trade_fx_get_rate;
+      );
+      premiumTranslation_FxPortfolio;
+    );
+    vbox(;
+      premiumTranslation_SettleCurrency;
+      premiumTranslation_FxAcquirer;
+    );
+    vbox(;
+      premiumTranslation_FxPrice;
+    );
+  );
+ };
+  hbox(;
+    vbox{;
+      trade_optkey1_chlnbr;
+      trade_optkey2_chlnbr;
+      trade_AdditionalInfo.DealerCode;
+      trade_AdditionalInfo.DocumentType;
+      trade_AdditionalInfo.TransactionPurpose;
+    };
+    vbox{;
+      trade_optkey3_chlnbr;
+      trade_optkey4_chlnbr;
+    };
+  );
+  hbox(;
+    vbox{;
+      trade_sales_credit;
+    };
+    vbox{;
+      trade_sales_person_usrnbr;
+    };
+  );
+  hbox(;
+    vbox{;
+      trade_trdnbr;
+      trade_Status;     
+    };
+    vbox{;
+      trade_bo_trdnbr;
+      hbox(;
+        trade_payments;
+        trade_save_new;
+      );
+    };
+  );
+);
+...
+
+}
+
+clx CInsDef_CASH_PAYMENT [FExtensionValue] {
+  CustomLayout_FrontOfficePane
+vbox(;
+  vbox{;
+    hbox(;
+      trade_Quantity;
+      trade_cash_payment_curr;
+      vbox(;
+      );
+    );
+    trade_acquire_day;
+    trade_value_day;
+  };
+  hbox(;
+    vbox{;
+      trade_prfnbr;
+      trade_PositionPair;
+      trade_DiscountingType;
+      trade_SettleCategoryChlItem;
+    };
+    vbox{;
+      trade_Counterparty;
+      trade_hostid;
+      trade_your_ref;
+      trade_MirrorPortfolio;
+      trade_time;
+      trade_acquirer_ptynbr;
+      trade_trader_usrnbr;      
+    };
+  );  
+  hbox(;
+    vbox{;
+      trade_optkey1_chlnbr;
+      trade_optkey2_chlnbr;
+      trade_AdditionalInfo.DealerCode;
+      trade_AdditionalInfo.DocumentType;
+      trade_AdditionalInfo.TransactionPurpose;
+    };
+    vbox{;
+      trade_optkey3_chlnbr;
+      trade_optkey4_chlnbr;
+    };
+  );
+  hbox(;
+    vbox{;
+      trade_sales_credit;
+    };
+    vbox{;
+      trade_sales_person_usrnbr;
+    };
+  );  
+  hbox(;
+    vbox{;
+      trade_trdnbr;
+      trade_Status;
+    };
+    vbox{;
+      trade_bo_trdnbr;
+      hbox(;
+        trade_payments;
+        trade_save_new;
+      );
+    };
+  );
+);
+...
+
+}
+
+clx CInsDef_CASHFLOW_FUTURE [FExtensionValue] {
+  CustomLayout_FrontOfficePane
+vbox(;
+  hbox(;
+    vbox{;
+      trade_Quantity;
+      trade_Nominal;
+      hbox(;
+        salescover_SalesMargin;
+        salescover_SalesCoverEnabled;
+      );
+      salescover_TraderPrice;
+      trade_Price;
+      trade_Currency;
+      hbox(;
+        trade_IndependentAmount;
+        trade_IndependentAmountAsPercentage;
+      );
+      trade_prfnbr;
+      trade_Broker;
+      trade_fee;
+      trade_Market;
+    };
+    vbox{;
+      trade_Counterparty;
+      trade_hostid;
+      trade_MirrorPortfolio;
+      trade_your_ref;
+      trade_DiscountingType;
+      trade_value_day;
+      trade_acquire_day;
+      trade_time;
+      trade_acquirer_ptynbr;
+      trade_trader_usrnbr;
+      salescover_TraderPortfolio;
+      salescover_TraderAcquirer;
+      trade_SettleCategoryChlItem;
+      trade_ordnbr;
+      trade_locked_info;
+    };
+  );
+ vbox{;
+  hbox(;
+    vbox(;
+      hbox(;
+        premiumTranslation_FxRate;
+        trade_fx_get_rate;
+      );
+      premiumTranslation_FxPortfolio;
+    );
+    vbox(;
+      premiumTranslation_SettleCurrency;
+      premiumTranslation_FxAcquirer;
+    );
+    vbox(;
+      premiumTranslation_FxPrice;
+    );
+  );
+ };
+  hbox(;
+    vbox{;
+      trade_optkey1_chlnbr;
+      trade_optkey2_chlnbr;
+      trade_AdditionalInfo.DealerCode;
+      trade_AdditionalInfo.DocumentType;
+      trade_AdditionalInfo.TransactionPurpose;
+    };
+    vbox{;
+      trade_optkey3_chlnbr;
+      trade_optkey4_chlnbr;
+    };
+  );
+  hbox(;
+    vbox{;
+      trade_sales_credit;
+    };
+    vbox{;
+      trade_sales_person_usrnbr;
+    };
+  );
+  hbox(;
+    vbox{;
+      trade_trdnbr;
+      trade_Status;     
+    };
+    vbox{;
+      trade_bo_trdnbr;
+      hbox(;
+        trade_payments;
+        trade_save_new;
+      );
+    };
+  );
+);
+...
+
+}
+
+clx CInsDef_CD [FExtensionValue] {
+  CustomLayout_FrontOfficePane
+vbox(;
+  hbox(;
+    vbox{;
+      trade_Quantity;
+      trade_Nominal;
+      salescover_SalesCoverEnabled;
+      hbox(;
+        vbox(;
+           salescover_SalesMargin;
+           salescover_TraderPrice;
+           trade_Price;
+        );
+        vbox(;
+           salescover_ViceVersaSalesMargin;
+           salescover_ViceVersaPrice;
+           trade_ViceVersa;
+        );
+      );
+      trade_dirty;
+      trade_accrued_int;
+      trade_Premium;
+      trade_Currency;
+      hbox(;
+        trade_IndependentAmount;
+        trade_IndependentAmountAsPercentage;
+      );
+      trade_prfnbr;
+      trade_PositionPair;
+      trade_Broker;
+      trade_fee;
+    };
+    vbox{;
+      trade_Counterparty;
+      trade_hostid;
+      trade_MirrorPortfolio;
+      trade_your_ref;
+      trade_DiscountingType;
+      trade_value_day;
+      trade_acquire_day;
+      trade_time;
+      trade_acquirer_ptynbr;
+      trade_trader_usrnbr;
+      salescover_TraderPortfolio;
+      salescover_TraderAcquirer;
+      trade_SettleCategoryChlItem;
+      trade_Market;
+      trade_ordnbr;
+      trade_locked_info;
+      trade_position;
+    };
+  );
+  hbox(;
+    vbox{;
+      trade_optkey1_chlnbr;
+      trade_optkey2_chlnbr;
+      trade_AdditionalInfo.DealerCode;
+      trade_AdditionalInfo.DocumentType;
+      trade_AdditionalInfo.TransactionPurpose;
+    };
+    vbox{;
+      trade_optkey3_chlnbr;
+      trade_optkey4_chlnbr;
+    };
+  );
+  hbox(;
+    vbox{;
+      trade_sales_credit;
+    };
+    vbox{;
+      trade_sales_person_usrnbr;
+    };
+  );
+  hbox(;
+    vbox{;
+      trade_trdnbr;
+      trade_Status;
+    };
+    vbox{;
+      trade_bo_trdnbr;
+      trade_payments;
+    };
+  );
+);
+...
+
+}
+
+clx CInsDef_CERTIFICATE [FExtensionValue] {
+  CustomLayout_FrontOfficePane
+vbox(;
+  hbox(;
+    vbox{;
+      trade_Quantity;
+      trade_Nominal;
+      hbox(;
+        salescover_SalesMargin;
+        salescover_SalesCoverEnabled;
+      );      
+      salescover_TraderPrice;
+      trade_Price;
+      trade_Premium;
+      trade_Currency;
+      hbox(;
+        trade_IndependentAmount;
+        trade_IndependentAmountAsPercentage;
+      );
+      trade_prfnbr;
+      trade_PositionPair;
+      trade_Broker;
+      trade_fee;
+      trade_Market;
+    };
+    vbox{;
+      trade_Counterparty;
+      trade_hostid;
+      trade_MirrorPortfolio;
+      trade_your_ref;
+      trade_CollateralAgreement;
+      trade_DiscountingType;
+      trade_value_day;
+      trade_acquire_day;
+      trade_time;
+      trade_acquirer_ptynbr;
+      trade_trader_usrnbr;
+      salescover_TraderPortfolio;
+      salescover_TraderAcquirer;
+      trade_SettleCategoryChlItem;
+      trade_ordnbr;
+      trade_locked_info;
+    };
+  );
+  hbox(;
+    vbox{;
+      trade_optkey1_chlnbr;
+      trade_optkey2_chlnbr;
+      trade_AdditionalInfo.DealerCode;
+      trade_AdditionalInfo.DocumentType;
+      trade_AdditionalInfo.TransactionPurpose;
+    };
+    vbox{;
+      trade_optkey3_chlnbr;
+      trade_optkey4_chlnbr;
+    };
+  );
+  hbox(;
+    vbox{;
+      trade_sales_credit;
+    };
+    vbox{;
+      trade_sales_person_usrnbr;
+    };
+  );
+  hbox(;
+    vbox{;
+      trade_trdnbr;
+      trade_Status;     
+    };
+    vbox{;
+      trade_bo_trdnbr;
+      hbox(;
+        trade_payments;
+        trade_save_new;
+      );
+    };
+  );
+);
+...
+
+}
+
+clx CInsDef_CFD [FExtensionValue] {
+  CustomLayout_FrontOfficePane
+vbox(;
+  hbox(;
+    vbox{;
+      trade_Quantity;
+      trade_Nominal;
+      hbox(;
+        salescover_SalesMargin;
+        salescover_SalesCoverEnabled;
+      );
+      salescover_TraderPrice;
+      trade_Price;
+      trade_Premium;
+      trade_Currency;
+      hbox(;
+        trade_IndependentAmount;
+        trade_IndependentAmountAsPercentage;
+      );
+      trade_prfnbr;
+      trade_PositionPair;
+      trade_Broker;
+      trade_fee;      
+      trade_Market;
+    };
+    vbox{;
+      trade_Counterparty;
+      trade_hostid;
+      trade_MirrorPortfolio;
+      trade_your_ref;
+      trade_CollateralAgreement;
+      trade_DiscountingType;
+      trade_value_day;
+      trade_acquire_day;
+      trade_time;
+      trade_acquirer_ptynbr;
+      trade_trader_usrnbr;
+      salescover_TraderPortfolio;
+      salescover_TraderAcquirer; 
+      trade_SettleCategoryChlItem;
+      trade_ordnbr;
+      trade_locked_info;
+      trade_position;
+    };
+  );
+ vbox{;
+  hbox(;
+    vbox(;
+      hbox(;
+        premiumTranslation_FxRate;
+        trade_fx_get_rate;
+      );
+      premiumTranslation_FxPortfolio;
+    );
+    vbox(;
+      premiumTranslation_SettleCurrency;
+      premiumTranslation_FxAcquirer;
+    );
+    vbox(;
+      premiumTranslation_FxPrice;
+    );
+  );
+ };
+  hbox(;
+    vbox{;
+      trade_optkey1_chlnbr;
+      trade_optkey2_chlnbr;
+      trade_AdditionalInfo.DealerCode;
+      trade_AdditionalInfo.DocumentType;
+      trade_AdditionalInfo.TransactionPurpose;
+    };
+    vbox{;
+      trade_optkey3_chlnbr;
+      trade_optkey4_chlnbr;
+    };
+  );
+  hbox(;
+    vbox{;
+      trade_sales_credit;
+    };
+    vbox{;
+      trade_sales_person_usrnbr;
+    };
+  );
+  hbox(;
+    vbox{;
+      trade_trdnbr;
+      trade_Status;     
+    };
+    vbox{;
+      trade_bo_trdnbr;
+      hbox(;
+        trade_payments;
+        trade_save_new;
+      );
+    };
+  );
+);
+...
+
+}
+
+clx CInsDef_CLN [FExtensionValue] {
+  CustomLayout_FrontOfficePane
+vbox(;
+  hbox(;
+    vbox{;
+      trade_FaceValue;
+      trade_Quantity;
+      trade_Nominal;
+      salescover_SalesCoverEnabled;
+      hbox(;
+        vbox(;
+           salescover_SalesMargin;
+           salescover_TraderPrice;
+           trade_Price;
+        );
+        vbox(;
+           salescover_ViceVersaSalesMargin;
+           salescover_ViceVersaPrice;
+           trade_ViceVersa;
+        );
+      );
+      trade_accrued_int;
+      trade_Premium;
+      trade_Currency;
+      hbox(;
+        trade_IndependentAmount;
+        trade_IndependentAmountAsPercentage;
+      );
+      trade_prfnbr;
+      trade_PositionPair;
+      trade_Broker;
+      trade_fee;
+      trade_Market;
+    };
+    vbox{;
+      trade_Counterparty;
+      trade_hostid;
+      trade_MirrorPortfolio;
+      trade_your_ref;
+      trade_DiscountingType;
+      trade_value_day;
+      trade_acquire_day;
+      trade_time;
+      trade_acquirer_ptynbr;
+      trade_trader_usrnbr;
+      salescover_TraderPortfolio;
+      salescover_TraderAcquirer;
+      trade_SettleCategoryChlItem;
+      trade_ordnbr;  
+      trade_locked_info;
+      trade_position;
+      trade_flat_accrued;
+    };
+  );
+ vbox{;
+  hbox(;
+    vbox(;
+      hbox(;
+        premiumTranslation_FxRate;
+        trade_fx_get_rate;
+      );
+      premiumTranslation_FxPortfolio;
+    );
+    vbox(;
+      premiumTranslation_SettleCurrency;
+      premiumTranslation_FxAcquirer;
+    );
+    vbox(;
+      premiumTranslation_FxPrice;
+    );
+  );
+ };
+  hbox(;
+    vbox{;
+      trade_optkey1_chlnbr;
+      trade_optkey2_chlnbr;
+      trade_AdditionalInfo.DealerCode;
+      trade_AdditionalInfo.DocumentType;
+      trade_AdditionalInfo.TransactionPurpose;
+    };
+    vbox{;
+      trade_optkey3_chlnbr;
+      trade_optkey4_chlnbr;
+    };
+  );
+  hbox(;
+    vbox{;
+      trade_sales_credit;
+    };
+    vbox{;
+      trade_sales_person_usrnbr;
+    };
+  );
+  hbox(;
+    vbox{;
+      trade_trdnbr;
+      trade_Status;     
+    };
+    vbox{;
+      trade_bo_trdnbr;
+      hbox(;
+        trade_payments;
+        trade_save_new;
+      );
+    };
+  );
+);
+...
+
+}
+
+clx CInsDef_COLLATERAL [FExtensionValue] {
+  CustomLayout_FrontOfficePane
+vbox(;
+  hbox(;
+    vbox{;
+      trade_Counterparty;
+      trade_hostid;
+      trade_MirrorPortfolio;
+      trade_your_ref;
+    };
+    vbox{;
+      trade_CollateralAgreement;
+      trade_MasterAgreement;
+      trade_MarginingSet;
+      trade_HaircutRule;
+    };
+  );
+  hbox(;
+    vbox{;
+      trade_CollateralAssetType;
+    };
+    vbox{;
+      trade_cash_collateral;
+    };
+  );
+  hbox{;
+    vbox(;
+      tradedata_instype;
+      trade_insaddr_coll;
+    );
+    trade_sel_ins_coll;
+  };
+  hbox(;
+    vbox{;
+      trade_CollateralActionType;
+      trade_FaceValue;
+      trade_Nominal;
+      trade_CashAmountUnscaled;
+      hbox(;
+        trade_Price;
+        trade_ViceVersa;
+      );
+      trade_dirty;
+      trade_HaircutRuleOrTradeHaircutType;
+      trade_HaircutRuleOrTradeHaircut;
+      trade_BoFxRate;
+      hbox(;
+        trade_security_value;
+        trade_margining_set_curr;
+      );
+      trade_Currency;
+      trade_prfnbr;
+      trade_PositionPair;
+      trade_SettleCategoryChlItem;
+    };
+    vbox{;
+      trade_value_day;
+      trade_acquire_day;
+      trade_re_acquire_day;
+      trade_time;
+      trade_acquirer_ptynbr;
+      trade_trader_usrnbr;
+      trade_right_of_substitution;
+    };
+  );
+  hbox(;
+    vbox{;
+      trade_optkey1_chlnbr;
+      trade_optkey2_chlnbr;
+      trade_AdditionalInfo.DealerCode;
+      trade_AdditionalInfo.DocumentType;
+      trade_AdditionalInfo.TransactionPurpose;
+    };
+    vbox{;
+      trade_optkey3_chlnbr;
+      trade_optkey4_chlnbr;
+    };
+  );
+  hbox(;
+    vbox{;
+      trade_sales_credit;
+    };
+    vbox{;
+      trade_sales_person_usrnbr;
+    };
+  );
+  hbox(;
+    vbox{;
+      trade_trdnbr;
+      trade_Status;
+      trade_category;
+    };
+    vbox{;
+      trade_bo_trdnbr;
+      trade_payments;
+    };
+  );
+); 
+...
+
+}
+
+clx CInsDef_COMBINATION [FExtensionValue] {
+  CustomLayout_FrontOfficePane
+vbox(;
+  hbox(;
+    vbox{;
+      trade_Quantity;
+      trade_Nominal;
+      hbox(;
+        salescover_SalesMargin;
+        salescover_SalesCoverEnabled;
+      );
+      salescover_TraderPrice;
+      trade_Price;
+      trade_Premium;
+      trade_Currency;
+      hbox(;
+        trade_IndependentAmount;
+        trade_IndependentAmountAsPercentage;
+      );
+      trade_prfnbr;
+      trade_PositionPair;
+      trade_Broker;
+      trade_fee;
+      trade_Market;
+      trade_ordnbr;
+      trade_locked_info;
+    };
+    vbox{;
+      trade_Counterparty;
+      trade_hostid;
+      trade_MirrorPortfolio;
+      trade_your_ref;
+      trade_CollateralAgreement;
+      trade_DiscountingType;
+      trade_value_day;
+      trade_acquire_day;
+      trade_time;
+      trade_acquirer_ptynbr;
+      trade_trader_usrnbr;
+      salescover_TraderPortfolio;
+      salescover_TraderAcquirer;
+      trade_SettleCategoryChlItem;
+      trade_position;
+      trade_flat_accrued;
+    };
+  );
+ vbox{;
+  hbox(;
+    vbox(;
+      hbox(;
+        premiumTranslation_FxRate;
+        trade_fx_get_rate;
+      );
+      premiumTranslation_FxPortfolio;
+    );
+    vbox(;
+      premiumTranslation_SettleCurrency;
+      premiumTranslation_FxAcquirer;
+    );
+    vbox(;
+      premiumTranslation_FxPrice;
+    );
+  );
+ };
+  hbox(;
+    vbox{;
+      trade_optkey1_chlnbr;
+      trade_optkey2_chlnbr;
+      trade_AdditionalInfo.DealerCode;
+      trade_AdditionalInfo.DocumentType;
+      trade_AdditionalInfo.TransactionPurpose;
+    };
+    vbox{;
+      trade_optkey3_chlnbr;
+      trade_optkey4_chlnbr;
+    };
+  );
+  hbox(;
+    vbox{;
+      trade_sales_credit;
+    };
+    vbox{;
+      trade_sales_person_usrnbr;
+    };
+  );
+  hbox(;
+    vbox{;
+      trade_trdnbr;
+      trade_Status;     
+    };
+    vbox{;
+      trade_bo_trdnbr;
+      hbox(;
+        trade_payments;
+        trade_save_new;
+      );
+    };
+  );
+);
+...
+
+}
+
+clx CInsDef_COMMODITY [FExtensionValue] {
+  CustomLayout_FrontOfficePane
+vbox(;
+  hbox(;
+    vbox{;
+      trade_Quantity;
+      trade_Nominal;
+      trade_NominalInQuotation;
+      hbox(;
+        salescover_SalesMargin;
+        salescover_SalesCoverEnabled;
+      );
+      salescover_TraderPrice;
+      trade_Price;
+      trade_Premium;
+      trade_Currency;
+      hbox(;
+        trade_IndependentAmount;
+        trade_IndependentAmountAsPercentage;
+      );
+      trade_prfnbr;
+      trade_PositionPair;
+      trade_Broker;
+      trade_fee;
+      trade_ordnbr;
+      trade_locked_info;
+    };
+    vbox{;
+      trade_Counterparty;
+      trade_hostid;
+      trade_MirrorPortfolio;
+      trade_your_ref;
+      trade_DiscountingType;
+      trade_value_day;
+      trade_acquire_day;
+      trade_time;
+      trade_acquirer_ptynbr;
+      trade_trader_usrnbr;
+      salescover_TraderPortfolio;
+      salescover_TraderAcquirer;
+      trade_SettleCategoryChlItem;
+      trade_Market;
+      trade_position;
+    };
+  );
+ vbox{;
+  hbox(;
+    vbox(;
+      hbox(;
+        premiumTranslation_FxRate;
+        trade_fx_get_rate;
+      );
+      premiumTranslation_FxPortfolio;
+    );
+    vbox(;
+      premiumTranslation_SettleCurrency;
+      premiumTranslation_FxAcquirer;
+    );
+    vbox(;
+      premiumTranslation_FxPrice;
+    );
+  );
+ };
+  hbox(;
+    vbox{;
+      trade_optkey1_chlnbr;
+      trade_optkey2_chlnbr;
+      trade_AdditionalInfo.DealerCode;
+      trade_AdditionalInfo.DocumentType;
+      trade_AdditionalInfo.TransactionPurpose;
+    };
+    vbox{;
+      trade_optkey3_chlnbr;
+      trade_optkey4_chlnbr;
+    };
+  );
+  hbox(;
+    vbox{;
+      trade_sales_credit;
+    };
+    vbox{;
+      trade_sales_person_usrnbr;
+    };
+  );
+  hbox(;
+    vbox{;
+      trade_trdnbr;
+      trade_Status;     
+    };
+    vbox{;
+      trade_bo_trdnbr;
+      hbox(;
+        trade_payments;
+        trade_save_new;
+      );
+    };
+  );
+);
+...
+
+}
+
+clx CInsDef_COMMODITY_INDEX [FExtensionValue] {
+  CustomLayout_FrontOfficePane
+vbox(;
+  hbox(;
+    vbox{;
+      trade_Quantity;
+      trade_Nominal;
+      hbox(;
+        salescover_SalesMargin;
+        salescover_SalesCoverEnabled;
+      );
+      salescover_TraderPrice;
+      trade_Price;
+      trade_Premium;
+      trade_Currency;
+      hbox(;
+        trade_IndependentAmount;
+        trade_IndependentAmountAsPercentage;
+      );
+      trade_prfnbr;
+      trade_PositionPair;
+      trade_Broker;
+      trade_fee;
+      trade_Market;
+    };
+    vbox{;
+      trade_Counterparty;
+      trade_hostid;
+      trade_MirrorPortfolio;
+      trade_your_ref;
+      trade_DiscountingType;
+      trade_value_day;
+      trade_acquire_day;
+      trade_time;
+      trade_acquirer_ptynbr;
+      trade_trader_usrnbr;
+      salescover_TraderPortfolio;
+      salescover_TraderAcquirer;
+      trade_SettleCategoryChlItem;
+      trade_ordnbr;
+      trade_locked_info;
+      trade_position;
+    };
+  );
+ vbox{;
+  hbox(;
+    vbox(;
+      hbox(;
+        premiumTranslation_FxRate;
+        trade_fx_get_rate;
+      );
+      premiumTranslation_FxPortfolio;
+    );
+    vbox(;
+      premiumTranslation_SettleCurrency;
+      premiumTranslation_FxAcquirer;
+    );
+    vbox(;
+      premiumTranslation_FxPrice;
+    );
+  );
+ };
+  hbox(;
+    vbox{;
+      trade_optkey1_chlnbr;
+      trade_optkey2_chlnbr;
+      trade_AdditionalInfo.DealerCode;
+      trade_AdditionalInfo.DocumentType;
+      trade_AdditionalInfo.TransactionPurpose;
+    };
+    vbox{;
+      trade_optkey3_chlnbr;
+      trade_optkey4_chlnbr;
+    };
+  );
+  hbox(;
+    vbox{;
+      trade_sales_credit;
+    };
+    vbox{;
+      trade_sales_person_usrnbr;
+    };
+  );
+  hbox(;
+    vbox{;
+      trade_trdnbr;
+      trade_Status;     
+    };
+    vbox{;
+      trade_bo_trdnbr;
+      hbox(;
+        trade_payments;
+        trade_save_new;
+      );
+    };
+  );
+);
+...
+
+}
+
+clx CInsDef_COMMODITY_VARIANT [FExtensionValue] {
+  CustomLayout_FrontOfficePane
+vbox(;
+  hbox(;
+    vbox{;
+      trade_FaceValue;
+      trade_Quantity;
+      trade_Nominal;
+      trade_NominalInQuotation;
+      hbox(;
+        salescover_SalesMargin;
+        salescover_SalesCoverEnabled;
+      );
+      salescover_TraderPrice;
+      trade_Price;
+      trade_Premium;
+      trade_Currency;
+      hbox(;
+        trade_IndependentAmount;
+        trade_IndependentAmountAsPercentage;
+      );
+      trade_prfnbr;
+      trade_PositionPair;
+      trade_Broker;
+      trade_fee;
+      trade_Market;
+    };
+    vbox{;
+      trade_Counterparty;
+      trade_hostid;
+      trade_MirrorPortfolio;
+      trade_your_ref;
+      trade_CollateralAgreement;
+      trade_DiscountingType;
+      trade_value_day;
+      trade_acquire_day;
+      trade_time;
+      trade_acquirer_ptynbr;
+      trade_trader_usrnbr;
+      salescover_TraderPortfolio;
+      salescover_TraderAcquirer;
+      trade_SettleCategoryChlItem;
+      trade_ordnbr;
+      trade_locked_info;
+      trade_position;      
+    };
+  );
+ vbox{;
+  hbox(;
+    vbox(;
+      hbox(;
+        premiumTranslation_FxRate;
+        trade_fx_get_rate;
+      );
+      premiumTranslation_FxPortfolio;
+    );
+    vbox(;
+      premiumTranslation_SettleCurrency;
+      premiumTranslation_FxAcquirer;
+    );
+    vbox(;
+      premiumTranslation_FxPrice;
+    );
+  );
+ };
+  hbox(;
+    vbox{;
+      trade_optkey1_chlnbr;
+      trade_optkey2_chlnbr;
+      trade_AdditionalInfo.DealerCode;
+      trade_AdditionalInfo.DocumentType;
+      trade_AdditionalInfo.TransactionPurpose;
+    };
+    vbox{;
+      trade_optkey3_chlnbr;
+      trade_optkey4_chlnbr;
+    };
+  );
+  hbox(;
+    vbox{;
+      trade_sales_credit;
+    };
+    vbox{;
+      trade_sales_person_usrnbr;
+    };
+  );
+  hbox(;
+    vbox{;
+      trade_trdnbr;
+      trade_Status;     
+    };
+    vbox{;
+      trade_bo_trdnbr;
+      hbox(;
+        trade_payments;
+        trade_save_new;
+      );
+    };
+  );
+);
+...
+
+}
+
+clx CInsDef_CONVERTIBLE [FExtensionValue] {
+  CustomLayout_FrontOfficePane
+vbox(;
+  hbox(;
+    vbox{;
+      trade_FaceValue;
+      trade_Quantity;
+      trade_Nominal;
+      salescover_SalesCoverEnabled;
+      hbox(;
+        vbox(;
+           salescover_SalesMargin;
+           salescover_TraderPrice;
+           trade_Price;
+        );
+        vbox(;
+           salescover_ViceVersaSalesMargin;
+           salescover_ViceVersaPrice;
+           trade_ViceVersa;
+        );
+      );
+      trade_dirty;
+      trade_accrued_int;
+      trade_Premium;
+      trade_Currency;
+      hbox(;
+        trade_IndependentAmount;
+        trade_IndependentAmountAsPercentage;
+      );
+      trade_prfnbr;
+      trade_PositionPair;
+      trade_Broker;
+      trade_fee;
+      trade_ordnbr;
+      trade_locked_info;      
+    };
+    vbox{;
+      trade_Counterparty;
+      trade_hostid;
+      trade_MirrorPortfolio;
+      trade_your_ref;
+      trade_CollateralAgreement;
+      trade_DiscountingType;
+      trade_value_day;
+      trade_acquire_day;
+      trade_time;
+      trade_acquirer_ptynbr;
+      trade_trader_usrnbr;
+      salescover_TraderPortfolio;
+      salescover_TraderAcquirer;
+      trade_SettleCategoryChlItem;
+      trade_Market;
+      trade_position;
+      trade_flat_accrued;
+    };
+  );
+ vbox{;
+  hbox(;
+    vbox(;
+      hbox(;
+        premiumTranslation_FxRate;
+        trade_fx_get_rate;
+      );
+      premiumTranslation_FxPortfolio;
+    );
+    vbox(;
+      premiumTranslation_SettleCurrency;
+      premiumTranslation_FxAcquirer;
+    );
+    vbox(;
+      premiumTranslation_FxPrice;
+    );
+  );
+ };
+  hbox(;
+    vbox{;
+      trade_optkey1_chlnbr;
+      trade_optkey2_chlnbr;
+      trade_AdditionalInfo.DealerCode;
+      trade_AdditionalInfo.DocumentType;
+      trade_AdditionalInfo.TransactionPurpose;
+    };
+    vbox{;
+      trade_optkey3_chlnbr;
+      trade_optkey4_chlnbr;
+    };
+  );
+  hbox(;
+    vbox{;
+      trade_sales_credit;
+    };
+    vbox{;
+      trade_sales_person_usrnbr;
+    };
+  );
+  hbox(;
+    vbox{;
+      trade_trdnbr;
+      trade_Status;     
+    };
+    vbox{;
+      trade_bo_trdnbr;
+      hbox(;
+        trade_payments;
+        trade_save_new;
+      );
+    };
+  );
+);
+...
+
+}
+
+clx CInsDef_CREDIT_BALANCE [FExtensionValue] {
+  CustomLayout_FrontOfficePane
+vbox(;
+  hbox(;
+    vbox{;
+      trade_prfnbr;
+      trade_PositionPair;
+      trade_Nominal;
+      trade_Price;
+      trade_Premium;
+    };
+    vbox{;
+      trade_Counterparty;
+      trade_CollateralAgreement;
+      trade_value_day;
+      trade_acquire_day;
+      trade_time;
+      trade_acquirer_ptynbr;
+      trade_trader_usrnbr;
+    };
+  );
+  hbox(;
+    vbox{;
+      trade_optkey1_chlnbr;
+      trade_optkey2_chlnbr;
+      trade_AdditionalInfo.DealerCode;
+      trade_AdditionalInfo.DocumentType;
+      trade_AdditionalInfo.TransactionPurpose;
+    };
+    vbox{;
+      trade_optkey3_chlnbr;
+      trade_optkey4_chlnbr;
+    };
+  );
+  hbox(;
+    vbox{;
+      trade_trdnbr;
+      trade_Status;     
+    };
+    vbox{;
+      trade_bo_trdnbr;
+      trade_payments;
+    };
+  );
+);
+...
+
+}
+
+clx CInsDef_CREDIT_DEFAULT_SWAP [FExtensionValue] {
+  CustomLayout_FrontOfficePane
+vbox(;
+  hbox(;
+    vbox{;
+      trade_Quantity;
+      trade_Nominal;
+      trade_OpenNominal;
+      trade_Direction;
+      hbox(;
+        vbox(;
+            salescover_SalesMargin;
+            trade_Price;
+        );
+        vbox(;
+            salescover_ViceVersaSalesMargin;
+            trade_ViceVersa;
+        );
+      );
+      trade_dirty;
+      trade_accrued_int;
+      trade_Premium;
+      trade_Currency;
+      hbox(;
+        trade_IndependentAmount;
+        trade_IndependentAmountAsPercentage;
+      );
+      trade_prfnbr;
+      trade_PositionPair;
+    };
+    vbox{;
+      trade_Counterparty;
+      trade_hostid;
+      trade_MirrorPortfolio;
+      trade_your_ref;
+      trade_CollateralAgreement;
+      trade_DiscountingType;
+      trade_value_day;
+      trade_acquire_day;
+      trade_time;
+      trade_acquirer_ptynbr;
+      trade_trader_usrnbr;
+      trade_Broker;
+      trade_fee;
+      trade_SettleCategoryChlItem;
+    };
+  );
+  hbox(;
+    vbox{;
+      salescover_SalesCoverEnabled;
+      salescover_TraderPortfolio;
+    };
+    vbox{;
+     hbox(;
+        salescover_TraderPrice;
+        salescover_ViceVersaPrice;
+      );
+      salescover_TraderAcquirer;
+    };
+  );
+  hbox(;
+    vbox{;
+      trade_optkey1_chlnbr;
+      trade_optkey2_chlnbr;
+      trade_AdditionalInfo.DealerCode;
+      trade_AdditionalInfo.DocumentType;
+      trade_AdditionalInfo.TransactionPurpose;
+    };
+    vbox{;
+      trade_optkey3_chlnbr;
+      trade_optkey4_chlnbr;
+    };
+  );
+  hbox(;
+    vbox{;
+      trade_trdnbr;
+      trade_Status;
+      trade_CLS;
+    };
+    vbox{;
+      trade_bo_trdnbr;
+      trade_payments;
+    };
+  );
+);
+...
+
+}
+
+clx CInsDef_CURR_SWAP [FExtensionValue] {
+  CustomLayout_FrontOfficePane
+vbox(;
+  hbox(;
+    vbox{;
+      trade_prfnbr;
+      trade_PositionPair;
+      salescover_SalesMargin;
+      trade_Premium;
+      trade_Currency;
+      hbox(;
+        trade_IndependentAmount;
+        trade_IndependentAmountAsPercentage;
+      );
+      trade_acquirer_ptynbr;
+      trade_Broker;
+      trade_fee;
+      trade_CurrSwapRecOpenNominal;
+      trade_CurrSwapPayOpenNominal;
+    };
+    vbox{;
+      trade_Counterparty;
+      trade_hostid;
+      trade_MirrorPortfolio;
+      trade_your_ref;
+      trade_CollateralAgreement;
+      trade_DiscountingType;
+      trade_value_day;
+      trade_acquire_day;
+      trade_time;
+      trade_trader_usrnbr;
+      trade_SettleCategoryChlItem;
+    };
+  );
+  hbox(;
+    vbox{;
+      salescover_SalesCoverEnabled;
+      salescover_TraderPortfolio;
+    };
+    vbox{;
+      salescover_TraderPrice;
+      salescover_TraderAcquirer;
+    };
+  );
+  hbox(;
+    vbox{;
+      trade_optkey1_chlnbr;
+      trade_optkey2_chlnbr;
+      trade_AdditionalInfo.DealerCode;
+      trade_AdditionalInfo.DocumentType;
+      trade_AdditionalInfo.TransactionPurpose;
+    };
+    vbox{;
+      trade_optkey3_chlnbr;
+      trade_optkey4_chlnbr;
+    };
+  );
+  hbox(;
+    vbox{;
+      trade_trdnbr;
+      trade_Status;
+    };
+    vbox{;
+      trade_bo_trdnbr;
+      trade_payments;
+    };
+  );
+);
+...
+
+}
+
+clx CInsDef_DEPOSIT [FExtensionValue] {
+  CustomLayout_FrontOfficePane
+vbox(;
+  hbox(;
+    vbox{;
+      trade_CashAmount;
+      trade_OpenNominal;
+      trade_Premium;
+      trade_Price;
+      ins_Currency;
+      hbox(;
+        trade_IndependentAmount;
+        trade_IndependentAmountAsPercentage;
+      );
+      hbox(;
+        ins_LegStartDate;
+        ins_LegStartPeriod;
+      );
+      hbox(;
+        ins_LegEndDate;
+        ins_LegEndPeriod;
+      );
+      leg_LegType;
+      hbox(;
+        leg_FloatRateReference;
+        leg_InitialRate;
+      );
+      leg_FloatRateReference2;
+      hbox(;
+        leg_Spread;
+        leg_SpreadBps;
+        leg_spread_recalc;
+        leg_spread_unit;
+        leg_reset;
+      );
+      hbox(;
+        leg_Spread2;
+        leg_Spread2Bps;
+        leg_spread2_unit;
+      );
+      leg_DigitalType;
+      leg_ComparisonType;
+      leg_FloatRateFactor;
+      leg_FloatRateFactor2;      
+      leg_PayoutSpread;      
+      hbox(;
+        leg_FixedRate;
+        leg_FixedRateBps;
+        leg_fixed_rate_recalc;
+        leg_fixed_rate_unit;
+      );
+      leg_ZeroCouponFixedPeriod;
+      leg_OptionalityMethod;
+      leg_Strike;
+      leg_Strike2;
+      leg_StrikeLimit;
+      hbox(;
+         salescover_SalesMargin;
+         salescover_SalesCoverEnabled;
+      );
+      salescover_TraderPrice;
+      leg_DayCountMethod;
+      hbox(;
+        leg_RollingPeriod;
+        leg_RollingPeriodBase;
+      );
+      leg_LongStub;
+      leg_RollingConv;
+      hbox(;
+        ins_AccruedArrear;
+        leg_FixedCoupon;
+        leg_EmbedOptions;
+      );
+      trade_Broker;
+      trade_fee;
+    };
+    vbox{;
+      trade_Counterparty;
+      trade_hostid;
+      trade_MirrorPortfolio;
+      tradedata_counter_position_pair;
+      trade_your_ref;
+      trade_CollateralAgreement;
+      trade_DiscountingType;
+      trade_prfnbr;
+      trade_PositionPair;
+      trade_value_day;
+      trade_acquire_day;
+      trade_time;
+      trade_acquirer_ptynbr;
+      trade_trader_usrnbr;
+      salescover_TraderPortfolio;
+      salescover_TraderAcquirer;
+      trade_SettleCategoryChlItem;
+      trade_end_cash;
+      trade_end_interest;
+      trade_flat_accrued;
+    };
+  );
+  hbox(;
+    vbox{;
+      trade_optkey1_chlnbr;
+      trade_optkey2_chlnbr;
+      trade_AdditionalInfo.DealerCode;
+      trade_AdditionalInfo.DocumentType;
+    };
+    vbox{;
+      trade_optkey3_chlnbr;
+      trade_optkey4_chlnbr;
+      trade_AdditionalInfo.TransactionPurpose;
+    };
+  );
+  hbox(;
+    vbox{;
+      trade_sales_credit;
+    };
+    vbox{;
+      trade_sales_person_usrnbr;
+    };
+  );
+  hbox(;
+    vbox{;
+      trade_trdnbr;
+      trade_Status;
+      trade_category;
+    };
+    vbox{;
+      trade_bo_trdnbr;
+      trade_payments;
+    };
+  );
+);
+...
+
+}
+
+clx CInsDef_DEPOSITARY_RECEIPT [FExtensionValue] {
+  CustomLayout_FrontOfficePane
+vbox(;
+  hbox(;
+    vbox{;
+      trade_Quantity;
+      trade_Nominal;
+      hbox(;
+        salescover_SalesMargin;
+        salescover_SalesCoverEnabled;
+      );
+      salescover_TraderPrice;
+      trade_Price;
+      trade_Premium;
+      trade_Currency;
+      hbox(;
+        trade_IndependentAmount;
+        trade_IndependentAmountAsPercentage;
+      );
+      trade_prfnbr;
+      trade_PositionPair;
+      trade_Broker;
+      trade_fee;      
+      trade_Market;
+    };
+    vbox{;
+      trade_Counterparty;
+      trade_hostid;
+      trade_MirrorPortfolio;
+      trade_your_ref;
+      trade_CollateralAgreement;
+      trade_DiscountingType;
+      trade_value_day;
+      trade_acquire_day;
+      trade_time;
+      trade_acquirer_ptynbr;
+      trade_trader_usrnbr;
+      salescover_TraderPortfolio;
+      salescover_TraderAcquirer;
+      trade_SettleCategoryChlItem;
+      trade_ordnbr;
+      trade_locked_info;
+    };
+  );
+  hbox(;
+    vbox{;
+      trade_optkey1_chlnbr;
+      trade_optkey2_chlnbr;
+      trade_AdditionalInfo.DealerCode;
+      trade_AdditionalInfo.DocumentType;
+      trade_AdditionalInfo.TransactionPurpose;
+    };
+    vbox{;
+      trade_optkey3_chlnbr;
+      trade_optkey4_chlnbr;
+    };
+  );
+  hbox(;
+    vbox{;
+      trade_sales_credit;
+    };
+    vbox{;
+      trade_sales_person_usrnbr;
+    };
+  );
+  hbox(;
+    vbox{;
+      trade_trdnbr;
+      trade_Status;     
+    };
+    vbox{;
+      trade_bo_trdnbr;
+      hbox(;
+        trade_payments;
+        trade_save_new;
+      );
+    };
+  );
+);
+...
+
+}
+
+clx CInsDef_DUAL_CURR_BOND [FExtensionValue] {
+  CustomLayout_FrontOfficePane
+vbox(;
+  hbox(;
+    vbox{;
+      trade_FaceValue;
+      trade_Quantity;
+      trade_Nominal;
+      salescover_SalesCoverEnabled;
+      hbox(;
+        vbox(;
+           salescover_SalesMargin;
+           salescover_TraderPrice;
+           trade_Price;
+        );
+        vbox(;
+           salescover_ViceVersaSalesMargin;
+           salescover_ViceVersaPrice;
+           trade_ViceVersa;
+        );
+      );
+      trade_dirty;
+      trade_accrued_int;
+      trade_Premium;
+      trade_Currency;
+      hbox(;
+        trade_IndependentAmount;
+        trade_IndependentAmountAsPercentage;
+      );
+      trade_prfnbr;
+      trade_PositionPair;
+      trade_Broker;
+      trade_fee;
+      trade_ordnbr;
+      trade_locked_info;  
+    };
+    vbox{;
+      trade_Counterparty;
+      trade_hostid;
+      trade_MirrorPortfolio;
+      trade_your_ref;
+      trade_DiscountingType;
+      trade_value_day;
+      trade_acquire_day;
+      trade_time;
+      trade_acquirer_ptynbr;
+      trade_trader_usrnbr;
+      salescover_TraderPortfolio;
+      salescover_TraderAcquirer;
+      trade_SettleCategoryChlItem;
+      trade_Market;
+      trade_position;
+      trade_flat_accrued;
+    };
+  );
+ vbox{;
+  hbox(;
+    vbox(;
+      hbox(;
+        premiumTranslation_FxRate;
+        trade_fx_get_rate;
+      );
+      premiumTranslation_FxPortfolio;
+    );
+    vbox(;
+      premiumTranslation_SettleCurrency;
+      premiumTranslation_FxAcquirer;
+    );
+    vbox(;
+      premiumTranslation_FxPrice;
+    );
+  );
+ };
+  hbox(;
+    vbox{;
+      trade_optkey1_chlnbr;
+      trade_optkey2_chlnbr;
+      trade_AdditionalInfo.DealerCode;
+      trade_AdditionalInfo.DocumentType;
+      trade_AdditionalInfo.TransactionPurpose;
+    };
+    vbox{;
+      trade_optkey3_chlnbr;
+      trade_optkey4_chlnbr;
+    };
+  );
+  hbox(;
+    vbox{;
+      trade_sales_credit;
+    };
+    vbox{;
+      trade_sales_person_usrnbr;
+    };
+  );
+  hbox(;
+    vbox{;
+      trade_trdnbr;
+      trade_Status;     
+    };
+    vbox{;
+      trade_bo_trdnbr;
+      hbox(;
+        trade_payments;
+        trade_save_new;
+      );
+    };
+  );
+);
+...
+
+}
+
+clx CInsDef_EQUITY_INDEX [FExtensionValue] {
+  CustomLayout_FrontOfficePane
+vbox(;
+  hbox(;
+    vbox{;
+      trade_Quantity;
+      trade_Nominal;
+      hbox(;
+        salescover_SalesMargin;
+        salescover_SalesCoverEnabled;
+      );
+      salescover_TraderPrice;
+      trade_Price;
+      trade_Premium;
+      trade_Currency;
+      hbox(;
+        trade_IndependentAmount;
+        trade_IndependentAmountAsPercentage;
+      );
+      trade_prfnbr;
+      trade_PositionPair;
+      trade_Broker;
+      trade_fee;
+      trade_ordnbr;
+      trade_locked_info;      
+    };
+    vbox{;
+      trade_Counterparty;
+      trade_hostid;
+      trade_MirrorPortfolio;
+      trade_your_ref;
+      trade_DiscountingType;
+      trade_value_day;
+      trade_acquire_day;
+      trade_time;
+      trade_acquirer_ptynbr;
+      trade_trader_usrnbr;      
+      salescover_TraderPortfolio;
+      salescover_TraderAcquirer;
+      trade_SettleCategoryChlItem;
+      trade_Market;
+      trade_position;
+    };
+  );
+ vbox{;
+  hbox(;
+    vbox(;
+      hbox(;
+        premiumTranslation_FxRate;
+        trade_fx_get_rate;
+      );
+      premiumTranslation_FxPortfolio;
+    );
+    vbox(;
+      premiumTranslation_SettleCurrency;
+      premiumTranslation_FxAcquirer;
+    );
+    vbox(;
+      premiumTranslation_FxPrice;
+    );
+  );
+ };
+  hbox(;
+    vbox{;
+      trade_optkey1_chlnbr;
+      trade_optkey2_chlnbr;
+      trade_AdditionalInfo.DealerCode;
+      trade_AdditionalInfo.DocumentType;
+      trade_AdditionalInfo.TransactionPurpose;
+    };
+    vbox{;
+      trade_optkey3_chlnbr;
+      trade_optkey4_chlnbr;
+    };
+  );
+  hbox(;
+    vbox{;
+      trade_sales_credit;
+    };
+    vbox{;
+      trade_sales_person_usrnbr;
+    };
+  );
+  hbox(;
+    vbox{;
+      trade_trdnbr;
+      trade_Status;     
+    };
+    vbox{;
+      trade_bo_trdnbr;
+      hbox(;
+        trade_payments;
+        trade_save_new;
+      );
+    };
+  );
+);
+...
+
+}
+
+clx CInsDef_ETF [FExtensionValue] {
+  CustomLayout_FrontOfficePane
+vbox(;
+  hbox(;
+    vbox{;
+      trade_Quantity;
+      trade_Nominal;
+      hbox(;
+        salescover_SalesMargin;
+        salescover_SalesCoverEnabled;
+      );
+      salescover_TraderPrice;
+      trade_Price;
+      trade_Premium;
+      trade_Currency;
+      hbox(;
+        trade_IndependentAmount;
+        trade_IndependentAmountAsPercentage;
+      );
+      trade_prfnbr;
+      trade_PositionPair;
+      trade_Broker;
+      trade_fee;      
+      trade_ordnbr;
+      trade_locked_info;
+    };
+    vbox{;
+      trade_Counterparty;
+      trade_hostid;
+      trade_MirrorPortfolio;
+      trade_your_ref;
+      trade_CollateralAgreement;
+      trade_DiscountingType;
+      trade_value_day;
+      trade_acquire_day;
+      trade_time;
+      trade_acquirer_ptynbr;
+      trade_trader_usrnbr;      
+      salescover_TraderPortfolio;
+      salescover_TraderAcquirer;      
+      trade_SettleCategoryChlItem;
+      trade_Market;
+      trade_position;
+    };
+  );
+ vbox{;
+  hbox(;
+    vbox(;
+      hbox(;
+        premiumTranslation_FxRate;
+        trade_fx_get_rate;
+      );
+      premiumTranslation_FxPortfolio;
+    );
+    vbox(;
+      premiumTranslation_SettleCurrency;
+      premiumTranslation_FxAcquirer;
+    );
+    vbox(;
+      premiumTranslation_FxPrice;
+    );
+  );
+ };
+  hbox(;
+    vbox{;
+      trade_optkey1_chlnbr;
+      trade_optkey2_chlnbr;
+      trade_AdditionalInfo.DealerCode;
+      trade_AdditionalInfo.DocumentType;
+      trade_AdditionalInfo.TransactionPurpose;
+    };
+    vbox{;
+      trade_optkey3_chlnbr;
+      trade_optkey4_chlnbr;
+    };
+  );
+  hbox(;
+    vbox{;
+      trade_sales_credit;
+    };
+    vbox{;
+      trade_sales_person_usrnbr;
+    };
+  );
+  hbox(;
+    vbox{;
+      trade_trdnbr;
+      trade_Status;     
+    };
+    vbox{;
+      trade_bo_trdnbr;
+      hbox(;
+        trade_payments;
+        trade_save_new;
+      );
+    };
+  );
+);
+...
+
+}
+
+clx CInsDef_FIXED_NOMINAL_SECURITY_LOAN [FExtensionValue] {
+  CustomLayout_FrontOfficePane
+vbox(;
+  hbox(;
+    vbox{;
+      trade_accrued_int;
+      trade_prfnbr;
+      trade_PositionPair;
+      trade_Premium;
+      trade_Currency;
+      hbox(;
+        trade_IndependentAmount;
+        trade_IndependentAmountAsPercentage;
+      );
+      trade_SettleCategoryChlItem;
+      trade_right_of_substitution;
+    };
+    vbox{;
+      trade_DiscountingType;
+      trade_value_day;
+      trade_acquire_day;
+      trade_time;
+      trade_acquirer_ptynbr;
+      trade_trader_usrnbr;
+    };
+  );
+  hbox(;
+    vbox{;
+      trade_optkey1_chlnbr;
+      trade_optkey2_chlnbr;
+      trade_AdditionalInfo.DealerCode;
+      trade_AdditionalInfo.DocumentType;
+      trade_AdditionalInfo.TransactionPurpose;
+    };
+    vbox{;
+      trade_optkey3_chlnbr;
+      trade_optkey4_chlnbr;
+    };
+  );
+  hbox(;
+    vbox{;
+      trade_sales_credit;
+    };
+    vbox{;
+      trade_sales_person_usrnbr;
+    };
+  );
+  hbox(;
+    vbox{;
+      trade_trdnbr;
+      trade_Status;
+    };
+    vbox{;
+      trade_bo_trdnbr;
+      trade_payments;
+    };
+  );
+);
+...
+
+}
+
+clx CInsDef_FLEXI_BOND [FExtensionValue] {
+  CustomLayout_FrontOfficePane
+vbox(;
+  hbox(;
+    vbox{;
+      trade_FaceValue;
+      trade_Quantity;
+      trade_Nominal;
+      hbox(;
+        salescover_SalesMargin;
+        salescover_SalesCoverEnabled;
+      );
+      salescover_TraderPrice;
+      trade_Price;
+      trade_dirty;
+      trade_accrued_int;
+      trade_Premium;
+      trade_Currency;
+      hbox(;
+        trade_IndependentAmount;
+        trade_IndependentAmountAsPercentage;
+      );
+      trade_prfnbr;
+      trade_PositionPair;
+      trade_Broker;
+      trade_fee;
+    };
+    vbox{;
+      trade_Counterparty;
+      trade_MirrorPortfolio;
+      trade_your_ref;
+      trade_DiscountingType;
+      trade_value_day;
+      trade_acquire_day;
+      trade_time;
+      trade_acquirer_ptynbr;
+      trade_trader_usrnbr;
+      salescover_TraderPortfolio;
+      salescover_TraderAcquirer;
+      trade_SettleCategoryChlItem;
+      trade_Market;
+      trade_ordnbr;
+      trade_locked_info;
+      trade_position;
+      trade_flat_accrued;
+    };
+  );
+ vbox{;
+  hbox(;
+    vbox(;
+      hbox(;
+        premiumTranslation_FxRate;
+        trade_fx_get_rate;
+      );
+      premiumTranslation_FxPortfolio;
+    );
+    vbox(;
+      premiumTranslation_SettleCurrency;
+      premiumTranslation_FxAcquirer;
+    );
+    vbox(;
+      premiumTranslation_FxPrice;
+    );
+  );
+ };
+  hbox(;
+    vbox{;
+      trade_optkey1_chlnbr;
+      trade_optkey2_chlnbr;
+      trade_AdditionalInfo.DealerCode;
+      trade_AdditionalInfo.DocumentType;
+      trade_AdditionalInfo.TransactionPurpose;
+    };
+    vbox{;
+      trade_optkey3_chlnbr;
+      trade_optkey4_chlnbr;
+    };
+  );
+  hbox(;
+    vbox{;
+      trade_sales_credit;
+    };
+    vbox{;
+      trade_sales_person_usrnbr;
+    };
+  );
+  hbox(;
+    vbox{;
+      trade_trdnbr;
+      trade_Status;
+    };
+    vbox{;
+      trade_bo_trdnbr;
+      trade_payments;
+    };
+  );
+);
+...
+
+}
+
+clx CInsDef_FLOOR [FExtensionValue] {
+  CustomLayout_FrontOfficePane
+vbox(;
+  hbox(;
+    vbox{;
+      trade_Quantity;
+      trade_Nominal;
+      trade_OpenNominal;
+      hbox(;
+        salescover_SalesMargin;
+        salescover_SalesCoverEnabled;
+      );
+      salescover_TraderPrice;
+      trade_Price;
+      trade_Premium;
+      trade_Currency;
+      hbox(;
+        trade_IndependentAmount;
+        trade_IndependentAmountAsPercentage;
+      );
+      trade_prfnbr;
+      trade_PositionPair;
+      trade_Broker;
+      trade_fee;
+    };
+    vbox{;
+      trade_Counterparty;
+      trade_hostid;
+      trade_MirrorPortfolio;
+      trade_your_ref;
+      trade_CollateralAgreement;
+      trade_DiscountingType;
+      trade_value_day;
+      trade_acquire_day;
+      trade_time;
+      trade_acquirer_ptynbr;
+      trade_trader_usrnbr;
+      salescover_TraderPortfolio;
+      salescover_TraderAcquirer;
+      trade_SettleCategoryChlItem;
+    };
+  );
+ vbox{;
+  hbox(;
+    vbox(;
+      hbox(;
+        premiumTranslation_FxRate;
+        trade_fx_get_rate;
+      );
+      premiumTranslation_FxPortfolio;
+    );
+    vbox(;
+      premiumTranslation_SettleCurrency;
+      premiumTranslation_FxAcquirer;
+    );
+    vbox(;
+      premiumTranslation_FxPrice;
+    );
+  );
+ };
+  hbox(;
+    vbox{;
+      trade_optkey1_chlnbr;
+      trade_optkey2_chlnbr;
+      trade_AdditionalInfo.DealerCode;
+      trade_AdditionalInfo.DocumentType;
+      trade_AdditionalInfo.TransactionPurpose;
+    };
+    vbox{;
+      trade_optkey3_chlnbr;
+      trade_optkey4_chlnbr;
+    };
+  );
+  hbox(;
+    vbox{;
+      trade_sales_credit;
+    };
+    vbox{;
+      trade_sales_person_usrnbr;
+    };
+  );
+  hbox(;
+    vbox{;
+      trade_trdnbr;
+      trade_Status;     
+    };
+    vbox{;
+      trade_bo_trdnbr;
+      hbox(;
+        trade_payments;
+        trade_save_new;
+      );
+    };
+  );
+);
+...
+
+}
+
+clx CInsDef_FRA [FExtensionValue] {
+  CustomLayout_FrontOfficePane
+vbox(;
+  hbox(;
+    vbox{;
+      trade_Quantity;
+      trade_Nominal;
+      trade_OpenNominal;
+      salescover_SalesMargin;
+      trade_Price;
+      trade_Premium;
+      trade_Currency;
+      hbox(;
+        trade_IndependentAmount;
+        trade_IndependentAmountAsPercentage;
+      );
+      trade_prfnbr;
+      trade_PositionPair;
+      trade_Broker;
+      trade_fee;
+      trade_Market;
+      trade_locked_info;
+      trade_ordnbr;
+    };
+    vbox{;
+      trade_Counterparty;
+      trade_hostid;
+      trade_MirrorPortfolio;
+      trade_your_ref;
+      trade_CollateralAgreement;
+      trade_DiscountingType;
+      trade_value_day;
+      trade_acquire_day;
+      trade_time;
+      trade_acquirer_ptynbr;
+      trade_trader_usrnbr;
+      trade_SettleCategoryChlItem;
+    };
+  );
+  hbox(;
+    vbox{;
+      salescover_SalesCoverEnabled;
+      salescover_TraderPortfolio;
+    };
+    vbox{;
+      salescover_TraderPrice;
+      salescover_TraderAcquirer;
+    };
+  );
+  hbox(;
+    vbox{;
+      trade_optkey1_chlnbr;
+      trade_optkey2_chlnbr;  
+      trade_AdditionalInfo.DealerCode;
+      trade_AdditionalInfo.DocumentType;
+      trade_AdditionalInfo.TransactionPurpose;  
+    };
+    vbox{;
+      trade_optkey3_chlnbr;
+      trade_optkey4_chlnbr;
+    };
+  );
+  hbox(;
+    vbox{;
+      trade_sales_credit;
+    };
+    vbox{;
+      trade_sales_person_usrnbr;
+    };
+  );
+  hbox(;
+    vbox{;
+      trade_trdnbr;
+      trade_Status;     
+    };
+    vbox{;
+      trade_bo_trdnbr;
+      hbox(;
+        trade_payments;
+        trade_save_new;
+      );
+    };
+  );
+);
+...
+
+}
+
+clx CInsDef_FREEDEF_CASHFLOW [FExtensionValue] {
+  CustomLayout_FrontOfficePane
+vbox(;
+  hbox(;
+    vbox{;
+      trade_FaceValue;
+      trade_Quantity;
+      trade_Nominal;
+      trade_Price;
+      trade_accrued_int;
+      trade_Premium;
+      trade_Currency;
+      hbox(;
+        trade_IndependentAmount;
+        trade_IndependentAmountAsPercentage;
+      );
+      trade_prfnbr;
+      trade_PositionPair;
+      trade_Broker;
+      trade_fee;
+      trade_Market;
+      trade_ordnbr;
+      trade_locked_info;
+    };
+    vbox{;
+      trade_Counterparty;
+      trade_hostid;
+      trade_MirrorPortfolio;
+      trade_your_ref;
+      trade_CollateralAgreement;
+      trade_DiscountingType;
+      trade_value_day;
+      trade_acquire_day;
+      trade_time;
+      trade_acquirer_ptynbr;
+      trade_trader_usrnbr;      
+      trade_SettleCategoryChlItem;
+      
+      trade_position;
+      trade_flat_accrued;
+    };
+  );
+ vbox{;
+  hbox(;
+    vbox(;
+      hbox(;
+        premiumTranslation_FxRate;
+        trade_fx_get_rate;
+      );
+      premiumTranslation_FxPortfolio;
+    );
+    vbox(;
+      premiumTranslation_SettleCurrency;
+      premiumTranslation_FxAcquirer;
+    );
+    vbox(;
+      premiumTranslation_FxPrice;
+    );
+  );
+ };
+  hbox(;
+    vbox{;
+      trade_optkey1_chlnbr;
+      trade_optkey2_chlnbr;
+      trade_AdditionalInfo.DealerCode;
+      trade_AdditionalInfo.DocumentType;
+      trade_AdditionalInfo.TransactionPurpose;
+    };
+    vbox{;
+      trade_optkey3_chlnbr;
+      trade_optkey4_chlnbr;
+    };
+  );
+  hbox(;
+    vbox{;
+      trade_sales_credit;
+    };
+    vbox{;
+      trade_sales_person_usrnbr;
+    };
+  );
+  hbox(;
+    vbox{;
+      trade_trdnbr;
+      trade_Status;     
+    };
+    vbox{;
+      trade_bo_trdnbr;
+      hbox(;
+        trade_payments;
+        trade_save_new;
+      );
+    };
+  );
+);
+...
+
+}
+
+clx CInsDef_FRN [FExtensionValue] {
+  CustomLayout_FrontOfficePane
+vbox(;
+  hbox(;
+    vbox{;
+      trade_FaceValue;
+      trade_Quantity;
+      trade_Nominal;
+      salescover_SalesCoverEnabled;
+      hbox(;
+        vbox(;
+           salescover_SalesMargin;
+           salescover_TraderPrice;
+           trade_Price;
+        );
+        vbox(;
+           salescover_ViceVersaSalesMargin;
+           salescover_ViceVersaPrice;
+           trade_ViceVersa;
+        );
+      );
+      trade_accrued_int;
+      trade_Premium;
+      trade_Currency;
+      hbox(;
+        trade_IndependentAmount;
+        trade_IndependentAmountAsPercentage;
+      );
+      trade_prfnbr;
+      trade_PositionPair;
+      trade_Broker;
+      trade_fee;
+      trade_Market;
+    };
+    vbox{;
+      trade_Counterparty;
+      trade_hostid;
+      trade_MirrorPortfolio;
+      trade_your_ref;
+      trade_DiscountingType;
+      trade_value_day;
+      trade_acquire_day;
+      trade_time;
+      trade_acquirer_ptynbr;
+      trade_trader_usrnbr;
+      salescover_TraderPortfolio;
+      salescover_TraderAcquirer;
+      trade_SettleCategoryChlItem;
+      trade_ordnbr;
+      trade_locked_info;
+      trade_position;
+      trade_flat_accrued;
+    };
+  );
+ vbox{;
+  hbox(;
+    vbox(;
+      hbox(;
+        premiumTranslation_FxRate;
+        trade_fx_get_rate;
+      );
+      premiumTranslation_FxPortfolio;
+    );
+    vbox(;
+      premiumTranslation_SettleCurrency;
+      premiumTranslation_FxAcquirer;
+    );
+    vbox(;
+      premiumTranslation_FxPrice;
+    );
+  );
+ };
+  hbox(;
+    vbox{;
+      trade_optkey1_chlnbr;
+      trade_optkey2_chlnbr;
+      trade_AdditionalInfo.DealerCode;
+      trade_AdditionalInfo.DocumentType;
+      trade_AdditionalInfo.TransactionPurpose;
+    };
+    vbox{;
+      trade_optkey3_chlnbr;
+      trade_optkey4_chlnbr;
+    };
+  );
+  hbox(;
+    vbox{;
+      trade_sales_credit;
+    };
+    vbox{;
+      trade_sales_person_usrnbr;
+    };
+  );
+  hbox(;
+    vbox{;
+      trade_trdnbr;
+      trade_Status;     
+    };
+    vbox{;
+      trade_bo_trdnbr;
+      hbox(;
+        trade_payments;
+        trade_save_new;
+      );
+    };
+  );
+);
+...
+
+}
+
+clx CInsDef_FUND [FExtensionValue] {
+  CustomLayout_FrontOfficePane
+vbox(;
+  hbox(;
+    vbox{;
+      trade_category;
+      trade_Quantity;
+      trade_Nominal;
+      trade_Price;
+      trade_Premium;
+      trade_Currency;
+      hbox(;
+        trade_IndependentAmount;
+        trade_IndependentAmountAsPercentage;
+      );
+      trade_prfnbr;
+      trade_PositionPair;
+      trade_Broker;
+      trade_fee;
+    };
+    vbox{;
+      trade_Counterparty;
+      trade_hostid;
+      trade_MirrorPortfolio;
+      trade_your_ref;
+      trade_DiscountingType;
+      trade_value_day;
+      trade_acquire_day;
+      trade_time;
+      trade_acquirer_ptynbr;
+      trade_trader_usrnbr;
+      trade_SettleCategoryChlItem;
+      trade_locked_info;
+      trade_ordnbr;
+      trade_position;
+    };
+  );
+  hbox(;
+    vbox{;
+      trade_optkey1_chlnbr;
+      trade_optkey2_chlnbr;
+      trade_AdditionalInfo.DealerCode;
+      trade_AdditionalInfo.DocumentType;
+      trade_AdditionalInfo.TransactionPurpose;
+    };
+    vbox{;
+      trade_optkey3_chlnbr;
+      trade_optkey4_chlnbr;
+    };
+  );
+  hbox(;
+    vbox{;
+      trade_sales_credit;
+    };
+    vbox{;
+      trade_sales_person_usrnbr;
+    };
+  );
+  hbox(;
+    vbox{;
+      trade_trdnbr;
+      trade_Status;
+    };
+    vbox{;
+      trade_bo_trdnbr;
+      hbox(;
+        trade_payments;
+        trade_save_new;
+      );
+    };
+  );
+);
+...
+
+  CustomLayout_InsIDPane
+vbox{;
+  ins_Isin;
+  ins_ExternalId1;
+  ins_ExternalId2;
+  ins_FreeText;
+  ins_CategoryChlItem;
+  ins_ProductTypeChlItem;
+  ins_Insaddr;
+  hbox[Instrument Aliases;
+    ins_aliases;
+    vbox(;
+        ins_alias_add;
+        ins_alias_update;
+        ins_alias_remove;
+        ins_alias_revert;
+    );
+  ];
+};
+...
+
+  CustomLayout_InstrumentPane
+vbox(;
+  hbox{;
+    ins_insid;
+    ins_suggest_id;
+  };
+  hbox(;
+    vbox{;
+      ins_Currency;
+      ins_FundPortfolio;
+      ins_ValuationGrpChlItem;
+    };
+    vbox{;
+      ins_issuer_ptynbr;
+      ins_Quotation;
+      ins_ContractSize;
+    };
+  );
+);
+
+...
+
+}
+
+clx CInsDef_FUTURE [FExtensionValue] {
+  CustomLayout_FrontOfficePane
+vbox(;
+  hbox(;
+    vbox{;
+      trade_Quantity;            
+      trade_Nominal;
+      trade_OpenNominal;
+      trade_NominalInQuotation;
+      hbox(;
+        salescover_SalesMargin;
+        salescover_SalesCoverEnabled;
+      );
+      salescover_TraderPrice;
+      trade_Price;
+      trade_ForwardPremium;
+      trade_Currency;
+      hbox(;
+        trade_IndependentAmount;
+        trade_IndependentAmountAsPercentage;
+      );
+      trade_prfnbr;
+      trade_PositionPair;
+      trade_Broker;
+      trade_fee;
+      trade_Market;
+    };
+    vbox{;
+      trade_Counterparty;
+      trade_hostid;
+      trade_MirrorPortfolio;
+      trade_your_ref;
+      trade_CollateralAgreement;
+      trade_DiscountingType;
+      trade_ForwardValueDate;    
+      trade_value_day;
+      trade_acquire_day;
+      trade_time;
+      trade_acquirer_ptynbr;
+      trade_trader_usrnbr;
+      salescover_TraderPortfolio;
+      salescover_TraderAcquirer;
+      trade_SettleCategoryChlItem;
+      trade_ordnbr;
+      trade_locked_info;
+    };
+  );
+ vbox{;
+  hbox(;
+    vbox(;
+      hbox(;
+        premiumTranslation_FxRate;
+        trade_fx_get_rate;
+      );
+      premiumTranslation_FxPortfolio;
+    );
+    vbox(;
+      premiumTranslation_SettleCurrency;
+      premiumTranslation_FxAcquirer;
+    );
+    vbox(;
+      premiumTranslation_FxPrice;
+    );
+  );
+ };
+  hbox(;
+    vbox{;
+      trade_optkey1_chlnbr;
+      trade_optkey2_chlnbr;
+      trade_AdditionalInfo.DealerCode;
+      trade_AdditionalInfo.DocumentType;
+      trade_AdditionalInfo.TransactionPurpose;
+    };
+    vbox{;
+      trade_optkey3_chlnbr;
+      trade_optkey4_chlnbr;
+    };
+  );
+  hbox(;
+    vbox{;
+      trade_sales_credit;
+    };
+    vbox{;
+      trade_sales_person_usrnbr;
+    };
+  );
+  hbox(;
+    vbox{;
+      trade_trdnbr;
+      trade_Status;     
+    };
+    vbox{;
+      trade_bo_trdnbr;
+      hbox(;
+        trade_payments;
+        trade_save_new;
+      );
+    };
+  );
+);
+...
+
+}
+
+clx CInsDef_FX_CASH [FExtensionValue] {
+  CustomLayout_FrontOfficePane
+vbox(;
+  hbox(;
+    trade_fx_detail_fill;
+    trade_fx_swap_detail_fill;
+  );
+  hbox(;
+    vbox[Currency Pair;
+      hbox(;
+        trade_fx_apps_curr1;
+        trade_fx_apps_curr2;
+      );
+      trade_fx_curr_fill;
+    ];
+    vbox{;
+      hbox{;
+        trade_fx_spot_toggle;
+        trade_fx_swap_toggle;
+        trade_cls_in_out_swap_toggle;
+        salescover_SalesCoverEnabled;
+      };
+      trade_fx_toggle_fill;
+    };
+  );
+  hbox(;
+    vbox{;
+      trade_fx_near_amount1;
+      trade_acquire_day;
+      hbox(;
+        trade_value_day;
+        trade_fx_spot_cover;
+      );
+      hbox(;
+        trade_fx_spot;
+        trade_fx_quoting_method;
+      );
+      hbox(;
+        trade_fx_spot_price;
+        trade_fx_trader_spot_price;
+        trade_fx_spot_margin;
+        trade_fx_spot_price_detailed;
+      );
+      hbox(;
+        trade_fx_near_points;
+        trade_fx_trader_near_points;
+        trade_fx_near_points_margin;
+        trade_fx_near_points_detailed;
+      );
+      hbox(;
+        trade_fx_near_price;
+        trade_fx_trader_near_price;
+        trade_fx_near_price_margin;
+        trade_fx_near_price_detailed;
+      );
+      trade_fx_near_amount2;
+      trade_fx_historic_funding_rate;
+      trade_fx_historic_funding_spread;
+      trade_fx_near_pv;
+    };
+    vbox{;
+      trade_fx_far_amount1;
+      trade_fx_far_acquire_day;
+      hbox(;
+        trade_fx_far_value_day;
+        trade_fx_far_spot_cover;
+      );
+      hbox(;
+        trade_fx_early_delivery_swap_points;
+        trade_fx_trader_far_swap_points;
+        trade_fx_far_swap_points_margin;;
+        trade_fx_early_delivery_swap_points_detailed;	
+      );
+      hbox(;
+        trade_fx_far_points;
+        trade_fx_early_delivery_points;
+        trade_fx_trader_far_points;
+        trade_fx_far_points_margin;
+        trade_fx_far_points_detailed;
+        trade_fx_early_delivery_points_detailed;
+      );
+      hbox(;
+        trade_fx_far_price;
+        trade_fx_trader_far_price;
+        trade_fx_far_price_margin;
+        trade_fx_far_price_detailed;
+      );
+      trade_fx_far_amount2;
+      trade_fx_historic_funding_cost;
+      trade_fx_far_pv;
+    };
+    trade_fx_far_fill;
+  );
+  hbox(;
+    vbox{;
+      trade_prfnbr;
+      trade_PositionPair;
+      salescover_TraderPortfolio;
+      salescover_TraderPositionPair;
+      trade_Counterparty;
+      trade_hostid;
+      trade_MirrorPortfolio; 
+      trade_your_ref;
+      trade_fx_split_btn;
+    };
+    vbox{;
+      hbox(;
+        trade_DiscountingType;
+        trade_suggest_discounting_type;
+        trade_suggest_disc_type_ccy_pair;
+      );
+      trade_time;
+      trade_acquirer_ptynbr;
+      salescover_TraderAcquirer;
+      trade_trader_usrnbr;
+      trade_sales_person_usrnbr;
+      trade_SettleCategoryChlItem;
+      trade_Broker;
+      trade_fee;
+    };
+  );
+  hbox(;
+    vbox{;
+      trade_optkey1_chlnbr;
+      trade_optkey2_chlnbr;
+      trade_AdditionalInfo.DealerCode;
+      trade_AdditionalInfo.DocumentType;
+      trade_AdditionalInfo.TransactionPurpose;
+      trade_AdditionalInfo.ClientRate;
+    };
+    vbox{;
+      trade_optkey3_chlnbr;
+      trade_optkey4_chlnbr;
+    };
+  );
+  hbox(;
+    vbox{;
+      trade_trdnbr;
+      trade_Status;
+      trade_CLS;
+    };
+    vbox{;
+      trade_bo_trdnbr;
+      hbox(;
+        trade_payments;
+        trade_save_new;
+      );
+      trade_fx_far_cls;
+    };
+  );
+);
+...
+
+}
+
+clx CInsDef_FX_NDF [FExtensionValue] {
+  CustomLayout_FrontOfficePane
+vbox(;
+  hbox(;
+    hbox{;
+      trade_FxForwardCurrencyOne;
+    };
+    hbox{;
+      trade_FxForwardCurrencyTwo;
+    };
+  );
+  hbox(;
+    vbox{;
+      trade_FxForwardAmount1;
+      trade_FxForwardSettlementDate;
+      ins_FxForwardFixingDate;
+      trade_ReferencePrice;
+      trade_FxForwardPoints;
+      hbox(;
+        salescover_SalesMargin;
+        salescover_SalesCoverEnabled;
+      );
+      salescover_TraderPrice;
+      hbox(;
+        trade_Price;
+        ins_fx_forward_quoting_method;
+      );
+      trade_FxForwardAmount2;
+    };
+    vbox{; 
+      trade_SettlementCurrency;
+      ins_FixingSource;
+      hbox(;
+        trade_IndependentAmount;
+        trade_IndependentAmountAsPercentage;
+      );
+    };
+  );
+  hbox(;
+    vbox{;
+      trade_prfnbr;
+      salescover_TraderPortfolio;
+      trade_Counterparty;
+      trade_hostid;
+      trade_MirrorPortfolio;
+      trade_your_ref;
+      trade_CollateralAgreement;      
+      hbox(;
+        ins_DiscountingType;
+        ins_suggest_discounting_type;
+      );
+    };
+    vbox{;
+      trade_time;
+      trade_acquirer_ptynbr;
+      salescover_TraderAcquirer;
+      trade_sales_person_usrnbr;
+      trade_trader_usrnbr;
+      trade_SettleCategoryChlItem;
+      trade_Broker;
+      trade_fee;
+    };
+  );
+  hbox(;
+    vbox{;
+      trade_optkey1_chlnbr;
+      trade_optkey2_chlnbr;
+      trade_AdditionalInfo.DealerCode;
+      trade_AdditionalInfo.DocumentType;
+      trade_AdditionalInfo.TransactionPurpose;
+    };
+    vbox{;
+      trade_optkey3_chlnbr;
+      trade_optkey4_chlnbr;
+    };
+  );
+  hbox(;
+    vbox{;
+      trade_trdnbr;
+      trade_Status;
+    };
+    vbox{;
+      trade_bo_trdnbr;
+      hbox(;
+        trade_payments;
+        trade_save_new;
+      );
+    };
+  );
+);
+...
+
+}
+
+clx CInsDef_FX_ODF [FExtensionValue] {
+  CustomLayout_FrontOfficePane
+vbox(;
+  vbox{;
+    hbox(;
+      ins_CurrencyOne;
+      ins_CurrencyTwo;
+    );
+    hbox(;
+      ins_DealtCurrency;
+      empty;
+      ins_odf_rate_quoting_label;
+      ins_odf_quoting_method;
+    );
+  };
+  vbox[Amount;
+    trade_odf_dealt_amount;
+    hbox(;
+      trade_RemainingDrawdownAmount;
+      ins_exercise_events;
+    );
+  ];
+  vbox{Drawdowns:;
+    trade_odf_drawdown_table;
+  };
+  hbox(;
+    vbox{;
+      trade_prfnbr;
+      trade_Counterparty;
+      trade_hostid;
+      trade_MirrorPortfolio;
+      trade_your_ref;
+      trade_CollateralAgreement;
+      hbox(;
+        trade_IndependentAmount;
+        trade_IndependentAmountAsPercentage;
+      );
+      trade_SettleCategoryChlItem;
+    };
+    vbox{;
+      hbox(;
+        ins_DiscountingType;
+        ins_suggest_discounting_type;
+      );
+      trade_value_day;
+      trade_acquire_day;
+      trade_time;
+      trade_acquirer_ptynbr;
+      trade_trader_usrnbr;
+    };
+  );
+  hbox(;
+    vbox{;
+      trade_optkey1_chlnbr;
+      trade_optkey2_chlnbr;
+      trade_AdditionalInfo.DealerCode;
+      trade_AdditionalInfo.DocumentType;
+      trade_AdditionalInfo.TransactionPurpose;
+    };
+    vbox{;
+      trade_optkey3_chlnbr;
+      trade_optkey4_chlnbr;
+    };
+  );
+  hbox(;
+    vbox{;
+      trade_sales_credit;
+    };
+    vbox{;
+      trade_sales_person_usrnbr;
+    };
+  );
+  hbox(;
+    vbox{;
+      trade_trdnbr;
+      trade_Status;
+    };
+    vbox{;
+      trade_bo_trdnbr;
+      trade_payments;
+    };
+  );
+);  
+...
+
+}
+
+clx CInsDef_FX_OPTION [FExtensionValue] {
+  CustomLayout_FrontOfficePane
+vbox(;
+  hbox(;
+    vbox{;
+      trade_AmountForeign;
+      trade_prfnbr;
+      trade_PositionPair;
+      hbox(;
+        salescover_SalesMargin;
+        salescover_SalesCoverEnabled;
+      );
+      salescover_TraderPrice;
+      trade_Price;
+      trade_Premium;
+      trade_ForwardPremium;
+      trade_FxoPremiumCurr;
+      hbox(;
+        trade_IndependentAmount;
+        trade_IndependentAmountAsPercentage;
+      );
+      trade_Broker;
+      trade_fee;
+      trade_Market;
+    };
+    vbox{;
+      trade_AmountDomestic;
+      trade_Counterparty;
+      trade_hostid;
+      trade_MirrorPortfolio;
+      trade_your_ref;
+      trade_CollateralAgreement;
+      trade_DiscountingType;
+      trade_value_day;
+      trade_acquire_day;
+      trade_time;
+      trade_acquirer_ptynbr;
+      trade_trader_usrnbr;
+      salescover_TraderPortfolio;
+      salescover_TraderAcquirer;      
+      trade_SettleCategoryChlItem;
+      trade_ordnbr;
+      trade_locked_info;
+    };
+  );
+  hbox[Delta Hedge;
+    trade_fx_delta_hedge_type;
+    trade_fx_delta_hedge_btn;
+  ];
+ vbox{;
+  hbox(;
+    vbox(;
+      hbox(;
+        premiumTranslation_FxRate;
+        trade_fx_get_rate;
+      ); 
+      premiumTranslation_FxPortfolio;
+    );
+    vbox(;
+      premiumTranslation_SettleCurrency;
+      premiumTranslation_FxAcquirer;
+    );
+    vbox(;
+      premiumTranslation_FxPrice;
+      trade_sales_person_usrnbr;
+    );
+  );  
+ };
+  hbox(;
+    vbox{;
+      trade_optkey1_chlnbr;
+      trade_optkey2_chlnbr;
+      trade_AdditionalInfo.DealerCode;
+      trade_AdditionalInfo.DocumentType;
+      trade_AdditionalInfo.TransactionPurpose;
+    };
+    vbox{;
+      trade_optkey3_chlnbr;
+      trade_optkey4_chlnbr;
+    };
+  );
+  hbox(;
+    vbox{;
+      trade_trdnbr;
+      trade_Status;
+    };
+    vbox{;
+      trade_bo_trdnbr;
+      hbox(;
+        trade_payments;
+        trade_save_new;
+      );
+    };
+  );
+);
+...
+
+}
+
+clx CInsDef_FX_SWAP [FExtensionValue] {
+  CustomLayout_FrontOfficePane
+vbox(;
+  hbox(;
+    vbox{;
+      trade_prfnbr;
+      trade_PositionPair;
+      trade_acquirer_ptynbr;
+      trade_trader_usrnbr;
+      trade_SettleCategoryChlItem;
+      trade_Broker;
+      trade_fee;
+    };
+    vbox{;
+      trade_Counterparty;
+      trade_hostid;
+      trade_MirrorPortfolio;
+      trade_your_ref;
+      trade_CollateralAgreement;
+      trade_DiscountingType;
+      trade_value_day;
+      trade_acquire_day;
+      trade_time;      
+    };
+  );
+  hbox(;
+    vbox{;
+      trade_optkey1_chlnbr;
+      trade_optkey2_chlnbr;
+      trade_AdditionalInfo.DealerCode;
+      trade_AdditionalInfo.DocumentType;
+      trade_AdditionalInfo.TransactionPurpose;
+    };
+    vbox{;
+      trade_optkey3_chlnbr;
+      trade_optkey4_chlnbr;
+    };
+  );
+  hbox(;
+    vbox{;
+      trade_trdnbr;
+      trade_Status;
+    };
+    vbox{;
+      trade_bo_trdnbr;
+      trade_payments;
+    };
+  );
+);
+...
+
+}
+
+clx CInsDef_INDEX_LINKED_BOND [FExtensionValue] {
+  CustomLayout_FrontOfficePane
+vbox(;
+  hbox(;
+    vbox{;
+      trade_FaceValue;
+      trade_Quantity;
+      trade_Nominal;
+      salescover_SalesCoverEnabled;
+      hbox(;
+        vbox(;
+           salescover_SalesMargin;
+           salescover_TraderPrice;
+           trade_Price;
+        );
+        vbox(;
+           salescover_ViceVersaSalesMargin;
+           salescover_ViceVersaPrice;
+           trade_ViceVersa;
+        );
+      );
+      trade_dirty;
+      trade_accrued_int;
+      trade_Premium;
+      trade_Currency;
+      hbox(;
+        trade_IndependentAmount;
+        trade_IndependentAmountAsPercentage;
+      );
+      trade_prfnbr;
+      trade_PositionPair;
+      trade_Broker;
+      trade_fee;
+      trade_Market;
+    };
+    vbox{;
+      trade_Counterparty;
+      trade_hostid;
+      trade_MirrorPortfolio;
+      trade_your_ref;
+      trade_DiscountingType;
+      trade_index_ratio;
+      trade_value_day;
+      trade_acquire_day;
+      trade_time;
+      trade_acquirer_ptynbr;
+      trade_trader_usrnbr;
+      salescover_TraderPortfolio;
+      salescover_TraderAcquirer;
+      trade_SettleCategoryChlItem;
+      trade_ordnbr;
+      trade_locked_info;
+      trade_position;
+      trade_flat_accrued;
+    };
+  );
+ vbox{;
+  hbox(;
+    vbox(;
+      hbox(;
+        premiumTranslation_FxRate;
+        trade_fx_get_rate;
+      );
+      premiumTranslation_FxPortfolio;
+    );
+    vbox(;
+      premiumTranslation_SettleCurrency;
+      premiumTranslation_FxAcquirer;
+    );
+    vbox(;
+      premiumTranslation_FxPrice;
+    );
+  );
+ };
+  hbox(;
+    vbox{;
+      trade_optkey1_chlnbr;
+      trade_optkey2_chlnbr;
+      trade_AdditionalInfo.DealerCode;
+      trade_AdditionalInfo.DocumentType;
+      trade_AdditionalInfo.TransactionPurpose;
+    };
+    vbox{;
+      trade_optkey3_chlnbr;
+      trade_optkey4_chlnbr;
+    };
+  );
+  hbox(;
+    vbox{;
+      trade_sales_credit;
+    };
+    vbox{;
+      trade_sales_person_usrnbr;
+    };
+  );
+  hbox(;
+    vbox{;
+      trade_trdnbr;
+      trade_Status;     
+    };
+    vbox{;
+      trade_bo_trdnbr;
+      hbox(;
+        trade_payments;
+        trade_save_new;
+      );
+    };
+  );
+);
+...
+
+}
+
+clx CInsDef_INDEX_LINKED_SWAP [FExtensionValue] {
+  CustomLayout_FrontOfficePane
+vbox(;
+  hbox(;
+    vbox{;
+      trade_Quantity;
+      trade_Nominal;
+      trade_OpenNominal;
+      salescover_SalesMargin;
+      trade_Price;
+      trade_accrued_int;
+      trade_Premium;
+      trade_Currency;
+      hbox(;
+        trade_IndependentAmount;
+        trade_IndependentAmountAsPercentage;
+      );
+      trade_prfnbr;
+      trade_PositionPair;
+      trade_acquirer_ptynbr;
+      trade_Broker;
+      trade_fee;
+      trade_Market;
+    };
+    vbox{;
+      trade_Counterparty;
+      trade_hostid;
+      trade_MirrorPortfolio;
+      trade_your_ref;
+      trade_CollateralAgreement;
+      trade_DiscountingType;
+      trade_value_day;
+      trade_acquire_day;
+      trade_time;
+      trade_trader_usrnbr;
+      trade_SettleCategoryChlItem;
+      trade_ordnbr;
+      trade_locked_info;
+      trade_position;
+    };
+  );
+  hbox(;
+    vbox{;
+      salescover_SalesCoverEnabled;
+      salescover_TraderPortfolio;
+    };
+    vbox{;
+      salescover_TraderPrice;
+      salescover_TraderAcquirer;
+    };
+  );
+ vbox{;
+  hbox(;
+    vbox(;
+      hbox(;
+        premiumTranslation_FxRate;
+        trade_fx_get_rate;
+      );
+      premiumTranslation_FxPortfolio;
+    );
+    vbox(;
+      premiumTranslation_SettleCurrency;
+      premiumTranslation_FxAcquirer;
+    );
+    vbox(;
+      premiumTranslation_FxPrice;
+    );
+  );
+ };
+  hbox(;
+    vbox{;
+      trade_optkey1_chlnbr;
+      trade_optkey2_chlnbr;
+      trade_AdditionalInfo.DealerCode;
+      trade_AdditionalInfo.DocumentType;
+      trade_AdditionalInfo.TransactionPurpose;
+    };
+    vbox{;
+      trade_optkey3_chlnbr;
+      trade_optkey4_chlnbr;
+    };
+  );
+  hbox(;
+    vbox{;
+      trade_sales_credit;
+    };
+    vbox{;
+      trade_sales_person_usrnbr;
+    };
+  );
+  hbox(;
+    vbox{;
+      trade_trdnbr;
+      trade_Status;     
+    };
+    vbox{;
+      trade_bo_trdnbr;
+      hbox(;
+        trade_payments;
+        trade_save_new;
+      );
+    };
+  );
+);
+...
+
+}
+
+clx CInsDef_MBS_ABS [FExtensionValue] {
+  CustomLayout_FrontOfficePane
+vbox(;
+  hbox(;
+    vbox{;
+      trade_FaceValue;
+      trade_Quantity;
+      trade_Nominal;
+      hbox(;
+        salescover_SalesMargin;
+        salescover_SalesCoverEnabled;
+      );
+      salescover_TraderPrice;
+      trade_Price;
+      trade_accrued_int;
+      trade_Premium;
+      trade_Currency;
+      hbox(;
+        trade_IndependentAmount;
+        trade_IndependentAmountAsPercentage;
+      );
+      trade_prfnbr;
+      trade_PositionPair;
+      trade_Broker;
+      trade_fee;
+      trade_ordnbr;
+      trade_locked_info;
+    };
+    vbox{;
+      trade_Counterparty;
+      trade_hostid;
+      trade_MirrorPortfolio;
+      trade_your_ref;
+      trade_DiscountingType;
+      trade_value_day;
+      trade_acquire_day;
+      trade_time;
+      trade_acquirer_ptynbr;
+      trade_trader_usrnbr;
+      salescover_TraderPortfolio;
+      salescover_TraderAcquirer;
+      trade_SettleCategoryChlItem;
+      trade_Market;
+      trade_position;
+      trade_flat_accrued;
+    };
+  );
+ vbox{;
+  hbox(;
+    vbox(;
+      hbox(;
+        premiumTranslation_FxRate;
+        trade_fx_get_rate;
+      );
+      premiumTranslation_FxPortfolio;
+    );
+    vbox(;
+      premiumTranslation_SettleCurrency;
+      premiumTranslation_FxAcquirer;
+    );
+    vbox(;
+      premiumTranslation_FxPrice;
+    );
+  );
+ };
+  hbox(;
+    vbox{;
+      trade_optkey1_chlnbr;
+      trade_optkey2_chlnbr;
+      trade_AdditionalInfo.DealerCode;
+      trade_AdditionalInfo.DocumentType;
+      trade_AdditionalInfo.TransactionPurpose;
+    };
+    vbox{;
+      trade_optkey3_chlnbr;
+      trade_optkey4_chlnbr;
+    };
+  );
+  hbox(;
+    vbox{;
+      trade_sales_credit;
+    };
+    vbox{;
+      trade_sales_person_usrnbr;
+    };
+  );
+  hbox(;
+    vbox{;
+      trade_trdnbr;
+      trade_Status;     
+    };
+    vbox{;
+      trade_bo_trdnbr;
+      hbox(;
+        trade_payments;
+        trade_save_new;
+      );
+    };
+  );
+);
+...
+
+}
+
+clx CInsDef_OPTION [FExtensionValue] {
+  CustomLayout_FrontOfficePane
+vbox(;
+  hbox(;
+    vbox{;
+      trade_Quantity;
+      trade_Nominal;
+      trade_OpenNominal;
+      trade_NominalInQuotation;
+      hbox(;
+        salescover_SalesMargin;
+        salescover_SalesCoverEnabled;
+      );      
+      salescover_TraderPrice;
+      trade_Price;
+      trade_Premium;
+      trade_ForwardPremium;
+      trade_Currency;
+      hbox(;
+        trade_IndependentAmount;
+        trade_IndependentAmountAsPercentage;
+      );
+      trade_prfnbr;
+      trade_PositionPair;
+      trade_Broker;
+      trade_fee;
+      trade_Market;
+    };
+    vbox{;
+      trade_Counterparty;
+      trade_hostid;
+      trade_MirrorPortfolio;
+      trade_your_ref;
+      trade_CollateralAgreement;
+      trade_DiscountingType;
+      trade_ForwardValueDate;
+      trade_value_day;
+      trade_acquire_day;
+      trade_time;
+      trade_acquirer_ptynbr;
+      trade_trader_usrnbr;
+      salescover_TraderPortfolio;
+      salescover_TraderAcquirer;
+      trade_SettleCategoryChlItem;
+      trade_ordnbr;
+      trade_locked_info;
+    };
+  );
+ vbox{;
+  hbox(;
+    vbox(;
+      hbox(;
+        premiumTranslation_FxRate;
+        trade_fx_get_rate;
+      );
+      premiumTranslation_FxPortfolio;
+    );
+    vbox(;
+      premiumTranslation_SettleCurrency;
+      premiumTranslation_FxAcquirer;
+    );
+    vbox(;
+      premiumTranslation_FxPrice;
+    );
+  );
+ };
+  hbox(;
+    vbox{;
+      trade_optkey1_chlnbr;
+      trade_optkey2_chlnbr;
+      trade_AdditionalInfo.DealerCode;
+      trade_AdditionalInfo.DocumentType;
+      trade_AdditionalInfo.TransactionPurpose;
+    };
+    vbox{;
+      trade_optkey3_chlnbr;
+      trade_optkey4_chlnbr;
+    };
+  );
+  hbox(;
+    vbox{;
+      trade_sales_credit;
+    };
+    vbox{;
+      trade_sales_person_usrnbr;
+    };
+  );
+  hbox(;
+    vbox{;
+      trade_trdnbr;
+      trade_Status;     
+    };
+    vbox{;
+      trade_bo_trdnbr;
+      hbox(;
+        trade_payments;
+        trade_save_new;
+      );
+    };
+  );
+);
+...
+
+}
+
+clx CInsDef_PRECIOUS_METAL_CASH [FExtensionValue] {
+  CustomLayout_FrontOfficePane
+vbox(;
+   hbox(;
+    trade_fx_detail_fill;
+    trade_fx_swap_detail_fill;
+  );
+  hbox(;
+    vbox[Precious Metal Pair;
+      hbox(;
+        trade_fx_apps_curr1;
+        trade_fx_apps_curr2;
+      );
+      trade_fx_curr_fill;
+    ];
+    vbox{;
+      hbox{;
+        trade_fx_spot_toggle;
+        trade_fx_swap_toggle;
+        salescover_SalesCoverEnabled;
+      };
+      trade_fx_toggle_fill;
+    };
+  );
+  hbox(;
+    vbox{;
+      trade_fx_near_amount1;
+      trade_fx_near_nominal_in_qtn;
+      trade_acquire_day;
+      hbox(;
+        trade_value_day;
+        trade_fx_spot_cover;
+      );
+      trade_fx_spot;
+      hbox(;
+        trade_fx_spot_price;
+        trade_fx_trader_spot_price;
+        trade_fx_spot_margin;
+        trade_fx_spot_price_detailed;
+      );
+      hbox(;
+        trade_fx_near_points;
+        trade_fx_trader_near_points;
+        trade_fx_near_points_margin;
+        trade_fx_near_points_detailed;
+      );
+      hbox(;
+        trade_pm_near_swap_rate;
+        trade_pm_trader_near_swap_rate;
+        trade_pm_near_swap_rate_margin;
+        trade_pm_near_swap_rate_detailed;
+      );
+      hbox(;
+        trade_fx_near_price;
+        trade_fx_trader_near_price;
+        trade_fx_near_price_margin;
+        trade_fx_near_price_detailed;
+      );
+      trade_fx_near_amount2;
+      trade_fx_historic_funding_rate;
+      trade_fx_historic_funding_spread;
+      trade_fx_near_pv;
+    };
+    vbox{;
+      trade_fx_far_amount1;
+      trade_fx_far_nominal_in_qtn;
+      trade_fx_far_acquire_day;
+      hbox(;
+        trade_fx_far_value_day;
+        trade_fx_far_spot_cover;
+      );
+      hbox(;
+        trade_fx_early_delivery_swap_points;
+        trade_fx_trader_far_swap_points;
+        trade_fx_far_swap_points_margin;;
+        trade_fx_early_delivery_swap_points_detailed;	
+      );
+      hbox(;
+        trade_fx_far_points;
+        trade_fx_early_delivery_points;
+        trade_fx_trader_far_points;
+        trade_fx_far_points_margin;
+        trade_fx_far_points_detailed;
+        trade_fx_early_delivery_points_detailed;
+      );
+      hbox(;
+        trade_pm_far_swap_rate;
+        trade_pm_trader_far_swap_rate;
+        trade_pm_far_swap_rate_margin;
+        trade_pm_far_swap_rate_detailed;
+      );
+      hbox(;
+        trade_fx_far_price;
+        trade_fx_trader_far_price;
+        trade_fx_far_price_margin;
+        trade_fx_far_price_detailed;
+      );
+      trade_fx_far_amount2;
+      trade_fx_historic_funding_cost;
+      trade_fx_far_pv;
+    };
+    trade_fx_far_fill;
+  );
+  hbox(;
+    vbox{;
+      trade_prfnbr;
+      trade_SplitCurrency;
+      salescover_TraderPortfolio;
+      salescover_TraderSplitCurrency;
+      trade_Counterparty;
+      trade_hostid;
+      trade_MirrorPortfolio;
+      trade_your_ref;   
+      trade_fx_split_btn;
+    };
+    vbox{;
+      trade_CollateralAgreement;
+      hbox(;
+        trade_DiscountingType;
+        trade_suggest_discounting_type;
+      );
+      trade_time;
+      salescover_TraderAcquirer;
+      trade_acquirer_ptynbr;
+      trade_trader_usrnbr;
+      trade_sales_person_usrnbr;
+      trade_SettleCategoryChlItem;
+      trade_Broker;
+      trade_fee;
+    };
+  );
+  hbox(;
+    vbox{;
+      trade_optkey1_chlnbr;
+      trade_optkey2_chlnbr;
+      trade_AdditionalInfo.DealerCode;
+      trade_AdditionalInfo.DocumentType;
+      trade_AdditionalInfo.TransactionPurpose;
+    };
+    vbox{;
+      trade_optkey3_chlnbr;
+      trade_optkey4_chlnbr;
+    };
+  );
+  hbox(;
+    vbox{;
+      trade_trdnbr;
+      trade_Status;
+    };
+    vbox{;
+      trade_bo_trdnbr;
+      hbox(;
+        trade_payments;
+        trade_save_new;
+      );
+    };
+  );
+);
+...
+
+}
+
+clx CInsDef_PRECIOUS_METAL_DEPOSIT [FExtensionValue] {
+  CustomLayout_FrontOfficePane
+vbox(;
+  hbox(;
+    vbox{;
+      ins_UnderlyingType;
+      ins_und_insaddr;
+      trade_Quantity;
+      ins_QuotationAsString;
+      leg_Currency;
+      hbox(;
+        trade_IndependentAmount;
+        trade_IndependentAmountAsPercentage;
+      );
+      hbox(;
+        ins_LegStartDate;
+        ins_LegStartPeriod;
+      );
+      hbox(;
+        ins_LegEndDate;
+        ins_LegEndPeriod;
+      );
+      hbox(;
+        leg_FloatRateReference;
+        leg_InitialRate;
+      );
+      leg_FloatRateReference2;
+      hbox(;
+        leg_Spread;
+        leg_SpreadBps;
+        leg_spread_recalc;
+        leg_spread_unit;
+        leg_reset;
+      );
+      hbox(;
+        leg_Spread2;
+        leg_Spread2Bps;
+        leg_spread2_unit;
+      );
+      leg_DigitalType;
+      leg_ComparisonType;
+      leg_FloatRateFactor;
+      leg_FloatRateFactor2;      
+      leg_PayoutSpread;      
+      hbox(;
+        leg_FixedRate;
+        leg_FixedRateBps;
+        leg_fixed_rate_recalc;
+        leg_fixed_rate_unit;
+      );
+      leg_ZeroCouponFixedPeriod;
+      leg_Strike;
+      leg_Strike2;
+      leg_StrikeLimit;
+      leg_DayCountMethod;
+      hbox(;
+        leg_RollingPeriod;
+        leg_RollingPeriodBase;
+      );
+      leg_LongStub;
+      leg_RollingConv;
+      leg_InitialIndexValue;
+      leg_IndexRefFixingRule;
+      hbox(;
+        ins_AccruedArrear;
+        leg_FixedCoupon;
+      );
+    };
+    vbox{;   
+      trade_Counterparty;
+      trade_hostid;
+      trade_MirrorPortfolio;
+      tradedata_counter_position_pair;
+      trade_your_ref;
+      trade_CollateralAgreement;
+      trade_DiscountingType;
+      trade_prfnbr;
+      trade_PositionPair;
+      trade_value_day;
+      trade_acquire_day;
+      trade_time;
+      trade_acquirer_ptynbr;
+      trade_trader_usrnbr;
+      trade_SettleCategoryChlItem;
+      trade_Broker;
+      trade_fee;
+      trade_end_cash;
+      trade_end_interest;
+      trade_flat_accrued;
+    };
+  );
+  hbox(;
+    vbox{;
+      trade_optkey1_chlnbr;
+      trade_optkey2_chlnbr;
+      trade_AdditionalInfo.DealerCode;
+      trade_AdditionalInfo.DocumentType;
+      trade_AdditionalInfo.TransactionPurpose;
+    };
+    vbox{;
+      trade_optkey3_chlnbr;
+      trade_optkey4_chlnbr;
+    };
+  );
+  hbox(;
+    vbox{;
+      trade_sales_credit;
+    };
+    vbox{;
+      trade_sales_person_usrnbr;
+    };
+  );
+  hbox(;
+    vbox{;
+      trade_trdnbr;
+      trade_Status;
+      trade_category;
+    };
+    vbox{;
+      trade_bo_trdnbr;
+      trade_payments;
+    };
+  );
+);
+...
+
+}
+
+clx CInsDef_PRECIOUS_METAL_OPTION [FExtensionValue] {
+  CustomLayout_FrontOfficePane
+vbox(;
+  hbox(;
+    vbox{;
+      trade_AmountForeign;
+      trade_prfnbr;
+      trade_PositionPair;
+      hbox(;
+        salescover_SalesMargin;
+        salescover_SalesCoverEnabled;
+      );
+      salescover_TraderPrice;
+      trade_Price;
+      trade_Premium;
+      trade_ForwardPremium;
+      trade_FxoPremiumCurr;
+      hbox(;
+        trade_IndependentAmount;
+        trade_IndependentAmountAsPercentage;
+      );
+      trade_Broker;
+      trade_fee;
+      trade_Market;
+    };
+    vbox{;
+      trade_AmountDomestic;
+      trade_Counterparty;
+      trade_hostid;
+      trade_MirrorPortfolio;
+      trade_your_ref;
+      trade_CollateralAgreement;
+      trade_DiscountingType;
+      trade_value_day;
+      trade_acquire_day;
+      trade_time;
+      trade_acquirer_ptynbr;
+      trade_trader_usrnbr;
+      salescover_TraderPortfolio;
+      salescover_TraderAcquirer;      
+      trade_SettleCategoryChlItem;
+      trade_ordnbr;
+      trade_locked_info;
+    };
+  );
+  hbox[Delta Hedge;
+    trade_fx_delta_hedge_type;
+    trade_fx_delta_hedge_btn;
+  ];
+ vbox{;  hbox(;
+    vbox(;
+      hbox(;
+        premiumTranslation_FxRate;
+        trade_fx_get_rate;
+      ); 
+      premiumTranslation_FxPortfolio;
+    );
+    vbox(;
+      premiumTranslation_SettleCurrency;
+      premiumTranslation_FxAcquirer;
+    );
+    vbox(;
+      premiumTranslation_FxPrice;
+      trade_sales_person_usrnbr;
+    );
+  );  
+ };
+  hbox(;
+    vbox{;
+      trade_optkey1_chlnbr;
+      trade_optkey2_chlnbr;
+      trade_AdditionalInfo.DealerCode;
+      trade_AdditionalInfo.DocumentType;
+      trade_AdditionalInfo.TransactionPurpose;
+    };
+    vbox{;
+      trade_optkey3_chlnbr;
+      trade_optkey4_chlnbr;
+    };
+  );
+  hbox(;
+    vbox{;
+      trade_trdnbr;
+      trade_Status;
+    };
+    vbox{;
+      trade_bo_trdnbr;
+      hbox(;
+        trade_payments;
+        trade_save_new;
+      );
+    };
+  );
+);
+...
+
+}
+
+clx CInsDef_PRICE_SWAP [FExtensionValue] {
+  CustomLayout_FrontOfficePane
+vbox(;
+  hbox(;
+    vbox{;
+      trade_Quantity;
+      trade_Nominal;
+      salescover_SalesMargin;
+      trade_Price;
+      trade_Premium;
+      trade_Currency;
+      hbox(;
+        trade_IndependentAmount;
+        trade_IndependentAmountAsPercentage;
+      );
+      trade_prfnbr;
+      trade_PositionPair;
+      trade_Broker;
+      trade_fee;
+      trade_Market;
+    };
+    vbox{;
+      trade_Counterparty;
+      trade_hostid;
+      trade_MirrorPortfolio;
+      trade_your_ref;
+      trade_CollateralAgreement;
+      trade_DiscountingType;
+      trade_value_day;
+      trade_acquire_day;
+      trade_time;
+      trade_acquirer_ptynbr;
+      trade_trader_usrnbr;   
+      trade_SettleCategoryChlItem;
+      trade_ordnbr;
+      trade_locked_info;
+    };
+  );
+  hbox(;
+    vbox{;
+      salescover_SalesCoverEnabled;
+      salescover_TraderPortfolio;
+    };
+    vbox{;
+      salescover_TraderPrice;
+      salescover_TraderAcquirer;
+    };
+  );
+ vbox{;
+  hbox(;
+    vbox(;
+      hbox(;
+        premiumTranslation_FxRate;
+        trade_fx_get_rate;
+      );
+      premiumTranslation_FxPortfolio;
+    );
+    vbox(;
+      premiumTranslation_SettleCurrency;
+      premiumTranslation_FxAcquirer;
+    );
+    vbox(;
+      premiumTranslation_FxPrice;
+    );
+  );
+ };
+  hbox(;
+    vbox{;
+      trade_optkey1_chlnbr;
+      trade_optkey2_chlnbr;
+      trade_AdditionalInfo.DealerCode;
+      trade_AdditionalInfo.DocumentType;
+      trade_AdditionalInfo.TransactionPurpose;
+    };
+    vbox{;
+      trade_optkey3_chlnbr;
+      trade_optkey4_chlnbr;
+    };
+  );
+  hbox(;
+    vbox{;
+      trade_sales_credit;
+    };
+    vbox{;
+      trade_sales_person_usrnbr;
+    };
+  );
+  hbox(;
+    vbox{;
+      trade_trdnbr;
+      trade_Status;     
+    };
+    vbox{;
+      trade_bo_trdnbr;
+      hbox(;
+        trade_payments;
+        trade_save_new;
+      );
+    };
+  );
+);
+...
+
+}
+
+clx CInsDef_PROMIS_LOAN [FExtensionValue] {
+  CustomLayout_FrontOfficePane
+vbox(;
+  hbox(;
+    vbox{;
+      trade_FaceValue;
+      trade_Quantity;
+      trade_Nominal;
+      salescover_SalesCoverEnabled;
+      hbox(;
+        vbox(;
+           salescover_SalesMargin;
+           salescover_TraderPrice;
+           trade_Price;
+        );
+        vbox(;
+           salescover_ViceVersaSalesMargin;
+           salescover_ViceVersaPrice;
+           trade_ViceVersa;
+        );
+      );
+      trade_dirty;
+      trade_accrued_int;
+      trade_Premium;
+      trade_Currency;
+      hbox(;
+        trade_IndependentAmount;
+        trade_IndependentAmountAsPercentage;
+      );
+      trade_prfnbr;
+      trade_PositionPair;
+      trade_Broker;
+      trade_fee;
+      trade_ordnbr;
+      trade_locked_info;
+    };
+    vbox{;
+      trade_Counterparty;
+      trade_hostid;
+      trade_MirrorPortfolio;
+      trade_your_ref;
+      trade_DiscountingType;
+      trade_value_day;
+      trade_acquire_day;
+      trade_time;
+      trade_acquirer_ptynbr;
+      trade_trader_usrnbr;
+      salescover_TraderPortfolio;
+      salescover_TraderAcquirer;
+      trade_SettleCategoryChlItem;
+      trade_Market;
+      trade_position;
+      trade_flat_accrued;
+    };
+  );
+ vbox{;
+  hbox(;
+    vbox(;
+      hbox(;
+        premiumTranslation_FxRate;
+        trade_fx_get_rate;
+      );
+      premiumTranslation_FxPortfolio;
+    );
+    vbox(;
+      premiumTranslation_SettleCurrency;
+      premiumTranslation_FxAcquirer;
+    );
+    vbox(;
+      premiumTranslation_FxPrice;
+    );
+  );
+ };
+  hbox(;
+    vbox{;
+      trade_optkey1_chlnbr;
+      trade_optkey2_chlnbr;
+      trade_AdditionalInfo.DealerCode;
+      trade_AdditionalInfo.DocumentType;
+      trade_AdditionalInfo.TransactionPurpose;
+    };
+    vbox{;
+      trade_optkey3_chlnbr;
+      trade_optkey4_chlnbr;
+    };
+  );
+  hbox(;
+    vbox{;
+      trade_sales_credit;
+    };
+    vbox{;
+      trade_sales_person_usrnbr;
+    };
+  );
+  hbox(;
+    vbox{;
+      trade_trdnbr;
+      trade_Status;     
+    };
+    vbox{;
+      trade_bo_trdnbr;
+      hbox(;
+        trade_payments;
+        trade_save_new;
+      );
+    };
+  );
+);
+...
+
+}
+
+clx CInsDef_REPO [FExtensionValue] {
+  CustomLayout_FrontOfficePane
+vbox(;
+  hbox(;
+    vbox{;
+      trade_accrued_int;
+      trade_prfnbr;
+      trade_PositionPair;
+      trade_Currency;
+      hbox(;
+        trade_IndependentAmount;
+        trade_IndependentAmountAsPercentage;
+      );
+      trade_SettleCategoryChlItem;
+      trade_right_of_substitution;
+    };
+    vbox{;
+      trade_DiscountingType;
+      trade_value_day;
+      trade_acquire_day;
+      trade_time;
+      trade_acquirer_ptynbr;
+      trade_trader_usrnbr;
+      trade_Broker;
+      trade_fee;
+    };
+  );
+  hbox(;
+    vbox{;
+      trade_optkey1_chlnbr;
+      trade_optkey2_chlnbr;
+      trade_AdditionalInfo.DealerCode;
+      trade_AdditionalInfo.DocumentType;
+      trade_AdditionalInfo.TransactionPurpose;
+    };
+    vbox{;
+      trade_optkey3_chlnbr;
+      trade_optkey4_chlnbr;
+    };
+  );
+  hbox(;
+    vbox{;
+      trade_sales_credit;
+    };
+    vbox{;
+      trade_sales_person_usrnbr;
+    };
+  );
+  hbox(;
+    vbox{;
+      trade_trdnbr;
+      trade_Status;     
+    };
+    vbox{;
+      trade_bo_trdnbr;
+      hbox(;
+        trade_payments;
+        trade_save_new;
+      );
+    };
+  );
+);
+...
+
+}
+
+clx CInsDef_REVERSE_SECURITY_LOAN [FExtensionValue] {
+  CustomLayout_FrontOfficePane
+vbox(;
+  hbox(;
+    vbox{;
+      trade_prfnbr;
+      trade_PositionPair;
+      trade_Currency;
+      hbox(;
+        trade_IndependentAmount;
+        trade_IndependentAmountAsPercentage;
+      );
+      trade_SettleCategoryChlItem;
+      trade_flat_accrued;
+    };
+    vbox{;
+      trade_hostid;
+      trade_DiscountingType;
+      trade_value_day;
+      trade_acquire_day;
+      trade_time;
+      trade_acquirer_ptynbr;
+      trade_trader_usrnbr;
+    };
+  );
+  hbox(;
+    vbox{;
+      trade_optkey1_chlnbr;
+      trade_optkey2_chlnbr;
+      trade_AdditionalInfo.DealerCode;
+      trade_AdditionalInfo.DocumentType;
+      trade_AdditionalInfo.TransactionPurpose;
+    };
+    vbox{;
+      trade_optkey3_chlnbr;
+      trade_optkey4_chlnbr;
+    };
+  );
+  hbox(;
+    vbox{;
+      trade_sales_credit;
+    };
+    vbox{;
+      trade_sales_person_usrnbr;
+    };
+  );
+  hbox(;
+    vbox{;
+      trade_trdnbr;
+      trade_Status;
+    };
+    vbox{;
+      trade_bo_trdnbr;
+      trade_payments;
+    };
+  );
+);
+...
+
+}
+
+clx CInsDef_SECURITY_LOAN [FExtensionValue] {
+  CustomLayout_FrontOfficePane
+vbox(;
+  hbox(;
+    vbox{;
+      trade_accrued_int;
+      trade_prfnbr;
+      trade_PositionPair;
+      trade_Premium;
+      trade_Currency;
+      hbox(;
+        trade_IndependentAmount;
+        trade_IndependentAmountAsPercentage;
+      );
+      trade_SettleCategoryChlItem;
+      trade_right_of_substitution;
+    };
+    vbox{;
+      trade_DiscountingType;
+      trade_value_day;
+      trade_acquire_day;
+      trade_time;
+      trade_acquirer_ptynbr;
+      trade_trader_usrnbr;
+    };
+  );
+  hbox(;
+    vbox{;
+      trade_optkey1_chlnbr;
+      trade_optkey2_chlnbr;
+      trade_AdditionalInfo.DealerCode;
+      trade_AdditionalInfo.DocumentType;
+      trade_AdditionalInfo.TransactionPurpose;
+    };
+    vbox{;
+      trade_optkey3_chlnbr;
+      trade_optkey4_chlnbr;
+    };
+  );
+  hbox(;
+    vbox{;
+      trade_sales_credit;
+    };
+    vbox{;
+      trade_sales_person_usrnbr;
+    };
+  );
+  hbox(;
+    vbox{;
+      trade_trdnbr;
+      trade_Status;
+    };
+    vbox{;
+      trade_bo_trdnbr;
+      trade_payments;
+    };
+  );
+);
+...
+
+}
+
+clx CInsDef_STOCK [FExtensionValue] {
+  CustomLayout_FrontOfficePane
+vbox(;
+  hbox(;
+    vbox{;
+      trade_Quantity;
+      trade_Nominal;
+      hbox(;
+        salescover_SalesMargin;
+        salescover_SalesCoverEnabled;
+      );
+      salescover_TraderPrice;
+      trade_Price;
+      trade_Premium;
+      trade_Currency;
+      hbox(;
+        trade_IndependentAmount;
+        trade_IndependentAmountAsPercentage;
+      );
+      trade_prfnbr;
+      trade_PositionPair;
+      trade_Broker;
+      trade_fee;      
+      trade_Market;
+      trade_ordnbr;
+      trade_locked_info;      
+    };
+    vbox{;
+      trade_Counterparty;
+      trade_hostid;
+      trade_MirrorPortfolio;
+      trade_your_ref;
+      trade_DiscountingType;
+      trade_value_day;
+      trade_acquire_day;
+      trade_time;
+      trade_acquirer_ptynbr;
+      trade_trader_usrnbr;
+      salescover_TraderPortfolio;
+      salescover_TraderAcquirer;
+      trade_SettleCategoryChlItem;
+      trade_position;
+    };
+  );
+ vbox{;
+  hbox(;
+    vbox(;
+      hbox(;
+        premiumTranslation_FxRate;
+        trade_fx_get_rate;
+      );
+      premiumTranslation_FxPortfolio;
+    );
+    vbox(;
+      premiumTranslation_SettleCurrency;
+      premiumTranslation_FxAcquirer;
+    );
+    vbox(;
+      premiumTranslation_FxPrice;
+    );
+  );
+ };
+  hbox(;
+    vbox{;
+      trade_optkey1_chlnbr;
+      trade_optkey2_chlnbr;
+      trade_AdditionalInfo.DealerCode;
+      trade_AdditionalInfo.DocumentType;
+      trade_AdditionalInfo.TransactionPurpose;
+    };
+    vbox{;
+      trade_optkey3_chlnbr;
+      trade_optkey4_chlnbr;
+    };
+  );
+  hbox(;
+    vbox{;
+      trade_trdnbr;
+      trade_Status;
+    };
+    vbox{;
+      trade_bo_trdnbr;
+      trade_payments;
+    };
+  );
+);
+...
+
+}
+
+clx CInsDef_SWAP [FExtensionValue] {
+  CustomLayout_FrontOfficePane
+vbox(;
+  hbox(;
+    vbox{;
+      trade_Quantity;
+      trade_Nominal;
+      trade_OpenNominal;
+      trade_Direction;
+      salescover_SalesMargin;
+      trade_Price;
+      trade_Premium;
+      trade_Currency;
+      hbox(;
+        trade_IndependentAmount;
+        trade_IndependentAmountAsPercentage;
+      );
+      trade_prfnbr;
+      trade_PositionPair;
+      trade_Broker;
+      trade_fee;
+    };
+    vbox{;
+      trade_Counterparty;
+      trade_hostid;
+      trade_MirrorPortfolio;
+      trade_your_ref;
+      trade_CollateralAgreement;
+      trade_DiscountingType;
+      trade_value_day;
+      trade_acquire_day;
+      trade_time;
+      trade_acquirer_ptynbr;
+      trade_trader_usrnbr;
+      trade_SettleCategoryChlItem;
+    };
+  );
+  hbox(;
+    vbox{;
+      salescover_SalesCoverEnabled;
+      salescover_TraderPortfolio;
+    };
+    vbox{;
+      salescover_TraderPrice;
+      salescover_TraderAcquirer;
+    };
+  );
+ vbox{;
+  hbox(;
+    vbox(;
+      hbox(;
+        premiumTranslation_FxRate;
+        trade_fx_get_rate;
+      );
+      premiumTranslation_FxPortfolio;
+    );
+    vbox(;
+      premiumTranslation_SettleCurrency;
+      premiumTranslation_FxAcquirer;
+    );
+    vbox(;
+      premiumTranslation_FxPrice;
+    );
+  );
+ };
+  hbox(;
+    vbox{;
+      trade_optkey1_chlnbr;
+      trade_optkey2_chlnbr;
+      trade_AdditionalInfo.DealerCode;
+      trade_AdditionalInfo.DocumentType;
+      trade_AdditionalInfo.TransactionPurpose;
+    };
+    vbox{;
+      trade_optkey3_chlnbr;
+      trade_optkey4_chlnbr;
+    };
+  );
+  hbox(;
+    vbox{;
+      trade_sales_credit;
+    };
+    vbox{;
+      trade_sales_person_usrnbr;
+    };
+  );
+  hbox(;
+    vbox{;
+      trade_trdnbr;
+      trade_Status;     
+    };
+    vbox{;
+      trade_bo_trdnbr;
+      hbox(;
+        trade_payments;
+        trade_save_new;
+      );
+    };
+  );
+);
+...
+
+}
+
+clx CInsDef_TOTAL_RETURN_SWAP [FExtensionValue] {
+  CustomLayout_FrontOfficePane
+vbox(;
+  hbox(;
+    vbox{;
+      trade_Quantity;
+      trade_Nominal;
+      trade_OpenNominal;
+      salescover_SalesMargin;
+      trade_Price;
+      trade_accrued_int;
+      trade_Premium;
+      trade_Currency;
+      hbox(;
+        trade_IndependentAmount;
+        trade_IndependentAmountAsPercentage;
+      );
+      trade_prfnbr;
+      trade_PositionPair;
+      trade_SettleCategoryChlItem;
+    };
+    vbox{;
+      trade_Counterparty;
+      trade_hostid;
+      trade_MirrorPortfolio;
+      trade_your_ref;
+      trade_CollateralAgreement;
+      trade_DiscountingType;
+      trade_value_day;
+      trade_acquire_day;
+      trade_time;
+      trade_acquirer_ptynbr;
+      trade_trader_usrnbr;
+    };
+  );
+  hbox(;
+    vbox{;
+      salescover_SalesCoverEnabled;
+      salescover_TraderPortfolio;
+    };
+    vbox{;
+      salescover_TraderPrice;
+      salescover_TraderAcquirer;
+    };
+  );
+ vbox{;
+  hbox(;
+    vbox(;
+      hbox(;
+        premiumTranslation_FxRate;
+        trade_fx_get_rate;
+      );
+      premiumTranslation_FxPortfolio;
+    );
+    vbox(;
+      premiumTranslation_SettleCurrency;
+      premiumTranslation_FxAcquirer;
+    );
+    vbox(;
+      premiumTranslation_FxPrice;
+    );
+  );
+ };
+  hbox(;
+    vbox{;
+      trade_optkey1_chlnbr;
+      trade_optkey2_chlnbr;
+      trade_AdditionalInfo.DealerCode;
+      trade_AdditionalInfo.DocumentType;
+      trade_AdditionalInfo.TransactionPurpose;
+    };
+    vbox{;
+      trade_optkey3_chlnbr;
+      trade_optkey4_chlnbr;
+    };
+  );
+  hbox(;
+    vbox{;
+      trade_sales_credit;
+    };
+    vbox{;
+      trade_sales_person_usrnbr;
+    };
+  );
+  hbox(;
+    vbox{;
+      trade_trdnbr;
+      trade_Status;     
+    };
+    vbox{;
+      trade_bo_trdnbr;
+      hbox(;
+        trade_payments;
+        trade_save_new;
+      );
+    };
+  );
+);
+...
+
+}
+
+clx CInsDef_VARIANCE_SWAP [FExtensionValue] {
+  CustomLayout_FrontOfficePane
+vbox(;
+  hbox(;
+    vbox{;
+      trade_VolatilityStrike;
+      trade_VegaAmount;
+      trade_Quantity;
+      trade_Nominal;
+      hbox(;
+        salescover_SalesMargin;
+        salescover_SalesCoverEnabled;
+      );      
+      salescover_TraderPrice;
+      trade_Price;
+      trade_Premium;
+      trade_ForwardPremium;
+      trade_Currency;
+      hbox(;
+        trade_IndependentAmount;
+        trade_IndependentAmountAsPercentage;
+      );
+      trade_prfnbr;
+      trade_PositionPair;
+      trade_Broker;
+      trade_fee;
+    };
+    vbox{;
+      trade_Counterparty;
+      trade_hostid;
+      trade_MirrorPortfolio;
+      trade_your_ref;
+      trade_CollateralAgreement;
+      trade_DiscountingType;
+      trade_ForwardValueDate;
+      trade_value_day;
+      trade_acquire_day;
+      trade_time;
+      trade_acquirer_ptynbr;
+      trade_trader_usrnbr;
+      salescover_TraderPortfolio;
+      salescover_TraderAcquirer;
+      trade_SettleCategoryChlItem;
+      trade_Market;
+      trade_ordnbr;
+      trade_locked_info;
+    };
+  );
+ vbox{;
+  hbox(;
+    vbox(;
+      hbox(;
+        premiumTranslation_FxRate;
+        trade_fx_get_rate;
+      );
+      premiumTranslation_FxPortfolio;
+    );
+    vbox(;
+      premiumTranslation_SettleCurrency;
+      premiumTranslation_FxAcquirer;
+    );
+    vbox(;
+      premiumTranslation_FxPrice;
+    );
+  );
+ };
+  hbox(;
+    vbox{;
+      trade_optkey1_chlnbr;
+      trade_optkey2_chlnbr;
+      trade_AdditionalInfo.DealerCode;
+      trade_AdditionalInfo.DocumentType;
+      trade_AdditionalInfo.TransactionPurpose;
+    };
+    vbox{;
+      trade_optkey3_chlnbr;
+      trade_optkey4_chlnbr;
+    };
+  );
+  hbox(;
+    vbox{;
+      trade_sales_credit;
+    };
+    vbox{;
+      trade_sales_person_usrnbr;
+    };
+  );
+  hbox(;
+    vbox{;
+      trade_trdnbr;
+      trade_Status;     
+    };
+    vbox{;
+      trade_bo_trdnbr;
+      hbox(;
+        trade_payments;
+        trade_save_new;
+      );
+    };
+  );
+);
+...
+
+}
+
+clx CInsDef_VOLATILITY_SWAP [FExtensionValue] {
+  CustomLayout_FrontOfficePane
+vbox(;
+  hbox(;
+    vbox{;
+      trade_VolatilityStrike;
+      trade_VegaAmount;
+      trade_Quantity;
+      trade_Nominal;
+      hbox(;
+        salescover_SalesMargin;
+        salescover_SalesCoverEnabled;
+      );      
+      salescover_TraderPrice;
+      trade_Price;
+      trade_Premium;
+      trade_ForwardPremium;
+      trade_Currency;
+      hbox(;
+        trade_IndependentAmount;
+        trade_IndependentAmountAsPercentage;
+      );
+      trade_prfnbr;
+      trade_PositionPair;
+      trade_Broker;
+      trade_fee;
+    };
+    vbox{;
+      trade_Counterparty;
+      trade_hostid;
+      trade_MirrorPortfolio;
+      trade_your_ref;
+      trade_CollateralAgreement;
+      trade_DiscountingType;
+      trade_ForwardValueDate;
+      trade_value_day;
+      trade_acquire_day;
+      trade_time;
+      trade_acquirer_ptynbr;
+      trade_trader_usrnbr;
+      salescover_TraderPortfolio;
+      salescover_TraderAcquirer;
+      trade_SettleCategoryChlItem;
+      trade_Market;
+      trade_ordnbr;
+      trade_locked_info;
+    };
+  );
+ vbox{;
+  hbox(;
+    vbox(;
+      hbox(;
+        premiumTranslation_FxRate;
+        trade_fx_get_rate;
+      );
+      premiumTranslation_FxPortfolio;
+    );
+    vbox(;
+      premiumTranslation_SettleCurrency;
+      premiumTranslation_FxAcquirer;
+    );
+    vbox(;
+      premiumTranslation_FxPrice;
+    );
+  );
+ };
+  hbox(;
+    vbox{;
+      trade_optkey1_chlnbr;
+      trade_optkey2_chlnbr;
+      trade_AdditionalInfo.DealerCode;
+      trade_AdditionalInfo.DocumentType;
+      trade_AdditionalInfo.TransactionPurpose;
+    };
+    vbox{;
+      trade_optkey3_chlnbr;
+      trade_optkey4_chlnbr;
+    };
+  );
+  hbox(;
+    vbox{;
+      trade_sales_credit;
+    };
+    vbox{;
+      trade_sales_person_usrnbr;
+    };
+  );
+  hbox(;
+    vbox{;
+      trade_trdnbr;
+      trade_Status;     
+    };
+    vbox{;
+      trade_bo_trdnbr;
+      hbox(;
+        trade_payments;
+        trade_save_new;
+      );
+    };
+  );
+);
+...
+
+}
+
+clx CInsDef_WARRANT [FExtensionValue] {
+  CustomLayout_FrontOfficePane
+vbox(;
+  hbox(;
+    vbox{;
+      trade_Quantity;
+      trade_Nominal;
+      hbox(;
+        salescover_SalesMargin;
+        salescover_SalesCoverEnabled;
+      );      
+      salescover_TraderPrice;
+      trade_Price;
+      trade_Premium;
+      trade_ForwardPremium;
+      trade_Currency;
+      hbox(;
+        trade_IndependentAmount;
+        trade_IndependentAmountAsPercentage;
+      );
+      trade_prfnbr;
+      trade_PositionPair;
+      trade_Broker;
+      trade_fee;
+      trade_Market;
+    };
+    vbox{;
+      trade_Counterparty;
+      trade_hostid;
+      trade_MirrorPortfolio;
+      trade_your_ref;
+      trade_CollateralAgreement;
+      trade_DiscountingType;
+      trade_ForwardValueDate;
+      trade_value_day;
+      trade_acquire_day;
+      trade_time;
+      trade_acquirer_ptynbr;
+      trade_trader_usrnbr;
+      salescover_TraderPortfolio;
+      salescover_TraderAcquirer;
+      trade_SettleCategoryChlItem;
+      trade_ordnbr;
+      trade_locked_info;
+      trade_position;
+    };
+  );
+ vbox{;
+  hbox(;
+    vbox(;
+      hbox(;
+        premiumTranslation_FxRate;
+        trade_fx_get_rate;
+      );
+      premiumTranslation_FxPortfolio;
+    );
+    vbox(;
+      premiumTranslation_SettleCurrency;
+      premiumTranslation_FxAcquirer;
+    );
+    vbox(;
+      premiumTranslation_FxPrice;
+    );
+  );
+ };
+  hbox(;
+    vbox{;
+      trade_optkey1_chlnbr;
+      trade_optkey2_chlnbr;
+      trade_AdditionalInfo.DealerCode;
+      trade_AdditionalInfo.DocumentType;
+      trade_AdditionalInfo.TransactionPurpose;
+    };
+    vbox{;
+      trade_optkey3_chlnbr;
+      trade_optkey4_chlnbr;
+    };
+  );
+  hbox(;
+    vbox{;
+      trade_sales_credit;
+    };
+    vbox{;
+      trade_sales_person_usrnbr;
+    };
+  );
+  hbox(;
+    vbox{;
+      trade_trdnbr;
+      trade_Status;     
+    };
+    vbox{;
+      trade_bo_trdnbr;
+      hbox(;
+        trade_payments;
+        trade_save_new;
+      );
+    };
+  );
+);
+...
+
+}
+
+clx CInsDef_ZERO [FExtensionValue] {
+  CustomLayout_FrontOfficePane
+vbox(;
+  hbox(;
+    vbox{;
+      trade_FaceValue;
+      trade_Quantity;
+      trade_Nominal;
+      salescover_SalesCoverEnabled;
+      hbox(;
+        vbox(;
+           salescover_SalesMargin;
+           salescover_TraderPrice;
+           trade_Price;
+        );
+        vbox(;
+           salescover_ViceVersaSalesMargin;
+           salescover_ViceVersaPrice;
+           trade_ViceVersa;
+        );
+      );
+      trade_accrued_int;
+      trade_Premium;
+      trade_Currency;
+      hbox(;
+        trade_IndependentAmount;
+        trade_IndependentAmountAsPercentage;
+      );
+      trade_prfnbr;
+      trade_PositionPair;
+      trade_Broker;
+      trade_fee;
+    };
+    vbox{;
+      trade_Counterparty;
+      trade_hostid;
+      trade_MirrorPortfolio;
+      trade_your_ref;
+      trade_DiscountingType;
+      trade_value_day;
+      trade_acquire_day;
+      trade_time;
+      trade_acquirer_ptynbr;
+      trade_trader_usrnbr;
+      salescover_TraderPortfolio;
+      salescover_TraderAcquirer;
+      trade_SettleCategoryChlItem;
+      trade_Market;
+      trade_ordnbr;
+      trade_locked_info;
+      trade_position;
+    };
+  );
+ vbox{;
+  hbox(;
+    vbox(;
+      hbox(;
+        premiumTranslation_FxRate;
+        trade_fx_get_rate;
+      );
+      premiumTranslation_FxPortfolio;
+    );
+    vbox(;
+      premiumTranslation_SettleCurrency;
+      premiumTranslation_FxAcquirer;
+    );
+    vbox(;
+      premiumTranslation_FxPrice;
+    );
+  );
+ };
+  hbox(;
+    vbox{;
+      trade_optkey1_chlnbr;
+      trade_optkey2_chlnbr;
+      trade_AdditionalInfo.DealerCode;
+      trade_AdditionalInfo.DocumentType;
+      trade_AdditionalInfo.TransactionPurpose;
+    };
+    vbox{;
+      trade_optkey3_chlnbr;
+      trade_optkey4_chlnbr;
+    };
+  );
+  hbox(;
+    vbox{;
+      trade_sales_credit;
+    };
+    vbox{;
+      trade_sales_person_usrnbr;
+    };
+  );
+  hbox(;
+    vbox{;
+      trade_trdnbr;
+      trade_Status;     
+    };
+    vbox{;
+      trade_bo_trdnbr;
+      hbox(;
+        trade_payments;
+        trade_save_new;
+      );
+    };
+  );
+);
+...
+
+}
+
+clx CInsDefAppFrame [FExtensionValue] {
+  CustomLayout_FrontOfficePane
+vbox(;
+  hbox(;
+    vbox{;
+      trade_FaceValue;
+      trade_Quantity;
+      trade_Nominal;
+      trade_Direction;
+      trade_CashAmountUnscaled;
+      hbox(;
+        trade_Price;
+        trade_ViceVersa;
+      );
+      trade_dirty;
+      trade_accrued_int;
+      trade_Premium;
+      trade_ForwardPremium;
+      trade_Currency;
+      hbox(;
+        trade_IndependentAmount;
+        trade_IndependentAmountAsPercentage;
+      );
+      trade_prfnbr;
+      trade_PositionPair;
+      trade_Broker;
+      trade_fee;
+      trade_right_of_substitution;
+    };
+    vbox{;
+      trade_Counterparty;
+      trade_hostid;
+      trade_MirrorPortfolio;
+      trade_your_ref;
+      trade_DiscountingType;
+      trade_total_fee;
+      trade_ForwardValueDate;
+      trade_value_day;
+      trade_acquire_day;
+      trade_time;
+      trade_acquirer_ptynbr;
+      trade_trader_usrnbr;
+      trade_SettleCategoryChlItem;
+      trade_Market;
+      trade_ordnbr;
+      trade_locked_info;
+      trade_end_cash;
+      trade_end_interest; 
+      trade_position;
+      trade_flat_accrued;
+    };
+  );
+ vbox{;
+  hbox(;
+    vbox(;
+      hbox(;
+        premiumTranslation_FxRate;
+        trade_fx_get_rate;
+      );
+      premiumTranslation_FxPortfolio;
+    );
+    vbox(;
+      premiumTranslation_SettleCurrency;
+      premiumTranslation_FxAcquirer;
+    );
+    vbox(;
+      premiumTranslation_FxPrice;
+    );
+  );
+ };
+  hbox(;
+    vbox{;
+      trade_optkey1_chlnbr;
+      trade_optkey2_chlnbr;
+    };
+    vbox{;
+      trade_optkey3_chlnbr;
+      trade_optkey4_chlnbr;
+    };
+  );
+  hbox(;
+    vbox{;
+      trade_sales_credit;
+    };
+    vbox{;
+      trade_sales_person_usrnbr;
+    };
+  );
+  hbox(;
+    vbox{;
+      trade_trdnbr;
+      trade_Status;     
+    };
+    vbox{;
+      trade_bo_trdnbr;
+      hbox(;
+        trade_payments;
+        trade_save_new;
+      );
+    };
+  );
+);
+...
+
+}
+
+clx CTradeManagerAppFrame [FExtensionValue] {
+  CustomLayout_FrontOfficePane
+vbox(;
+  hbox{;
+    hbox(;trade_insaddr;trade_sel_ins;);
+  };
+  hbox(;
+    vbox{;
+      trade_Quantity;
+      trade_Nominal;
+      hbox(;
+         trade_Price;
+         trade_ViceVersa;
+      );
+      trade_Premium;
+      trade_Currency;
+      trade_prfnbr;
+      trade_Broker;
+      trade_fee;
+      trade_ordnbr;
+      trade_discount;
+      trade_sales_credit;
+      trade_Status;
+    };
+    vbox{;
+      trade_Counterparty;
+      trade_MirrorPortfolio;
+      trade_your_ref;
+      trade_value_day;
+      trade_acquire_day;
+      trade_time;
+      trade_acquirer_ptynbr;
+      trade_trader_usrnbr;
+      trade_sales_person_usrnbr;
+      trade_position;
+    };
+  );
+  hbox(;
+    vbox{;
+      trade_optkey1_chlnbr;
+      trade_optkey2_chlnbr;
+    };
+    vbox{;
+      trade_optkey3_chlnbr;
+      trade_optkey4_chlnbr;
+    };
+  );
+);
+...
+
+}
+
+decls[FPythonCode] {
+}
+
+clx FObject [FPythonCode] {
+  FValidationBack2Back
+import ael
+
+SCP = 1 << 19 # Sales Cover Parent bit
+SCM = 1 << 7  # SCM B2B bit
+
+force_inherit_list = ['optkey3_chlnbr', 'optkey4_chlnbr']
+
+def validate_transaction(transaction_list, *rest):
+    for entity, operation in transaction_list:
+        if operation == 'Delete':
+            continue
+        if entity.record_type != 'Trade':
+            continue
+        group_trade = entity.group_trdnbr
+        if group_trade is None:
+            continue
+        if group_trade.trdnbr == entity.trdnbr:
+            continue
+        group_process = group_trade.trade_process
+        if (SCP & group_process > 0) and (SCM & group_process > 0):
+            for att in force_inherit_list:
+                val = getattr(group_trade, att)
+                if val is not None:
+                    setattr(entity, att, val)
+    return transaction_list
+
+
+
+
+...
+
+  FValidationMidRate
+import ael, acm
+import FValidationUtils
+
+market = 'REFINITIV_SPOT'
+def GetLivePricesFromMarket(ins,curr,market = 'REFINITIV_SPOT'):
+    query = f"market='{market}' and instrument='{ins}' and currency='{curr}'"
+    livePrices = acm.FPrice.Select(query)
+    price =  livePrices[0] if livePrices else 0.0
+    bid = price.Bid() if price else 0
+    ask = price.Ask() if price else 0
+    return (bid+ask)/2
+
+def validate_transaction(transaction_list, *rest):
+    for entity, operation in transaction_list:
+        if entity.record_type == 'Trade' and operation in ('Insert', 'Update') and entity.status in ('Reserved', 'FO Confirmed', 'BO Confirmed') and entity.insaddr.instype == 'Curr':
+            try:
+                avg_price = GetLivePricesFromMarket(entity.insaddr.insid, entity.curr.insid)
+                FValidationUtils.set_addinfo(entity, 'ClientRate', str(avg_price))
+            except Exception as e:
+                print(str(e))
+
+    return transaction_list
+
+...
+
+  FValidationPortfolio
+import ael, acm
+
+import FValidationUtils
+
+def validate_transaction(transaction_list, *rest):
+    for entity, operation in transaction_list:
+        if entity.record_type == 'Trade' and entity.insaddr.instype in ['Bill', 'Bond', 'FRN'] and entity.category != 'Collateral' and operation in ('Insert', 'Update'):
+            
+            try:
+                portfolio_name = entity.prfnbr.prfid if entity.prfnbr else 'None'
+                FValidationUtils.set_addinfo(entity, 'BondPortfolio', portfolio_name)
+            except Exception as e:
+                print(str(e))
+
+    return transaction_list
+
+
+
+...
+
+  FValidationUtils
+
+import ael, acm
+
+'''
+    addinfo management
+'''
+
+def set_addinfo(obj, addInfoName, addInfoValue):
+    '''
+        Set addinfo value on object.
+         addInfoValue must be a string.
+    '''
+
+    found = False
+
+    for ai in obj.additional_infos():
+        if ai.addinf_specnbr.field_name == addInfoName:
+            ai.value = addInfoValue
+            found    = True
+
+    if not found:
+        addInfoNew                = ael.AdditionalInfo.new(obj)
+        addInfoNew.value          = addInfoValue
+        addInfoNew.addinf_specnbr = ael.AdditionalInfoSpec[addInfoName]
+
+def delete_addinfo(obj, addInfoName):
+    for ai in obj.additional_infos():
+        if ai.addinf_specnbr.field_name == addInfoName:
+            try:
+                ai.delete()
+            except:
+                print("Failed to delete '%s'" % addInfoName)
+                
+
+...
+
+  PSPriceDataVerification
+
+
+from datetime import date
+
+from datetime import datetime
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+
+from FParameterSettings import ParameterSettingsCreator
+import acm
+
+import ael
+
+import FRunScriptGUI
+
+import FLogger
+
+import smtplib
+
+
+
+logger = FLogger.FLogger("PriceDataVerification")
+SMTP_SETTINGS = ParameterSettingsCreator.FromRootParameter('SMTPSettings')
+
+tt_absolute_threshold_stale = "Absolute threshold value for stale price check. Stale price check is for 5 days(T+4) for instruments and 3(T+2) days for FX rates"
+tt_price_spike_percent = "Enter the price spike in percentage of the yesterday's price"
+
+# email parameters
+HOST = SMTP_SETTINGS.SMTPServer()
+PORT = SMTP_SETTINGS.SMTPPort()
+FROM = SMTP_SETTINGS.SenderAddress()
+USERNAME = SMTP_SETTINGS.SMTPUsername()
+PASSWORD = SMTP_SETTINGS.SMTPPassword()
+TLS = SMTP_SETTINGS.SMTPTLS()
+
+
+class PriceDataVerification(FRunScriptGUI.AelVariablesHandler):
+
+
+
+    def get_query_folders(self):
+        """ Get query folders from database """
+        rules = acm.FStoredASQLQuery.Select("subType='FInstrument'")
+        return rules
+
+    def get_query_folders_currency(self):
+
+        """ Get query folders from database """
+        return acm.FCurrencyPair.Select('')
+
+    def get_markets(self):
+
+        """ Get market places """
+
+        mkts = acm.FMTMMarket.Select("")
+
+        return mkts
+
+
+
+    def __init__(self):
+
+        vars = [
+
+        # 0-name, 1-field name_tab, 2-data_type, 3-values, 4-default value, 5-Mandatory, 6-'', 7-tooltip, 8-enable/disable method, 9-enable/disable
+        ['ins_query', 'Instruments', 'string', self.get_query_folders(), '', 0, 1, 'Select Instrument Query Folder', self.checkInsQuery, 1],
+        ['cur_query', 'Currency Pair', 'string', self.get_query_folders_currency(), '', 0, 1, 'Select Currency Pair Query Folder', self.checkCurrPairQuery, 1],
+
+        ['market','Market','string',self.get_markets(), '', 1, 0, 'Select market to obtain prices from', None, 1],
+        ['absolute_threshold_stale', 'Threshold Stale Price', 'float', None, 1.0, 1, 0, tt_absolute_threshold_stale, None],
+        ['price_spike_percent', 'Price Spike', 'float', None, 1.0, 1, 0, tt_price_spike_percent, None],
+        ['send_email_to', 'EmailID', 'string', None, 'trading.risk@bankmandiri.co.id', 1, 1, 'Enter emailid to send notification to', None, 1],
+
+        ]
+
+        FRunScriptGUI.AelVariablesHandler.__init__(self,vars)
+
+    def checkInsQuery(self, index, fieldValues):
+        queryfolder = fieldValues[index]
+        if not queryfolder:
+            ael_variables[self.ael_variables.cur_query.sequenceNumber][5] = 1
+        else:
+            ael_variables[self.ael_variables.cur_query.sequenceNumber][5] = 0
+        return fieldValues
+
+    def checkCurrPairQuery(self, index, fieldValues):
+        queryfolder = fieldValues[index]
+        if not queryfolder:
+            ael_variables[self.ael_variables.ins_query.sequenceNumber][5] = 1
+        else:
+            ael_variables[self.ael_variables.ins_query.sequenceNumber][5] = 0
+        return fieldValues
+
+ael_variables = PriceDataVerification()
+
+def get_price(instrument, market, date) -> acm.FPrice:
+    """ Get prices from user specified market
+    Input:
+
+        instrument - acm.FInstrument
+
+        market - string
+    Output:
+        acm.FPrice
+
+    """
+    #acm_instrument = acm.FInstrument[instrument]
+    acm_market = acm.FMTMMarket[market]
+    query = "instrument = %s and market = %i and day = %s" % (instrument.Oid(), acm_market.Oid(), date)
+    price = acm.FPrice.Select01(query, "")
+    if  price :
+        today_bid = price.Bid() if price.Bid() and str(price.Bid()) != 'nan'  else 0
+        today_ask = price.Ask() if price.Ask() and str(price.Ask()) != 'nan'  else 0
+        today_settle = price.Settle() if price.Settle() and str(price.Settle()) != 'nan'  else 0
+        if today_bid or today_ask or today_settle:
+            return price
+
+def GetLivePricesFromMarket(market, currencyPair, date):
+    instrument, currency = currencyPair.split('/')
+
+    ins = acm.FInstrument[instrument]
+    curr = acm.FCurrency[currency]
+    acm_market = acm.FMTMMarket[market]
+
+    query = f"market = {acm_market.Oid()} and instrument = {ins.Oid()} and currency = {curr.Oid()} and day = {date}"
+
+    livePrices = acm.FPrice.Select(query)
+    if livePrices:
+        price = livePrices[0]
+        bid = price.Bid() if price.Bid() and str(price.Bid()) != 'nan'  else 0
+        ask = price.Ask() if price.Ask() and str(price.Ask()) != 'nan'  else 0
+        settle = price.Settle() if price.Settle() and str(price.Settle()) != 'nan'  else 0
+        if bid or ask or settle:
+            return price
+
+
+def valid_price(price):
+    return price if price and str(price) != 'nan'  else 0
+
+def check_price_spike(todayPrice, prevPrice, spike):
+    price_check = 0
+    if todayPrice:
+       if todayPrice > (prevPrice + prevPrice * spike) or todayPrice < (prevPrice - prevPrice * spike):
+            price_check = 1
+    else:
+        # this for handling the missing price
+        price_check = 1
+    return price_check
+
+def check_stale_price(todayPrice, prevPrice, threshold ):
+    price_check = 0
+    if todayPrice:
+       if prevPrice >= (todayPrice - threshold) and \
+        (todayPrice + threshold) >= prevPrice :
+            price_check = 1
+    else:
+        price_check = 1
+    return price_check
+
+
+def send_email(body, subject, recipients):
+    try:
+        msg = MIMEMultipart()
+        msg['From'] = FROM
+        msg['To'] = recipients
+        msg['Subject'] = subject
+        msg.attach(MIMEText(body, 'plain'))
+        server = smtplib.SMTP(HOST, PORT)
+
+        #for TLS connection
+        server.ehlo()
+        server.starttls()
+
+        server.login(USERNAME, PASSWORD)
+        server.sendmail(FROM, recipients, msg.as_string())
+        server.quit()
+        logger.LOG('Email sent succesfully')
+    except Exception as ex:
+        print("Error while sending email", str(ex))
+
+def ael_main(ael_variables):
+
+    """ Task main function to execute """
+    send_emailid = ael_variables['send_email_to']
+    send_emailid = list(send_emailid)
+    recipients = ','.join(send_emailid)
+    todayDate = acm.Time().DateNow()
+
+    ins_query = ael_variables['ins_query'] if ael_variables['ins_query'] else []
+    cur_query = ael_variables['cur_query'] if ael_variables['cur_query'] else []
+
+    if not cur_query and not ins_query:
+        print("Select instruments or currency pairs")
+
+    market = ael_variables['market']
+
+    absolute_threshold_stale = ael_variables['absolute_threshold_stale']
+    price_spike_percent = ael_variables['price_spike_percent']
+    Spike = price_spike_percent / 100
+
+    instruments = []
+    currPairs = []
+
+    for each_query in ins_query:
+
+        acm_query = acm.FStoredASQLQuery[each_query]
+        if acm_query is not None:
+            instruments.extend(acm_query.Query().Select())
+
+    for curpair in cur_query:
+        valid_date = ael.date_from_string(todayDate)
+        valid_date = valid_date.to_string('%Y-%m-%d')
+        TodayPrice = GetLivePricesFromMarket(market, curpair, valid_date)
+        PriceCheckDays = 2
+
+        if TodayPrice:
+            logger.LOG("Prices found for <%s> in Market <%s> for date <%s>" % (curpair, market, valid_date))
+
+            previousDate = todayDate
+            for PriceCheckCtr in range(1, PriceCheckDays+1):
+                price_checks = []
+                previousDate = acm.Time().DateAddDelta(previousDate, 0, 0, -1)
+                while TodayPrice.Currency().Calendar().IsNonBankingDay(None, None, previousDate):
+                    previousDate = acm.Time().DateAddDelta(previousDate, 0, 0, -1)
+
+                valid_date = ael.date_from_string(previousDate)
+                valid_date = valid_date.to_string('%Y-%m-%d')
+                PrevPrice = GetLivePricesFromMarket(market, curpair, valid_date) #get_price(ins, market, valid_date)
+
+                if PrevPrice:
+                    price_checks.append(check_stale_price(valid_price(TodayPrice.Bid()), valid_price(PrevPrice.Bid()), absolute_threshold_stale))
+                    price_checks.append(check_stale_price(valid_price(TodayPrice.Ask()), valid_price(PrevPrice.Ask()), absolute_threshold_stale))
+                    price_checks.append(check_stale_price(valid_price(TodayPrice.Settle()), valid_price(PrevPrice.Settle()), absolute_threshold_stale))
+
+                    if all(price_checks):
+                        if PriceCheckCtr == PriceCheckDays:
+                            logger.LOG("Sending email for stale price")
+                            body = """Market data for {0} in market {1} hasn't change for 3 consecutive days. Please verify.""".format(curpair, market)
+                            subject = 'Market Data Stale - {0}'.format(market)
+                            send_email(body, subject, recipients)
+                    else:
+                        break
+            logger.LOG("Stale Price check done succesfully for {}".format(curpair))
+
+            # checking for stale price
+            previousDate = todayDate
+            price_checks = []
+            previousDate = acm.Time().DateAddDelta(previousDate, 0,0, -1)
+            while TodayPrice.Currency().Calendar().IsNonBankingDay(None, None, previousDate):
+                previousDate = acm.Time().DateAddDelta(previousDate, 0,0, -1)
+            valid_date = ael.date_from_string(previousDate)
+            valid_date = valid_date.to_string('%Y-%m-%d')
+            PrevPrice = GetLivePricesFromMarket(market, curpair, valid_date)
+            if PrevPrice:
+                price_checks.append(check_price_spike(valid_price(TodayPrice.Bid()), valid_price(PrevPrice.Bid()), Spike))
+                price_checks.append(check_price_spike(valid_price(TodayPrice.Ask()), valid_price(PrevPrice.Ask()), Spike))
+                price_checks.append(check_price_spike(valid_price(TodayPrice.Settle()), valid_price(PrevPrice.Settle()), Spike))
+
+                if all(price_checks):
+                    logger.LOG("Sending email for price spike")
+                    body = """Market data for {0} in market {1} has changed for more than {2}%. Please verify.""".format(curpair, market, price_spike_percent)
+                    subject = 'Market Data Spike - {0}'.format(market)
+                    send_email(body, subject, recipients)
+
+            logger.LOG("Spike Price check done succesfully for {}".format(curpair))
+        else:
+            logger.WLOG("Prices not found for <%s> in Market <%s> for date <%s>" % (curpair, market, valid_date))
+
+    for ins in instruments:
+        logger.LOG("Processing Instrument %s" % ins.Name())
+        valid_date = ael.date_from_string(todayDate)
+        valid_date = valid_date.to_string('%Y-%m-%d')
+
+        TodayPrice = get_price(ins, market, valid_date)
+
+        if ins.InsType() == "Curr":
+           PriceCheckDays = 2
+        else:
+           PriceCheckDays = 4
+
+        if TodayPrice:
+            logger.LOG("Prices found for <%s> in Market <%s> for date <%s>" % (ins.Name(), market, valid_date))
+
+            previousDate = todayDate
+            for PriceCheckCtr in range(1, PriceCheckDays + 1):
+                price_checks = []
+                previousDate = acm.Time().DateAddDelta(previousDate, 0, 0, -1)
+                while TodayPrice.Currency().Calendar().IsNonBankingDay(None, None, previousDate):
+                    previousDate = acm.Time().DateAddDelta(previousDate, 0, 0, -1)
+                valid_date = ael.date_from_string(previousDate)
+                valid_date = valid_date.to_string('%Y-%m-%d')
+
+                PrevPrice = get_price(ins, market, valid_date)
+                if PrevPrice:
+                    price_checks.append(check_stale_price(valid_price(TodayPrice.Bid()), valid_price(PrevPrice.Bid()), absolute_threshold_stale))
+                    price_checks.append(check_stale_price(valid_price(TodayPrice.Ask()), valid_price(PrevPrice.Ask()), absolute_threshold_stale))
+                    price_checks.append(check_stale_price(valid_price(TodayPrice.Settle()), valid_price(PrevPrice.Settle()), absolute_threshold_stale))
+
+                    if all(price_checks):
+                        if PriceCheckCtr == PriceCheckDays:
+                            logger.LOG("Sending email for stale price")
+                            body = """Market data for {0} in market {1} hasn't change for {2} consecutive days. \
+                                Please verify.""".format(ins.Name(), market, PriceCheckDays+1)
+                            subject = 'Market Data Stale - {0}'.format(market)
+                            send_email(body, subject, recipients)
+                    else:
+                        break
+            logger.LOG("Stale Price check done succesfully for {}".format(ins.Name()))
+
+
+            previousDate = todayDate
+            price_checks = []
+            previousDate = acm.Time().DateAddDelta(previousDate, 0,0, -1)
+            while TodayPrice.Currency().Calendar().IsNonBankingDay(None, None, previousDate):
+                previousDate = acm.Time().DateAddDelta(previousDate, 0,0, -1)
+            valid_date = ael.date_from_string(previousDate)
+            valid_date = valid_date.to_string('%Y-%m-%d')
+
+            PrevPrice = get_price(ins, market, valid_date)
+            if PrevPrice:
+                price_checks.append(check_price_spike(valid_price(TodayPrice.Bid()), valid_price(PrevPrice.Bid()), Spike))
+                price_checks.append(check_price_spike(valid_price(TodayPrice.Ask()), valid_price(PrevPrice.Ask()), Spike))
+                price_checks.append(check_price_spike(valid_price(TodayPrice.Settle()), valid_price(PrevPrice.Settle()), Spike))
+
+                if all(price_checks):
+                    logger.LOG("Sending email for price spike")
+                    body = """Market data for {0} in market {1} has changed for more than {2}%. \
+                    Please verify.""".format(ins.Name(), market, price_spike_percent)
+                    subject = 'Market Data Spike - {0}'.format(market)
+                    send_email(body, subject, recipients)
+
+            logger.LOG("Price spike check done succesfully for {}".format(ins.Name()))
+        else:
+            logger.WLOG("Prices not found for <%s> in Market <%s> for date <%s>" % (ins.Name(), market, valid_date))
+
+
+
+...
+
+}
+

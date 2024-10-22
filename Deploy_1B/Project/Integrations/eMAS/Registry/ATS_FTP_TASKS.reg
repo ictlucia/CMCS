@@ -1,0 +1,8 @@
+Windows Registry Editor Version 5.00
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Front\Front Arena\ATS\FA_INSTANCE_NAME]
+"include_task"="{BIS4_In_HoldingPosition_FTP,BIS4_In_PriceFeed_FTP,BIS4_In_Settlements_FTP,MBOX-FTP,SInvest-Download_FTP}"
+"username"="ATS_FTP_TASK"
+"password"="intas"
+"Unicode"="1"
+

@@ -1,0 +1,6 @@
+ADDITIONALINFOSPEC,,,,,/ADDITIONALINFOSPEC
+DATA_TYPE.GRP,DESCRIPTION,DATA_TYPE.TYPE,FIELD_NAME,REC_TYPE,
+Standard,Ac_Tag72_1,String,Ac_Tag72_1,Account,
+Standard,Ac_Tag72_2,String,Ac_Tag72_2,Account,
+Standard,Ac_Tag72_3,String,Ac_Tag72_3,Account,
+Standard,Ac_Tag72_4,String,Ac_Tag72_4,Account,

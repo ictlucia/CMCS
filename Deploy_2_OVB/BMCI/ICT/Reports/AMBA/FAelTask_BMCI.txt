@@ -1,0 +1,413 @@
+[MESSAGE]
+  TYPE=INSERT_TASK
+  VERSION=1.0
+  TIME=2024-03-22 10:21:09
+  SOURCE=FAMBAMessageGenerator
+  [TASK]
+    CONTEXT=Standard
+    MODULE=CI01 - Maturity GAP
+    NAME=CI01 - Maturity GAP
+    PARAMETER=output_file=.xls;file_path=\\\\supporting.devmandiri.co.id\\SharedFolder\\FTPS\\BMCI\\Report Front Arena\\Front Office\\CI01_Maturity_Gap;report_name=CI01 - Maturity GAP;
+    SIZE=162
+    [TASKSCHEDULE]
+      CALNBR.CALID=New York
+      ENABLED=Yes
+      SCHEDULE=1:W:1,Mo,Tu,We,Th,Fr:O,1300:20240101
+      SEQNBR=808
+    [/TASKSCHEDULE]
+  [/TASK]
+[/MESSAGE]
+[MESSAGE]
+  TYPE=INSERT_TASK
+  VERSION=1.0
+  TIME=2024-03-22 10:21:09
+  SOURCE=FAMBAMessageGenerator
+  [TASK]
+    CONTEXT=Standard
+    MODULE=CI02 - Repricing GAP
+    NAME=CI02 - Repricing GAP
+    PARAMETER=date=2024-02-28;report_name=CI02 - Repricing GAP;file_path=\\\\supporting.devmandiri.co.id\\SharedFolder\\FTPS\\BMCI\\Report Front Arena\\Front Office\\CI02_Repricing_Gap;output_file=.xls;
+    SIZE=180
+    [TASKSCHEDULE]
+      CALNBR.CALID=New York
+      ENABLED=Yes
+      SCHEDULE=1:W:1,Mo,Tu,We,Th,Fr:O,1300:20240101
+      SEQNBR=1120
+    [/TASKSCHEDULE]
+  [/TASK]
+[/MESSAGE]
+[MESSAGE]
+  TYPE=INSERT_TASK
+  VERSION=1.0
+  TIME=2024-03-22 10:21:09
+  SOURCE=FAMBAMessageGenerator
+  [TASK]
+    CONTEXT=Standard
+    MODULE=CI03 - Minimum Liquidity Ratio
+    NAME=CI03 - Minimum Liquidity Ratio
+    PARAMETER=output_file=.xls;file_path=\\\\supporting.devmandiri.co.id\\SharedFolder\\FTPS\\BMCI\\Report Front Arena\\Front Office\\CI03_Minimum_Liquidity_Ratio;report_name=CI03 - Minimum Liquidity Ratio;
+    SIZE=184
+    [TASKSCHEDULE]
+      CALNBR.CALID=New York
+      ENABLED=Yes
+      SCHEDULE=1:W:1,Mo,Tu,We,Th,Fr:O,1300:20240101
+      SEQNBR=810
+    [/TASKSCHEDULE]
+  [/TASK]
+[/MESSAGE]
+[MESSAGE]
+  TYPE=INSERT_TASK
+  VERSION=1.0
+  TIME=2024-03-22 10:21:09
+  SOURCE=FAMBAMessageGenerator
+  [TASK]
+    CONTEXT=Standard
+    MODULE=CI04 - Cashflow
+    NAME=CI04 - Cashflow
+    PARAMETER=output_file=.xls;file_path=\\\\supporting.devmandiri.co.id\\SharedFolder\\FTPS\\BMCI\\Report Front Arena\\Front Office\\CI04_Cashflow;report_name=CI04 - Cashflow;
+    SIZE=154
+    [TASKSCHEDULE]
+      CALNBR.CALID=New York
+      ENABLED=Yes
+      SCHEDULE=1:W:1,Mo,Tu,We,Th,Fr:O,1300:20240101
+      SEQNBR=811
+    [/TASKSCHEDULE]
+  [/TASK]
+[/MESSAGE]
+[MESSAGE]
+  TYPE=INSERT_TASK
+  VERSION=1.0
+  TIME=2024-03-22 10:21:09
+  SOURCE=FAMBAMessageGenerator
+  [TASK]
+    CONTEXT=Standard
+    MODULE=CI05 - Liquidity Gap
+    NAME=CI05 - Liquidity Gap
+    PARAMETER=output_file=.xls;file_path=\\\\supporting.devmandiri.co.id\\SharedFolder\\FTPS\\BMCI\\Report Front Arena\\Middle Office\\CI05_Liquidity_Gap;report_name=CI05 - Liquidity Gap;
+    SIZE=165
+    [TASKSCHEDULE]
+      CALNBR.CALID=New York
+      ENABLED=Yes
+      SCHEDULE=1:W:1,Mo,Tu,We,Th,Fr:O,1300:20240101
+      SEQNBR=1121
+    [/TASKSCHEDULE]
+  [/TASK]
+[/MESSAGE]
+[MESSAGE]
+  TYPE=INSERT_TASK
+  VERSION=1.0
+  TIME=2024-03-22 10:21:09
+  SOURCE=FAMBAMessageGenerator
+  [TASK]
+    CONTEXT=Standard
+    MODULE=CI06 - Liquidity Stress
+    NAME=CI06 - Liquidity Stress
+    PARAMETER=output_file=.xls;file_path=\\\\supporting.devmandiri.co.id\\SharedFolder\\FTPS\\BMCI\\Report Front Arena\\Middle Office\\CI06_Liquidity_Stress;report_name=CI06 - Liquidity Stress;
+    SIZE=171
+    [TASKSCHEDULE]
+      CALNBR.CALID=New York
+      ENABLED=Yes
+      SCHEDULE=1:W:1,Mo,Tu,We,Th,Fr:O,1300:20240101
+      SEQNBR=1122
+    [/TASKSCHEDULE]
+  [/TASK]
+[/MESSAGE]
+[MESSAGE]
+  TYPE=INSERT_TASK
+  VERSION=1.0
+  TIME=2024-03-22 10:21:09
+  SOURCE=FAMBAMessageGenerator
+  [TASK]
+    CONTEXT=Standard
+    MODULE=FWorksheetReport
+    NAME=CIBO81 - PPE EBUS Sebagai Pedagang (Overseas Branch).csv
+    PARAMETER=storedASQLQueriesInstrument=;Secondary file extension=.csv;Secondary output=True;storedASQLQueries=;tradeFilters=;FPortfolioSheet_Discounting Type Override=;File Path=\\\\supporting.devmandiri.co.id\\SharedFolder\\FTPS\\BMCI\\Report Front Arena\\Back Office\\BO81_Laporan_Kegiatan_PPEEBUS_sebagai_Pedagang_Data_Consolidate_with_Overseas_branch;multiThread=True;Date format=%y%m%d;Wait for Remote Work=False;FPortfolioSheet_Portfolio Hide Zero Positions Choice=;File date format=%d%m%y%H%M;FPortfolioSheet_Portfolio Profit Loss Start Date=;Include header image=False;Compress Output=False;FTradeSheet_overrideSheetSettings=False;AMB XML Message=True;zeroPositions=False;Header image path=;Send XML File to AMB=False;FPortfolioSheet_Valuation Date=;useMacroGUI=False;FTradeSheet_Portfolio Profit Loss End Date=;AMB Sender Name=;expiredPositions=False;Create directory with date=True;updateInterval=60;expandTimebucketChildren=False;File Name=BO81 - PPE EBUS Sebagai Pedagang (Overseas Branch);instrumentRows=True;Secondary template=FCSVTemplate;Include Full Data=False;FPortfolioSheet_Portfolio Profit Loss Use MtM Today=;FTradeSheet_Portfolio Profit Loss Start Date Custom=;Include Default Data=False;FPortfolioSheet_Portfolio Trade Filter Match Choice=;AMB Subject=;Include Raw Data=True;numberOfReports=5;Utf8 BOM=False;Include Formatted Data=True;HTML to Screen=False;tradeRowsOnly=True;verticalScenario=;FTradeSheet_Aggregate Currency Choice=;FPortfolioSheet_Portfolio Price Source=;clearSheetContent=False;FTradeSheet_Position Currency Choice=;FPortfolioSheet_Credit Delta DayCount=;trades=;FTradeSheet_Portfolio Profit Loss End Date Custom=;Include Color Information=True;function=;param=;instrumentParts=False;grouping=;infoManQueriesInstrument=;FTradeSheet_Portfolio Profit Loss Use MtM Today=;FPortfolioSheet_Fixed Currency=;infoManQueriesTrades=;FPortfolioSheet_Aggregate Currency Choice=;FPortfolioSheet_Portfolio Profit Loss End Date=;Overwrite if file exists=True;FTradeSheet_Fixed Currency=;FPortfolioSheet_Position Currency Choice=;wbName=BO81 - PPE EBUS Sebagai Pedagang (Overseas Branch);FPortfolioSheet_Credit Delta RateType=;FTradeSheet_Portfolio Profit Loss Start Date=;AMB Address=;FPortfolioSheet_Include Simulated Trades=;timeBuckets=;portfolios=;snapshot=True;preProcessXml=;Year with century=False;template=;FPortfolioSheet_Portfolio Profit Loss End Date Custom=;Print style sheet (CSS)=FStandardCSS;FPortfolioSheet_Portfolio Profit Loss Start Date Custom=;FPortfolioSheet_Currency Rate Relative Update Slack=;FPortfolioSheet_Credit Delta Displayed Rate=;HTML to Printer=False;XML to File=False;FPortfolioSheet_overrideSheetSettings=False;HTML to File=False;portfolioRowOnly=False;Performance Strategy=Periodic full GC to save memory;Print template (XSL)=FStandardTemplate;File date beginning=False;FPortfolioSheet_Valuation Parameter Date=;FPortfolioSheet_Portfolio Hide Expired Positions Choice=;macros=;
+    SIZE=2922
+  [/TASK]
+[/MESSAGE]
+[MESSAGE]
+  TYPE=INSERT_TASK
+  VERSION=1.0
+  TIME=2024-03-22 10:21:09
+  SOURCE=FAMBAMessageGenerator
+  [TASK]
+    CONTEXT=Standard
+    MODULE=FWorksheetReport
+    NAME=CIBO81 - PPE EBUS Sebagai Pedagang (Overseas Branch).xls
+    PARAMETER=storedASQLQueriesInstrument=;Secondary file extension=.xls;Secondary output=True;storedASQLQueries=;tradeFilters=;FPortfolioSheet_Discounting Type Override=;File Path=\\\\supporting.devmandiri.co.id\\SharedFolder\\FTPS\\BMCI\\Report Front Arena\\Back Office\\BO81_Laporan_Kegiatan_PPEEBUS_sebagai_Pedagang_Data_Consolidate_with_Overseas_branch;multiThread=True;Date format=%y%m%d;Wait for Remote Work=False;FPortfolioSheet_Portfolio Hide Zero Positions Choice=;File date format=%d%m%y%H%M;FPortfolioSheet_Portfolio Profit Loss Start Date=;Include header image=False;Compress Output=False;FTradeSheet_overrideSheetSettings=False;AMB XML Message=True;zeroPositions=False;Header image path=;Send XML File to AMB=False;FPortfolioSheet_Valuation Date=;useMacroGUI=False;FTradeSheet_Portfolio Profit Loss End Date=;AMB Sender Name=;expiredPositions=False;Create directory with date=True;updateInterval=60;expandTimebucketChildren=False;File Name=BO81 - PPE EBUS Sebagai Pedagang (Overseas Branch);instrumentRows=True;Secondary template=BM_Overseas;Include Full Data=False;FPortfolioSheet_Portfolio Profit Loss Use MtM Today=;FTradeSheet_Portfolio Profit Loss Start Date Custom=;Include Default Data=False;FPortfolioSheet_Portfolio Trade Filter Match Choice=;AMB Subject=;Include Raw Data=True;numberOfReports=5;Utf8 BOM=False;Include Formatted Data=True;HTML to Screen=False;tradeRowsOnly=True;verticalScenario=;FTradeSheet_Aggregate Currency Choice=;FPortfolioSheet_Portfolio Price Source=;clearSheetContent=False;FTradeSheet_Position Currency Choice=;FPortfolioSheet_Credit Delta DayCount=;trades=;FTradeSheet_Portfolio Profit Loss End Date Custom=;Include Color Information=True;function=;param=;instrumentParts=False;grouping=;infoManQueriesInstrument=;FTradeSheet_Portfolio Profit Loss Use MtM Today=;FPortfolioSheet_Fixed Currency=;infoManQueriesTrades=;FPortfolioSheet_Aggregate Currency Choice=;FPortfolioSheet_Portfolio Profit Loss End Date=;Overwrite if file exists=True;FTradeSheet_Fixed Currency=;FPortfolioSheet_Position Currency Choice=;wbName=BO81 - PPE EBUS Sebagai Pedagang (Overseas Branch);FPortfolioSheet_Credit Delta RateType=;FTradeSheet_Portfolio Profit Loss Start Date=;AMB Address=;FPortfolioSheet_Include Simulated Trades=;timeBuckets=;portfolios=;snapshot=True;preProcessXml=;Year with century=False;template=;FPortfolioSheet_Portfolio Profit Loss End Date Custom=;Print style sheet (CSS)=FStandardCSS;FPortfolioSheet_Portfolio Profit Loss Start Date Custom=;FPortfolioSheet_Currency Rate Relative Update Slack=;FPortfolioSheet_Credit Delta Displayed Rate=;HTML to Printer=False;XML to File=False;FPortfolioSheet_overrideSheetSettings=False;HTML to File=False;portfolioRowOnly=False;Performance Strategy=Periodic full GC to save memory;Print template (XSL)=FStandardTemplate;File date beginning=False;FPortfolioSheet_Valuation Parameter Date=;FPortfolioSheet_Portfolio Hide Expired Positions Choice=;macros=;
+    SIZE=2921
+  [/TASK]
+[/MESSAGE]
+[MESSAGE]
+  TYPE=INSERT_TASK
+  VERSION=1.0
+  TIME=2024-03-22 10:21:09
+  SOURCE=FAMBAMessageGenerator
+  [TASK]
+    CONTEXT=Standard
+    MODULE=FWorksheetReport
+    NAME=CIBO82 - PPE EBUS Sebagai Perantara (Overseas Branch).csv
+    PARAMETER=storedASQLQueriesInstrument=;Secondary file extension=.csv;Secondary output=True;storedASQLQueries=;tradeFilters=;FPortfolioSheet_Discounting Type Override=;File Path=\\\\supporting.devmandiri.co.id\\SharedFolder\\FTPS\\BMCI\\Report Front Arena\\Back Office\\BO82_Laporan_Kegiatan_PPEEBUS_sebagai_Perantara_Data_Consolidate_with_Overseas_branch;multiThread=True;Date format=%y%m%d;Wait for Remote Work=False;FPortfolioSheet_Portfolio Hide Zero Positions Choice=;File date format=%d%m%y%H%M;FPortfolioSheet_Portfolio Profit Loss Start Date=;Include header image=False;Compress Output=False;FTradeSheet_overrideSheetSettings=False;AMB XML Message=True;zeroPositions=False;Header image path=;Send XML File to AMB=False;FPortfolioSheet_Valuation Date=;useMacroGUI=False;FTradeSheet_Portfolio Profit Loss End Date=;AMB Sender Name=;expiredPositions=False;Create directory with date=True;updateInterval=60;expandTimebucketChildren=False;File Name=BO82 - PPE EBUS Sebagai Perantara (Overseas Branch);instrumentRows=True;Secondary template=FCSVTemplate;Include Full Data=False;FPortfolioSheet_Portfolio Profit Loss Use MtM Today=;FTradeSheet_Portfolio Profit Loss Start Date Custom=;Include Default Data=False;FPortfolioSheet_Portfolio Trade Filter Match Choice=;AMB Subject=;Include Raw Data=True;numberOfReports=5;Utf8 BOM=False;Include Formatted Data=True;HTML to Screen=False;tradeRowsOnly=True;verticalScenario=;FTradeSheet_Aggregate Currency Choice=;FPortfolioSheet_Portfolio Price Source=;clearSheetContent=False;FTradeSheet_Position Currency Choice=;FPortfolioSheet_Credit Delta DayCount=;trades=;FTradeSheet_Portfolio Profit Loss End Date Custom=;Include Color Information=True;function=;param=;instrumentParts=False;grouping=;infoManQueriesInstrument=;FTradeSheet_Portfolio Profit Loss Use MtM Today=;FPortfolioSheet_Fixed Currency=;infoManQueriesTrades=;FPortfolioSheet_Aggregate Currency Choice=;FPortfolioSheet_Portfolio Profit Loss End Date=;Overwrite if file exists=True;FTradeSheet_Fixed Currency=;FPortfolioSheet_Position Currency Choice=;wbName=BO82 - PPE EBUS Sebagai Perantara (Overseas Branch);FPortfolioSheet_Credit Delta RateType=;FTradeSheet_Portfolio Profit Loss Start Date=;AMB Address=;FPortfolioSheet_Include Simulated Trades=;timeBuckets=;portfolios=;snapshot=True;preProcessXml=;Year with century=False;template=;FPortfolioSheet_Portfolio Profit Loss End Date Custom=;Print style sheet (CSS)=FStandardCSS;FPortfolioSheet_Portfolio Profit Loss Start Date Custom=;FPortfolioSheet_Currency Rate Relative Update Slack=;FPortfolioSheet_Credit Delta Displayed Rate=;HTML to Printer=False;XML to File=False;FPortfolioSheet_overrideSheetSettings=False;HTML to File=False;portfolioRowOnly=False;Performance Strategy=Periodic full GC to save memory;Print template (XSL)=FStandardTemplate;File date beginning=False;FPortfolioSheet_Valuation Parameter Date=;FPortfolioSheet_Portfolio Hide Expired Positions Choice=;macros=;
+    SIZE=2925
+  [/TASK]
+[/MESSAGE]
+[MESSAGE]
+  TYPE=INSERT_TASK
+  VERSION=1.0
+  TIME=2024-03-22 10:21:09
+  SOURCE=FAMBAMessageGenerator
+  [TASK]
+    CONTEXT=Standard
+    MODULE=FWorksheetReport
+    NAME=CIBO82 - PPE EBUS Sebagai Perantara (Overseas Branch).xls
+    PARAMETER=storedASQLQueriesInstrument=;Secondary file extension=.xls;Secondary output=True;storedASQLQueries=;tradeFilters=;FPortfolioSheet_Discounting Type Override=;File Path=\\\\supporting.devmandiri.co.id\\SharedFolder\\FTPS\\BMCI\\Report Front Arena\\Back Office\\BO82_Laporan_Kegiatan_PPEEBUS_sebagai_Perantara_Data_Consolidate_with_Overseas_branch;multiThread=True;Date format=%y%m%d;Wait for Remote Work=False;FPortfolioSheet_Portfolio Hide Zero Positions Choice=;File date format=%d%m%y%H%M;FPortfolioSheet_Portfolio Profit Loss Start Date=;Include header image=False;Compress Output=False;FTradeSheet_overrideSheetSettings=False;AMB XML Message=True;zeroPositions=False;Header image path=;Send XML File to AMB=False;FPortfolioSheet_Valuation Date=;useMacroGUI=False;FTradeSheet_Portfolio Profit Loss End Date=;AMB Sender Name=;expiredPositions=False;Create directory with date=True;updateInterval=60;expandTimebucketChildren=False;File Name=BO82 - PPE EBUS Sebagai Perantara (Overseas Branch);instrumentRows=True;Secondary template=BM_Overseas;Include Full Data=False;FPortfolioSheet_Portfolio Profit Loss Use MtM Today=;FTradeSheet_Portfolio Profit Loss Start Date Custom=;Include Default Data=False;FPortfolioSheet_Portfolio Trade Filter Match Choice=;AMB Subject=;Include Raw Data=True;numberOfReports=5;Utf8 BOM=False;Include Formatted Data=True;HTML to Screen=False;tradeRowsOnly=True;verticalScenario=;FTradeSheet_Aggregate Currency Choice=;FPortfolioSheet_Portfolio Price Source=;clearSheetContent=False;FTradeSheet_Position Currency Choice=;FPortfolioSheet_Credit Delta DayCount=;trades=;FTradeSheet_Portfolio Profit Loss End Date Custom=;Include Color Information=True;function=;param=;instrumentParts=False;grouping=;infoManQueriesInstrument=;FTradeSheet_Portfolio Profit Loss Use MtM Today=;FPortfolioSheet_Fixed Currency=;infoManQueriesTrades=;FPortfolioSheet_Aggregate Currency Choice=;FPortfolioSheet_Portfolio Profit Loss End Date=;Overwrite if file exists=True;FTradeSheet_Fixed Currency=;FPortfolioSheet_Position Currency Choice=;wbName=BO82 - PPE EBUS Sebagai Perantara (Overseas Branch);FPortfolioSheet_Credit Delta RateType=;FTradeSheet_Portfolio Profit Loss Start Date=;AMB Address=;FPortfolioSheet_Include Simulated Trades=;timeBuckets=;portfolios=;snapshot=True;preProcessXml=;Year with century=False;template=;FPortfolioSheet_Portfolio Profit Loss End Date Custom=;Print style sheet (CSS)=FStandardCSS;FPortfolioSheet_Portfolio Profit Loss Start Date Custom=;FPortfolioSheet_Currency Rate Relative Update Slack=;FPortfolioSheet_Credit Delta Displayed Rate=;HTML to Printer=False;XML to File=False;FPortfolioSheet_overrideSheetSettings=False;HTML to File=False;portfolioRowOnly=False;Performance Strategy=Periodic full GC to save memory;Print template (XSL)=FStandardTemplate;File date beginning=False;FPortfolioSheet_Valuation Parameter Date=;FPortfolioSheet_Portfolio Hide Expired Positions Choice=;macros=;
+    SIZE=2924
+  [/TASK]
+[/MESSAGE]
+[MESSAGE]
+  TYPE=INSERT_TASK
+  VERSION=1.0
+  TIME=2024-03-22 10:21:09
+  SOURCE=FAMBAMessageGenerator
+  [TASK]
+    CONTEXT=Standard
+    MODULE=FWorksheetReport
+    NAME=CIBOa01 - SLIK - OJK.xls
+    PARAMETER=storedASQLQueriesInstrument=;Secondary file extension=.xls;Secondary output=True;storedASQLQueries=;tradeFilters=;FPortfolioSheet_Discounting Type Override=;File Path=\\\\supporting.devmandiri.co.id\\SharedFolder\\FTPS\\BMCI\\Report Front Arena\\Back Office\\CIBOa01_SLIK_OJK;multiThread=True;Date format=%y%m%d;Wait for Remote Work=False;FPortfolioSheet_Portfolio Hide Zero Positions Choice=;File date format=%d%m%y%H%M;FPortfolioSheet_Portfolio Profit Loss Start Date=;Include header image=False;Compress Output=False;FTradeSheet_overrideSheetSettings=False;AMB XML Message=True;zeroPositions=False;Header image path=;Send XML File to AMB=False;FPortfolioSheet_Valuation Date=;useMacroGUI=False;FTradeSheet_Portfolio Profit Loss End Date=;AMB Sender Name=;expiredPositions=False;Create directory with date=True;updateInterval=60;expandTimebucketChildren=False;File Name=CIBOa01 - SLIK - OJK;instrumentRows=True;Secondary template=BM_Overseas;Include Full Data=False;FPortfolioSheet_Portfolio Profit Loss Use MtM Today=;FTradeSheet_Portfolio Profit Loss Start Date Custom=;Include Default Data=False;FPortfolioSheet_Portfolio Trade Filter Match Choice=;AMB Subject=;Include Raw Data=True;numberOfReports=5;Utf8 BOM=False;Include Formatted Data=True;HTML to Screen=False;tradeRowsOnly=True;verticalScenario=;FTradeSheet_Aggregate Currency Choice=;FPortfolioSheet_Portfolio Price Source=;clearSheetContent=False;FTradeSheet_Position Currency Choice=;FPortfolioSheet_Credit Delta DayCount=;trades=;FTradeSheet_Portfolio Profit Loss End Date Custom=;Include Color Information=True;function=;param=;instrumentParts=False;grouping=;infoManQueriesInstrument=;FTradeSheet_Portfolio Profit Loss Use MtM Today=;FPortfolioSheet_Fixed Currency=;infoManQueriesTrades=;FPortfolioSheet_Aggregate Currency Choice=;FPortfolioSheet_Portfolio Profit Loss End Date=;Overwrite if file exists=True;FTradeSheet_Fixed Currency=;FPortfolioSheet_Position Currency Choice=;wbName=CIBOa01 - SLIK - OJK;FPortfolioSheet_Credit Delta RateType=;FTradeSheet_Portfolio Profit Loss Start Date=;AMB Address=;FPortfolioSheet_Include Simulated Trades=;timeBuckets=;portfolios=;snapshot=True;preProcessXml=;Year with century=False;template=;FPortfolioSheet_Portfolio Profit Loss End Date Custom=;Print style sheet (CSS)=FStandardCSS;FPortfolioSheet_Portfolio Profit Loss Start Date Custom=;FPortfolioSheet_Currency Rate Relative Update Slack=;FPortfolioSheet_Credit Delta Displayed Rate=;HTML to Printer=False;XML to File=False;FPortfolioSheet_overrideSheetSettings=False;HTML to File=False;portfolioRowOnly=False;Performance Strategy=Periodic full GC to save memory;Print template (XSL)=FStandardTemplate;File date beginning=False;FPortfolioSheet_Valuation Parameter Date=;FPortfolioSheet_Portfolio Hide Expired Positions Choice=;macros=;
+    SIZE=2793
+    [TASKSCHEDULE]
+      CALNBR.CALID=New York
+      ENABLED=Yes
+      SCHEDULE=1:M:1,1:O,1300:20240101
+      SEQNBR=1129
+    [/TASKSCHEDULE]
+  [/TASK]
+[/MESSAGE]
+[MESSAGE]
+  TYPE=INSERT_TASK
+  VERSION=1.0
+  TIME=2024-03-22 10:21:09
+  SOURCE=FAMBAMessageGenerator
+  [TASK]
+    CONTEXT=Standard
+    MODULE=FWorksheetReport
+    NAME=CIFOa01 - Reporting for Placement Taken.xls
+    PARAMETER=storedASQLQueriesInstrument=;Secondary file extension=.xls;Secondary output=True;storedASQLQueries=;tradeFilters=;FPortfolioSheet_Discounting Type Override=;File Path=\\\\supporting.devmandiri.co.id\\SharedFolder\\FTPS\\BMCI\\Report Front Arena\\Front Office\\CIFOa01_Reporting_for_Placement_Taken;multiThread=True;Date format=%y%m%d;Wait for Remote Work=False;FPortfolioSheet_Portfolio Hide Zero Positions Choice=;File date format=%d%m%y%H%M;FPortfolioSheet_Portfolio Profit Loss Start Date=;Include header image=False;Compress Output=False;FTradeSheet_overrideSheetSettings=False;AMB XML Message=True;zeroPositions=False;Header image path=;Send XML File to AMB=False;FPortfolioSheet_Valuation Date=;useMacroGUI=False;FTradeSheet_Portfolio Profit Loss End Date=;AMB Sender Name=;expiredPositions=False;Create directory with date=True;updateInterval=60;expandTimebucketChildren=False;File Name=CIFOa01 - Reporting for Placement Taken;instrumentRows=True;Secondary template=BM_Overseas;Include Full Data=False;FPortfolioSheet_Portfolio Profit Loss Use MtM Today=;FTradeSheet_Portfolio Profit Loss Start Date Custom=;Include Default Data=False;FPortfolioSheet_Portfolio Trade Filter Match Choice=;AMB Subject=;Include Raw Data=True;numberOfReports=5;Utf8 BOM=False;Include Formatted Data=True;HTML to Screen=False;tradeRowsOnly=True;verticalScenario=;FTradeSheet_Aggregate Currency Choice=;FPortfolioSheet_Portfolio Price Source=;clearSheetContent=False;FTradeSheet_Position Currency Choice=;FPortfolioSheet_Credit Delta DayCount=;trades=;FTradeSheet_Portfolio Profit Loss End Date Custom=;Include Color Information=True;function=;param=;instrumentParts=False;grouping=;infoManQueriesInstrument=;FTradeSheet_Portfolio Profit Loss Use MtM Today=;FPortfolioSheet_Fixed Currency=;infoManQueriesTrades=;FPortfolioSheet_Aggregate Currency Choice=;FPortfolioSheet_Portfolio Profit Loss End Date=;Overwrite if file exists=True;FTradeSheet_Fixed Currency=;FPortfolioSheet_Position Currency Choice=;wbName=CIFOa01 - Reporting for Placement Taken;FPortfolioSheet_Credit Delta RateType=;FTradeSheet_Portfolio Profit Loss Start Date=;AMB Address=;FPortfolioSheet_Include Simulated Trades=;timeBuckets=;portfolios=;snapshot=True;preProcessXml=;Year with century=False;template=;FPortfolioSheet_Portfolio Profit Loss End Date Custom=;Print style sheet (CSS)=FStandardCSS;FPortfolioSheet_Portfolio Profit Loss Start Date Custom=;FPortfolioSheet_Currency Rate Relative Update Slack=;FPortfolioSheet_Credit Delta Displayed Rate=;HTML to Printer=False;XML to File=False;FPortfolioSheet_overrideSheetSettings=False;HTML to File=False;portfolioRowOnly=False;Performance Strategy=Periodic full GC to save memory;Print template (XSL)=FStandardTemplate;File date beginning=False;FPortfolioSheet_Valuation Parameter Date=;FPortfolioSheet_Portfolio Hide Expired Positions Choice=;macros=;
+    SIZE=2853
+    [TASKSCHEDULE]
+      CALNBR.CALID=New York
+      ENABLED=Yes
+      SCHEDULE=1:W:1,Mo,Tu,We,Th,Fr:O,1300:20240101
+      SEQNBR=1130
+    [/TASKSCHEDULE]
+  [/TASK]
+[/MESSAGE]
+[MESSAGE]
+  TYPE=INSERT_TASK
+  VERSION=1.0
+  TIME=2024-03-22 10:21:09
+  SOURCE=FAMBAMessageGenerator
+  [TASK]
+    CONTEXT=Standard
+    MODULE=FWorksheetReport
+    NAME=CIFOa02 - Outstanding FX.xls
+    PARAMETER=storedASQLQueriesInstrument=;Secondary file extension=.xls;Secondary output=True;storedASQLQueries=;tradeFilters=;FPortfolioSheet_Discounting Type Override=;File Path=\\\\supporting.devmandiri.co.id\\SharedFolder\\FTPS\\BMCI\\Report Front Arena\\Front Office\\CIFOa02_Outstanding_FX;multiThread=True;Date format=%y%m%d;Wait for Remote Work=False;FPortfolioSheet_Portfolio Hide Zero Positions Choice=;File date format=%d%m%y%H%M;FPortfolioSheet_Portfolio Profit Loss Start Date=;Include header image=False;Compress Output=False;FTradeSheet_overrideSheetSettings=False;AMB XML Message=True;zeroPositions=False;Header image path=;Send XML File to AMB=False;FPortfolioSheet_Valuation Date=;useMacroGUI=False;FTradeSheet_Portfolio Profit Loss End Date=;AMB Sender Name=;expiredPositions=False;Create directory with date=True;updateInterval=60;expandTimebucketChildren=False;File Name=CIFOa02 - Outstanding FX;instrumentRows=True;Secondary template=BM_Overseas;Include Full Data=False;FPortfolioSheet_Portfolio Profit Loss Use MtM Today=;FTradeSheet_Portfolio Profit Loss Start Date Custom=;Include Default Data=False;FPortfolioSheet_Portfolio Trade Filter Match Choice=;AMB Subject=;Include Raw Data=True;numberOfReports=5;Utf8 BOM=False;Include Formatted Data=True;HTML to Screen=False;tradeRowsOnly=True;verticalScenario=;FTradeSheet_Aggregate Currency Choice=;FPortfolioSheet_Portfolio Price Source=;clearSheetContent=False;FTradeSheet_Position Currency Choice=;FPortfolioSheet_Credit Delta DayCount=;trades=;FTradeSheet_Portfolio Profit Loss End Date Custom=;Include Color Information=True;function=;param=;instrumentParts=False;grouping=;infoManQueriesInstrument=;FTradeSheet_Portfolio Profit Loss Use MtM Today=;FPortfolioSheet_Fixed Currency=;infoManQueriesTrades=;FPortfolioSheet_Aggregate Currency Choice=;FPortfolioSheet_Portfolio Profit Loss End Date=;Overwrite if file exists=True;FTradeSheet_Fixed Currency=;FPortfolioSheet_Position Currency Choice=;wbName=CIFOa02 - Outstanding FX;FPortfolioSheet_Credit Delta RateType=;FTradeSheet_Portfolio Profit Loss Start Date=;AMB Address=;FPortfolioSheet_Include Simulated Trades=;timeBuckets=;portfolios=;snapshot=True;preProcessXml=;Year with century=False;template=;FPortfolioSheet_Portfolio Profit Loss End Date Custom=;Print style sheet (CSS)=FStandardCSS;FPortfolioSheet_Portfolio Profit Loss Start Date Custom=;FPortfolioSheet_Currency Rate Relative Update Slack=;FPortfolioSheet_Credit Delta Displayed Rate=;HTML to Printer=False;XML to File=False;FPortfolioSheet_overrideSheetSettings=False;HTML to File=False;portfolioRowOnly=False;Performance Strategy=Periodic full GC to save memory;Print template (XSL)=FStandardTemplate;File date beginning=False;FPortfolioSheet_Valuation Parameter Date=;FPortfolioSheet_Portfolio Hide Expired Positions Choice=;macros=;
+    SIZE=2808
+    [TASKSCHEDULE]
+      CALNBR.CALID=New York
+      ENABLED=Yes
+      SCHEDULE=1:W:1,Mo,Tu,We,Th,Fr:O,1300:20240101
+      SEQNBR=1131
+    [/TASKSCHEDULE]
+  [/TASK]
+[/MESSAGE]
+[MESSAGE]
+  TYPE=INSERT_TASK
+  VERSION=1.0
+  TIME=2024-03-22 10:21:09
+  SOURCE=FAMBAMessageGenerator
+  [TASK]
+    CONTEXT=Standard
+    MODULE=FWorksheetReport
+    NAME=CIFOa03 - Outstanding Fixed Income.xls
+    PARAMETER=storedASQLQueriesInstrument=;Secondary file extension=.xls;Secondary output=True;storedASQLQueries=;tradeFilters=;FPortfolioSheet_Discounting Type Override=;File Path=\\\\supporting.devmandiri.co.id\\SharedFolder\\FTPS\\BMCI\\Report Front Arena\\Front Office\\CIFOa03_Outstanding_Fixed_Income_mencakup_mark_to_market;multiThread=True;Date format=%y%m%d;Wait for Remote Work=False;FPortfolioSheet_Portfolio Hide Zero Positions Choice=;File date format=%d%m%y%H%M;FPortfolioSheet_Portfolio Profit Loss Start Date=;Include header image=False;Compress Output=False;FTradeSheet_overrideSheetSettings=False;AMB XML Message=True;zeroPositions=False;Header image path=;Send XML File to AMB=False;FPortfolioSheet_Valuation Date=;useMacroGUI=False;FTradeSheet_Portfolio Profit Loss End Date=;AMB Sender Name=;expiredPositions=False;Create directory with date=True;updateInterval=60;expandTimebucketChildren=False;File Name=CIFOa03 - Outstanding Fixed Income;instrumentRows=True;Secondary template=BM_Overseas;Include Full Data=False;FPortfolioSheet_Portfolio Profit Loss Use MtM Today=;FTradeSheet_Portfolio Profit Loss Start Date Custom=;Include Default Data=False;FPortfolioSheet_Portfolio Trade Filter Match Choice=;AMB Subject=;Include Raw Data=True;numberOfReports=5;Utf8 BOM=False;Include Formatted Data=True;HTML to Screen=False;tradeRowsOnly=True;verticalScenario=;FTradeSheet_Aggregate Currency Choice=;FPortfolioSheet_Portfolio Price Source=;clearSheetContent=False;FTradeSheet_Position Currency Choice=;FPortfolioSheet_Credit Delta DayCount=;trades=;FTradeSheet_Portfolio Profit Loss End Date Custom=;Include Color Information=True;function=;param=;instrumentParts=False;grouping=;infoManQueriesInstrument=;FTradeSheet_Portfolio Profit Loss Use MtM Today=;FPortfolioSheet_Fixed Currency=;infoManQueriesTrades=;FPortfolioSheet_Aggregate Currency Choice=;FPortfolioSheet_Portfolio Profit Loss End Date=;Overwrite if file exists=True;FTradeSheet_Fixed Currency=;FPortfolioSheet_Position Currency Choice=;wbName=CIFOa03 - Outstanding Fixed Income;FPortfolioSheet_Credit Delta RateType=;FTradeSheet_Portfolio Profit Loss Start Date=;AMB Address=;FPortfolioSheet_Include Simulated Trades=;timeBuckets=;portfolios=;snapshot=True;preProcessXml=;Year with century=False;template=;FPortfolioSheet_Portfolio Profit Loss End Date Custom=;Print style sheet (CSS)=FStandardCSS;FPortfolioSheet_Portfolio Profit Loss Start Date Custom=;FPortfolioSheet_Currency Rate Relative Update Slack=;FPortfolioSheet_Credit Delta Displayed Rate=;HTML to Printer=False;XML to File=False;FPortfolioSheet_overrideSheetSettings=False;HTML to File=False;portfolioRowOnly=False;Performance Strategy=Periodic full GC to save memory;Print template (XSL)=FStandardTemplate;File date beginning=False;FPortfolioSheet_Valuation Parameter Date=;FPortfolioSheet_Portfolio Hide Expired Positions Choice=;macros=;
+    SIZE=2862
+    [TASKSCHEDULE]
+      CALNBR.CALID=New York
+      ENABLED=Yes
+      SCHEDULE=1:W:1,Mo,Tu,We,Th,Fr:O,1300:20240101
+      SEQNBR=1132
+    [/TASKSCHEDULE]
+  [/TASK]
+[/MESSAGE]
+[MESSAGE]
+  TYPE=INSERT_TASK
+  VERSION=1.0
+  TIME=2024-03-22 10:21:09
+  SOURCE=FAMBAMessageGenerator
+  [TASK]
+    CONTEXT=Standard
+    MODULE=FWorksheetReport
+    NAME=CIFOa04 - Outstanding Placement.xls
+    PARAMETER=storedASQLQueriesInstrument=;Secondary file extension=.xls;Secondary output=True;storedASQLQueries=;tradeFilters=;FPortfolioSheet_Discounting Type Override=;File Path=\\\\supporting.devmandiri.co.id\\SharedFolder\\FTPS\\BMCI\\Report Front Arena\\Front Office\\CIFOa04_Outstanding_Placement;multiThread=True;Date format=%y%m%d;Wait for Remote Work=False;FPortfolioSheet_Portfolio Hide Zero Positions Choice=;File date format=%d%m%y%H%M;FPortfolioSheet_Portfolio Profit Loss Start Date=;Include header image=False;Compress Output=False;FTradeSheet_overrideSheetSettings=False;AMB XML Message=True;zeroPositions=False;Header image path=;Send XML File to AMB=False;FPortfolioSheet_Valuation Date=;useMacroGUI=False;FTradeSheet_Portfolio Profit Loss End Date=;AMB Sender Name=;expiredPositions=False;Create directory with date=True;updateInterval=60;expandTimebucketChildren=False;File Name=CIFOa04 - Outstanding Placement;instrumentRows=True;Secondary template=BM_Overseas;Include Full Data=False;FPortfolioSheet_Portfolio Profit Loss Use MtM Today=;FTradeSheet_Portfolio Profit Loss Start Date Custom=;Include Default Data=False;FPortfolioSheet_Portfolio Trade Filter Match Choice=;AMB Subject=;Include Raw Data=True;numberOfReports=5;Utf8 BOM=False;Include Formatted Data=True;HTML to Screen=False;tradeRowsOnly=True;verticalScenario=;FTradeSheet_Aggregate Currency Choice=;FPortfolioSheet_Portfolio Price Source=;clearSheetContent=False;FTradeSheet_Position Currency Choice=;FPortfolioSheet_Credit Delta DayCount=;trades=;FTradeSheet_Portfolio Profit Loss End Date Custom=;Include Color Information=True;function=;param=;instrumentParts=False;grouping=;infoManQueriesInstrument=;FTradeSheet_Portfolio Profit Loss Use MtM Today=;FPortfolioSheet_Fixed Currency=;infoManQueriesTrades=;FPortfolioSheet_Aggregate Currency Choice=;FPortfolioSheet_Portfolio Profit Loss End Date=;Overwrite if file exists=True;FTradeSheet_Fixed Currency=;FPortfolioSheet_Position Currency Choice=;wbName=CIFOa04 - Outstanding Placement;FPortfolioSheet_Credit Delta RateType=;FTradeSheet_Portfolio Profit Loss Start Date=;AMB Address=;FPortfolioSheet_Include Simulated Trades=;timeBuckets=;portfolios=;snapshot=True;preProcessXml=;Year with century=False;template=;FPortfolioSheet_Portfolio Profit Loss End Date Custom=;Print style sheet (CSS)=FStandardCSS;FPortfolioSheet_Portfolio Profit Loss Start Date Custom=;FPortfolioSheet_Currency Rate Relative Update Slack=;FPortfolioSheet_Credit Delta Displayed Rate=;HTML to Printer=False;XML to File=False;FPortfolioSheet_overrideSheetSettings=False;HTML to File=False;portfolioRowOnly=False;Performance Strategy=Periodic full GC to save memory;Print template (XSL)=FStandardTemplate;File date beginning=False;FPortfolioSheet_Valuation Parameter Date=;FPortfolioSheet_Portfolio Hide Expired Positions Choice=;macros=;
+    SIZE=2829
+    [TASKSCHEDULE]
+      CALNBR.CALID=New York
+      ENABLED=Yes
+      SCHEDULE=1:W:1,Mo,Tu,We,Th,Fr:O,1300:20240101
+      SEQNBR=1133
+    [/TASKSCHEDULE]
+  [/TASK]
+[/MESSAGE]
+[MESSAGE]
+  TYPE=INSERT_TASK
+  VERSION=1.0
+  TIME=2024-03-22 10:21:09
+  SOURCE=FAMBAMessageGenerator
+  [TASK]
+    CONTEXT=Standard
+    MODULE=FWorksheetReport
+    NAME=CIFOa05 - Outstanding Deposit.xls
+    PARAMETER=storedASQLQueriesInstrument=;Secondary file extension=.xls;Secondary output=True;storedASQLQueries=;tradeFilters=;FPortfolioSheet_Discounting Type Override=;File Path=\\\\supporting.devmandiri.co.id\\SharedFolder\\FTPS\\BMCI\\Report Front Arena\\Front Office\\CIFOa05_Outstanding_Deposit;multiThread=True;Date format=%y%m%d;Wait for Remote Work=False;FPortfolioSheet_Portfolio Hide Zero Positions Choice=;File date format=%d%m%y%H%M;FPortfolioSheet_Portfolio Profit Loss Start Date=;Include header image=False;Compress Output=False;FTradeSheet_overrideSheetSettings=False;AMB XML Message=True;zeroPositions=False;Header image path=;Send XML File to AMB=False;FPortfolioSheet_Valuation Date=;useMacroGUI=False;FTradeSheet_Portfolio Profit Loss End Date=;AMB Sender Name=;expiredPositions=False;Create directory with date=True;updateInterval=60;expandTimebucketChildren=False;File Name=CIFOa05 - Outstanding Deposit;instrumentRows=True;Secondary template=BM_Overseas;Include Full Data=False;FPortfolioSheet_Portfolio Profit Loss Use MtM Today=;FTradeSheet_Portfolio Profit Loss Start Date Custom=;Include Default Data=False;FPortfolioSheet_Portfolio Trade Filter Match Choice=;AMB Subject=;Include Raw Data=True;numberOfReports=5;Utf8 BOM=False;Include Formatted Data=True;HTML to Screen=False;tradeRowsOnly=True;verticalScenario=;FTradeSheet_Aggregate Currency Choice=;FPortfolioSheet_Portfolio Price Source=;clearSheetContent=False;FTradeSheet_Position Currency Choice=;FPortfolioSheet_Credit Delta DayCount=;trades=;FTradeSheet_Portfolio Profit Loss End Date Custom=;Include Color Information=True;function=;param=;instrumentParts=False;grouping=;infoManQueriesInstrument=;FTradeSheet_Portfolio Profit Loss Use MtM Today=;FPortfolioSheet_Fixed Currency=;infoManQueriesTrades=;FPortfolioSheet_Aggregate Currency Choice=;FPortfolioSheet_Portfolio Profit Loss End Date=;Overwrite if file exists=True;FTradeSheet_Fixed Currency=;FPortfolioSheet_Position Currency Choice=;wbName=CIFOa05 - Outstanding Deposit;FPortfolioSheet_Credit Delta RateType=;FTradeSheet_Portfolio Profit Loss Start Date=;AMB Address=;FPortfolioSheet_Include Simulated Trades=;timeBuckets=;portfolios=;snapshot=True;preProcessXml=;Year with century=False;template=;FPortfolioSheet_Portfolio Profit Loss End Date Custom=;Print style sheet (CSS)=FStandardCSS;FPortfolioSheet_Portfolio Profit Loss Start Date Custom=;FPortfolioSheet_Currency Rate Relative Update Slack=;FPortfolioSheet_Credit Delta Displayed Rate=;HTML to Printer=False;XML to File=False;FPortfolioSheet_overrideSheetSettings=False;HTML to File=False;portfolioRowOnly=False;Performance Strategy=Periodic full GC to save memory;Print template (XSL)=FStandardTemplate;File date beginning=False;FPortfolioSheet_Valuation Parameter Date=;FPortfolioSheet_Portfolio Hide Expired Positions Choice=;macros=;
+    SIZE=2823
+    [TASKSCHEDULE]
+      CALNBR.CALID=New York
+      ENABLED=Yes
+      SCHEDULE=1:W:1,Mo,Tu,We,Th,Fr:O,1300:20240101
+      SEQNBR=1134
+    [/TASKSCHEDULE]
+  [/TASK]
+[/MESSAGE]
+[MESSAGE]
+  TYPE=INSERT_TASK
+  VERSION=1.0
+  TIME=2024-03-22 10:21:09
+  SOURCE=FAMBAMessageGenerator
+  [TASK]
+    CONTEXT=Standard
+    MODULE=FWorksheetReport
+    NAME=CIFOa06 - Repo Trade Outstanding.xls
+    PARAMETER=storedASQLQueriesInstrument=;Secondary file extension=.xls;Secondary output=True;storedASQLQueries=;tradeFilters=;FPortfolioSheet_Discounting Type Override=;File Path=\\\\supporting.devmandiri.co.id\\SharedFolder\\FTPS\\BMCI\\Report Front Arena\\Front Office\\CIFOa06_Repo_Trade_Outstanding;multiThread=True;Date format=%y%m%d;Wait for Remote Work=False;FPortfolioSheet_Portfolio Hide Zero Positions Choice=;File date format=%d%m%y%H%M;FPortfolioSheet_Portfolio Profit Loss Start Date=;Include header image=False;Compress Output=False;FTradeSheet_overrideSheetSettings=False;AMB XML Message=True;zeroPositions=False;Header image path=;Send XML File to AMB=False;FPortfolioSheet_Valuation Date=;useMacroGUI=False;FTradeSheet_Portfolio Profit Loss End Date=;AMB Sender Name=;expiredPositions=False;Create directory with date=True;updateInterval=60;expandTimebucketChildren=False;File Name=CIFOa06 - Repo Trade Outstanding;instrumentRows=True;Secondary template=BM_Overseas;Include Full Data=False;FPortfolioSheet_Portfolio Profit Loss Use MtM Today=;FTradeSheet_Portfolio Profit Loss Start Date Custom=;Include Default Data=False;FPortfolioSheet_Portfolio Trade Filter Match Choice=;AMB Subject=;Include Raw Data=True;numberOfReports=5;Utf8 BOM=False;Include Formatted Data=True;HTML to Screen=False;tradeRowsOnly=True;verticalScenario=;FTradeSheet_Aggregate Currency Choice=;FPortfolioSheet_Portfolio Price Source=;clearSheetContent=False;FTradeSheet_Position Currency Choice=;FPortfolioSheet_Credit Delta DayCount=;trades=;FTradeSheet_Portfolio Profit Loss End Date Custom=;Include Color Information=True;function=;param=;instrumentParts=False;grouping=;infoManQueriesInstrument=;FTradeSheet_Portfolio Profit Loss Use MtM Today=;FPortfolioSheet_Fixed Currency=;infoManQueriesTrades=;FPortfolioSheet_Aggregate Currency Choice=;FPortfolioSheet_Portfolio Profit Loss End Date=;Overwrite if file exists=True;FTradeSheet_Fixed Currency=;FPortfolioSheet_Position Currency Choice=;wbName=CIFOa06 - Repo Trade Outstanding;FPortfolioSheet_Credit Delta RateType=;FTradeSheet_Portfolio Profit Loss Start Date=;AMB Address=;FPortfolioSheet_Include Simulated Trades=;timeBuckets=;portfolios=;snapshot=True;preProcessXml=;Year with century=False;template=;FPortfolioSheet_Portfolio Profit Loss End Date Custom=;Print style sheet (CSS)=FStandardCSS;FPortfolioSheet_Portfolio Profit Loss Start Date Custom=;FPortfolioSheet_Currency Rate Relative Update Slack=;FPortfolioSheet_Credit Delta Displayed Rate=;HTML to Printer=False;XML to File=False;FPortfolioSheet_overrideSheetSettings=False;HTML to File=False;portfolioRowOnly=False;Performance Strategy=Periodic full GC to save memory;Print template (XSL)=FStandardTemplate;File date beginning=False;FPortfolioSheet_Valuation Parameter Date=;FPortfolioSheet_Portfolio Hide Expired Positions Choice=;macros=;
+    SIZE=2832
+    [TASKSCHEDULE]
+      CALNBR.CALID=New York
+      ENABLED=Yes
+      SCHEDULE=1:W:1,Mo,Tu,We,Th,Fr:O,1300:20240101
+      SEQNBR=1135
+    [/TASKSCHEDULE]
+  [/TASK]
+[/MESSAGE]
+[MESSAGE]
+  TYPE=INSERT_TASK
+  VERSION=1.0
+  TIME=2024-03-22 10:21:09
+  SOURCE=FAMBAMessageGenerator
+  [TASK]
+    CONTEXT=Standard
+    MODULE=FWorksheetReport
+    NAME=CIFOa07 - List of FX Deals Input Today.xls
+    PARAMETER=storedASQLQueriesInstrument=;Secondary file extension=.xls;Secondary output=True;storedASQLQueries=;tradeFilters=;FPortfolioSheet_Discounting Type Override=;File Path=\\\\supporting.devmandiri.co.id\\SharedFolder\\FTPS\\BMCI\\Report Front Arena\\Front Office\\CIFOa07_List_of_FX_Deals_Input_Today;multiThread=True;Date format=%y%m%d;Wait for Remote Work=False;FPortfolioSheet_Portfolio Hide Zero Positions Choice=;File date format=%d%m%y%H%M;FPortfolioSheet_Portfolio Profit Loss Start Date=;Include header image=False;Compress Output=False;FTradeSheet_overrideSheetSettings=False;AMB XML Message=True;zeroPositions=False;Header image path=;Send XML File to AMB=False;FPortfolioSheet_Valuation Date=;useMacroGUI=False;FTradeSheet_Portfolio Profit Loss End Date=;AMB Sender Name=;expiredPositions=False;Create directory with date=True;updateInterval=60;expandTimebucketChildren=False;File Name=CIFOa07 - List of FX Deals Input Today;instrumentRows=True;Secondary template=BM_Overseas;Include Full Data=False;FPortfolioSheet_Portfolio Profit Loss Use MtM Today=;FTradeSheet_Portfolio Profit Loss Start Date Custom=;Include Default Data=False;FPortfolioSheet_Portfolio Trade Filter Match Choice=;AMB Subject=;Include Raw Data=True;numberOfReports=5;Utf8 BOM=False;Include Formatted Data=True;HTML to Screen=False;tradeRowsOnly=True;verticalScenario=;FTradeSheet_Aggregate Currency Choice=;FPortfolioSheet_Portfolio Price Source=;clearSheetContent=False;FTradeSheet_Position Currency Choice=;FPortfolioSheet_Credit Delta DayCount=;trades=;FTradeSheet_Portfolio Profit Loss End Date Custom=;Include Color Information=True;function=;param=;instrumentParts=False;grouping=;infoManQueriesInstrument=;FTradeSheet_Portfolio Profit Loss Use MtM Today=;FPortfolioSheet_Fixed Currency=;infoManQueriesTrades=;FPortfolioSheet_Aggregate Currency Choice=;FPortfolioSheet_Portfolio Profit Loss End Date=;Overwrite if file exists=True;FTradeSheet_Fixed Currency=;FPortfolioSheet_Position Currency Choice=;wbName=CIFOa07 - List of FX Deals Input Today;FPortfolioSheet_Credit Delta RateType=;FTradeSheet_Portfolio Profit Loss Start Date=;AMB Address=;FPortfolioSheet_Include Simulated Trades=;timeBuckets=;portfolios=;snapshot=True;preProcessXml=;Year with century=False;template=;FPortfolioSheet_Portfolio Profit Loss End Date Custom=;Print style sheet (CSS)=FStandardCSS;FPortfolioSheet_Portfolio Profit Loss Start Date Custom=;FPortfolioSheet_Currency Rate Relative Update Slack=;FPortfolioSheet_Credit Delta Displayed Rate=;HTML to Printer=False;XML to File=False;FPortfolioSheet_overrideSheetSettings=False;HTML to File=False;portfolioRowOnly=False;Performance Strategy=Periodic full GC to save memory;Print template (XSL)=FStandardTemplate;File date beginning=False;FPortfolioSheet_Valuation Parameter Date=;FPortfolioSheet_Portfolio Hide Expired Positions Choice=;macros=;
+    SIZE=2850
+    [TASKSCHEDULE]
+      CALNBR.CALID=New York
+      ENABLED=Yes
+      SCHEDULE=1:W:1,Mo,Tu,We,Th,Fr:O,1300:20240101
+      SEQNBR=1136
+    [/TASKSCHEDULE]
+  [/TASK]
+[/MESSAGE]
+[MESSAGE]
+  TYPE=INSERT_TASK
+  VERSION=1.0
+  TIME=2024-03-22 10:21:09
+  SOURCE=FAMBAMessageGenerator
+  [TASK]
+    CONTEXT=Standard
+    MODULE=FWorksheetReport
+    NAME=CIFOa08 - List of Securities Deals Today.xls
+    PARAMETER=storedASQLQueriesInstrument=;Secondary file extension=.xls;Secondary output=True;storedASQLQueries=;tradeFilters=;FPortfolioSheet_Discounting Type Override=;File Path=\\\\supporting.devmandiri.co.id\\SharedFolder\\FTPS\\BMCI\\Report Front Arena\\Front Office\\CIFOa08_List_of_Securities_Deals_Today;multiThread=True;Date format=%y%m%d;Wait for Remote Work=False;FPortfolioSheet_Portfolio Hide Zero Positions Choice=;File date format=%d%m%y%H%M;FPortfolioSheet_Portfolio Profit Loss Start Date=;Include header image=False;Compress Output=False;FTradeSheet_overrideSheetSettings=False;AMB XML Message=True;zeroPositions=False;Header image path=;Send XML File to AMB=False;FPortfolioSheet_Valuation Date=;useMacroGUI=False;FTradeSheet_Portfolio Profit Loss End Date=;AMB Sender Name=;expiredPositions=False;Create directory with date=True;updateInterval=60;expandTimebucketChildren=False;File Name=CIFOa08 - List of Securities Deals Today;instrumentRows=True;Secondary template=BM_Overseas;Include Full Data=False;FPortfolioSheet_Portfolio Profit Loss Use MtM Today=;FTradeSheet_Portfolio Profit Loss Start Date Custom=;Include Default Data=False;FPortfolioSheet_Portfolio Trade Filter Match Choice=;AMB Subject=;Include Raw Data=True;numberOfReports=5;Utf8 BOM=False;Include Formatted Data=True;HTML to Screen=False;tradeRowsOnly=True;verticalScenario=;FTradeSheet_Aggregate Currency Choice=;FPortfolioSheet_Portfolio Price Source=;clearSheetContent=False;FTradeSheet_Position Currency Choice=;FPortfolioSheet_Credit Delta DayCount=;trades=;FTradeSheet_Portfolio Profit Loss End Date Custom=;Include Color Information=True;function=;param=;instrumentParts=False;grouping=;infoManQueriesInstrument=;FTradeSheet_Portfolio Profit Loss Use MtM Today=;FPortfolioSheet_Fixed Currency=;infoManQueriesTrades=;FPortfolioSheet_Aggregate Currency Choice=;FPortfolioSheet_Portfolio Profit Loss End Date=;Overwrite if file exists=True;FTradeSheet_Fixed Currency=;FPortfolioSheet_Position Currency Choice=;wbName=CIFOa08 - List of Securities Deals Today;FPortfolioSheet_Credit Delta RateType=;FTradeSheet_Portfolio Profit Loss Start Date=;AMB Address=;FPortfolioSheet_Include Simulated Trades=;timeBuckets=;portfolios=;snapshot=True;preProcessXml=;Year with century=False;template=;FPortfolioSheet_Portfolio Profit Loss End Date Custom=;Print style sheet (CSS)=FStandardCSS;FPortfolioSheet_Portfolio Profit Loss Start Date Custom=;FPortfolioSheet_Currency Rate Relative Update Slack=;FPortfolioSheet_Credit Delta Displayed Rate=;HTML to Printer=False;XML to File=False;FPortfolioSheet_overrideSheetSettings=False;HTML to File=False;portfolioRowOnly=False;Performance Strategy=Periodic full GC to save memory;Print template (XSL)=FStandardTemplate;File date beginning=False;FPortfolioSheet_Valuation Parameter Date=;FPortfolioSheet_Portfolio Hide Expired Positions Choice=;macros=;
+    SIZE=2856
+    [TASKSCHEDULE]
+      CALNBR.CALID=New York
+      ENABLED=Yes
+      SCHEDULE=1:W:1,Mo,Tu,We,Th,Fr:O,1300:20240101
+      SEQNBR=1137
+    [/TASKSCHEDULE]
+  [/TASK]
+[/MESSAGE]
+[MESSAGE]
+  TYPE=INSERT_TASK
+  VERSION=1.0
+  TIME=2024-03-22 10:21:09
+  SOURCE=FAMBAMessageGenerator
+  [TASK]
+    CONTEXT=Standard
+    MODULE=FWorksheetReport
+    NAME=CIFOa09 - List of MM Deals Input Today.xls
+    PARAMETER=storedASQLQueriesInstrument=;Secondary file extension=.xls;Secondary output=True;storedASQLQueries=;tradeFilters=;FPortfolioSheet_Discounting Type Override=;File Path=\\\\supporting.devmandiri.co.id\\SharedFolder\\FTPS\\BMCI\\Report Front Arena\\Front Office\\CIFOa09_List_of_MM_Deals_Input_Today;multiThread=True;Date format=%y%m%d;Wait for Remote Work=False;FPortfolioSheet_Portfolio Hide Zero Positions Choice=;File date format=%d%m%y%H%M;FPortfolioSheet_Portfolio Profit Loss Start Date=;Include header image=False;Compress Output=False;FTradeSheet_overrideSheetSettings=False;AMB XML Message=True;zeroPositions=False;Header image path=;Send XML File to AMB=False;FPortfolioSheet_Valuation Date=;useMacroGUI=False;FTradeSheet_Portfolio Profit Loss End Date=;AMB Sender Name=;expiredPositions=False;Create directory with date=True;updateInterval=60;expandTimebucketChildren=False;File Name=CIFOa09 - List of MM Deals Input Today;instrumentRows=True;Secondary template=BM_Overseas;Include Full Data=False;FPortfolioSheet_Portfolio Profit Loss Use MtM Today=;FTradeSheet_Portfolio Profit Loss Start Date Custom=;Include Default Data=False;FPortfolioSheet_Portfolio Trade Filter Match Choice=;AMB Subject=;Include Raw Data=True;numberOfReports=5;Utf8 BOM=False;Include Formatted Data=True;HTML to Screen=False;tradeRowsOnly=True;verticalScenario=;FTradeSheet_Aggregate Currency Choice=;FPortfolioSheet_Portfolio Price Source=;clearSheetContent=False;FTradeSheet_Position Currency Choice=;FPortfolioSheet_Credit Delta DayCount=;trades=;FTradeSheet_Portfolio Profit Loss End Date Custom=;Include Color Information=True;function=;param=;instrumentParts=False;grouping=;infoManQueriesInstrument=;FTradeSheet_Portfolio Profit Loss Use MtM Today=;FPortfolioSheet_Fixed Currency=;infoManQueriesTrades=;FPortfolioSheet_Aggregate Currency Choice=;FPortfolioSheet_Portfolio Profit Loss End Date=;Overwrite if file exists=True;FTradeSheet_Fixed Currency=;FPortfolioSheet_Position Currency Choice=;wbName=CIFOa09 - List of MM Deals Input Today;FPortfolioSheet_Credit Delta RateType=;FTradeSheet_Portfolio Profit Loss Start Date=;AMB Address=;FPortfolioSheet_Include Simulated Trades=;timeBuckets=;portfolios=;snapshot=True;preProcessXml=;Year with century=False;template=;FPortfolioSheet_Portfolio Profit Loss End Date Custom=;Print style sheet (CSS)=FStandardCSS;FPortfolioSheet_Portfolio Profit Loss Start Date Custom=;FPortfolioSheet_Currency Rate Relative Update Slack=;FPortfolioSheet_Credit Delta Displayed Rate=;HTML to Printer=False;XML to File=False;FPortfolioSheet_overrideSheetSettings=False;HTML to File=False;portfolioRowOnly=False;Performance Strategy=Periodic full GC to save memory;Print template (XSL)=FStandardTemplate;File date beginning=False;FPortfolioSheet_Valuation Parameter Date=;FPortfolioSheet_Portfolio Hide Expired Positions Choice=;macros=;
+    SIZE=2850
+    [TASKSCHEDULE]
+      CALNBR.CALID=New York
+      ENABLED=Yes
+      SCHEDULE=1:W:1,Mo,Tu,We,Th,Fr:O,1300:20240101
+      SEQNBR=1138
+    [/TASKSCHEDULE]
+  [/TASK]
+[/MESSAGE]
+[MESSAGE]
+  TYPE=INSERT_TASK
+  VERSION=1.0
+  TIME=2024-03-22 10:21:09
+  SOURCE=FAMBAMessageGenerator
+  [TASK]
+    CONTEXT=Standard
+    MODULE=FWorksheetReport
+    NAME=CIFOa10 - List of Repo Deals Input Today.xls
+    PARAMETER=storedASQLQueriesInstrument=;Secondary file extension=.xls;Secondary output=True;storedASQLQueries=;tradeFilters=;FPortfolioSheet_Discounting Type Override=;File Path=\\\\supporting.devmandiri.co.id\\SharedFolder\\FTPS\\BMCI\\Report Front Arena\\Front Office\\CIFOa10_List_of_Repo_Deals_Input_Today;multiThread=True;Date format=%y%m%d;Wait for Remote Work=False;FPortfolioSheet_Portfolio Hide Zero Positions Choice=;File date format=%d%m%y%H%M;FPortfolioSheet_Portfolio Profit Loss Start Date=;Include header image=False;Compress Output=False;FTradeSheet_overrideSheetSettings=False;AMB XML Message=True;zeroPositions=False;Header image path=;Send XML File to AMB=False;FPortfolioSheet_Valuation Date=;useMacroGUI=False;FTradeSheet_Portfolio Profit Loss End Date=;AMB Sender Name=;expiredPositions=False;Create directory with date=True;updateInterval=60;expandTimebucketChildren=False;File Name=CIFOa10 - List of Repo Deals Input Today;instrumentRows=True;Secondary template=BM_Overseas;Include Full Data=False;FPortfolioSheet_Portfolio Profit Loss Use MtM Today=;FTradeSheet_Portfolio Profit Loss Start Date Custom=;Include Default Data=False;FPortfolioSheet_Portfolio Trade Filter Match Choice=;AMB Subject=;Include Raw Data=True;numberOfReports=5;Utf8 BOM=False;Include Formatted Data=True;HTML to Screen=False;tradeRowsOnly=True;verticalScenario=;FTradeSheet_Aggregate Currency Choice=;FPortfolioSheet_Portfolio Price Source=;clearSheetContent=False;FTradeSheet_Position Currency Choice=;FPortfolioSheet_Credit Delta DayCount=;trades=;FTradeSheet_Portfolio Profit Loss End Date Custom=;Include Color Information=True;function=;param=;instrumentParts=False;grouping=;infoManQueriesInstrument=;FTradeSheet_Portfolio Profit Loss Use MtM Today=;FPortfolioSheet_Fixed Currency=;infoManQueriesTrades=;FPortfolioSheet_Aggregate Currency Choice=;FPortfolioSheet_Portfolio Profit Loss End Date=;Overwrite if file exists=True;FTradeSheet_Fixed Currency=;FPortfolioSheet_Position Currency Choice=;wbName=CIFOa10 - List of Repo Deals Input Today;FPortfolioSheet_Credit Delta RateType=;FTradeSheet_Portfolio Profit Loss Start Date=;AMB Address=;FPortfolioSheet_Include Simulated Trades=;timeBuckets=;portfolios=;snapshot=True;preProcessXml=;Year with century=False;template=;FPortfolioSheet_Portfolio Profit Loss End Date Custom=;Print style sheet (CSS)=FStandardCSS;FPortfolioSheet_Portfolio Profit Loss Start Date Custom=;FPortfolioSheet_Currency Rate Relative Update Slack=;FPortfolioSheet_Credit Delta Displayed Rate=;HTML to Printer=False;XML to File=False;FPortfolioSheet_overrideSheetSettings=False;HTML to File=False;portfolioRowOnly=False;Performance Strategy=Periodic full GC to save memory;Print template (XSL)=FStandardTemplate;File date beginning=False;FPortfolioSheet_Valuation Parameter Date=;FPortfolioSheet_Portfolio Hide Expired Positions Choice=;macros=;
+    SIZE=2856
+    [TASKSCHEDULE]
+      CALNBR.CALID=New York
+      ENABLED=Yes
+      SCHEDULE=1:W:1,Mo,Tu,We,Th,Fr:O,1300:20240101
+      SEQNBR=1139
+    [/TASKSCHEDULE]
+  [/TASK]
+[/MESSAGE]
+[MESSAGE]
+  TYPE=INSERT_TASK
+  VERSION=1.0
+  TIME=2024-03-22 10:21:09
+  SOURCE=FAMBAMessageGenerator
+  [TASK]
+    CONTEXT=Standard
+    MODULE=FWorksheetReport
+    NAME=CIFOa11 - Details of Revalued Deals by Currency.xls
+    PARAMETER=storedASQLQueriesInstrument=;Secondary file extension=.xls;Secondary output=True;storedASQLQueries=;tradeFilters=;FPortfolioSheet_Discounting Type Override=;File Path=\\\\supporting.devmandiri.co.id\\SharedFolder\\FTPS\\BMCI\\Report Front Arena\\Front Office\\CIFOa11_Details_of_Revalued_Deals_by_Currency;multiThread=True;Date format=%y%m%d;Wait for Remote Work=False;FPortfolioSheet_Portfolio Hide Zero Positions Choice=;File date format=%d%m%y%H%M;FPortfolioSheet_Portfolio Profit Loss Start Date=;Include header image=False;Compress Output=False;FTradeSheet_overrideSheetSettings=False;AMB XML Message=True;zeroPositions=False;Header image path=;Send XML File to AMB=False;FPortfolioSheet_Valuation Date=;useMacroGUI=False;FTradeSheet_Portfolio Profit Loss End Date=;AMB Sender Name=;expiredPositions=False;Create directory with date=True;updateInterval=60;expandTimebucketChildren=False;File Name=CIFOa11 - Details of Revalued Deals by Currency;instrumentRows=True;Secondary template=BM_Overseas;Include Full Data=False;FPortfolioSheet_Portfolio Profit Loss Use MtM Today=;FTradeSheet_Portfolio Profit Loss Start Date Custom=;Include Default Data=False;FPortfolioSheet_Portfolio Trade Filter Match Choice=;AMB Subject=;Include Raw Data=True;numberOfReports=5;Utf8 BOM=False;Include Formatted Data=True;HTML to Screen=False;tradeRowsOnly=True;verticalScenario=;FTradeSheet_Aggregate Currency Choice=;FPortfolioSheet_Portfolio Price Source=;clearSheetContent=False;FTradeSheet_Position Currency Choice=;FPortfolioSheet_Credit Delta DayCount=;trades=;FTradeSheet_Portfolio Profit Loss End Date Custom=;Include Color Information=True;function=;param=;instrumentParts=False;grouping=;infoManQueriesInstrument=;FTradeSheet_Portfolio Profit Loss Use MtM Today=;FPortfolioSheet_Fixed Currency=;infoManQueriesTrades=;FPortfolioSheet_Aggregate Currency Choice=;FPortfolioSheet_Portfolio Profit Loss End Date=;Overwrite if file exists=True;FTradeSheet_Fixed Currency=;FPortfolioSheet_Position Currency Choice=;wbName=CIFOa11 - Details of Revalued Deals by Currency;FPortfolioSheet_Credit Delta RateType=;FTradeSheet_Portfolio Profit Loss Start Date=;AMB Address=;FPortfolioSheet_Include Simulated Trades=;timeBuckets=;portfolios=;snapshot=True;preProcessXml=;Year with century=False;template=;FPortfolioSheet_Portfolio Profit Loss End Date Custom=;Print style sheet (CSS)=FStandardCSS;FPortfolioSheet_Portfolio Profit Loss Start Date Custom=;FPortfolioSheet_Currency Rate Relative Update Slack=;FPortfolioSheet_Credit Delta Displayed Rate=;HTML to Printer=False;XML to File=False;FPortfolioSheet_overrideSheetSettings=False;HTML to File=False;portfolioRowOnly=False;Performance Strategy=Periodic full GC to save memory;Print template (XSL)=FStandardTemplate;File date beginning=False;FPortfolioSheet_Valuation Parameter Date=;FPortfolioSheet_Portfolio Hide Expired Positions Choice=;macros=;
+    SIZE=2877
+    [TASKSCHEDULE]
+      CALNBR.CALID=New York
+      ENABLED=Yes
+      SCHEDULE=1:W:1,Mo,Tu,We,Th,Fr:O,1300:20240101
+      SEQNBR=1140
+    [/TASKSCHEDULE]
+  [/TASK]
+[/MESSAGE]
+[MESSAGE]
+  TYPE=INSERT_TASK
+  VERSION=1.0
+  TIME=2024-03-22 10:21:09
+  SOURCE=FAMBAMessageGenerator
+  [TASK]
+    CONTEXT=Standard
+    MODULE=FWorksheetReport
+    NAME=CIFOa12 - Outstanding IRS.xls
+    PARAMETER=storedASQLQueriesInstrument=;Secondary file extension=.xls;Secondary output=True;storedASQLQueries=;tradeFilters=;FPortfolioSheet_Discounting Type Override=;File Path=\\\\supporting.devmandiri.co.id\\SharedFolder\\FTPS\\BMCI\\Report Front Arena\\Front Office\\CIFOa12_Outstanding_IRS;multiThread=True;Date format=%y%m%d;Wait for Remote Work=False;FPortfolioSheet_Portfolio Hide Zero Positions Choice=;File date format=%d%m%y%H%M;FPortfolioSheet_Portfolio Profit Loss Start Date=;Include header image=False;Compress Output=False;FTradeSheet_overrideSheetSettings=False;AMB XML Message=True;zeroPositions=False;Header image path=;Send XML File to AMB=False;FPortfolioSheet_Valuation Date=;useMacroGUI=False;FTradeSheet_Portfolio Profit Loss End Date=;AMB Sender Name=;expiredPositions=False;Create directory with date=True;updateInterval=60;expandTimebucketChildren=False;File Name=CIFOa12 - Outstanding IRS;instrumentRows=True;Secondary template=BM_Overseas;Include Full Data=False;FPortfolioSheet_Portfolio Profit Loss Use MtM Today=;FTradeSheet_Portfolio Profit Loss Start Date Custom=;Include Default Data=False;FPortfolioSheet_Portfolio Trade Filter Match Choice=;AMB Subject=;Include Raw Data=True;numberOfReports=5;Utf8 BOM=False;Include Formatted Data=True;HTML to Screen=False;tradeRowsOnly=True;verticalScenario=;FTradeSheet_Aggregate Currency Choice=;FPortfolioSheet_Portfolio Price Source=;clearSheetContent=False;FTradeSheet_Position Currency Choice=;FPortfolioSheet_Credit Delta DayCount=;trades=;FTradeSheet_Portfolio Profit Loss End Date Custom=;Include Color Information=True;function=;param=;instrumentParts=False;grouping=;infoManQueriesInstrument=;FTradeSheet_Portfolio Profit Loss Use MtM Today=;FPortfolioSheet_Fixed Currency=;infoManQueriesTrades=;FPortfolioSheet_Aggregate Currency Choice=;FPortfolioSheet_Portfolio Profit Loss End Date=;Overwrite if file exists=True;FTradeSheet_Fixed Currency=;FPortfolioSheet_Position Currency Choice=;wbName=CIFOa12 - Outstanding IRS;FPortfolioSheet_Credit Delta RateType=;FTradeSheet_Portfolio Profit Loss Start Date=;AMB Address=;FPortfolioSheet_Include Simulated Trades=;timeBuckets=;portfolios=;snapshot=True;preProcessXml=;Year with century=False;template=;FPortfolioSheet_Portfolio Profit Loss End Date Custom=;Print style sheet (CSS)=FStandardCSS;FPortfolioSheet_Portfolio Profit Loss Start Date Custom=;FPortfolioSheet_Currency Rate Relative Update Slack=;FPortfolioSheet_Credit Delta Displayed Rate=;HTML to Printer=False;XML to File=False;FPortfolioSheet_overrideSheetSettings=False;HTML to File=False;portfolioRowOnly=False;Performance Strategy=Periodic full GC to save memory;Print template (XSL)=FStandardTemplate;File date beginning=False;FPortfolioSheet_Valuation Parameter Date=;FPortfolioSheet_Portfolio Hide Expired Positions Choice=;macros=;
+    SIZE=2811
+    [TASKSCHEDULE]
+      CALNBR.CALID=New York
+      ENABLED=Yes
+      SCHEDULE=1:W:1,Mo,Tu,We,Th,Fr:O,1300:20240101
+      SEQNBR=1141
+    [/TASKSCHEDULE]
+  [/TASK]
+[/MESSAGE]

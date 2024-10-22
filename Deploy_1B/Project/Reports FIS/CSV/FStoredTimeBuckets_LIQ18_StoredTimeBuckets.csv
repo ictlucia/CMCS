@@ -1,0 +1,296 @@
+TEXTOBJECT,,,,,/TEXTOBJECT
+DATA,NAME,SIZE,TYPE,USRNBR.USERID,
+"<?xml version='1.0' encoding='UTF-8'?>\
+<FrontArenaPrimeSheetExport>\
+<!--PRIME Version: 2022.4.15-->\
+<FDictionary type =""AcmDomain"">\
+  <Element>\
+  <FAssociation type =""AcmDomain"">\
+    <associationKey type =""Property"">\
+      <FSymbol type =""AcmDomain"">\
+        <Text type =""Property"">\
+          <string type =""AcmDomain"">timeBuckets</string>\
+        </Text>\
+      </FSymbol>\
+    </associationKey>\
+    <associationValue type =""Property"">\
+      <FTimeBuckets type =""AcmDomain"">\
+        <timeBucketsDefinitionAndConfiguration type =""Property"">\
+          <FTimeBucketsDefinitionAndConfiguration type =""AcmDomain"">\
+            <timeBucketsDefinition type =""Property"">\
+              <FTimeBucketsDefinition type =""AcmDomain"">\
+                <startDate type =""Property"">\
+                  <int type =""AcmDomain"">739455</int>\
+                </startDate>\
+                <subBuckets type =""Property"">\
+                  <int type =""AcmDomain"">0</int>\
+                </subBuckets>\
+                <defaultStartDate type =""Property"">\
+                  <bool type =""AcmDomain"">true</bool>\
+                </defaultStartDate>\
+                <dateStartsBucket type =""Property"">\
+                  <bool type =""AcmDomain"">false</bool>\
+                </dateStartsBucket>\
+                <generationInfos type =""Property"">\
+                  <FSortedCollection type =""AcmDomain"">\
+                  </FSortedCollection>\
+                </generationInfos>\
+                <bucketDefinitions type =""Property"">\
+                  <FArray type =""AcmDomain"">\
+                    <Element>\
+                    <FRestTimeBucketDefinition type =""AcmDomain"">\
+                      <businessDayMethod type =""Property"">\
+                        <int type =""AcmDomain"">0</int>\
+                      </businessDayMethod>\
+                      <dateAsName type =""Property"">\
+                        <bool type =""AcmDomain"">false</bool>\
+                      </dateAsName>\
+                      <adjust type =""Property"">\
+                        <bool type =""AcmDomain"">false</bool>\
+                      </adjust>\
+                      <priority type =""Property"">\
+                        <int type =""AcmDomain"">2</int>\
+                      </priority>\
+                      <uninterruptedSequence type =""Property"">\
+                        <bool type =""AcmDomain"">false</bool>\
+                      </uninterruptedSequence>\
+                      <useSubBuckets type =""Property"">\
+                        <bool type =""AcmDomain"">false</bool>\
+                      </useSubBuckets>\
+                      <subBuckets type =""Property"">\
+                        <int type =""AcmDomain"">0</int>\
+                      </subBuckets>\
+                    </FRestTimeBucketDefinition>\
+                    </Element>\
+                    <Element>\
+                    <FDatePeriodTimeBucketDefinition type =""AcmDomain"">\
+                      <businessDayMethod type =""Property"">\
+                        <int type =""AcmDomain"">0</int>\
+                      </businessDayMethod>\
+                      <dateAsName type =""Property"">\
+                        <bool type =""AcmDomain"">false</bool>\
+                      </dateAsName>\
+                      <adjust type =""Property"">\
+                        <bool type =""AcmDomain"">true</bool>\
+                      </adjust>\
+                      <priority type =""Property"">\
+                        <int type =""AcmDomain"">2</int>\
+                      </priority>\
+                      <uninterruptedSequence type =""Property"">\
+                        <bool type =""AcmDomain"">false</bool>\
+                      </uninterruptedSequence>\
+                      <useSubBuckets type =""Property"">\
+                        <bool type =""AcmDomain"">false</bool>\
+                      </useSubBuckets>\
+                      <subBuckets type =""Property"">\
+                        <int type =""AcmDomain"">0</int>\
+                      </subBuckets>\
+                      <datePeriodUnit type =""Property"">\
+                        <int type =""AcmDomain"">1</int>\
+                      </datePeriodUnit>\
+                      <datePeriodCount type =""Property"">\
+                        <int type =""AcmDomain"">1</int>\
+                      </datePeriodCount>\
+                      <relativeSpot type =""Property"">\
+                        <bool type =""AcmDomain"">true</bool>\
+                      </relativeSpot>\
+                    </FDatePeriodTimeBucketDefinition>\
+                    </Element>\
+                    <Element>\
+                    <FDatePeriodTimeBucketDefinition type =""AcmDomain"">\
+                      <businessDayMethod type =""Property"">\
+                        <int type =""AcmDomain"">0</int>\
+                      </businessDayMethod>\
+                      <dateAsName type =""Property"">\
+                        <bool type =""AcmDomain"">false</bool>\
+                      </dateAsName>\
+                      <adjust type =""Property"">\
+                        <bool type =""AcmDomain"">true</bool>\
+                      </adjust>\
+                      <priority type =""Property"">\
+                        <int type =""AcmDomain"">2</int>\
+                      </priority>\
+                      <uninterruptedSequence type =""Property"">\
+                        <bool type =""AcmDomain"">false</bool>\
+                      </uninterruptedSequence>\
+                      <useSubBuckets type =""Property"">\
+                        <bool type =""AcmDomain"">false</bool>\
+                      </useSubBuckets>\
+                      <subBuckets type =""Property"">\
+                        <int type =""AcmDomain"">0</int>\
+                      </subBuckets>\
+                      <datePeriodUnit type =""Property"">\
+                        <int type =""AcmDomain"">1</int>\
+                      </datePeriodUnit>\
+                      <datePeriodCount type =""Property"">\
+                        <int type =""AcmDomain"">2</int>\
+                      </datePeriodCount>\
+                      <relativeSpot type =""Property"">\
+                        <bool type =""AcmDomain"">true</bool>\
+                      </relativeSpot>\
+                    </FDatePeriodTimeBucketDefinition>\
+                    </Element>\
+                    <Element>\
+                    <FDatePeriodTimeBucketDefinition type =""AcmDomain"">\
+                      <businessDayMethod type =""Property"">\
+                        <int type =""AcmDomain"">0</int>\
+                      </businessDayMethod>\
+                      <dateAsName type =""Property"">\
+                        <bool type =""AcmDomain"">false</bool>\
+                      </dateAsName>\
+                      <adjust type =""Property"">\
+                        <bool type =""AcmDomain"">true</bool>\
+                      </adjust>\
+                      <priority type =""Property"">\
+                        <int type =""AcmDomain"">2</int>\
+                      </priority>\
+                      <uninterruptedSequence type =""Property"">\
+                        <bool type =""AcmDomain"">false</bool>\
+                      </uninterruptedSequence>\
+                      <useSubBuckets type =""Property"">\
+                        <bool type =""AcmDomain"">false</bool>\
+                      </useSubBuckets>\
+                      <subBuckets type =""Property"">\
+                        <int type =""AcmDomain"">0</int>\
+                      </subBuckets>\
+                      <datePeriodUnit type =""Property"">\
+                        <int type =""AcmDomain"">1</int>\
+                      </datePeriodUnit>\
+                      <datePeriodCount type =""Property"">\
+                        <int type =""AcmDomain"">3</int>\
+                      </datePeriodCount>\
+                      <relativeSpot type =""Property"">\
+                        <bool type =""AcmDomain"">true</bool>\
+                      </relativeSpot>\
+                    </FDatePeriodTimeBucketDefinition>\
+                    </Element>\
+                    <Element>\
+                    <FDatePeriodTimeBucketDefinition type =""AcmDomain"">\
+                      <businessDayMethod type =""Property"">\
+                        <int type =""AcmDomain"">0</int>\
+                      </businessDayMethod>\
+                      <dateAsName type =""Property"">\
+                        <bool type =""AcmDomain"">false</bool>\
+                      </dateAsName>\
+                      <adjust type =""Property"">\
+                        <bool type =""AcmDomain"">true</bool>\
+                      </adjust>\
+                      <priority type =""Property"">\
+                        <int type =""AcmDomain"">2</int>\
+                      </priority>\
+                      <uninterruptedSequence type =""Property"">\
+                        <bool type =""AcmDomain"">false</bool>\
+                      </uninterruptedSequence>\
+                      <useSubBuckets type =""Property"">\
+                        <bool type =""AcmDomain"">false</bool>\
+                      </useSubBuckets>\
+                      <subBuckets type =""Property"">\
+                        <int type =""AcmDomain"">0</int>\
+                      </subBuckets>\
+                      <datePeriodUnit type =""Property"">\
+                        <int type =""AcmDomain"">1</int>\
+                      </datePeriodUnit>\
+                      <datePeriodCount type =""Property"">\
+                        <int type =""AcmDomain"">4</int>\
+                      </datePeriodCount>\
+                      <relativeSpot type =""Property"">\
+                        <bool type =""AcmDomain"">true</bool>\
+                      </relativeSpot>\
+                    </FDatePeriodTimeBucketDefinition>\
+                    </Element>\
+                    <Element>\
+                    <FDatePeriodTimeBucketDefinition type =""AcmDomain"">\
+                      <businessDayMethod type =""Property"">\
+                        <int type =""AcmDomain"">0</int>\
+                      </businessDayMethod>\
+                      <dateAsName type =""Property"">\
+                        <bool type =""AcmDomain"">false</bool>\
+                      </dateAsName>\
+                      <adjust type =""Property"">\
+                        <bool type =""AcmDomain"">true</bool>\
+                      </adjust>\
+                      <priority type =""Property"">\
+                        <int type =""AcmDomain"">2</int>\
+                      </priority>\
+                      <uninterruptedSequence type =""Property"">\
+                        <bool type =""AcmDomain"">false</bool>\
+                      </uninterruptedSequence>\
+                      <useSubBuckets type =""Property"">\
+                        <bool type =""AcmDomain"">false</bool>\
+                      </useSubBuckets>\
+                      <subBuckets type =""Property"">\
+                        <int type =""AcmDomain"">0</int>\
+                      </subBuckets>\
+                      <datePeriodUnit type =""Property"">\
+                        <int type =""AcmDomain"">1</int>\
+                      </datePeriodUnit>\
+                      <datePeriodCount type =""Property"">\
+                        <int type =""AcmDomain"">5</int>\
+                      </datePeriodCount>\
+                      <relativeSpot type =""Property"">\
+                        <bool type =""AcmDomain"">true</bool>\
+                      </relativeSpot>\
+                    </FDatePeriodTimeBucketDefinition>\
+                    </Element>\
+                  </FArray>\
+                </bucketDefinitions>\
+                <monthPeriodMapping type =""Property"">\
+                  <int type =""AcmDomain"">0</int>\
+                </monthPeriodMapping>\
+                <datePeriodPrecedence type =""Property"">\
+                  <bool type =""AcmDomain"">false</bool>\
+                </datePeriodPrecedence>\
+              </FTimeBucketsDefinition>\
+            </timeBucketsDefinition>\
+            <timeBucketsConfiguration type =""Property"">\
+              <FTimeBucketsConfiguration type =""AcmDomain"">\
+                <ParamDict type =""Property"">\
+                  <FDictionary type =""AcmDomain"">\
+                    <Element>\
+                    <FAssociation type =""AcmDomain"">\
+                      <associationKey type =""Property"">\
+                        <FSymbol type =""AcmDomain"">\
+                          <Text type =""Property"">\
+                            <string type =""AcmDomain"">buckettype</string>\
+                          </Text>\
+                        </FSymbol>\
+                      </associationKey>\
+                      <associationValue type =""Property"">\
+                        <FInteger type =""AcmDomain"">\
+                          <Number type =""Property"">\
+                            <int64 type =""AcmDomain"">0</int64>\
+                          </Number>\
+                        </FInteger>\
+                      </associationValue>\
+                    </FAssociation>\
+                    </Element>\
+                    <Element>\
+                    <FAssociation type =""AcmDomain"">\
+                      <associationKey type =""Property"">\
+                        <FSymbol type =""AcmDomain"">\
+                          <Text type =""Property"">\
+                            <string type =""AcmDomain"">spotdays</string>\
+                          </Text>\
+                        </FSymbol>\
+                      </associationKey>\
+                      <associationValue type =""Property"">\
+                        <FInteger type =""AcmDomain"">\
+                          <Number type =""Property"">\
+                            <int64 type =""AcmDomain"">2</int64>\
+                          </Number>\
+                        </FInteger>\
+                      </associationValue>\
+                    </FAssociation>\
+                    </Element>\
+                  </FDictionary>\
+                </ParamDict>\
+              </FTimeBucketsConfiguration>\
+            </timeBucketsConfiguration>\
+          </FTimeBucketsDefinitionAndConfiguration>\
+        </timeBucketsDefinitionAndConfiguration>\
+      </FTimeBuckets>\
+    </associationValue>\
+  </FAssociation>\
+  </Element>\
+</FDictionary>\
+</FrontArenaPrimeSheetExport>",LIQ18_StoredTimeBuckets,13928,Stored Time Buckets,ARENASYS,

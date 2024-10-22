@@ -1,0 +1,1753 @@
+<?xml version='1.0' encoding='ISO-8859-1'?>
+<FStoredASQLQuery><acm_version>2022.4.17, Aug 20 2024</acm_version><acm_unicode>True</acm_unicode><py2_ads>False</py2_ads><version>2 $Id$</version><update_time>2024-09-18 15:30:04</update_time><object_name>A_Sett_Treasury</object_name><owner>ARENASYS</owner><protection>3072</protection><shared>True</shared><subtype>bookSettlementMapping</subtype><data>&lt;?xml version='1.0' encoding='UTF-8'?&gt;
+&lt;FDictionary type ="AcmDomain"&gt;
+  &lt;Element&gt;
+  &lt;FAssociation type ="AcmDomain"&gt;
+    &lt;associationKey type ="Property"&gt;
+      &lt;FSymbol type ="AcmDomain"&gt;
+        &lt;Text type ="Property"&gt;
+          &lt;string type ="AcmDomain"&gt;Query&lt;/string&gt;
+        &lt;/Text&gt;
+      &lt;/FSymbol&gt;
+    &lt;/associationKey&gt;
+    &lt;associationValue type ="Property"&gt;    
+
+
+
+    &lt;FASQLQuery type ="AcmDomain"&gt;
+
+
+
+      &lt;asqlNodes type ="Property"&gt;
+
+
+
+        &lt;FArray type ="AcmDomain"&gt;
+
+
+
+          &lt;Element&gt;
+
+
+
+          &lt;FASQLOpNode type ="AcmDomain"&gt;
+
+
+
+            &lt;asqlNodes type ="Property"&gt;
+
+
+
+              &lt;FArray type ="AcmDomain"&gt;
+
+
+
+                &lt;Element&gt;
+
+
+
+                &lt;FASQLAttrNode type ="AcmDomain"&gt;
+
+
+
+                  &lt;asqlAttribute type ="Property"&gt;
+
+
+
+                    &lt;FASQLAttribute type ="AcmDomain"&gt;
+
+
+
+                      &lt;attributeString type ="Property"&gt;
+
+
+
+                        &lt;FString type ="AcmDomain"&gt;
+
+
+
+                          &lt;Text type ="Property"&gt;
+
+
+
+                            &lt;string type ="AcmDomain"&gt;Trade.Portfolio.Name&lt;/string&gt;
+
+
+
+                          &lt;/Text&gt;
+
+
+
+                        &lt;/FString&gt;
+
+
+
+                      &lt;/attributeString&gt;
+
+
+
+                    &lt;/FASQLAttribute&gt;
+
+
+
+                  &lt;/asqlAttribute&gt;
+
+
+
+                  &lt;asqlValue type ="Property"&gt;
+
+
+
+                    &lt;FUndefinedObject type ="AcmDomain"&gt;
+
+
+
+                    &lt;/FUndefinedObject&gt;
+
+
+
+                  &lt;/asqlValue&gt;
+
+
+
+                  &lt;asqlOperator type ="Property"&gt;
+
+
+
+                    &lt;int type ="AcmDomain"&gt;1&lt;/int&gt;
+
+
+
+                  &lt;/asqlOperator&gt;
+
+
+
+                  &lt;scaleFactor type ="Property"&gt;
+
+
+
+                    &lt;double type ="AcmDomain"&gt;NaN&lt;/double&gt;
+
+
+
+                  &lt;/scaleFactor&gt;
+
+
+
+                &lt;/FASQLAttrNode&gt;
+
+
+
+                &lt;/Element&gt;
+
+
+
+                &lt;Element&gt;
+
+
+
+                &lt;FASQLOpNode type ="AcmDomain"&gt;
+
+
+
+                  &lt;asqlNodes type ="Property"&gt;
+
+
+
+                    &lt;FArray type ="AcmDomain"&gt;
+
+
+
+                    &lt;/FArray&gt;
+
+
+
+                  &lt;/asqlNodes&gt;
+
+
+
+                  &lt;asqlOperator type ="Property"&gt;
+
+
+
+                    &lt;int type ="AcmDomain"&gt;0&lt;/int&gt;
+
+
+
+                  &lt;/asqlOperator&gt;
+
+
+
+                  &lt;asqlNodeName type ="Property"&gt;
+
+
+
+                    &lt;FString type ="AcmDomain"&gt;
+
+
+
+                      &lt;Text type ="Property"&gt;
+
+
+
+                        &lt;string type ="AcmDomain"&gt;includeSubportfolios&lt;/string&gt;
+
+
+
+                      &lt;/Text&gt;
+
+
+
+                    &lt;/FString&gt;
+
+
+
+                  &lt;/asqlNodeName&gt;
+
+
+
+                  &lt;not type ="Property"&gt;
+
+
+
+                    &lt;bool type ="AcmDomain"&gt;false&lt;/bool&gt;
+
+
+
+                  &lt;/not&gt;
+
+
+
+                  &lt;parameterInfoData type ="Property"&gt;
+
+
+
+                    &lt;FDictionary type ="AcmDomain"&gt;
+
+
+
+                      &lt;Element&gt;
+
+
+
+                      &lt;FAssociation type ="AcmDomain"&gt;
+
+
+
+                        &lt;associationKey type ="Property"&gt;
+
+
+
+                          &lt;FSymbol type ="AcmDomain"&gt;
+
+
+
+                            &lt;Text type ="Property"&gt;
+
+
+
+                              &lt;string type ="AcmDomain"&gt;methodChainFull&lt;/string&gt;
+
+
+
+                            &lt;/Text&gt;
+
+
+
+                          &lt;/FSymbol&gt;
+
+
+
+                        &lt;/associationKey&gt;
+
+
+
+                        &lt;associationValue type ="Property"&gt;
+
+
+
+                          &lt;FString type ="AcmDomain"&gt;
+
+
+
+                            &lt;Text type ="Property"&gt;
+
+
+
+                              &lt;string type ="AcmDomain"&gt;Trade.Portfolio.Name&lt;/string&gt;
+
+
+
+                            &lt;/Text&gt;
+
+
+
+                          &lt;/FString&gt;
+
+
+
+                        &lt;/associationValue&gt;
+
+
+
+                      &lt;/FAssociation&gt;
+
+
+
+                      &lt;/Element&gt;
+
+
+
+                    &lt;/FDictionary&gt;
+
+
+
+                  &lt;/parameterInfoData&gt;
+
+
+
+                &lt;/FASQLOpNode&gt;
+
+
+
+                &lt;/Element&gt;
+
+
+
+              &lt;/FArray&gt;
+
+
+
+            &lt;/asqlNodes&gt;
+
+
+
+            &lt;asqlOperator type ="Property"&gt;
+
+
+
+              &lt;int type ="AcmDomain"&gt;1&lt;/int&gt;
+
+
+
+            &lt;/asqlOperator&gt;
+
+
+
+            &lt;asqlNodeName type ="Property"&gt;
+
+
+
+              &lt;FString type ="AcmDomain"&gt;
+
+
+
+                &lt;Text type ="Property"&gt;
+
+
+
+                  &lt;string type ="AcmDomain"&gt;&lt;/string&gt;
+
+
+
+                &lt;/Text&gt;
+
+
+
+              &lt;/FString&gt;
+
+
+
+            &lt;/asqlNodeName&gt;
+
+
+
+            &lt;not type ="Property"&gt;
+
+
+
+              &lt;bool type ="AcmDomain"&gt;false&lt;/bool&gt;
+
+
+
+            &lt;/not&gt;
+
+
+
+          &lt;/FASQLOpNode&gt;
+
+
+
+          &lt;/Element&gt;
+
+
+
+          &lt;Element&gt;
+
+
+
+          &lt;FASQLOpNode type ="AcmDomain"&gt;
+
+
+
+            &lt;asqlNodes type ="Property"&gt;
+
+
+
+              &lt;FArray type ="AcmDomain"&gt;
+
+
+
+                &lt;Element&gt;
+
+
+
+                &lt;FASQLAttrNode type ="AcmDomain"&gt;
+
+
+
+                  &lt;asqlAttribute type ="Property"&gt;
+
+
+
+                    &lt;FASQLAttribute type ="AcmDomain"&gt;
+
+
+
+                      &lt;attributeString type ="Property"&gt;
+
+
+
+                        &lt;FString type ="AcmDomain"&gt;
+
+
+
+                          &lt;Text type ="Property"&gt;
+
+
+
+                            &lt;string type ="AcmDomain"&gt;Status&lt;/string&gt;
+
+
+
+                          &lt;/Text&gt;
+
+
+
+                        &lt;/FString&gt;
+
+
+
+                      &lt;/attributeString&gt;
+
+
+
+                    &lt;/FASQLAttribute&gt;
+
+
+
+                  &lt;/asqlAttribute&gt;
+
+
+
+                  &lt;asqlValue type ="Property"&gt;
+
+
+
+                    &lt;FEnumValue type ="AcmDomain"&gt;
+
+
+
+                      &lt;enumeration type ="Property"&gt;
+
+
+
+                        &lt;FDomain type ="AcmDomain"&gt;
+
+
+
+                          &lt;DomainName type ="Property"&gt;
+
+
+
+                            &lt;string type ="AcmDomain"&gt;enum(SettlementStatus)&lt;/string&gt;
+
+
+
+                          &lt;/DomainName&gt;
+
+
+
+                        &lt;/FDomain&gt;
+
+
+
+                      &lt;/enumeration&gt;
+
+
+
+                      &lt;tag type ="Property"&gt;
+
+
+
+                        &lt;FString type ="AcmDomain"&gt;
+
+
+
+                          &lt;Text type ="Property"&gt;
+
+
+
+                            &lt;string type ="AcmDomain"&gt;Acknowledged&lt;/string&gt;
+
+
+
+                          &lt;/Text&gt;
+
+
+
+                        &lt;/FString&gt;
+
+
+
+                      &lt;/tag&gt;
+
+
+
+                      &lt;value type ="Property"&gt;
+
+
+
+                        &lt;int type ="AcmDomain"&gt;8&lt;/int&gt;
+
+
+
+                      &lt;/value&gt;
+
+
+
+                    &lt;/FEnumValue&gt;
+
+
+
+                  &lt;/asqlValue&gt;
+
+
+
+                  &lt;asqlOperator type ="Property"&gt;
+
+
+
+                    &lt;int type ="AcmDomain"&gt;0&lt;/int&gt;
+
+
+
+                  &lt;/asqlOperator&gt;
+
+
+
+                  &lt;scaleFactor type ="Property"&gt;
+
+
+
+                    &lt;double type ="AcmDomain"&gt;NaN&lt;/double&gt;
+
+
+
+                  &lt;/scaleFactor&gt;
+
+
+
+                &lt;/FASQLAttrNode&gt;
+
+
+
+                &lt;/Element&gt;
+
+
+
+                &lt;Element&gt;
+
+
+
+                &lt;FASQLAttrNode type ="AcmDomain"&gt;
+
+
+
+                  &lt;asqlAttribute type ="Property"&gt;
+
+
+
+                    &lt;FASQLAttribute type ="AcmDomain"&gt;
+
+
+
+                      &lt;attributeString type ="Property"&gt;
+
+
+
+                        &lt;FString type ="AcmDomain"&gt;
+
+
+
+                          &lt;Text type ="Property"&gt;
+
+
+
+                            &lt;string type ="AcmDomain"&gt;Status&lt;/string&gt;
+
+
+
+                          &lt;/Text&gt;
+
+
+
+                        &lt;/FString&gt;
+
+
+
+                      &lt;/attributeString&gt;
+
+
+
+                    &lt;/FASQLAttribute&gt;
+
+
+
+                  &lt;/asqlAttribute&gt;
+
+
+
+                  &lt;asqlValue type ="Property"&gt;
+
+
+
+                    &lt;FEnumValue type ="AcmDomain"&gt;
+
+
+
+                      &lt;enumeration type ="Property"&gt;
+
+
+
+                        &lt;FDomain type ="AcmDomain"&gt;
+
+
+
+                          &lt;DomainName type ="Property"&gt;
+
+
+
+                            &lt;string type ="AcmDomain"&gt;enum(SettlementStatus)&lt;/string&gt;
+
+
+
+                          &lt;/DomainName&gt;
+
+
+
+                        &lt;/FDomain&gt;
+
+
+
+                      &lt;/enumeration&gt;
+
+
+
+                      &lt;tag type ="Property"&gt;
+
+
+
+                        &lt;FString type ="AcmDomain"&gt;
+
+
+
+                          &lt;Text type ="Property"&gt;
+
+
+
+                            &lt;string type ="AcmDomain"&gt;Closed&lt;/string&gt;
+
+
+
+                          &lt;/Text&gt;
+
+
+
+                        &lt;/FString&gt;
+
+
+
+                      &lt;/tag&gt;
+
+
+
+                      &lt;value type ="Property"&gt;
+
+
+
+                        &lt;int type ="AcmDomain"&gt;11&lt;/int&gt;
+
+
+
+                      &lt;/value&gt;
+
+
+
+                    &lt;/FEnumValue&gt;
+
+
+
+                  &lt;/asqlValue&gt;
+
+
+
+                  &lt;asqlOperator type ="Property"&gt;
+
+
+
+                    &lt;int type ="AcmDomain"&gt;0&lt;/int&gt;
+
+
+
+                  &lt;/asqlOperator&gt;
+
+
+
+                  &lt;scaleFactor type ="Property"&gt;
+
+
+
+                    &lt;double type ="AcmDomain"&gt;NaN&lt;/double&gt;
+
+
+
+                  &lt;/scaleFactor&gt;
+
+
+
+                &lt;/FASQLAttrNode&gt;
+
+
+
+                &lt;/Element&gt;
+
+
+
+                &lt;Element&gt;
+
+
+
+                &lt;FASQLAttrNode type ="AcmDomain"&gt;
+
+
+
+                  &lt;asqlAttribute type ="Property"&gt;
+
+
+
+                    &lt;FASQLAttribute type ="AcmDomain"&gt;
+
+
+
+                      &lt;attributeString type ="Property"&gt;
+
+
+
+                        &lt;FString type ="AcmDomain"&gt;
+
+
+
+                          &lt;Text type ="Property"&gt;
+
+
+
+                            &lt;string type ="AcmDomain"&gt;Status&lt;/string&gt;
+
+
+
+                          &lt;/Text&gt;
+
+
+
+                        &lt;/FString&gt;
+
+
+
+                      &lt;/attributeString&gt;
+
+
+
+                    &lt;/FASQLAttribute&gt;
+
+
+
+                  &lt;/asqlAttribute&gt;
+
+
+
+                  &lt;asqlValue type ="Property"&gt;
+
+
+
+                    &lt;FEnumValue type ="AcmDomain"&gt;
+
+
+
+                      &lt;enumeration type ="Property"&gt;
+
+
+
+                        &lt;FDomain type ="AcmDomain"&gt;
+
+
+
+                          &lt;DomainName type ="Property"&gt;
+
+
+
+                            &lt;string type ="AcmDomain"&gt;enum(SettlementStatus)&lt;/string&gt;
+
+
+
+                          &lt;/DomainName&gt;
+
+
+
+                        &lt;/FDomain&gt;
+
+
+
+                      &lt;/enumeration&gt;
+
+
+
+                      &lt;tag type ="Property"&gt;
+
+
+
+                        &lt;FString type ="AcmDomain"&gt;
+
+
+
+                          &lt;Text type ="Property"&gt;
+
+
+
+                            &lt;string type ="AcmDomain"&gt;Incorrect Payment&lt;/string&gt;
+
+
+
+                          &lt;/Text&gt;
+
+
+
+                        &lt;/FString&gt;
+
+
+
+                      &lt;/tag&gt;
+
+
+
+                      &lt;value type ="Property"&gt;
+
+
+
+                        &lt;int type ="AcmDomain"&gt;16&lt;/int&gt;
+
+
+
+                      &lt;/value&gt;
+
+
+
+                    &lt;/FEnumValue&gt;
+
+
+
+                  &lt;/asqlValue&gt;
+
+
+
+                  &lt;asqlOperator type ="Property"&gt;
+
+
+
+                    &lt;int type ="AcmDomain"&gt;0&lt;/int&gt;
+
+
+
+                  &lt;/asqlOperator&gt;
+
+
+
+                  &lt;scaleFactor type ="Property"&gt;
+
+
+
+                    &lt;double type ="AcmDomain"&gt;NaN&lt;/double&gt;
+
+
+
+                  &lt;/scaleFactor&gt;
+
+
+
+                &lt;/FASQLAttrNode&gt;
+
+
+
+                &lt;/Element&gt;
+
+
+
+                &lt;Element&gt;
+
+
+
+                &lt;FASQLAttrNode type ="AcmDomain"&gt;
+
+
+
+                  &lt;asqlAttribute type ="Property"&gt;
+
+
+
+                    &lt;FASQLAttribute type ="AcmDomain"&gt;
+
+
+
+                      &lt;attributeString type ="Property"&gt;
+
+
+
+                        &lt;FString type ="AcmDomain"&gt;
+
+
+
+                          &lt;Text type ="Property"&gt;
+
+
+
+                            &lt;string type ="AcmDomain"&gt;Status&lt;/string&gt;
+
+
+
+                          &lt;/Text&gt;
+
+
+
+                        &lt;/FString&gt;
+
+
+
+                      &lt;/attributeString&gt;
+
+
+
+                    &lt;/FASQLAttribute&gt;
+
+
+
+                  &lt;/asqlAttribute&gt;
+
+
+
+                  &lt;asqlValue type ="Property"&gt;
+
+
+
+                    &lt;FEnumValue type ="AcmDomain"&gt;
+
+
+
+                      &lt;enumeration type ="Property"&gt;
+
+
+
+                        &lt;FDomain type ="AcmDomain"&gt;
+
+
+
+                          &lt;DomainName type ="Property"&gt;
+
+
+
+                            &lt;string type ="AcmDomain"&gt;enum(SettlementStatus)&lt;/string&gt;
+
+
+
+                          &lt;/DomainName&gt;
+
+
+
+                        &lt;/FDomain&gt;
+
+
+
+                      &lt;/enumeration&gt;
+
+
+
+                      &lt;tag type ="Property"&gt;
+
+
+
+                        &lt;FString type ="AcmDomain"&gt;
+
+
+
+                          &lt;Text type ="Property"&gt;
+
+
+
+                            &lt;string type ="AcmDomain"&gt;Not Acknowledged&lt;/string&gt;
+
+
+
+                          &lt;/Text&gt;
+
+
+
+                        &lt;/FString&gt;
+
+
+
+                      &lt;/tag&gt;
+
+
+
+                      &lt;value type ="Property"&gt;
+
+
+
+                        &lt;int type ="AcmDomain"&gt;9&lt;/int&gt;
+
+
+
+                      &lt;/value&gt;
+
+
+
+                    &lt;/FEnumValue&gt;
+
+
+
+                  &lt;/asqlValue&gt;
+
+
+
+                  &lt;asqlOperator type ="Property"&gt;
+
+
+
+                    &lt;int type ="AcmDomain"&gt;0&lt;/int&gt;
+
+
+
+                  &lt;/asqlOperator&gt;
+
+
+
+                  &lt;scaleFactor type ="Property"&gt;
+
+
+
+                    &lt;double type ="AcmDomain"&gt;NaN&lt;/double&gt;
+
+
+
+                  &lt;/scaleFactor&gt;
+
+
+
+                &lt;/FASQLAttrNode&gt;
+
+
+
+                &lt;/Element&gt;
+
+
+
+                &lt;Element&gt;
+
+
+
+                &lt;FASQLAttrNode type ="AcmDomain"&gt;
+
+
+
+                  &lt;asqlAttribute type ="Property"&gt;
+
+
+
+                    &lt;FASQLAttribute type ="AcmDomain"&gt;
+
+
+
+                      &lt;attributeString type ="Property"&gt;
+
+
+
+                        &lt;FString type ="AcmDomain"&gt;
+
+
+
+                          &lt;Text type ="Property"&gt;
+
+
+
+                            &lt;string type ="AcmDomain"&gt;Status&lt;/string&gt;
+
+
+
+                          &lt;/Text&gt;
+
+
+
+                        &lt;/FString&gt;
+
+
+
+                      &lt;/attributeString&gt;
+
+
+
+                    &lt;/FASQLAttribute&gt;
+
+
+
+                  &lt;/asqlAttribute&gt;
+
+
+
+                  &lt;asqlValue type ="Property"&gt;
+
+
+
+                    &lt;FEnumValue type ="AcmDomain"&gt;
+
+
+
+                      &lt;enumeration type ="Property"&gt;
+
+
+
+                        &lt;FDomain type ="AcmDomain"&gt;
+
+
+
+                          &lt;DomainName type ="Property"&gt;
+
+
+
+                            &lt;string type ="AcmDomain"&gt;enum(SettlementStatus)&lt;/string&gt;
+
+
+
+                          &lt;/DomainName&gt;
+
+
+
+                        &lt;/FDomain&gt;
+
+
+
+                      &lt;/enumeration&gt;
+
+
+
+                      &lt;tag type ="Property"&gt;
+
+
+
+                        &lt;FString type ="AcmDomain"&gt;
+
+
+
+                          &lt;Text type ="Property"&gt;
+
+
+
+                            &lt;string type ="AcmDomain"&gt;Pending Closure&lt;/string&gt;
+
+
+
+                          &lt;/Text&gt;
+
+
+
+                        &lt;/FString&gt;
+
+
+
+                      &lt;/tag&gt;
+
+
+
+                      &lt;value type ="Property"&gt;
+
+
+
+                        &lt;int type ="AcmDomain"&gt;10&lt;/int&gt;
+
+
+
+                      &lt;/value&gt;
+
+
+
+                    &lt;/FEnumValue&gt;
+
+
+
+                  &lt;/asqlValue&gt;
+
+
+
+                  &lt;asqlOperator type ="Property"&gt;
+
+
+
+                    &lt;int type ="AcmDomain"&gt;0&lt;/int&gt;
+
+
+
+                  &lt;/asqlOperator&gt;
+
+
+
+                  &lt;scaleFactor type ="Property"&gt;
+
+
+
+                    &lt;double type ="AcmDomain"&gt;NaN&lt;/double&gt;
+
+
+
+                  &lt;/scaleFactor&gt;
+
+
+
+                &lt;/FASQLAttrNode&gt;
+
+
+
+                &lt;/Element&gt;
+
+
+
+                &lt;Element&gt;
+
+
+
+                &lt;FASQLAttrNode type ="AcmDomain"&gt;
+
+
+
+                  &lt;asqlAttribute type ="Property"&gt;
+
+
+
+                    &lt;FASQLAttribute type ="AcmDomain"&gt;
+
+
+
+                      &lt;attributeString type ="Property"&gt;
+
+
+
+                        &lt;FString type ="AcmDomain"&gt;
+
+
+
+                          &lt;Text type ="Property"&gt;
+
+
+
+                            &lt;string type ="AcmDomain"&gt;Status&lt;/string&gt;
+
+
+
+                          &lt;/Text&gt;
+
+
+
+                        &lt;/FString&gt;
+
+
+
+                      &lt;/attributeString&gt;
+
+
+
+                    &lt;/FASQLAttribute&gt;
+
+
+
+                  &lt;/asqlAttribute&gt;
+
+
+
+                  &lt;asqlValue type ="Property"&gt;
+
+
+
+                    &lt;FEnumValue type ="AcmDomain"&gt;
+
+
+
+                      &lt;enumeration type ="Property"&gt;
+
+
+
+                        &lt;FDomain type ="AcmDomain"&gt;
+
+
+
+                          &lt;DomainName type ="Property"&gt;
+
+
+
+                            &lt;string type ="AcmDomain"&gt;enum(SettlementStatus)&lt;/string&gt;
+
+
+
+                          &lt;/DomainName&gt;
+
+
+
+                        &lt;/FDomain&gt;
+
+
+
+                      &lt;/enumeration&gt;
+
+
+
+                      &lt;tag type ="Property"&gt;
+
+
+
+                        &lt;FString type ="AcmDomain"&gt;
+
+
+
+                          &lt;Text type ="Property"&gt;
+
+
+
+                            &lt;string type ="AcmDomain"&gt;Released&lt;/string&gt;
+
+
+
+                          &lt;/Text&gt;
+
+
+
+                        &lt;/FString&gt;
+
+
+
+                      &lt;/tag&gt;
+
+
+
+                      &lt;value type ="Property"&gt;
+
+
+
+                        &lt;int type ="AcmDomain"&gt;7&lt;/int&gt;
+
+
+
+                      &lt;/value&gt;
+
+
+
+                    &lt;/FEnumValue&gt;
+
+
+
+                  &lt;/asqlValue&gt;
+
+
+
+                  &lt;asqlOperator type ="Property"&gt;
+
+
+
+                    &lt;int type ="AcmDomain"&gt;0&lt;/int&gt;
+
+
+
+                  &lt;/asqlOperator&gt;
+
+
+
+                  &lt;scaleFactor type ="Property"&gt;
+
+
+
+                    &lt;double type ="AcmDomain"&gt;NaN&lt;/double&gt;
+
+
+
+                  &lt;/scaleFactor&gt;
+
+
+
+                &lt;/FASQLAttrNode&gt;
+
+
+
+                &lt;/Element&gt;
+
+
+
+              &lt;/FArray&gt;
+
+
+
+            &lt;/asqlNodes&gt;
+
+
+
+            &lt;asqlOperator type ="Property"&gt;
+
+
+
+              &lt;int type ="AcmDomain"&gt;1&lt;/int&gt;
+
+
+
+            &lt;/asqlOperator&gt;
+
+
+
+            &lt;asqlNodeName type ="Property"&gt;
+
+
+
+              &lt;FString type ="AcmDomain"&gt;
+
+
+
+                &lt;Text type ="Property"&gt;
+
+
+
+                  &lt;string type ="AcmDomain"&gt;&lt;/string&gt;
+
+
+
+                &lt;/Text&gt;
+
+
+
+              &lt;/FString&gt;
+
+
+
+            &lt;/asqlNodeName&gt;
+
+
+
+            &lt;not type ="Property"&gt;
+
+
+
+              &lt;bool type ="AcmDomain"&gt;false&lt;/bool&gt;
+
+
+
+            &lt;/not&gt;
+
+
+
+          &lt;/FASQLOpNode&gt;
+
+
+
+          &lt;/Element&gt;
+
+
+
+          &lt;Element&gt;
+
+
+
+          &lt;FASQLOpNode type ="AcmDomain"&gt;
+
+
+
+            &lt;asqlNodes type ="Property"&gt;
+
+
+
+              &lt;FArray type ="AcmDomain"&gt;
+
+
+
+                &lt;Element&gt;
+
+
+
+                &lt;FASQLAttrNode type ="AcmDomain"&gt;
+
+
+
+                  &lt;asqlAttribute type ="Property"&gt;
+
+
+
+                    &lt;FASQLAttribute type ="AcmDomain"&gt;
+
+
+
+                      &lt;attributeString type ="Property"&gt;
+
+
+
+                        &lt;FString type ="AcmDomain"&gt;
+
+
+
+                          &lt;Text type ="Property"&gt;
+
+
+
+                            &lt;string type ="AcmDomain"&gt;Trade.Acquirer.Name&lt;/string&gt;
+
+
+
+                          &lt;/Text&gt;
+
+
+
+                        &lt;/FString&gt;
+
+
+
+                      &lt;/attributeString&gt;
+
+
+
+                    &lt;/FASQLAttribute&gt;
+
+
+
+                  &lt;/asqlAttribute&gt;
+
+
+
+                  &lt;asqlValue type ="Property"&gt;
+
+
+
+                    &lt;FUndefinedObject type ="AcmDomain"&gt;
+
+
+
+                    &lt;/FUndefinedObject&gt;
+
+
+
+                  &lt;/asqlValue&gt;
+
+
+
+                  &lt;asqlOperator type ="Property"&gt;
+
+
+
+                    &lt;int type ="AcmDomain"&gt;1&lt;/int&gt;
+
+
+
+                  &lt;/asqlOperator&gt;
+
+
+
+                  &lt;scaleFactor type ="Property"&gt;
+
+
+
+                    &lt;double type ="AcmDomain"&gt;NaN&lt;/double&gt;
+
+
+
+                  &lt;/scaleFactor&gt;
+
+
+
+                &lt;/FASQLAttrNode&gt;
+
+
+
+                &lt;/Element&gt;
+
+
+
+              &lt;/FArray&gt;
+
+
+
+            &lt;/asqlNodes&gt;
+
+
+
+            &lt;asqlOperator type ="Property"&gt;
+
+
+
+              &lt;int type ="AcmDomain"&gt;1&lt;/int&gt;
+
+
+
+            &lt;/asqlOperator&gt;
+
+
+
+            &lt;asqlNodeName type ="Property"&gt;
+
+
+
+              &lt;FString type ="AcmDomain"&gt;
+
+
+
+                &lt;Text type ="Property"&gt;
+
+
+
+                  &lt;string type ="AcmDomain"&gt;&lt;/string&gt;
+
+
+
+                &lt;/Text&gt;
+
+
+
+              &lt;/FString&gt;
+
+
+
+            &lt;/asqlNodeName&gt;
+
+
+
+            &lt;not type ="Property"&gt;
+
+
+
+              &lt;bool type ="AcmDomain"&gt;false&lt;/bool&gt;
+
+
+
+            &lt;/not&gt;
+
+
+
+          &lt;/FASQLOpNode&gt;
+
+
+
+          &lt;/Element&gt;
+
+
+
+        &lt;/FArray&gt;
+
+
+
+      &lt;/asqlNodes&gt;
+
+
+
+      &lt;asqlOperator type ="Property"&gt;
+
+
+
+        &lt;int type ="AcmDomain"&gt;0&lt;/int&gt;
+
+
+
+      &lt;/asqlOperator&gt;
+
+
+
+      &lt;asqlNodeName type ="Property"&gt;
+
+
+
+        &lt;FString type ="AcmDomain"&gt;
+
+
+
+          &lt;Text type ="Property"&gt;
+
+
+
+            &lt;string type ="AcmDomain"&gt;&lt;/string&gt;
+
+
+
+          &lt;/Text&gt;
+
+
+
+        &lt;/FString&gt;
+
+
+
+      &lt;/asqlNodeName&gt;
+
+
+
+      &lt;not type ="Property"&gt;
+
+
+
+        &lt;bool type ="AcmDomain"&gt;false&lt;/bool&gt;
+
+
+
+      &lt;/not&gt;
+
+
+
+      &lt;asqlQueryClass type ="Property"&gt;
+
+
+
+        &lt;FDomain type ="AcmDomain"&gt;
+
+
+
+          &lt;DomainName type ="Property"&gt;
+
+
+
+            &lt;string type ="AcmDomain"&gt;FSettlement&lt;/string&gt;
+
+
+
+          &lt;/DomainName&gt;
+
+
+
+        &lt;/FDomain&gt;
+
+
+
+      &lt;/asqlQueryClass&gt;
+
+
+
+    &lt;/FASQLQuery&gt;
+    &lt;/associationValue&gt;
+  &lt;/FAssociation&gt;
+  &lt;/Element&gt;
+&lt;/FDictionary&gt;</data></FStoredASQLQuery>

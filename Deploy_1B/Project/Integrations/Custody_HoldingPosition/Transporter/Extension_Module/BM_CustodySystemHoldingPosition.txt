@@ -1,0 +1,195 @@
+#
+# Front Arena exported extension module.
+# source          ""
+# timestamp (utc) "2023-01-07 13:57:28.7"
+# ***** DO NOT EDIT! *****
+#
+name        "BM_CustodySystemHoldingPosition"
+description "$Id$"
+
+groups {
+}
+
+decls[FColumnDefinition] {
+}
+
+clx FTradingSheet [FColumnDefinition] {
+  CustodyHoldingPosition =
+  ColumnAppearance=AlignmentLeft
+  Description=Shows Custody Holding Position.
+  ExtensionAttribute=get_custody_holding
+  GroupLabel=Custody Holding Position
+  InitialWidth=200
+  Name=Custody Holding Position
+  ShowErrorHashmark=FullMessage
+
+
+}
+
+decls[FExtensionAttribute] {
+}
+
+clx FTradeRow [FExtensionAttribute] {
+  get_custody_holding = object.Instrument.AdditionalInfo.HoldPosCustody;
+}
+
+decls[FParameters] {
+}
+
+clx FObject [FParameters] {
+  CustodyHoldinPosLogParam =
+  logFileName=CUSTODY_HOLDING_POS_LOG_{}.txt
+
+
+  DBParam =
+  DATABASE=NTCSSTGDB
+  DRIVER=ODBC Driver 17 for SQL Server
+  PWD='UEBzc3cwcmROdGNzIw=='
+  REC_FETCH_PAGE_SIZE=50
+  SERVER=10.243.212.173
+  UID=AdminNTCS
+
+
+}
+
+decls[FPythonCode] {
+}
+
+clx FObject [FPythonCode] {
+  CustodySystemHoldingPosition
+
+import pyodbc
+import ParametersReader
+import acm
+import FRunScriptGUI
+import ael
+import FLogger
+import os
+import traceback
+import InterfaceUtils
+import base64
+
+
+def initialize_logging(params, logfile_name, app_name):
+    """
+    Initialize logger
+    :param params: parameters
+    :return: FLogger object
+    """
+    logger = None
+    logfile = None
+    try:
+        logFolder = params['log_folder']
+        logfolderString = logFolder.SelectedDirectory().AsString()
+        if logfolderString:
+            if logfile_name:
+                logfile = os.path.join(logfolderString, logfile_name)
+            
+                
+
+        logLevel = params['log_level']
+        log_to_console = params['log_to_console']
+        level = InterfaceUtils.LogLevelNameToNumber(logLevel)
+        logger = FLogger.FLogger(level=level,
+                                 name=app_name,
+                                 logToPrime=True,
+                                 logToFileAtSpecifiedPath=logfile,
+                                 logToConsole=log_to_console)
+    except Exception as err:
+        print('Error in initializing logger {}'.format(err))
+        print(traceback.format_exc())
+    return logger
+
+
+folderPicker = FRunScriptGUI.DirectorySelection()
+
+ael_gui_parameters =    {'windowCaption' : 'Custody System Holding Position'}
+logLevels = [FLogger.FLogger.INFO, FLogger.FLogger.ERROR, FLogger.FLogger.WARNING, FLogger.FLogger.DEBUG]
+
+
+# NAME = 0  # internal name
+# TEXT = 1  # GUI Text
+# TYPE = 2  # object type
+# VALUES = 3  # valid values
+# DEFAULT = 4  # default
+# MANDATORY = 5  # mandatory
+# MULTI = 6  # multiple selection
+# TIP = 7  # floating tip
+# CB = 8  # callback
+# ENABLED = 9  # enabled
+
+ael_variables=  [
+                ['log_folder', 'Log Folder_Logging', folderPicker, None, folderPicker, 0, 1, 'Select where to store the log file', 0, None],
+                 ['log_level', 'Log Level_Logging', 'string', logLevels, FLogger.FLogger.DEBUG, 1, 0],
+                 ['log_to_console', 'Log to console_Logging', 'int', [1, 0], 1, 1, 0,'Whether logging should be done in the Log Console or not.']]
+
+DB = ParametersReader.get_params("DBParam") 
+LOG_PARAM = ParametersReader.get_params("CustodyHoldinPosLogParam") 
+log_file_name = LOG_PARAM['logFileName'].format(acm.Time.DateToday().replace('-', ''))
+
+app_name = 'CustHoldingPos'
+
+
+def ael_main(params):
+    cursor = None
+    connection = None
+    DEFAULT_REC_FETCH_PAGE_SIZE = 50
+    logger = None
+    add_info_spec = acm.FAdditionalInfoSpec['HoldPosCustody']
+    try:
+        logger = initialize_logging(params, log_file_name, app_name)
+        logger.LOG('Execution started')
+        page_count = 0
+        row_count_per_page = int(DB.get('REC_FETCH_PAGE_SIZE', DEFAULT_REC_FETCH_PAGE_SIZE))
+        DbDriver=DB['DRIVER']
+        DbName=DB['DATABASE']
+        DbPassword=base64.b64decode(DB['PWD']).decode("utf-8")
+        DbServer=DB['SERVER']
+        DBUId = DB['UID']
+        connection = pyodbc.connect("DRIVER={{{}}};SERVER={};DATABASE={};ENCRYPT=no;UID={};PWD={}".format(DbDriver, DbServer, DbName, DBUId, DbPassword ))
+        cursor = connection.cursor()
+        
+        while True:
+            starting_row_number = (page_count * row_count_per_page) + 1
+            logger.LOG('Fetching {} database rows starting at {} index'.format(row_count_per_page, starting_row_number))
+            cursor.execute("EXEC GetHoldingPositionData @StartingRowNumber={}, @RowCountPerPage={}".format(starting_row_number, row_count_per_page))
+            data = cursor.fetchall()
+            page_count += 1
+            if not data:
+                break
+
+            for row in range(len(data)):
+                try:
+                    instr_obj = acm.FInstrument[data[row][0]]
+                    if instr_obj is not None:
+                        instr_obj.AddInfoValue(add_info_spec, data[row][1])
+                        instr_obj.Commit()
+                        logger.LOG(data[row][0] + ' Berhasil')
+                    else:
+                        logger.ELOG(data[row][0] + ' ISIN tidak ditemukan')  
+                except Exception as err:
+                    logger.LOG('Error occurred during updating instrument {}. Error {}'.format(instr_obj.Name(), err))
+            
+    except Exception as err:
+        logger.ELOG(str(err))
+        print(traceback.format_exc())
+        print('Error in ael main. {}'.format(err))
+    finally:
+        if cursor:
+            cursor.close()
+        if connection:
+            connection.close()
+            
+    logger.LOG('Execution ended')
+        
+        
+        
+
+
+
+
+
+...
+
+}
+

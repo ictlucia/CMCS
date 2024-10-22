@@ -1,0 +1,331 @@
+#
+# Front Arena exported extension module.
+# source          ""
+# timestamp (utc) "2024-05-23 16:46:18.8"
+# ***** DO NOT EDIT! *****
+#
+name        "CSVImporter_ExecutionReporting"
+description "$Id$"
+
+groups {
+}
+
+decls[FAMBADefinition] {
+}
+
+clx FCommonObject [FAMBADefinition] {
+  CSVUpload ExecutionReporting =
+  create_missing_ref={}
+  date_format=ISO
+  daytime_format=ISO %H:%M:%S
+  force_update=0
+  save_on_warn_off=0
+  time_format=%H:%M:%S
+  use_regional_settings=0
+
+
+}
+
+decls[FPythonCode] {
+}
+
+clx FObject [FPythonCode] {
+  CSVImporter_ExecutionReporting
+# (c) Copyright 2020-2022 FIS Global Markets. All rights reserved.
+import os, csv, re
+import acm
+from RowsToMessages import RowsToMessages
+from MessageToObject import MessageToObject
+from AppliedRuleTransform import AppliedRuleTransform
+from DateFieldTransform import DateFieldTransform
+from CSVUploadReader import CSVUploadReader
+from ADMRecord import ADMRecord
+from TransactionSegments import segments
+import FLogger
+
+
+def AMBADefinitionImport():
+    context = acm.GetDefaultContext()
+    ext     = context.GetExtension('FAMBADefinition', 'FCommonObject', 'CSVUpload ExecutionReporting')
+    
+    return ext.Value() if ext else None
+    
+
+class CSVImporterExecutionReporting:
+
+    openTransaction  = re.compile('^TRANSACTION[\s,]*$')
+    closeTransaction = re.compile('^/TRANSACTION[\s,]*$')
+    ambaDefImport = AMBADefinitionImport()
+
+    def __init__(self, logger):
+        self.logger = logger
+        self.processSummary = dict()
+
+
+    def ApplyTransformations(self, data, transforms):
+        res = data
+        for transform in transforms:
+            try:
+                res = transform(res)
+            except Exception as e:
+                self.logger.ELOG('Failed to apply transformation: %s (%s)'%(transform.__name__ if hasattr(transform, '__name__') else transform, e))
+                raise e
+        
+        return res
+
+
+    def CheckColumns(self, rowsToMessages, inputfilename):
+        f_class = table = columns = None
+
+        for tablename, column in rowsToMessages.GetColumns():
+            if tablename:
+                if tablename == 'FILTER_DETAILS':
+                    continue
+                tablename=tablename.lstrip('!+-')
+                
+                table = acm.FTable[f'ADM.{tablename}']
+                f_class = acm.Pom().MappedClass(table.Type())
+                columns = {attr.Column().Name().AsString()
+                            for attr in f_class.Attributes()
+                            if hasattr(attr, 'Column') and attr.IsUnique() and attr.IsReadOnly()} # Produce a Set with column names
+
+            if columns:
+                if column.lower() in columns:
+                    self.logger.ELOG(f"referencing unique key {table.Name()}:{column} from {inputfilename}")
+    
+    
+    def AppendProcessSummary(self, filename, summary):
+        try:
+            if filename in self.processSummary.keys():
+                for key in summary.keys():
+                    if key in self.processSummary[filename].keys():
+                        self.processSummary[filename][key] = self.processSummary[filename][key] + summary[key]
+                    else:
+                        self.processSummary[filename][key]=summary[key]
+                        
+            else:
+                 self.processSummary[filename]= summary
+        except Exception as e:
+            self.logger.ELOG(str(e))
+    
+
+    def ProcessFile(self, path, transactions, printAMBA, encoding=None):
+        filename             = os.path.basename(path)
+        oneByOne             = OneByOneCommitter(self.logger)
+        transactionCommitter = TransactionCommitter(self.logger)
+        anyTransactions      = False
+        anyNonTransactions   = False
+        ambaDefImport        = AMBADefinitionImport()
+        self.logger.LOG(f'Processing file: {path} ')
+        
+        try:
+            with open(path, 'r', encoding=encoding) as file:
+                header1 = next(file)
+                header2 = next(file)
+                
+                for inTransaction, rowSlice in segments(CSVImporterExecutionReporting.openTransaction, CSVImporterExecutionReporting.closeTransaction, file):
+                    reader             = CSVUploadReader(header1, header2, rowSlice)
+                    reader1 = CSVUploadReader(header1, header2, rowSlice)
+
+                    readerRows = list(reader1)
+                    fileRowCount           = len(readerRows)
+                    self.AppendProcessSummary(filename, {'RowCount':fileRowCount})
+                    rowsToMessages     = RowsToMessages(reader.header1, reader.header2)
+                    messages           = rowsToMessages(reader)
+                    messageToObject     = MessageToObject(printAMBA, ambaDefImport)
+                    
+                    anyTransactions    = anyTransactions or inTransaction
+                    anyNonTransactions = anyNonTransactions or not inTransaction
+                    rewriteAppliedRule = AppliedRuleTransform()
+                    objects            = []
+                    
+                    for rownumb, msg in messages:
+                        try:
+                            obj = self.ApplyTransformations(msg, [rewriteAppliedRule, DateFieldTransform, messageToObject])
+
+                            if obj.IsModified():
+                                self.CheckColumns(rowsToMessages, filename)
+
+                            if inTransaction:
+                                objects.append(obj)
+                            else:
+                                oneByOne.Commit(obj)
+                                
+                            if printAMBA : self.logger.DLOG(msg.AsString())
+                        except Exception as e:
+                            self.AppendProcessSummary(filename, {'Error':[e]})
+                    
+                    if inTransaction:
+                        transactionCommitter.Commit(objects)
+                
+                if anyNonTransactions: 
+                    summary = oneByOne.Report(filename)
+                    self.AppendProcessSummary(filename, summary)
+                if anyTransactions:
+                    
+                    summary = transactionCommitter.Report(filename)
+                    self.AppendProcessSummary(filename, summary)
+
+        except Exception as e:
+            self.logger.ELOG(f'Failed to process {filename} {e}')
+        
+        return (not self.IsAnyFailure(filename))
+    
+    
+    def ReportProcessSummary(self, writeToFile=False, FilePath=None, ErrorFilePath=None):
+        keys  = self.processSummary.keys()
+        rows = []
+        errors ={}
+        
+        if len(keys) > 0:
+            columnHeaders = ["FileName","RowCount", "Processed","Sucessful","Failed"]
+            rows.append(columnHeaders)
+            colFilenameLen = len(max(keys, key=len)) + 4
+            columnSize = [colFilenameLen, 10,10,10,10]
+            formatStr = ' '.join([f"{{:<{i}}}" for i in columnSize])
+            
+            self.logger.LOG("-------------------------------------------------------------------------------")
+            self.logger.LOG(formatStr.format(*columnHeaders))
+            self.logger.LOG("-------------------------------------------------------------------------------")
+            
+            for filename in keys:
+                row = [filename, self.processSummary[filename]["RowCount"], self.processSummary[filename]["Processed"], self.processSummary[filename]["Sucessful"], self.processSummary[filename]["Failed"]]
+                self.logger.LOG(formatStr.format(*row))
+                
+                rows.append(row)
+
+                if(len(self.processSummary[filename]["Error"]) > 0):
+                    errors[filename] = self.processSummary[filename]["Error"]
+
+            self.logger.LOG("-------------------------------------------------------------------------------")
+            
+        if(writeToFile) and (FilePath is not None):
+            with open(FilePath, 'w+', newline='') as f:
+                write = csv.writer(f)
+                write.writerows(rows)
+        
+        if(writeToFile) and (ErrorFilePath is not None):
+            with open(ErrorFilePath, 'w+', newline='') as f:
+                write = csv.writer(f)
+                write.writerow(errors.keys())
+                write.writerows(zip(*errors.values()))
+
+
+
+    def IsAnyFailure(self, filename):
+        if filename in self.processSummary.keys():
+            return (self.processSummary[filename]["Failed"] > 0)
+        else:
+            return False
+
+
+class OneByOneCommitter(object):
+    def __init__(self, logger):
+        self.successes = 0
+        self.failed    = 0
+        self.modified  = 0
+        self.logger = logger
+        self.CommitErrors = []
+    
+    
+    def Commit(self, obj):
+        isSucessful = False
+        
+        try:
+            if obj.IsModified() and hasattr(obj,'Original') and obj.Original() is not None:
+                obj.Commit()
+                isSucessful = True
+                self.modified += 1
+            else:
+                obj.Commit()
+                isSucessful = True
+                self.successes += 1
+
+        except Exception as e:
+            self.failed += 1
+            isSucessful = False
+            self.CommitErrors.append(e)
+            self.logger.ELOG(e)
+        
+        return isSucessful
+    
+    
+    def Report(self, filename):
+        if self.successes > 0:
+            self.logger.LOG(f'loaded {self.successes:3d} records from: {filename}')
+
+        if self.modified > 0:
+            self.logger.LOG(f'modify {self.modified:3d} records from: {filename}')
+
+        if self.failed > 0:
+            self.logger.ELOG(f'{self.failed} records could not be committed from: {filename}')
+        return self.GetCommitSummary()
+    
+    
+    def GetCommitSummary(self):
+        totalProcessed = self.successes + self.modified + self.failed
+        return {"Processed": totalProcessed, "Sucessful": totalProcessed-self.failed , "Failed":self.failed, "Error":self.CommitErrors  }
+    
+
+class TransactionCommitter(object):
+    def __init__(self, logger):
+        self.successes = 0
+        self.modified  = 0
+        self.failed    = 0
+        self.logger = logger
+        self.CommitErrors = []
+
+
+    def Commit(self, records):
+        isSucessful = False
+        numberOfRecordModified = 0
+        numberOfRecordLoaded = 0
+        numberOfRecordsInTras = len(records)
+        self.logger.DLOG(f"Processing trnsaction with {numberOfRecordsInTras} records")
+        try:
+            acm.BeginTransaction()
+            for record in records:
+                if record.IsModified() and hasattr(record,'Original') and record.Original() is not None:
+                    record.Commit()
+                    numberOfRecordModified +=1
+                else:
+                    record.Commit()
+                    numberOfRecordLoaded +=1
+            
+            acm.CommitTransaction()
+            self.logger.DLOG(f"Processing trnsaction with {numberOfRecordsInTras} records is successful")
+            isSucessful = True
+            self.successes += numberOfRecordLoaded
+            self.modified += numberOfRecordModified
+            
+        except Exception as e:
+            acm.AbortTransaction()
+            self.logger.ELOG(f"Failed trnsaction( {numberOfRecordsInTras} records) : {e}")
+            self.failed += numberOfRecordsInTras
+            isSucessful = False
+            self.CommitErrors.append(e)
+        
+        return isSucessful
+    
+    
+    def Report(self, filename):
+        if self.successes > 0:
+            self.logger.LOG(f'loaded {self.successes:3d} records from: {filename}')
+
+        if self.modified > 0:
+            self.logger.LOG(f'modify {self.modified:3d} records from: {filename}')
+
+        if self.failed > 0:
+            self.logger.ELOG(f'{self.failed} records could not be committed from: {filename}')
+        return self.GetCommitSummary()
+    
+    
+    def GetCommitSummary(self):
+        totalProcessed = self.successes + self.modified + self.failed
+        return {"Processed": totalProcessed, "Sucessful": totalProcessed-self.failed , "Failed":self.failed, "Error":self.CommitErrors  }
+
+
+...
+
+}
+

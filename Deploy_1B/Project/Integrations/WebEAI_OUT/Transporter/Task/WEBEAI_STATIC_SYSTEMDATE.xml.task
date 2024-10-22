@@ -1,0 +1,2 @@
+<?xml version='1.0' encoding='ISO-8859-1'?>
+<FAelTask><acm_version>2022.4.5, May 22 2023</acm_version><version>6 $Id$</version><update_time>2023-09-04 06:19:03</update_time><object_name>WEBEAI_STATIC_SYSTEMDATE</object_name><owner>ARENASYS</owner><protection>3072</protection><module>STATIC_SYSTEMDATE</module><context>Standard</context><parameter>file_path=C:\;query_folder=WEBEAI_STATIC_SYSTEMDATE;</parameter><historylength /><description /><logfilename /><group>WEBEAI</group><groupstatus>None</groupstatus><historylengthunit>None</historylengthunit></FAelTask>

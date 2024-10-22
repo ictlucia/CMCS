@@ -1,0 +1,243 @@
+#
+# Front Arena exported extension module.
+# source          ""
+# timestamp (utc) "2024-09-12 03:55:26.8"
+# ***** DO NOT EDIT! *****
+#
+name        "BM_BrokerAndCustomerData"
+description "$Id$"
+
+groups {
+}
+
+decls[FParameters] {
+}
+
+clx FObject [FParameters] {
+  BorisParams =
+  brokerLogFilename=BORIS_BROKER_LOG_{}.txt
+  brokerOutputFilename=BORIS_BROKER_DATA_{}.csv
+  customerLogFilename=BORIS_CUST_LOG_{}.txt
+  customerOutputFilename=BORIS_CUST_DATA_{}.csv
+
+
+}
+
+decls[FPythonCode] {
+}
+
+clx FObject [FPythonCode] {
+  BorisOutBrokerData
+"""----------------------------------------------------------------------------------------------------
+MODULE:
+    BrokerData
+
+DESCRIPTION:
+    Entry point to invoke the broker data run task gui.
+
+-------------------------------------------------------------------------------------------------------"""
+import acm, ael, traceback
+from datetime import datetime
+import ParametersReader
+import BorisUtils
+from InterfaceUtils import time_from_datetime, date_from_datetime
+
+# get value from FPArameter
+BorisParams = ParametersReader.get_params('BorisParams')
+
+#outputFile = BorisParams['brokerOutputFilename'].format(acm.Time.TimeNow().replace(' ', '_').replace('-', '')                                                           .replace(':', '')[:-7])
+#log_file_name = BorisParams['brokerLogFilename'].format(acm.Time.DateToday().replace('-', ''))
+
+outputFile = BorisParams['brokerOutputFilename'].format(date_from_datetime(acm.Time.TimeNow(), format_str='%d%m%Y%H%M'))
+
+log_file_name = BorisParams['brokerLogFilename'].format(date_from_datetime(acm.Time.TimeNow(), format_str='%d%m%Y%H%M'))
+
+class BrokerData(BorisUtils.ExportData):
+    def __init__(self):
+        queries = [query.Name() for query in acm.FStoredASQLQuery.Select("subType='FChoiceList'")]
+        queries.sort() 
+        super(BrokerData, self).__init__(queries)
+
+    def generate_broker_data(self, params):
+        """
+        This function generates the broker data
+        :param params: parameters
+        :return: None
+        """
+        print('generate broker')
+        self._logger.LOG('Start generateBrokerData')
+        output_folder = params['outputFolder'].SelectedDirectory().AsString()
+        stored_query_name = params['queryName']
+        
+        
+        stored_query = acm.FStoredASQLQuery[stored_query_name]
+        if stored_query:
+            file_row = list()
+            brokers = stored_query.Query().Select().Sort()
+            
+            for br in brokers:
+                
+                branchno = br.Name().split('-')[0].strip()
+                branchdesc = br.Description()
+                updatetime = datetime.fromtimestamp(br.UpdateTime()).strftime('%Y-%m-%d %H:%M:%S')
+                row = branchno, branchdesc, updatetime
+                row_list = ['"{}"'.format(row_item) if row_item is not None else '""' for row_item in row]
+                row_data = ';'.join(row_list)
+                file_row.append(row_data + '\n')
+            
+            if file_row:
+                BorisUtils.generateFile(output_folder, file_row, self._logger, outputFile)            
+        else:
+            self._logger.ELOG('Stored query with name {} not found.'.format(stored_query_name))
+        self._logger.LOG('Finish generateBrokerData')
+    
+
+
+ael_gui_parameters = {'windowCaption': "Broker data"}
+
+ael_variables = BrokerData()
+ael_variables.LoadDefaultValues(__name__)
+app_name = 'BrokerData'
+
+
+def ael_main(params):
+    """
+    AEL main function
+    :param params: GUI parameters
+    :return: None
+    """
+    brokerdata_loger = None
+    try:
+        brokerdata_loger = BorisUtils.initialize_logging(params, log_file_name, app_name)
+        if brokerdata_loger:
+            brokerdata_loger.LOG('Execution started.')
+            ael_variables.set_logger(brokerdata_loger)
+            ael_variables.generate_broker_data(params)
+
+    except Exception as err:
+        if brokerdata_loger is not None:
+            brokerdata_loger.ELOG(str(err))
+        print(traceback.format_exc())
+        print('Error in ael main. {}'.format(err))
+
+
+...
+
+  BorisOutCustomerData
+
+import acm, ael, traceback
+from datetime import datetime
+import ParametersReader
+import BorisUtils
+
+# get value from FPArameter
+BorisParams = ParametersReader.get_params('BorisParams')
+
+outputFile = BorisParams['customerOutputFilename'].format(acm.Time.TimeNow().replace(' ', '_').replace('-', '')
+                                                          .replace(':', '')[:-7])
+
+log_file_name = BorisParams['customerLogFilename'].format(acm.Time.DateToday().replace('-', ''))
+
+
+class CustomerData(BorisUtils.ExportData):
+    def __init__(self):
+        queries = [query.Name() for query in acm.FStoredASQLQuery.Select("subType='FParty'")]
+        queries.sort() 
+        super(CustomerData, self).__init__(queries)
+        self._party_alias_type = acm.FPartyAliasType['Customer Mnemonic']
+    
+    def countryMapping(self, countryBORIS):
+        try:
+            choiceListCountryOfRisk = acm.FChoiceList.Select('name = "'+countryBORIS+'" and list = "Country of Risk"')
+            country_name = choiceListCountryOfRisk[0].Description()
+            return country_name
+        except Exception as e:
+            print(e)
+            return None
+
+    def get_customer_mnemonic(self, customers):
+        alias_name = ''
+        if self._party_alias_type:
+            alias_name = customers.Alias(self._party_alias_type)
+
+        return alias_name
+
+    def generate_customer_data(self, params):
+        self._logger.LOG('Start generateCustomerData')
+        outputFolder = params['outputFolder'].SelectedDirectory().AsString()
+
+        stored_query_name = params['queryName']
+        
+        stored_query = acm.FStoredASQLQuery[stored_query_name]
+        if stored_query:
+            customers = stored_query.Query().Select().Sort()
+            file_row = list()
+            
+            for cs1 in customers:
+                add_info = cs1.AdditionalInfo()
+                cno = cs1.Id2()  # HOST ID / Customer Number / CHAR(11) done
+                cmne = self.get_customer_mnemonic(cs1)  # ALIAS / CustomerMnemonic / NCHAR(20)
+                bic = cs1.Swift()  # BIC / Bank Identification Code / CHAR(11) done
+                ccode = self.countryMapping(cs1.Country())  # Country field on Party Def GUI / Country Code / CHAR(2) done
+                gol_lawan = add_info.LBUT_GOL_PIHAKLAWAN() if add_info.LBUT_GOL_PIHAKLAWAN() is not None else ''  # Additional Information -  Golongan Pihak Lawan / CHAR(10) done
+                sn = cs1.Name()  # NAME / Short Name / NCHAR(80) done
+                cfn1 = cs1.Fullname()  # FULL NAME / Customer Full Name 1 / NCHAR(70) done
+                cfn2 = cs1.Fullname2()  # ADDITIONAL FULL NAME / Customer Full Name 2 / NCHAR(70) done
+                ca1 = cs1.Address()  # ADDRESS / Customer Address 1 / NCHAR(70) done **
+                ca2 = ''  # **
+                ca3 = cs1.Address2()  # ADDITIONAL ADDRESS / Customer Address 3 / NCHAR(70) done**
+                ca4 = ''  # ADDITIONAL ADDRESS / Customer Address 4 / NCHAR(70) done**
+                ca5 = ''  # ADDITIONAL ADDRESS / Customer Address 5 / CHAR(35) done**
+                ctype = ''  # cs1.Free1ChoiceList().Name() #Free Choice List 1 (Party Definition Details Tab) / Customer Type / CHAR(1) ** belum bisa di env ini
+                cpost = cs1.ZipCode()  # zipcode / Customer Postal Code / CHAR(10) done
+                lststmntdate = datetime.fromtimestamp(cs1.CreateTime()).strftime('%Y-%m-%d %H:%M:%S')
+                uccode = self.countryMapping(add_info.UCCODE()) if add_info.UCCODE() is not None else '' # Ultimate Risk Country Code CHAR(2)
+                birthdate = add_info.DOB() if add_info.DOB() is not None else '' # Birth Date DATETIME done
+                taxid = add_info.NPWP() if add_info.NPWP() is not None else '' # Taxpayer Identifier CHAR(15) done
+                acctngtype = ''  # Accounting Type CHAR(10) N/A**
+                taxapply = ''  # Tax Apply CHAR N/A ** tanya aziz
+                updatetime = datetime.fromtimestamp(cs1.UpdateTime()).strftime('%Y-%m-%d %H:%M:%S')  # Last Updated DATETIME
+                
+                row = cno, cmne, bic, ccode, gol_lawan, sn, cfn1, cfn2, ca1, ca2, ca3, ca4, ca5, ctype, cpost,lststmntdate, uccode, birthdate, taxid, acctngtype, updatetime
+                row_list = ['"{}"'.format(row_item) if row_item is not None else '""' for row_item in row]
+                row_data = ';'.join(row_list)
+                #format of row_data = "'cno'";"'cmne'"...
+                
+                file_row.append(row_data + '\n')
+
+            BorisUtils.generateFile(outputFolder, file_row, self._logger, outputFile)            
+        else:
+            self._logger.ELOG('Stored query with name {} not found.'.format(stored_query_name))
+        self._logger.LOG('Finish generateCustomerData')
+
+
+ael_gui_parameters = {'windowCaption': "Customer data"}
+
+ael_variables = CustomerData()
+ael_variables.LoadDefaultValues(__name__)
+
+
+def ael_main(params):
+    """
+    AEL main function
+    :param params: GUI parameters
+    :return: None
+    """
+    customerdata_loger = None
+    try:
+        customerdata_loger = BorisUtils.initialize_logging(params, log_file_name, 'CustomerData')
+        if customerdata_loger:
+            customerdata_loger.LOG('Execution started.')
+            ael_variables.set_logger(customerdata_loger)
+            ael_variables.generate_customer_data(params)            
+    except Exception as err:
+        if customerdata_loger is not None:
+            customerdata_loger.ELOG(str(err))
+        print(traceback.format_exc())
+        print('Error in ael main. {}'.format(err))
+
+
+...
+
+}
+

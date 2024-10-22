@@ -1,0 +1,299 @@
+#
+# Front Arena exported extension module.
+# source          ""
+# timestamp (utc) "2023-12-04 07:35:32.4"
+# ***** DO NOT EDIT! *****
+#
+name        "BM_ComplianceRule"
+description ""
+
+groups {
+}
+
+decls[FParameters] {
+}
+
+clx FObject [FParameters] {
+  ComplianceRuleConfig =
+  CERTIFICATE_FILE=
+  KEY_FILE=
+  Password=ntcs
+  SERVER_PORT=9051
+  Username=ntcs
+
+
+}
+
+decls[FPythonCode] {
+}
+
+clx FObject [FPythonCode] {
+  Authorization
+
+from functools import wraps
+from flask import request, jsonify
+
+    
+def api_key_required(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        api_key = request.headers.get('x-api-key')
+        
+        response_dict = {
+            "responseCode" : "401 Unauthorized",
+            "responseMessage" : ""
+        }
+
+        if api_key == "" or api_key is None:
+            response_dict["responseMessage"] = "Missing API Key"
+            return jsonify(response_dict), 401
+            
+        elif api_key != "26424b6f-7354-4ecc-88cf-997ecde6e352":
+            response_dict["responseMessage"] = "Invalid API Key"
+            return jsonify(response_dict), 401
+
+
+        return f(*args, **kwargs)
+
+    return decorated
+
+...
+
+  ComplianceRuleConstructData
+
+import acm, ael
+import xml.etree.ElementTree as ET
+
+
+def Query_Filter(_data_dict):
+    ael.poll()
+    
+    compRuleName = _data_dict.get("compRuleName")
+    print("request Compliance Rule Name: ", compRuleName)
+    
+    queryName = "PreDeal_QF"
+    storedQuery = acm.FStoredASQLQuery.Select('name="%s"'% queryName)[0]
+    data = storedQuery.Query().Select().Sort()
+    print(data)
+
+    tmp = []
+
+    for checked_data in data:
+        xml_data = checked_data.DataAsText()
+        root = ET.fromstring(xml_data)
+        
+        # Find all elements with the tag "string" and type "AcmDomain"
+        elements = root.findall(".//string[@type='AcmDomain']")
+        
+        for item in elements:
+            if compRuleName.lower() in str(item.text).lower() :
+                compName = {"Name" : checked_data.Name()}
+                tmp.append(compName)
+                break
+                
+                
+    return tmp
+
+...
+
+  ComplianceRuleServer
+"""--------------------------------------------------------------------------------------------------
+MODULE:
+    ComplianceRuleServer : Module for handing the server functions
+
+DESCRIPTION: This module uses flask and provides functions for handling webserver functions from client.
+-------------------------------------------------------------------------------------------------------"""
+from flask import Flask, request, jsonify
+from flask_httpauth import HTTPBasicAuth
+from werkzeug.security import generate_password_hash, check_password_hash
+from SubPartyInquiryConstructData import PartySubInq
+import acm
+import json
+import traceback
+import ParametersReader
+
+from ComplianceRuleConstructData import Query_Filter
+from Authorization import api_key_required
+
+app = Flask(__name__)
+#auth = HTTPBasicAuth()
+EDParams = ParametersReader.get_params('ComplianceRuleConfig')
+
+#auth_username = EDParams["Username"]
+#auth_password = EDParams["Password"]
+
+#users = {
+    #auth_username: generate_password_hash(auth_password),
+    #}
+
+'''
+@auth.verify_password
+def verify_password(username, password):
+    """-----------------------------------------------------------------------------------------
+    This function to Authectification user
+    :param username: string of username
+    :param password: string of password
+    :return string
+    -----------------------------------------------------------------------------------------"""
+    if username in users and check_password_hash(users.get(username), password):
+        return username
+'''
+
+@app.route("/", methods=['GET'])
+def welcome():
+    """
+    This function handles the default client request
+    :return: string
+    """
+    return "Welcome to FrontArena webserver for handling Compliance Rule!"
+    
+@app.route("/api/v1/party/complianceruleinquiry", methods=['POST'])
+@api_key_required
+#@auth.login_required(optional = True)
+def finding():
+    """
+    This function handles the default client request
+    :return: string
+    """
+    #if auth.current_user() == None :
+        #return jsonify({"responseCode":"401 Unauthorized", "responseMessage": [{"Name" : "Wrong Username or Password"}]}),401
+    
+    try:
+        req_data = request.get_json()
+        print(req_data)
+        
+        data_new = Query_Filter(req_data)
+        print(data_new)
+        return jsonify({"responseCode": "00", "responseMessage": data_new})
+        
+    except Exception as err:
+        return jsonify({"responseCode" : "500 Internal Server Error", "responseMessage" : [{"Name" : "Internal Server Error", "Error": err}]}), 500
+        
+@app.route("/api/v1/party/subpartyinquiry", methods=['POST'])
+#@auth.login_required(optional = True)
+@api_key_required
+def subpartyinquiry():
+    """
+    This function handles the deal posting request from client.
+    :return: JSON object
+    """
+    #if auth.current_user() == None :
+        #return jsonify({"responseCode":"401 Unauthorized", "responseMessage": [{"Name" : "Wrong Username or Password"}]}),401
+        
+    try:
+        req_data = request.get_json()
+        print(req_data)
+        try:
+            data = acm.FParty.Select("hostId =" + " " + req_data["cifNumber"])
+            print(data)
+            if list(data) == []:
+                if req_data["cifNumber"].isdigit():
+                    return jsonify({"responseCode": "01", "responseMessage" : [{"Name" : "Party is not Found"}]})
+                else:
+                    return jsonify({"responseCode": "02", "responseMessage" : [{"Name" : "cifNumber Should not Contain Alphabet"}]})
+            else:
+                print("Party is found") 
+                task = PartySubInq(req_data)
+                output = task.create_list_child()
+                
+                #Check Parent's Party has a Child Party
+                if output == []:
+                    return jsonify({"responseCode": "03", "responseMessage" : [{"Name" : "Does not have Subsidiary"}]})
+                else:
+                    return jsonify({"responseCode": "00", "responseMessage": output})
+                
+        except KeyError:
+            return jsonify({"responseCode": "400 Bad Request", "responseMessage": [{"Name" : "Body Request Must be 'cifNumber':"}]}),400
+            
+    except Exception as err:
+        return jsonify({"responseCode": "500 Internal Server Error", "responseMessage": [{"Name" : "Internal Server Error"}]}),500
+
+...
+
+  ComplianceRuleServerMain
+"""--------------------------------------------------------------------------------------------------
+MODULE:
+    ComplianceRuleServerMain : Main module for ATS
+
+DESCRIPTION: This module uses gevent to run the webserver in start method.
+             The start never returns and hence work and stop functions are not called.
+-------------------------------------------------------------------------------------------------------"""
+import ParametersReader
+import ComplianceRuleServer
+from gevent.pywsgi import WSGIServer
+
+#parameter = ParametersReader.get_params("SoaParams")
+
+def server_routine():
+    """
+    This function starts the gevent WSGI
+    :return: None
+    """
+    try:
+        compliance_rule_config = ParametersReader.get_params('ComplianceRuleConfig')
+        print(compliance_rule_config)
+        key_file = compliance_rule_config['KEY_FILE']
+        server_port = compliance_rule_config['SERVER_PORT']
+        print(server_port)
+        cert_file = compliance_rule_config['CERTIFICATE_FILE']
+
+        bind = ('0.0.0.0', int(server_port))
+        app = ComplianceRuleServer.app
+        #g_server = WSGIServer(bind, app, keyfile=key_file, certfile=cert_file)
+        g_server = WSGIServer(bind, app)
+        print('Started webserver.', g_server)
+        g_server.serve_forever()
+    except Exception as err:
+        print(err)
+        return False
+
+
+def start():
+    """ ATS start """
+    try:
+        server_routine()
+    except Exception as err:
+        print(err)
+
+...
+
+  SubPartyInquiryConstructData
+
+import acm
+
+class PartySubInq(object):
+    def __init__(self, _data_dict):
+        self.cifNumber = _data_dict.get("cifNumber")
+    
+    def FindParentsName(self):
+        parent_data = acm.FParty.Select("hostId =" + " " + self.cifNumber)
+        parent_name = parent_data[0].Name()
+        print("Parent's name", parent_name)
+        return parent_name
+        
+    def create_list_child(self):
+        parent_name = self.FindParentsName()
+        list_child = acm.FParty.Select("parent =" + " " + parent_name)
+        print(list_child)
+        
+        list_child_data = []
+        for data in list_child:
+            #Don't Append Parent's Data
+            if data.Name() == parent_name:
+                continue
+            else:
+                child_dict = {
+                "CIF" : data.HostId(),
+                "PartyName" : data.Name(),
+                "FullName" : data.Fullname(),
+                "PartyType": data.Type()
+                }
+                
+                list_child_data.append(child_dict)
+                
+        return(list_child_data)
+
+...
+
+}
+

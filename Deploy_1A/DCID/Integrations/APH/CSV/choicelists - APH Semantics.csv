@@ -1,0 +1,10 @@
+CHOICELIST,,,,/CHOICELIST
+DESCRIPTION,LIST,SORT_ORDER,ENTRY,
+,MASTER,,PriceSemantics,
+,MASTER,,PriceServices,
+,PriceSemantics,,BSF,
+,PriceSemantics,,FWDPOINTS,
+,PriceSemantics,,ILS,
+,PriceSemantics,,LIBOR,
+,PriceSemantics,,RSF,
+,PriceServices,,APH_REUTERS,

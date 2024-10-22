@@ -1,0 +1,583 @@
+#
+# Front Arena exported extension module.
+# source          ""
+# timestamp (utc) "2023-11-08 11:47:49.5"
+# ***** DO NOT EDIT! *****
+#
+name        "PS_SmartFXOutReconciliation"
+description ""
+
+groups {
+}
+
+decls[FParameters] {
+}
+
+clx FObject [FParameters] {
+  DealReconciliationConfig =
+  AccessToken=bWNtVXNlcjoxMjM0NTY=
+  CertificateFile=
+  ReconcileUrl=http://10.243.229.119:6666/ntcs/reconsiliation
+
+
+}
+
+decls[FPythonCode] {
+}
+
+clx FObject [FPythonCode] {
+  ReconciliationDealProcessor
+"""------------------------------------------------------------------------------------------------
+MODULE:
+    ReconciliationDealProcessor : User Module for processing the reconciliation request to SmartFX server.
+
+DESCRIPTION: This module provides the customizable class for handling deal reconciliation processing.
+---------------------------------------------------------------------------------------------------"""
+from ReconciliationDealProcessorBase import ReconciliationDealProcessorBase
+
+
+class ReconciliationDealProcessor(ReconciliationDealProcessorBase):
+    def __init__(self):
+        """
+        Initialize member variables
+        """
+        super(ReconciliationDealProcessor, self).__init__()
+
+    def commit_trade(self, trd):
+        """
+        This function lets user save additional fields on the trade.
+        :param trd: FTrade
+        :return: None
+
+        usage:
+        trd.Text2('My Text')
+        super(ReconciliationDealProcessor, self).commit_trade(trd)
+        """
+        super(ReconciliationDealProcessor, self).commit_trade(trd)
+
+
+
+
+
+...
+
+  ReconciliationDealProcessorBase
+"""------------------------------------------------------------------------------------------------
+MODULE:
+    ReconciliationDealProcessorBase : Base Module for processing the reconciliation request to SmartFX server.
+
+DESCRIPTION: This module provides the base class for handling deal reconciliation processing.
+             The function process_trade_update is called from AMBA hook.
+---------------------------------------------------------------------------------------------------"""
+from SmartFXDealReconciliationMapper import SmartFXDealReconciliationMapper
+from DealPostingUtils import TradeReconState, Parameters
+from DealPostingUtils import ConnectionObject
+import acm, traceback
+
+
+class ReconciliationDealProcessorBase(object):
+    def __init__(self):
+        """
+        Initialize member variables
+        """
+        deal_recon_config = Parameters('DealReconciliationConfig')
+        reconcile_url = getattr(deal_recon_config, 'ReconcileUrl', None)
+        access_token = getattr(deal_recon_config, 'AccessToken', None)
+        #certificate_file = getattr(deal_recon_config, 'CertificateFile', None)
+
+        self._smart_fx_client = ConnectionObject(reconcile_url, access_token)        
+
+    def commit_trade(self, trd):
+        """
+        Overriding this function provides a way to user to commit additional fields on trade.
+        :param trd: FTrade
+        :return: None
+        """
+        trd.Commit()
+
+    def _get_message_type(self, m):
+        """
+        This function returns the message type of the AMBA message
+        :param m: mbf_object
+        :return: string
+        """
+        type = m.mbf_find_object('TYPE', 'MBFE_BEGINNING')
+        return type.mbf_get_value() if type else ''
+
+    def send_recon_request(self, trade):
+        """
+        This function sends reconciliation request and extracts response state and description
+        :param trade: FTrade
+        :return:tuple of reconciliation state and description.
+        """
+        recon_mapper_object = SmartFXDealReconciliationMapper(trade)
+        recon_mapper_object.process_trade()
+        recon_json_string = recon_mapper_object.get_json_string()
+        reconcile_response = None
+        try:
+            print ('recon_json_string' , recon_json_string)
+            reconcile_response = self._smart_fx_client.post_request(recon_json_string)
+            print ('Sent recon successfuly for trade id {}'.format(trade.Oid()))
+        except Exception as client_err:
+            print('Error in sending request to SmartFX {}.'.format(client_err))
+            print(traceback.format_exc())
+            reconcile_response = None           
+
+        recon_state, recon_desc = recon_mapper_object.response_to_reconstate(reconcile_response)
+        
+        return recon_state, recon_desc
+
+    def send_recon_request_and_update_trade(self, trd):
+        """
+        This function sends the reconciliation request and commits the trade based on the response.
+        :param trd: FTrade
+        :return: None
+        """
+        trade_recon_state = TradeReconState.TIMED_OUT.value
+        trade_recon_desc = 'Reconciliation response timed out.'
+        try:
+            trade_recon_state, trade_recon_desc = self.send_recon_request(trd)
+            
+        except Exception as err:
+            print('Error occurred in while sending recon request. Error: {}'.format(err))
+            print(traceback.format_exc())
+
+        trd.AdditionalInfo().SmartFXReconState(trade_recon_state)
+        trd.Text2('SmartFX Recon:'+trade_recon_desc)
+        self.commit_trade(trd)
+
+    def process_trade_update(self, message):
+        """
+        This function extracts the trade from the AMBA message and sends the reconciliation.
+        :param message: mbf_object
+        :return: None
+        """
+        try:
+            message_type = self._get_message_type(message)
+            if message_type in ['UPDATE_TRADE', 'INSERT_TRADE']:
+                mbf_trade_obj = message.mbf_find_object('TRADE', 'MBFE_BEGINNING')
+                if not mbf_trade_obj:
+                    if message_type == 'UPDATE_TRADE':
+                        mbf_trade_obj = message.mbf_find_object('!TRADE', 'MBFE_BEGINNING')
+                    else:
+                        mbf_trade_obj = message.mbf_find_object('+TRADE', 'MBFE_BEGINNING')
+
+                while mbf_trade_obj:
+                    mbf_trade_trdnbr = mbf_trade_obj.mbf_find_object('TRDNBR', 'MBFE_BEGINNING')
+                    if mbf_trade_trdnbr:
+                        trd = acm.FTrade[mbf_trade_trdnbr.mbf_get_value()]
+
+                        if trd and trd.Status() in ['FO Confirmed', 'Void'] and \
+                                trd.AdditionalInfo().SmartFXReconState() == TradeReconState.AWAITED.value:
+                            print ( "About to Process Reconciliation for trade{}".format(trd.Oid()))
+                            if (trd.IsFxSwap() and trd.IsFxSwapNearLeg()) or not trd.IsFxSwap(): # If swap then send only first leg.
+                                self.send_recon_request_and_update_trade(trd)
+
+                    mbf_trade_obj = message.mbf_next_object()
+        except Exception as err:
+            print(traceback.format_exc())
+            print('Error occurred in ael_sender_modify {}.'.format(err))
+
+
+...
+
+  ReconciliationGenerator
+"""----------------------------------------------------------------------------------------------------
+MODULE:
+    ReconciliationGenerator
+
+DESCRIPTION:
+    Entry point to invoke the reconciliation process.
+
+-------------------------------------------------------------------------------------------------------"""
+from ReconciliationGUI import ReconciliationGUI
+
+ael_gui_parameters = {'windowCaption': "Trigger trade reconciliation"}
+
+ael_variables = ReconciliationGUI()
+ael_variables.LoadDefaultValues(__name__)
+
+
+def ael_main(variables_dictionary):
+    """
+    Entry point for the AEL GUI
+    :param variables_dictionary: Dictionary containing the variables
+    :return: None
+    """
+    ael_variables.start_reconciliation_process(variables_dictionary)
+
+...
+
+  ReconciliationGUI
+"""----------------------------------------------------------------------------------------------------
+MODULE:
+    ReconciliationGUI
+
+DESCRIPTION:
+    Module to handle the GUI controls of the reconciliation module.
+
+-------------------------------------------------------------------------------------------------------"""
+
+import FRunScriptGUI, acm
+
+
+# NAME = 0  # internal name
+# TEXT = 1  # GUI Text
+# TYPE = 2  # object type
+# VALUES = 3  # valid values
+# DEFAULT = 4  # default
+# MANDATORY = 5  # mandatory
+# MULTI = 6  # multiple selection
+# TIP = 7  # floating tip
+# CB = 8  # callback
+# ENABLED = 9  # enabled
+
+
+class ReconciliationGUI(FRunScriptGUI.AelVariablesHandler):
+
+    def __init__(self):
+        """
+        This function initializes the object
+        """
+        gui_vars = [[
+            'trade_filter', 'Select query_Trades', 'string', None,
+            None, 1,
+            0,
+            'Specify names of the trade filters which need to be reconciled.', None, True]]
+        FRunScriptGUI.AelVariablesHandler.__init__(self, gui_vars)
+
+    def insertTradeStoredFolder(self):
+        """
+        This function creates a query with FTrade as subtype
+        :return: FStoredASQLQuery
+        """
+        q = acm.CreateFASQLQuery(acm.FStoredASQLQuery, 'AND')
+        op = q.AddOpNode('OR')
+        op.AddAttrNode('Name', 'RE_LIKE_NOCASE', None)
+        op = q.AddOpNode('AND')
+        op.AddAttrNode('SubType', 'RE_LIKE_NOCASE', 'FTrade')
+        return q
+
+    def start_reconciliation_process(self, variables_dictionary):
+        """
+        This function starts the migration process
+        :param variables_dictionary: dictionary of variables
+        :return: None
+        """
+        from ReconciliationTrades import ReconciliationTrades
+        report_package_obj = ReconciliationTrades(variables_dictionary)
+        report_package_obj.trigger_report()
+
+
+
+
+
+...
+
+  ReconciliationTrades
+"""-----------------------------------------------------------------------------------
+MODULE:
+    ReconciliationTrades
+
+DESCRIPTION:
+    This module provides the implementation of reconciliation process.
+
+---------------------------------------------------------------------------------------"""
+import DealPostingUtils, traceback, acm
+
+
+class ReconciliationTrades(object):
+    def __init__(self, var_dicts):
+        """
+        This function initializes the object variables
+        :param var_dicts: Dictionary containing the variables
+        """
+        self._object_filter_list = var_dicts.get("trade_filter")
+
+    def trigger_report(self):
+        """
+        This function starts processing the reconciliation requests
+        :return: None
+        """
+        for filter_ in self._object_filter_list.split(','):
+            query = acm.FStoredASQLQuery[filter_.strip()]
+            if query:
+                trades = query.Query().Select()
+                print('Executing trades in query {}.'.format(filter_.strip()))
+                for trade in trades:
+                    try:
+                        DealPostingUtils.send_reconciliation(trade)
+                    except Exception as err:
+                        print('Error in trigger_report {}.'.format(err))
+                        print(traceback.format_exc())
+
+
+...
+
+  SmartFXDealReconciliationMapper
+"""------------------------------------------------------------------------------------------------
+MODULE:
+    SmartFXDealReconciliationMapper : User Module for handling deal reconciliation mapping
+
+DESCRIPTION: This module provides the customizable class for handling deal reconciliation mapping.
+---------------------------------------------------------------------------------------------------"""
+import SmartFXDealReconciliationMapperBase
+
+
+class SmartFXDealReconciliationMapper(SmartFXDealReconciliationMapperBase.SmartFXDealReconciliationMapperBase):
+    def __init__(self, trade):
+        """
+        initialize member variables
+        :param trade: FTrade
+        """
+        super(SmartFXDealReconciliationMapper, self).__init__(trade)
+
+    def add_custom_data(self):
+        """
+        This function lets user supply additional mapping in dictionary
+        :return: dict
+        Usage:
+              return {'revText':'Cancellation Text'}
+        """
+        return dict()
+
+    def _process_response(self, reconcile_response):
+        """
+        This function lets user decide the logic to process the incoming response from SmartFX
+        :param reconcile_response: httpresponse
+        :return: base function
+        """
+        return super(SmartFXDealReconciliationMapper, self)._process_response(reconcile_response)
+
+
+
+
+
+
+...
+
+  SmartFXDealReconciliationMapperBase
+"""-----------------------------------------------------------------------------------------------------
+MODULE
+    SmartFXDealReconciliationMapperBase
+
+DESCRIPTION: This module provides the base class for providing mapping of deal to JSON.
+
+-------------------------------------------------------------------------------------------------------"""
+import json, traceback
+import acm
+import DealPostingUtils, InterfaceUtils
+
+
+class SmartFXReconciliationData(object):
+    def __init__(self):
+        """
+        Initialize the member variables.
+        """
+        self.data_dict = {"BR": "",
+                          "dealNo": "",
+                          "trader": "",
+                          "valueDate": "",
+                          "customerCIF": "",
+                          "brokerCode": "",
+                          "portfolioCode": "",
+                          "dealDate": "",
+                          "dealTime": "",#Should always be empty
+                          "dealText": "",
+                          "noteText": "",
+                          "position": "",
+                          "productCode": "",
+                          "verInd": "",
+                          "revText": "",
+                          "revReason": "",
+                          "inputDate": "",
+                          "inputTime": "",#Should always be empty
+                          "lastMinuteDate": "",
+                          "ccy": "",
+                          "ccyAmount": "",
+                          "ccyTerms": "",
+                          "ccyRate": "",
+                          "counterCcy": "",
+                          "counterAmount": "",
+                          "counterRate": ""}
+
+    def set_field(self, name, value):
+        """
+        This function sets the field in the data dictionary.
+        :param name: Name of the field
+        :param value: Value of the field
+        :return: None
+        """
+        if name in self.data_dict.keys():
+            if not value: # Always populate the value even if value is empty.
+                value = ""
+            self.data_dict.update({name: value})
+        else:
+            raise Exception('Field {} not supported for reconciliation.'.format(name))
+
+    def get_json_dict(self):
+        """
+        This function generates te JSON object.
+        :return: string
+        """
+        return self.data_dict
+
+
+class SmartFXDealReconciliationMapperBase(object):
+
+    def __init__(self, trade):
+        """
+        Initialize the member variables.
+        :param trade: FTrade
+        """
+        self._reconciliation_data = SmartFXReconciliationData()
+        self._trade = trade
+        
+    def _get_code_from_branch(self, br_name):
+        """
+        This function deduces branch code
+        """
+        ret_val = ''
+        ch_name_split = br_name.split('-')
+        if len(ch_name_split) > 1:
+            ret_val = ch_name_split[0]
+        
+        return ret_val.strip()
+
+    def process_trade(self):
+        """
+        This function maps the trade to the dictionary
+        :return:
+        """
+        buy_sell = 'S'
+        if self._trade.Quantity() > 0:
+            buy_sell = 'B'
+
+        record_create_time = self._trade.CreateTime()
+        trade_time = self._trade.TradeTime()
+        record_create_time = acm.Time().DateTimeFromTime(record_create_time)
+        base_curr = self._trade.Instrument().Name()
+        amount = str(abs(self._trade.Quantity()))
+        counter_curr = self._trade.Currency().Name()
+        counter_amount = str(abs(self._trade.Premium()))
+        brokerId = self._trade.Broker().Id() if self._trade.Broker() else None
+        branch_name = self._trade.OptKey1().Name() if self._trade.OptKey1() else ''
+        client_rate = self._trade.AdditionalInfo().ClientRate()
+        cif_number = ''
+        if self._trade.Counterparty():
+            if self._trade.Counterparty().HostId():
+                cif_number = self._trade.Counterparty().HostId()
+            else:
+                cif_number = self._trade.YourRef()            
+
+        self._reconciliation_data.set_field('dealNo', str(self._trade.Oid()))        
+        self._reconciliation_data.set_field('customerCIF', cif_number)
+        self._reconciliation_data.set_field('trader', self._trade.TraderId())
+        self._reconciliation_data.set_field('brokerCode', brokerId)
+        self._reconciliation_data.set_field('valueDate', InterfaceUtils.date_from_datetime(self._trade.ValueDay()))
+        self._reconciliation_data.set_field('dealDate', InterfaceUtils.date_from_datetime(trade_time))
+        #self._reconciliation_data.set_field('dealTime', InterfaceUtils.time_from_datetime(trade_time))
+        self._reconciliation_data.set_field('inputDate', InterfaceUtils.date_from_datetime(record_create_time))
+        #self._reconciliation_data.set_field('inputTime', InterfaceUtils.time_from_datetime(record_create_time))
+        self._reconciliation_data.set_field('portfolioCode', self._trade.PortfolioId())
+        self._reconciliation_data.set_field('dealText', self._trade.Text1())
+        self._reconciliation_data.set_field('ccy', base_curr)
+        self._reconciliation_data.set_field('ccyAmount', amount)
+        self._reconciliation_data.set_field('position', buy_sell)
+        self._reconciliation_data.set_field('BR', self._get_code_from_branch(branch_name))
+        self._reconciliation_data.set_field('productCode', self._trade.OptKey3().Name() if self._trade.OptKey3() else "")
+        self._reconciliation_data.set_field('counterCcy', counter_curr)
+        self._reconciliation_data.set_field('counterAmount', counter_amount)
+        self._reconciliation_data.set_field('ccyRate', client_rate)
+        
+        
+        
+    
+
+    def get_json_string(self):
+        """
+        This function return the JSON string
+        :return: string
+        """
+        return self._reconciliation_data.get_json_dict()
+
+    def _process_response(self, reconcile_response):
+        """
+        This function provide the logic to process the incoming response from SmartFX
+        :param reconcile_response: httpresponse
+        :return: tuple of boolean and string
+        """
+        ret_val = False
+        json_response_desc = 'Description not found.'
+        try:
+            if reconcile_response.status_code == 200:
+                json_response = reconcile_response.json()
+                json_response_desc = json_response.get('errorDesc', '')
+                json_response_status = json_response.get('errorCode', '')
+                if json_response_status.upper() == 'N':
+                    ret_val = True
+            else:
+                json_response_desc = '{} {}'.format(reconcile_response.status_code, reconcile_response.reason)
+        except Exception as err:
+            print('Error while processing response. ', err)
+            print(traceback.format_exc())
+        return ret_val, json_response_desc
+
+    def response_to_reconstate(self, reconcile_response):
+        """
+        This function maps reconciliation response to AdditionalInfo spec values
+        :param reconcile_response: httpresponse
+        :return: tuple of string and string
+        """
+        recon_state = DealPostingUtils.TradeReconState.AWAITED.value
+        statusDesc = ''
+        if reconcile_response is None:
+            recon_state = DealPostingUtils.TradeReconState.TIMED_OUT.value
+            statusDesc = 'Reconciliation response timed out.'
+        else:
+            status, statusDesc = self._process_response(reconcile_response)
+            if status:
+                recon_state = DealPostingUtils.TradeReconState.ACK.value
+            else:
+                recon_state = DealPostingUtils.TradeReconState.NACK.value
+
+        return recon_state, statusDesc
+
+
+...
+
+  SmartFXDealReconHandlerHook
+"""-----------------------------------------------------------------------------------------------------
+MODULE
+    SmartFXDealReconHandlerHook
+
+DESCRIPTION: This module provides the function that needs to be called from AMBA.
+
+-------------------------------------------------------------------------------------------------------"""
+from ReconciliationDealProcessor import ReconciliationDealProcessor
+import traceback
+deal_processor = ReconciliationDealProcessor()
+
+
+def smartfx_deal_reconciliation_handler(message, s):
+    """
+    This function processes the AMBA trade update to reconciliation request.
+    :param message: mbf_object
+    :param s: subject
+    :return: mbf_object and string
+    """
+    try:
+        deal_processor.process_trade_update(message)        
+    except Exception as err:
+        print(traceback.format_exc())
+        print('Error in smartfx_deal_reconciliation_handler {}.'.format(err))
+    return  message, s
+    
+
+
+
+
+...
+
+}
+

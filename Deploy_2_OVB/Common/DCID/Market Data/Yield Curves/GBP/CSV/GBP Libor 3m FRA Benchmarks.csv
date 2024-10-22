@@ -1,0 +1,9 @@
+INSTRUMENT,,,,,,,,,,LEG,,,,,,,,,,,,,,,,,,,,/LEG,/INSTRUMENT
+CONTR_SIZE,CURR.INSID,GENERIC,INSID,INSTYPE,MTM_FROM_FEED,OTC,PAY_OFFSET_METHOD,QUOTATION_SEQNBR.NAME,SPOT_BANKING_DAYS_OFFSET,CURR.INSID,DAYCOUNT_METHOD,DECIMALS,END_PERIOD,FLOAT_RATE.INSID,FLOAT_RATE_FACTOR,INTEREST_PAYMENT_TIME,NOMINAL_FACTOR,PAYLEG,PAY_CALNBR.CALID,PAY_DAY_METHOD,RESET_CALNBR.CALID,RESET_DAY_METHOD,RESET_DAY_OFFSET,RESET_TYPE,ROLLING_CONVENTION,ROLLING_PERIOD,ROUNDING,START_PERIOD,TYPE,,
+1000000,GBP,Yes,GBP/FRA/LI3M/1X4,FRA,Yes,Yes,Business Days,Coupon,0,GBP,Act/365,5,4m,GBP/LIBOR/3M,1,In Advance,1,No,London,Mod. Following,London,Mod. Following,0,Single,EOM Cal Days,0d,Normal,1m,Float,,
+1000000,GBP,Yes,GBP/FRA/LI3M/2X5,FRA,Yes,Yes,Business Days,Coupon,0,GBP,Act/365,5,5m,GBP/LIBOR/3M,1,In Advance,1,No,London,Mod. Following,London,Mod. Following,0,Single,EOM Cal Days,0d,Normal,2m,Float,,
+1000000,GBP,Yes,GBP/FRA/LI3M/3X6,FRA,Yes,Yes,Business Days,Coupon,0,GBP,Act/365,5,6m,GBP/LIBOR/3M,1,In Advance,1,No,London,Mod. Following,London,Mod. Following,0,Single,EOM Cal Days,0d,Normal,3m,Float,,
+1000000,GBP,Yes,GBP/FRA/LI3M/4X7,FRA,Yes,Yes,Business Days,Coupon,0,GBP,Act/365,5,7m,GBP/LIBOR/3M,1,In Advance,1,No,London,Mod. Following,London,Mod. Following,0,Single,EOM Cal Days,0d,Normal,4m,Float,,
+1000000,GBP,Yes,GBP/FRA/LI3M/5X8,FRA,Yes,Yes,Business Days,Coupon,0,GBP,Act/365,5,8m,GBP/LIBOR/3M,1,In Advance,1,No,London,Mod. Following,London,Mod. Following,0,Single,EOM Cal Days,0d,Normal,5m,Float,,
+1000000,GBP,Yes,GBP/FRA/LI3M/6X9,FRA,Yes,Yes,Business Days,Coupon,0,GBP,Act/365,5,9m,GBP/LIBOR/3M,1,In Advance,1,No,London,Mod. Following,London,Mod. Following,0,Single,EOM Cal Days,0d,Normal,6m,Float,,
+1000000,GBP,Yes,GBP/FRA/LI3M/9X12,FRA,Yes,Yes,Business Days,Coupon,0,GBP,Act/365,5,12m,GBP/LIBOR/3M,1,In Advance,1,No,London,Mod. Following,London,Mod. Following,0,Single,EOM Cal Days,0d,Normal,9m,Float,,

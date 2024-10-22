@@ -1,0 +1,2827 @@
+#
+# Front Arena exported extension module.
+# source          ""
+# timestamp (utc) "2023-08-15 05:06:24.4"
+# ***** DO NOT EDIT! *****
+#
+name        "MarketLinkedDeposit_RangeAccrualFX"
+description "$Id$"
+
+groups {
+}
+
+decls[FCustomInstrumentDefinition] {
+}
+
+clx FObject [FCustomInstrumentDefinition] {
+  MarketLinkedDepositRangeAccrualFx =
+  Caption=Market Linked Deposit RAFx(Modify default)
+  DealPackageDefinition=
+  DefaultInstrumentName=MMLDRAFx
+  DefaultInstrumentUpdateHook=
+  DefaultTradeUpdateHook=
+  DisabledControls=
+  ExoticFixingsHook=SP_MarketLinkedDeposit_Utils.MLDRAFxExoticFixingsHook
+  ExtendsConfiguration=FX Option
+  FavoriteEnabledControls=
+  FilterCriteria=Instrument.AdditionalInfo.StructureType=Market Linked Deposit RAFx
+  HelpFileIndex=
+  InstantiatedAs=Concrete
+  InstrumentIcon=
+  LabelOverrides=
+  PanesExotic=
+  PanesInstrument=
+  PanesTrade=
+  ParentMenu=
+  PricingDefaultColumns=
+  PricingManualRefresh=
+  PricingShowRowHeaders=
+  ReplaceApplication=
+  SetUpFunction=SP_MarketLinkedDeposit_Setup.SetupMLD
+  ShowPlaceExcluded=
+  ShowPlaceInDetail=
+  ShowPlaceInSlim=
+  SubMenu=
+  UpdateControls=
+  VisiblePanes=
+
+
+}
+
+decls[FCustomMethod] {
+}
+
+clx FExoticEvent [FCustomMethod] {
+  MLDAmount =
+  Definition=MLDAmount:double
+  Function=SP_MarketLinkedDeposit_Utils.MLDAmount
+
+
+  MLDAmountInOut =
+  Definition=MLDAmountInOut:string
+  Function=SP_MarketLinkedDeposit_Utils.MLDAmountInOut
+
+
+  MLDFixing =
+  Definition=MLDFixing:double
+  Function=SP_MarketLinkedDeposit_Utils.MLDFixing
+
+
+  MLDFixingDomesticPerForeign =
+  Definition=MLDFixingDomesticPerForeign:string
+  Function=SP_MarketLinkedDeposit_Utils.MLDFixingDomesticPerForeign
+
+
+  PayDate =
+  Definition=PayDate:date
+  Function=SP_MarketLinkedDeposit_Utils.PayDate
+
+
+  SetPayDate =
+  Definition=SetPayDate(date value)
+  Function=SP_MarketLinkedDeposit_Utils.SetPayDate
+
+
+}
+
+decls[FDealPackageDefinition] {
+}
+
+clx FObject [FDealPackageDefinition] {
+  SP_MarketLinkedDepositRangeAccrualFx =
+  CustomApplication=Deal Package
+  DefinitionClass=SP_MarketLinkedDeposit.MarketLinkedDepositRangeAccrualFx
+  Description=
+  DisplayName=Market Linked Deposit RAFx
+  Type=Normal
+
+
+}
+
+decls[FExtensionValue] {
+}
+
+clx FObject [FExtensionValue] {
+  CustomLayout_SP_MLDDealPackageExoticEvents
+exoticEvents;
+fixingEditer;
+...
+
+  CustomLayout_SP_MLDDealPackageTrades
+vbox(;
+        vbox[;
+                hbox(;
+                    vbox{;
+                        tradeTime;
+                        tradeValueDay;
+                        tradePortfolio;
+                        tradeTrader;
+                    };
+                    vbox{;
+                        
+                        tradeAcquirer;
+                        tradeCounterParty;
+                        tradeStatus;
+                        hbox(;
+                                fill;
+                                tradePayments;
+                        );
+                    };
+                );
+        ];
+);
+...
+
+  CustomLayout_SP_MLDRAFxDealPackageGeneral
+vbox(;
+        vbox{;
+                hbox(;
+                        packageType;
+                );
+                hbox(;
+                        name;
+                        suggestName;
+                );
+                
+        };
+        vbox[;
+                hbox(;
+                        vbox{;
+                                domesticCurrency;
+                                notional2;
+                                mmld_ceiling;
+                                mmld_floor;
+                                mmld_premiumOption;
+                                discountingType;
+                                mtmFromFreed;
+                        };
+                        vbox{;
+                                mmld_reference;
+                                mmld_maxYield;
+                                mmld_minYield;
+                                mmld_dayBasis;
+                                settlementType;
+                                ExternalId;
+                                valGroup;
+                        };
+                );
+                hbox[Fixing Data;
+                        vbox{;
+                                startDate;
+                                datePeriod;
+                                fixingCalendar1;
+                                fixingCalendar2;
+                                fixingCalendar3;
+                                expiry;
+                        };
+                        vbox{;
+                                fixingSource;
+                                settleDays;
+                                dayMethod;
+                                settlementCalendar;
+                                nbrObservationDays;
+                                fixingsGenerate;
+                        };
+                ];
+                hbox(;
+                        vbox[,domesticPerForeignVBox;
+                            vbox{;
+                                hbox(;
+                                        spotReference_rateDomesticPerForeign;
+                                );
+                            };
+                        ];
+                        vbox[,foreignPerDomesticVBox;
+                            vbox{;
+                                spotReference_rateForeignPerDomestic;
+                            };
+                        ];
+                );
+                hbox[Early Termination Status;
+                    vbox{;
+                        terminationStatus;
+                    };
+                    vbox{;
+                        terminationDate;
+                    };
+                ];
+        ];
+);
+    
+...
+
+  CustomPanes_SP_MLDRAFxDealPackage
+CustomLayout_SP_MLDRAFxDealPackageGeneral,General;CustomLayout_SP_MLDDealPackageExoticEvents,Date Schedule;CustomLayout_SP_MLDDealPackageTrades,Trade
+...
+
+}
+
+decls[FMenuExtension] {
+}
+
+clx FFrame [FMenuExtension] {
+  SP_MarketLinkedDepositRangeAccrualFx =
+  DisplayName=Market Linked Deposit RAFx
+  Function=SP_MarketLinkedDepositDealPackage.StartMLDRangeAccrualFx
+  MenuType=Application
+  ParentMenu=Trading/Structured Products
+  Standard=Yes
+
+
+}
+
+decls[FNumFormatter] {
+}
+
+clx FObject [FNumFormatter] {
+  MLDFourDecimal =
+  DenominatedValueDateTimeFormatter=
+  DigitGrouping=
+  DigitGroupingSymbol=
+  Epsilon=
+  Expression=
+  Format=
+  Fractions=
+  InputScaleFactor=
+  InputScaleFactorLimit=
+  Inverse=
+  MaximumSignificantDigits=
+  MinimumSignificantDigits=
+  Mnemonic=''=0.0:Input
+  NumDecimals=4
+  ScaleFactor=
+  ShowInf=false
+  Tick=
+  TruncateTrailingZeros=false
+  USTreasuryInput=
+
+
+  SixDecimalVeryDetailedShowZeroHideNaN =
+  DenominatedValueDateTimeFormatter=
+  DigitGrouping=
+  DigitGroupingSymbol=
+  Epsilon=0.0
+  Expression=
+  Format=
+  Fractions=
+  InputScaleFactor=
+  InputScaleFactorLimit=
+  Inverse=
+  MaximumSignificantDigits=
+  MinimumSignificantDigits=
+  Mnemonic='B'=1000000000.0:Input;'G'=1000000000.0:Input;'K'=1000.0:Input;'M'=1000000.0:Input;''=NotANumber:Output
+  NumDecimals=6
+  ScaleFactor=1.0
+  ShowInf=false
+  Tick=
+  TruncateTrailingZeros=false
+  USTreasuryInput=
+
+
+  SP_MLDFXRate =
+  DenominatedValueDateTimeFormatter=
+  DigitGrouping=
+  DigitGroupingSymbol=
+  Epsilon=1e-06
+  Expression=x
+  Format=
+  Fractions=
+  InputScaleFactor=
+  InputScaleFactorLimit=
+  Inverse=abs(x)
+  MaximumSignificantDigits=
+  MinimumSignificantDigits=
+  Mnemonic='B'=1000000000.0:Input;'G'=1000000000.0:Input;'K'=1000.0:Input;'M'=1000000.0:Input;''=NotANumber:Output
+  NumDecimals=4
+  ScaleFactor=1.0
+  ShowInf=false
+  Tick=
+  TruncateTrailingZeros=false
+  USTreasuryInput=
+
+
+}
+
+decls[FPythonCode] {
+}
+
+clx FObject [FPythonCode] {
+  MMLD_Payments
+import acm
+import FBDPGui
+from FLogger import FLogger
+
+logger = FLogger(name=__name__)
+log_levl_dict = {'INFO' : 1, 'DEBUG' : 2, 'WARN' : 3, 'ERROR' : 4}
+
+# Tool Tip
+tttrades = 'Trades to process.'
+tttradeQueryFolder = 'Trade Query Folder to process.'
+ttdate = 'Date for the payments to run.'
+ttLogMode = 'Defines the amount of logging produced.'
+ttLogToCon = 'Whether logging should be done in the Log Console or not.'
+ttLogToFile = 'Defines whether logging should be done to file.'
+ttLogFile = r'Name of the logfile. Could include the whole path c:\log\...'
+
+query = acm.CreateFASQLQuery(acm.FTrade, 'AND')  # empty query
+op = query.AddOpNode('OR')
+op.AddAttrNode('Instrument.Name', 'RE_LIKE_NOCASE', None)
+op = query.AddOpNode('AND')
+op.AddAttrNode('Oid', 'GREATER_EQUAL', None)
+op.AddAttrNode('Oid', 'LESS_EQUAL', None)
+op = query.AddOpNode('OR')
+op.AddAttrNode('Portfolio.Name', 'EQUAL', None)
+query.AddOpNode('AND').AddAttrNode('DealPackageTradeLinks.DealPackage.InstrumentPackage.DefinitionName', 'EQUAL', 'SP_MarketLinkedDepositRangeAccrualFx')
+
+trade_query_folders = acm.FStoredASQLQuery.Select('subType = FTrade')
+query_names = [query_folder.Name() for query_folder in trade_query_folders]
+
+ael_variables = FBDPGui.DefaultVariables(
+    # Variable     Display                          Type           Candidate  Default  Mandatory   Description Input Enabled
+    # name         name                                            values                    Multiple          hook
+    ('trades', 'MMLD Trades', 'FTrade', None, query, False, True, tttrades),
+    ('tradeQueries', 'MMLD Trade Queries', 'FStoredASQLQuery', query_names, None, False, True, tttradeQueryFolder),
+    ('reportDate', 'Process Date', 'string', None, acm.Time.DateToday(), True, False, ttdate),
+    ('Logmode', 'Log mode_Logging', 'string', ['INFO','DEBUG','WARN','ERROR'], 'INFO', False, False, ttLogMode),
+    ('LogToConsole', 'Log to console_Logging', 'int', [1, 0], 1, False, False, ttLogToCon),
+    ('LogToFile', 'Log to file_Logging', 'int', [1 ,0], 0, False, False, ttLogToFile),
+    ('Logfile', 'Log file_Logging', 'string', None, __name__ + '.log', False, False, ttLogFile),)
+
+
+def getValidDate(newDate):
+    period = acm.Time().PeriodSymbolToDatePeriod(newDate)
+    if period:
+        newDate = acm.Time.PeriodSymbolToDate(period)
+    return newDate
+
+def TotalInterestDays(instrument):
+    PeriodWiseInterestDays = {}
+    excEvents = instrument.ExerciseEvents()
+    settlementDates = sorted(set([x.SettlementDate() for x in excEvents]))
+    startDate = instrument.StartDate()
+    ProcessedDate = None
+    for setDate in settlementDates:
+        noOfDay = 0
+        endDay = setDate
+        if (ProcessedDate ==None):
+            ProcessedDate = instrument.StartDate()
+        if( setDate >= instrument.ExpiryDate()):
+            # +1 to add the expiry day
+            endDay = instrument.ExpiryDate()
+            noOfDay  = noOfDay+1
+        noOfDay =  noOfDay + (acm.Time().DateDifference(endDay, ProcessedDate))
+        #noOfPeriods = GetNumberOfPaymentPeriods(instrument)
+        PeriodWiseInterestDays[setDate] = noOfDay
+        ProcessedDate = setDate
+    return PeriodWiseInterestDays
+    
+
+def ProcessPayments(params):
+    trades = params['trades']
+    for query_folder in params['tradeQueries']:
+        trades.AddAll(query_folder.Query().Select())
+    if not trades:
+        logger.LOG('No trades to process')
+    report_date = getValidDate(params['reportDate'])
+    for trade in trades:
+        logger.LOG('Processing trade %i' % trade.Oid())
+        instrument = trade.Instrument()
+        tInterestDays = TotalInterestDays(instrument)
+        if instrument.InsType() != 'Option':
+            logger.LOG('Trade %i is not an option' % trade.Oid())
+            continue
+        events = instrument.GetExoticEventsOfKind('Price Fixing')
+        if not events:
+            logger.LOG('Instrument "%s" has no MLD Expiry Dates' % instrument.Name())
+            continue
+        events_report_date = [event for event in events if acm.Time.DateDifference(event.PayDate(), report_date) == 0]
+        if len(events_report_date) == 0:
+            logger.LOG('Report date %s is not a payment date for trade %i.' % (report_date, trade.Oid()))
+            continue
+        ceiling = instrument.AdditionalInfo().Sp_MLDCeiling()
+        floor = instrument.AdditionalInfo().Sp_MLDFloor()
+        matched_events = [event for event in events_report_date if event.EventValue() >= floor and event.EventValue() <= ceiling]
+        len_matched_events = len(matched_events)
+        len_obs = len(events_report_date)
+        max_yield = instrument.AdditionalInfo().Sp_MLDMaxYield()
+        obs_ratio = len_matched_events / len_obs
+        premium_percentage = instrument.AdditionalInfo().Sp_MLDPremiumOption()
+        notional = instrument.AdditionalInfo().Sp_LeverageNotional()
+        basis = instrument.AdditionalInfo().Sp_MLDDayBasis()
+        interestDays = tInterestDays[report_date]       
+        if len_matched_events == 0:
+            logger.LOG('There are no fixings that fall withing Ceiling and Floor for trade %i.' % trade.Oid())
+        MMLD = (max_yield / 100 * notional * interestDays/basis)
+        #mld_amount_per_day = trade.Quantity()
+        #mld_amount_per_day = (premium_percentage / 100 * notional * interestDays/basis)
+        mld_amount = MMLD * obs_ratio
+
+        try:
+            interestDays = tInterestDays[report_date]
+            premium_amount = (premium_percentage / 100 * notional * interestDays/basis) *(-1)
+        except Exception as e:
+            premium_amount = 0
+            logger.ELOG('Premium amount could not be calculated for trade %i.' % trade.Oid())
+            logger.ELOG(str(e))
+        payments = trade.Payments()
+        to_delete = acm.FArray()
+        for payment in payments:
+            if acm.Time.DateDifference(payment.PayDay(), report_date) == 0:
+                if payment.Type() in ('MMLD Payment', 'Premium') and payment.Text() == 'Auto':
+                    to_delete.Add(payment)
+
+        new_payments = acm.FArray()
+
+        # MMLD Payment
+        if acm.Math.AlmostZero(mld_amount, 1e-2):
+            logger.LOG('MMLD Payment amount is zero for trade %i.' % trade.Oid())
+        else:
+            payment = acm.FPayment()
+            payment.Type('MMLD Payment')
+            payment.Party(trade.Counterparty())
+            payment.Currency(trade.Currency())
+            payment.PayDay(report_date)
+            payment.ValidFrom(report_date)
+            payment.Amount(mld_amount)
+            payment.Trade(trade)
+            payment.Text('Auto')
+            new_payments.Add(payment)
+
+        # Premium Payment
+        if acm.Math.AlmostZero(premium_amount, 1e-2):
+            logger.LOG('Premium amount is zero for trade %i.' % trade.Oid())
+        else:
+            payment = acm.FPayment()
+            payment.Type('Premium')
+            payment.Party(trade.Counterparty())
+            payment.Currency(trade.Currency())
+            payment.PayDay(report_date)
+            payment.ValidFrom(report_date)
+            payment.Amount(premium_amount)
+            payment.Trade(trade)
+            payment.Text('Auto')
+            new_payments.Add(payment)
+        if new_payments:
+            acm.BeginTransaction()
+            try:
+                new_payments.Commit()
+                to_delete.Delete()
+                logger.LOG('Payments created for trade %i.' % trade.Oid())
+                acm.CommitTransaction()
+            except Exception as e:
+                acm.AbortTransaction()
+                logger.ELOG('Could not create payments for trade %i.' % trade.Oid())
+                logger.ELOG(str(e))
+        else:
+            logger.LOG('No payments created for trade %i.' % trade.Oid())
+    logger.LOG('Completed payment creation for report date: %s' % report_date)
+
+
+def ael_main(params):
+    if params['LogToFile'] and params['Logfile']:
+        logger.Reinitialize(log_levl_dict[params['Logmode']], None, None, params['LogToConsole'], True, params['Logfile'], None, None, None)
+    else:
+        logger.Reinitialize(log_levl_dict[params['Logmode']], None, None, params['LogToConsole'], True, None, None, None, None)
+    logger.LOG('Initialising MMLD Payments process')
+    ProcessPayments(params)
+
+...
+
+  SP_MarketLinkedDeposit
+
+from __future__ import print_function
+from __future__ import division
+from __future__ import absolute_import
+
+import acm
+import math, inspect, string , types
+from math import isnan
+
+
+from DealPackageDevKit import DealPackageDefinition, DealPackageException, DealPackageUserException, CalcVal, Object, Str, Action, List, Bool, Float, Int, Date, DatePeriod, DealPackageChoiceListSource, Settings, UXDialogsWrapper, AcquirerChoices, CounterpartyChoices, PortfolioChoices, TradeStatusChoices, ValGroupChoices, ReturnDomainDecorator, Box, TradeActions, CorrectCommand, NovateCommand, CloseCommand, MirrorCommand, NoButtonAttributeDialog, InstrumentPart, DealPart, CustomActions, TradeActions
+import ChoicesExprInstrument
+import ChoicesExprInstrument
+from DealPackageUtil import UnDecorate
+from SP_DealPackageHelper import DoubleBarrierChoices, SettlementTypeChoices, DatePeriodToDateTime, StringValueIsInteger, DayMethodOnlyFollowingPreceding, BarrierSingleChoices, GetCurrencyPairPointsDomesticPerForeign, GetCurrencyPairPointsForeignPerDomestic
+from SP_CustomTradeActions import TrfExerciseAction
+from SP_BusinessCalculations import GenerateFXPeriodDates, AdjustBankingDaysFromMultiCalendars, BankingDayPeriodToDateFromStartDate, GetRelevantFixingCalendar, GenerateMonthlyPeriodDates, GenerateAverageDates, GetPairCalendars
+from CompositeAttributesLib import BuySell, PaymentsDialog
+from SP_ExerciseUtils import AddExerciseCashPayment, CreatePhysicalDeliveryFxSpotExerciseTrade, CreatePhysicalDeliveryPmSpotExerciseTrade, CalculateOpenPart, IsExercised, BarrierIsCrossedOnDate,CloseDealPackage
+
+from SP_MLDCompositeAttributes import MLDFxRateComposite, MLDFxFixingEditerComposite
+from SP_MLDCalculations import CalculateDailyAccrualReturn
+from SP_TrfUtils import SelectPackageType
+from SP_MarketLinkedDeposit_Utils import GetAllMLDProductTypes, GenerateMLDExpiryTable, MLDExpiryEvent, DefaultSheetDefaultColumns, TransformUsingDecorator, GetInverseRate, ExpiryPeriodToDate, GetNumberOfPaymentPeriods
+
+class Sentinel(object): pass
+READ = Sentinel()
+
+class MLDBaseDefinition(DealPackageDefinition):
+
+    averageMethodType   = Object(   objMapping = InstrumentPart("Option.Exotic.AverageMethodType"),
+                                    defaultValue = "None",
+                                    visible = False)
+    
+    averagePriceType    = Object(   objMapping = InstrumentPart("Option.Exotic.AveragePriceType"),
+                                    defaultValue = "None",
+                                    visible = False)
+
+    
+    averageStrikeType   = Object(   objMapping = InstrumentPart("Option.Exotic.AverageStrikeType"),
+                                    defaultValue = "None",
+                                    visible = False)
+
+
+    settlementType      = Object(   objMapping = InstrumentPart("Option.SettlementType"),
+                                    choiceListSource = '@ChoicesSettlementType',
+                                    label = "Settlement" )
+    
+   
+    settleDays          = Object ( objMapping   = InstrumentPart('Option.PayDayOffset'),
+                                   label        = 'Settle Days',
+                                   visible      = True,
+                                   toolTip      = 'Number of banking days between each period end date and the corresponding settlment date' )
+
+    
+    terminationStatus   = Object(   objMapping = InstrumentPart("Option.Exotic.BarrierCrossedStatus"),
+                                    recreateCalcSpaceOnChange=True,
+                                    label = "Termination Status",
+                                    visible = "@VisibleTerminationStatus" )
+    
+    terminationDate     = Object(   objMapping = InstrumentPart("Option.Exotic.BarrierCrossDate"),
+                                    recreateCalcSpaceOnChange=True,
+                                    label = "Termination Date",
+                                    visible = "@VisibleTerminationStatus" )
+    
+    #-----------------------------
+    # Trait building up the expiry table
+    #-----------------------------
+    
+    fixingsGenerate     = Action(   label = "Generate",
+                                    enabled = "@EnabledFixingsGenerate",
+                                    action = "@ActionFixingsGenerate" )
+    
+    exoticEvents        = Object(   objMapping = "MLDExpiryEvents",
+                                    columns = "@ColumnsExoticEvents",
+                                    label = "Expiry Table",
+                                    addNewItem=['First', 'Sorted'],
+                                    sortIndexCallback='@SortMLDExpiryEvents',
+                                    onSelectionChanged = "@SelectionExoticEvents",
+                                    dialog = None,
+                                    toolTip = "Expiry Table" )
+
+
+    #--------------------------
+    # B2B parameters
+    #--------------------------
+    '''
+
+    b2bEnabled          = Object( defaultValue=False,
+                                  label='B2B Cover',
+                                  objMapping='OptionB2B.SalesCoverEnabled',
+                                  visible='@IsB2BorDetail')
+
+    b2bMargin           = Object( defaultValue=0.0,
+                                  label='Sales Spread',
+                                  objMapping='OptionB2B.SalesMargin',
+                                  formatter='FullPrecision',
+                                  enabled='@IsB2B',
+                                  visible='@IsB2BorDetail')
+                            
+    b2bPrice            = Object( defaultValue=0.0,
+                                  label='Trader Price',
+                                  objMapping='OptionB2B.TraderPrice',
+                                  formatter='FullPrecision',
+                                  visible='@IsB2B')
+                            
+    b2bPortfolio        = Object( label='Trader Portfolio',
+                                  objMapping='OptionB2B.TraderPortfolio',
+                                  choiceListSource=PortfolioChoices(),
+                                  visible='@IsB2B')
+             
+    b2bAcquirer         = Object( label='Trader Acquirer',
+                                  objMapping='OptionB2B.TraderAcquirer',
+                                  choiceListSource=AcquirerChoices(),
+                                  visible='@IsB2B')
+    '''
+
+    #-----------------------------
+    # Non visible traits
+    #-----------------------------
+    productType         = Object(   objMapping = InstrumentPart("Option.AdditionalInfo.StructureType"),
+                                    defaultValue = 'Market Linked Deposit RAFx')
+    
+    quotation           = Object(   objMapping = InstrumentPart("Option.Quotation"))
+    
+    exoticType          = Object(   objMapping = InstrumentPart("Option.ExoticType"))
+    
+    isCallOption        = Object(   objMapping = InstrumentPart("Option.IsCallOption"),
+                                    visible = False )
+
+    notionalQuotation   = Object(   objMapping = InstrumentPart("Option.Underlying.Quotation"),
+                                    visible = False)
+
+    #-----------------------------
+    # Traits to handle fixing dates
+    #-----------------------------
+    exercise = Action (action = '@Exercise')
+    
+    def AttributeOverrides(self, overrideAccumulator):
+        overrideAccumulator({
+        })
+
+    def AddExoticEvent(self, type, date, settlementDate, endDate, value, valueSecond, componentInstrument):
+        ee = acm.FExoticEvent()
+        ee.Instrument(self.Option().Instrument())
+        ee.ComponentInstrument(componentInstrument)
+        ee.Type(type)
+        ee.Date(date)
+        ee.EventValue(value)
+        ee.EventValueSecond(valueSecond)
+        self.Option().ExoticEvents().Add(ee)
+        ee.RegisterInStorage()
+
+    def GetExoticEventReference(self):
+        raise NotImplementedError("Method GetExoticEventReference not implemented")
+
+    def DeleteExoticEventsOfType(self, eeType):
+        existingEvents = [event for event in self.Option().GetExoticEventsOfKind(eeType)]
+        for ee in existingEvents:
+            ee.Unsimulate()
+
+    def DeleteMLDExpiryEvents(self):
+        self.DeleteExoticEventsOfType('Price Fixing')
+
+    def DeleteAveragePriceDates(self):
+        self.DeleteExoticEventsOfType('Average price')
+
+    # Method to override
+    # Return value is for instrument (not for trade), i.e. for trade quantity 1
+    def ExerciseAmount(self, date):
+        raise NotImplementedError('Method ExerciseAmount not implemented')
+        
+    def ExerciseObjects(self, date, *rest):
+        raise NotImplementedError('Method ExerciseObjects not implemented')
+        
+    def GeneratePeriodDates(self):
+        raise NotImplementedError('Method GeneratePeriodDates not implemented')
+
+    def GetFixingParams(self):
+        raise NotImplementedError('Method GeneratePeriodDates not implemented')
+
+    def FieldsSetToGenerate(self):
+        raise NotImplementedError('Method FieldsSetToGenerate not implemented')
+    
+    def _CreateExerciseEvent(self, startDate, EndDate, SettlementDate):
+        #need to use strikeDomesticPerForeign
+        ee = acm.FExerciseEvent()
+        ee.Date(EndDate)
+        ee.StartDate(startDate)
+        ee.SettlementDate(SettlementDate)
+        ee.EndDate(EndDate)
+        ee.NoticeDate(EndDate)
+        ee.Strike(-1)
+        ee.Type('UserDefined')
+        ee.Instrument(self.Option())
+        self.Option().ExerciseEvents().Add(ee)
+        ee.RegisterInStorage()
+
+    def GenerateMLDExpiryEvents(self, dates = None):
+        if dates is None:
+            #dates = self.GeneratePeriodDates()
+            (ExpiryDates, periodEndDates) = GenerateMLDExpiryTable(self.GetFixingParams())
+        
+        allExerciseEvents = self.Option().ExerciseEvents()
+        allExerciseEvents.Unsimulate()
+        for enddate in periodEndDates:
+            #print(f"period end dates : {enddate}")
+            observationDays = [x for x in ExpiryDates if x.At('endDate') == enddate.At('endDate')]
+            startDate = None
+            for obsDay in observationDays:
+                observationDate = obsDay.At('observationDate')
+                #print(f"Price Fixing : {observationDate}    {obsDay.At('endDate')}    {obsDay.At('settlementDate')}")
+                
+                if(acm.Time.DateDifference(self.expiry, observationDate) >= 0):
+                    #print(f"Price Fixing : {observationDate}    {self.expiry} ")
+                    self.AddExoticEvent('Price Fixing', observationDate, obsDay.At('settlementDate'), obsDay.At('endDate'), -1, -1, self.GetExoticEventReference())
+                if startDate is None :
+                    startDate = observationDate
+                else:
+                    if startDate > observationDate:
+                        startDate = observationDate
+            #print(f"Exercise event : {startDate}    {enddate.At('endDate')}    {enddate.At('settlementDate')}")
+            self._CreateExerciseEvent(startDate, enddate.At('endDate'), enddate.At('settlementDate'))
+            
+        '''
+        if(len(ExpiryDates) > 0):
+            self.expiry = ExpiryDates.Last().At('endDate')
+            self.delivery = ExpiryDates.Last().At('settlementDate')
+        '''
+        self._generateAttributeUpdated = False
+
+
+
+    def GetNumberOfPeriods(self):
+        return GetNumberOfPaymentPeriods( self.Option().Instrument())
+    
+    
+    @ReturnDomainDecorator('int')
+    def NumberOfObservationDays(self, value = 'NoValue'):
+        return self.GetNumberOfObservationDays()
+    
+    def GetNumberOfObservationDays(self):
+        mldExpEvents = self.Option().GetExoticEventsOfKind('Price Fixing')
+        if mldExpEvents is not None :
+            return mldExpEvents.Size()
+        else:
+            return 0
+
+    def SortMLDExpiryEvents(self, attrName, columnNbr, value, formatter, obj):
+        if columnNbr < 0:
+            return acm.Time.DateTimeToTime(obj.Date())
+        elif columnNbr in (0, 1):
+            return acm.Time.DateTimeToTime(value)
+        else:
+            return value
+
+    #-----------------------------
+    # Object Mappings
+    #-----------------------------
+    @ReturnDomainDecorator('date')
+    def ExpiryDate(self, value = 'NoVal'):
+        if value == 'NoVal':
+            return self.OptionNoQuestionGui().ExpiryDate()
+        else:
+            self.OptionNoQuestionGui().ExpiryDate(value)
+
+    @ReturnDomainDecorator('date')
+    def StartDate(self, value = 'NoVal'):
+        if value == 'NoVal':
+            return self.Option().StartDate()
+        else:
+            self.Option().StartDate(value)
+    
+    @ReturnDomainDecorator('date')
+    def Expiry(self, value='NoVal'):
+        # How should this map to expiry table?
+        # Should expiry date and time be separate fields?
+        if value == 'NoVal':
+            #return self.Option().ExpiryDate()
+            return self.Option().FxoExpiryDate()
+        else:
+            #self.Option().ExpiryDate(value)
+            self.Option().FxoExpiryDate(value)
+
+
+    #-----------------------------
+    # Date period logic
+    #-----------------------------
+
+    def ExpiryPeriodToDate(self, traitName, value):
+        return ExpiryPeriodToDate(self.OptionNoQuestionGui(), value)
+
+    def TradeDayFromPeriod(self, startDate, period):
+        tradeDay = acm.Time.DateAdjustPeriod(startDate, period)
+        if self.currency and self.currency.Calendar():
+            tradeDay = self.currency.Calendar().ModifyDate(None, None, tradeDay)
+        return tradeDay
+    
+    def FirstRelevantDayOfMonth(self, value):
+        return acm.Time.FirstDayOfMonth(value)
+
+    #-----------------------------
+    # Enabled Callbacks
+    #-----------------------------
+    def FieldsUpdatedToGenerate(self):
+        return self._generateAttributeUpdated
+
+    def EnabledFixingsGenerate(self, traitName):
+        return (self.FieldsSetToGenerate() and
+                self.FieldsUpdatedToGenerate() and
+                (not self.IsFirstFixingDateFixed()))
+
+    #-----------------------------
+    # Action Callbacks
+    #-----------------------------
+
+    def ActionFixingsGenerate(self, traitName):
+        #nbrOfPeriods = self.nbrOfPeriods
+        self.DeleteMLDExpiryEvents()
+        self.GenerateMLDExpiryEvents()
+
+    #-----------------------------
+    # Columns callbacks
+    #-----------------------------
+    def ColumnsExoticEvents(self, traitName):
+        raise NotImplementedError('Method ColumnsExoticEvents not implemented')
+
+    #-----------------------------
+    # On Selection Changed callacks
+    #-----------------------------
+    def SelectionExoticEvents(self, traitName, rowObject):
+        self.fixingEditer.OnSelectionChanged(rowObject)
+
+    def RegisterUpdatedAttribute(self, attrName, *args):
+        raise NotImplementedError('Method RegisterUpdatedAttribute not implemented')
+
+    #-----------------------------------------
+    # Formatters
+    #-----------------------------------------
+    def VisibleIfNotCountLoss(self, traitName):
+        # For now always true
+        # Change if count feature is implemented on other strucutures
+        return True
+
+    def VisibleTerminationStatus(self, traitName):
+        return (self.IsShowModeDetail() or self.terminationStatus != "None")
+
+    def VisibleIfNotAsian(self, attrName):
+        return True
+
+    #-----------------------------------------
+    # Validation callbacks
+    #-----------------------------------------
+    def ValidateDatePeriod(self, attrName, value, *rest):
+        if not acm.Time().PeriodSymbolToDate(value):
+            raise DealPackageUserException('"%s" is not a valid date period' % value)
+
+    #-----------------------------------------
+    # Action callbacks
+    #-----------------------------------------
+    def Exercise(self, attrName, *rest):
+        def CheckAllFixingsDone(event):
+            for ee in self.exoticEvents:
+                if (acm.Time.DateDifference(ee.Date(), event.Date()) < 0 
+                        and ee.EventValue() < epsilon):
+                    raise DealPackageUserException('No fixing value for %s' % ee.Date())
+            return True
+        exerciseObjects = []
+        closingPackage = None
+        date = rest[0] if len(rest) > 0 else acm.Time().DateToday()
+        event = MLDExpiryEvent(self.Option(), date)
+        if event:
+            openPart = self.tradeQuantity * CalculateOpenPart(self.OptionTrade(), date = event.Date(), tradeType = 'tradeType', status = 'tradeStatus', quantity = 'tradeQuantity', valueDay = 'tradeValueDay', tradeTime = 'tradeTime')
+            if abs(openPart) > epsilon:
+                if not IsExercised(self.OptionTrade(), event):
+                    CheckAllFixingsDone(event)
+                    amount = self.ExerciseAmount(date)
+                    exerciseObjects = self.ExerciseObjects(amount, event, date, openPart)
+                else:
+                    raise DealPackageUserException('Trade has already been exercised for %s' % date)
+            else:
+                raise DealPackageUserException('Position is 0 for %s' % date)
+
+            # Close if last fixing or if early terminated
+            '''
+            if BarrierIsCrossedOnDate(self.Option(), event.Date()) or TodayIsLastTrfExpiry(self.Option(), event.Date()):
+                closingPackage = CloseDealPackage(self.DealPackage(), date, event.EndDate(), tradeTimeAttribute='tradeTime')
+            '''
+            
+        return exerciseObjects, closingPackage
+        
+    #-----------------------------------------
+    # Choice List values
+    #-----------------------------------------
+    def ChoicesSettlementType(self, attrName, *rest):
+        return SettlementTypeChoices(self.Option())
+
+    #-------------------------------------------------
+    # Other methods to be overridden by lower classes
+    #-------------------------------------------------
+
+    def LabelReplaceWithQuotation(self, traitName):
+        label = self.GetAttributeMetaData(traitName, '_labelText')()
+        if label:
+            if label.find('Quotation') > 0:
+                if not self.notionalQuotation:
+                    return label.split('(')[0].strip()
+                quotationName = self.notionalQuotation.Name().replace('Per ', '')
+                label = label.replace('Quotation', quotationName)
+        return label
+
+
+    #-----------------------------------------
+    # Access components
+    #-----------------------------------------
+    
+    def Option(self):
+        return self.DealPackage().InstrumentAt("Option")
+    
+    def OptionB2B(self):
+        return self.B2BTradeParamsAt("Option")
+
+    #-----------------------------------------
+    # Other methods
+    #-----------------------------------------
+    @ReturnDomainDecorator('FIndexedCollection(FExoticEvent)')
+    def MLDExpiryEvents(self, *rest):
+        return self.Option().GetExoticEventsOfKind('Price Fixing')
+
+    @ReturnDomainDecorator('FArray(FExoticEvent)')
+    def AveragePriceEvents(self, *rest):
+        allEvents = self.Option().GetExoticEventsOfKind('Average price').AsArray()
+        if self.fixingEditer.GetFixingEventSelected() is None:
+            return acm.FArray()
+        else:
+            specificEvents = acm.FArray()
+            selectedDateAsYMD = acm.Time.DateToYMD(self.fixingEditer.GetFixingEventSelected().Date())
+            for event in allEvents:
+                eventDateAsYMD = acm.Time.DateToYMD(event.Date())
+                if (eventDateAsYMD[0] == selectedDateAsYMD[0] and
+                    eventDateAsYMD[1] == selectedDateAsYMD[1]):
+                    specificEvents.Add(event)
+            return specificEvents
+       
+    def IsFirstFixingDateFixed(self):
+        if self.exoticEvents and len(self.exoticEvents) > 0:
+            return (self.exoticEvents[0].Date() < acm.Time.DateNow() and \
+                   (self.exoticEvents[0].EventValue() > 0.0 or \
+                    self.exoticEvents[0].EventValueSecond() > 0.0 ))
+        else:
+            return False
+
+    def IsB2B(self, attrName):
+        return self.b2bEnabled
+
+    def IsB2BorDetail(self, attrName):
+        return self.IsB2B(attrName) or self.IsShowModeDetail()
+
+    #-----------------------------------------
+    # Interface override
+    #-----------------------------------------
+    def CustomPanes(self):
+        raise NotImplementedError('Method CustomPanes not implemented')
+
+
+    def OnSave(self, saveConfig):
+        # Check to see if target was reached
+        #self.checkTargetLevel()
+        
+        # Make sure that exotic type is set to Other, otherwise
+        # Exotic record will be deleted unless a barrier exists
+        #self.Option().ExoticType('Other')
+        self.Option().OptionType('Call')
+        super(MLDBaseDefinition, self).OnSave(saveConfig)
+        
+        return {}
+
+    def IsValid(self, exceptionAccumulator, aspect):
+        if self.FieldsUpdatedToGenerate():
+            exceptionAccumulator('Fields affecting date periods have been updated, date periods must be re-generated in order to save')
+        
+        #self.ValidateBarrierIsNotZero(exceptionAccumulator)
+
+    def OnInit(self):
+        self._formatterTarget = None
+        self._standardCalcSpaceCollection = None
+        #self._numberOfPeriods = None
+        self._generateAttributeUpdated = False
+        self._CellingAttributeUpdated = False
+        self._FloorAttributeUpdated = False
+        self.RegisterCallbackOnAttributeChanged(self.RegisterUpdatedAttribute)
+
+    def AssemblePackage(self):
+        raise NotImplementedError('Method AssemblePackage not implemented')
+
+    @classmethod 
+    def SetUp(cls, definitionSetUp):
+        import SP_MarketLinkedDeposit_Setup
+        SP_MarketLinkedDeposit_Setup.SetupMLD(definitionSetUp)
+
+
+class MLDFxRABaseDefinition(MLDBaseDefinition):
+
+    
+    foreignPerDomesticVBox = Box( label='@LabelCurrBox', visible=False)
+
+    domesticPerForeignVBox = Box( label='@LabelCurrBox', visible=False)
+        
+    #_quantityMapping = 'Trades.Quantity|DealPackage.AdditionalInfo.ProductQuantity'
+    _buySellLabels = ["Deposit", "Loan", "-"]
+    _buySellChoiceListWidth = 10
+
+    #-----------------------------
+    # Visible Traits
+    #-----------------------------
+
+    packageType         = SelectPackageType(label='Type', 
+                                            choiceListSource=GetAllMLDProductTypes(),
+                                            definitionPrefix = 'FX ')
+
+    name                = Object(   objMapping = InstrumentPart("DealPackage.InstrumentPackage.Name"),
+                                    label = "Name",
+                                    toolTip = "Name of Instrument Package" )
+    
+    suggestName             = Action(  label='Suggest',
+                               action='@SuggestNameAction',
+                               toolTip='Suggest a name for the instrument/instrument package',
+                               visible=True,
+                               width=2000,
+                               maxWidth=2000 )
+
+    domesticCurrency = Object(objMapping = InstrumentPart('Option.DomesticCurrency'),
+                                label = 'Notional Currency',
+                                choiceListSource = acm.FCurrency.Instances(),
+                                onChanged = '@UpdateCurrencyPairChoices',
+                                toolTip = 'Notional Currency' )
+        
+    foreignCurrency = Object(objMapping = InstrumentPart('Option.ForeignCurrency'),
+                                visible = False,
+                                toolTip = 'Notional Currency' )
+
+    notional1           = Object(   objMapping = InstrumentPart("Option.ContractSizeInQuotation"),
+                                    label = "Contr Size",
+                                    visible=False)
+    
+    notional2           = BuySell(   objMapping =InstrumentPart("Option.AdditionalInfo.Sp_LeverageNotional"),
+                                    label = "Notional Amount",
+                                    buySellLabels = ["B", "S", "-"],
+                                    choiceListWidth=10
+                                    )
+    
+    ExternalId          = Object( label='External Id',
+                            visible = True,
+                            objMapping="PackageExternalId")
+                            #objMapping = InstrumentPart('Trades.Text2|DealPackage.AdditionalInfo.Sp_ExternalId'))
+
+    discountingType         = Object( label='Disc Type',
+                                choiceListSource=acm.GetDomain("FChoiceList('DiscType')").Instances(),
+                                objMapping=InstrumentPart("Option.DiscountingType"),
+                                visible=True
+                                )
+    
+    valGroup                = Object( label='Val Group',
+                                objMapping=InstrumentPart("Option.ValuationGrpChlItem"),
+                                choiceListSource=acm.GetDomain("FChoiceList('ValGroup')").Instances(),
+                                visible=True
+                                )
+    
+    mmld_ceiling            = Object( label='Ceiling',
+                                formatter = "MLDFourDecimal",
+                                visible = True,
+                                defaultValue = 0.0,
+                                objMapping = "Celling")
+                                #objMapping = InstrumentPart("Option.Exotic.RangeAccrualCapDomesticPerForeign|Option.AdditionalInfo.Sp_MLDCeiling"))
+
+    mmld_floor              = Object( label='Floor',
+                                formatter = "MLDFourDecimal",
+                                visible = True,
+                                defaultValue = 0.0,
+                                objMapping = "Floor")
+                                #objMapping = InstrumentPart("Option.Exotic.RangeAccrualFloorDomesticPerForeign|Option.AdditionalInfo.Sp_MLDFloor"))
+    
+    mmld_premiumOption      = Object( label='Premium Option(% p.a.)',
+                                formatter = "MLDFourDecimal",
+                                visible = True,
+                                 objMapping = InstrumentPart("Option.AdditionalInfo.Sp_MLDPremiumOption"))   
+    
+    mmld_reference = Object(label = 'Reference',
+                                recreateCalcSpaceOnChange = True,
+                                visible = True,
+                                onChanged = '@UpdateForeignCurrency',
+                                objMapping = InstrumentPart('Option.AdditionalInfo.Sp_MLDReference'))
+    
+    mmld_maxYield           = Object( label='Max Yield/Return(% p.a.)',
+                                formatter = "MLDFourDecimal",
+                                visible = True,
+                                 objMapping = InstrumentPart("Option.AdditionalInfo.Sp_MLDMaxYield"))
+    
+    mmld_minYield           = Object( label='Min Yield/Return(% p.a.)',
+                                formatter = "MLDFourDecimal",
+                                visible = True,
+                                 objMapping = InstrumentPart("Option.AdditionalInfo.Sp_MLDMinYield"))
+    
+    mmld_dayBasis           = Object( label='Day Basis',
+                                choiceListSource = [360, 365],
+                                visible = True,
+                                 objMapping = InstrumentPart("Option.AdditionalInfo.Sp_MLDDayBasis"))
+                                 
+    mtmFromFreed            = Object(   objMapping = InstrumentPart("Option.MtmFromFeed"),
+                                label = "MTM From Feed" )
+   
+    startDate           = Object(   objMapping = InstrumentPart("StartDate"),
+                                    label = 'Option Start',
+                                    toolTip = "Option Start Date",
+                                    validate = "@ValidateDate",
+                                    transform = "@ExpiryPeriodToDate" )
+    
+    datePeriod          = Object(   objMapping = InstrumentPart("Option.AdditionalInfo.Sp_RollingPeriod"),
+                                    validate = '@ValidateDatePeriod',
+                                    visible = '@VisibleIfNotAsian',
+                                    label = "Rolling Period" )
+    
+    fixingCalendar1     = Object( label="Calendar1",
+                                    objMapping=InstrumentPart("Option.AdditionalInfo.Sp_MLDCal1"))
+    
+    fixingCalendar2     = Object( label="Calendar2",
+                                    objMapping=InstrumentPart("Option.AdditionalInfo.Sp_MLDCal2"))
+    
+    fixingCalendar3     = Object( label="Calendar3",
+                                    objMapping=InstrumentPart("Option.AdditionalInfo.Sp_MLDCal3"))
+    
+    settlementCalendar    = Object(   objMapping = InstrumentPart("Option.SettlementCalendar"),
+                                    label = "Payment Calendar" )
+    
+    expiry              = Object(   objMapping = InstrumentPart("Expiry"),
+                                    label = "Option End",
+                                    toolTip = "Final Fixing Date",
+                                    validate = "@ValidateDate",
+                                    transform = "@ExpiryPeriodToDate"  )
+    
+    fixingSource        = Object(   objMapping = InstrumentPart("Option.FixingSource"),
+                                    label = "Fixing Source" )
+    
+    nbrObservationDays  = Object(   objMapping = InstrumentPart("NumberOfObservationDays"),
+                                    label = "Observation Days", enabled=False)
+    
+    '''
+    nbrOfPeriods        = Object(   objMapping = InstrumentPart("NumberOfDatePeriods"),
+                                    label = "Number of periods")
+    '''
+    
+    dayMethod           = Object(   objMapping = InstrumentPart("Option.AdditionalInfo.Sp_PayDayMethod"),
+                                    choiceListSource = DayMethodOnlyFollowingPreceding(),
+                                    label = "Day Convention" )
+    
+    spotReference       = MLDFxRateComposite(rateDomPerFor = 'ReferencePriceDomPerFor', 
+                                       rateForPerDom = 'ReferencePriceForPerDom')
+    
+    #-----------------------------
+    # Trade data
+    #-----------------------------
+
+    
+    tradeTime           = Object(   objMapping = "Trades.TradeTime",
+                                    label = "Trade Time",
+                                    transform = '@TradeDayAndTimeFromPeriod' )
+    
+    tradeStatus         = Object(   objMapping = "Trades.Status",
+                                    choiceListSource = TradeStatusChoices(),
+                                    label = "Trade Status" )
+    
+    tradeValueDay       = Object(   objMapping = "Trades.ValueDay",
+                                    label = "Value Day",
+                                    transform = '@BankingDayPeriodToDateFromTradeTimePlusSpot' )
+    
+    tradeTrader         = Object(   objMapping = "Trades.Trader",
+                                    choiceListSource = acm.FUser.Instances(),
+                                    label = "Trader")
+
+    tradePortfolio      = Object(   objMapping = "Trades.Portfolio",
+                                    choiceListSource = PortfolioChoices(),
+                                    label = "Portfolio" )
+       
+    tradeAcquirer       = Object(   objMapping = "Trades.Acquirer",
+                                    choiceListSource = AcquirerChoices(),
+                                    label = "Acquirer" )
+    
+    tradeCounterParty   = Object(   objMapping = "Trades.Counterparty",
+                                    choiceListSource = CounterpartyChoices(),
+                                    label = "Counterparty" )
+    
+    tradePayments =       PaymentsDialog( trade = 'LeadTrade' )
+    
+    # Non visible trade traits, used for exercise
+    tradeType =           Object(   objMapping = "Trades.Type" )
+    tradeQuantity =       Object(   objMapping = "Trades.Quantity")
+    #-----------------------------
+    # Traits to handle fixing dates
+    #-----------------------------
+    fixingEditer = MLDFxFixingEditerComposite(instrument='Option')
+    
+    
+
+    #-----------------------------
+    # Non visible traits
+    #-----------------------------
+    baseType            = Object(   objMapping = InstrumentPart("Option.Exotic.BaseType") )
+
+    strikeQuotation     = Object(   objMapping = InstrumentPart("Option.StrikeQuotation") )
+
+    flipBuySell         = Action(   action = "@FlipBuySell")
+    
+    instrumentPair      = Object(   objMapping = InstrumentPart("InstrumentPair"),
+                                    visible = False)
+
+
+    def AttributeOverrides(self, overrideAccumulator):
+        overrideAccumulator({
+            'settlementCalendar':                       dict(defaultValue='Jakarta'),
+            'dayMethod':                                dict(defaultValue='Mod. Following'),
+            'datePeriod':                               dict(defaultValue='1M'),
+            'startDate':                                dict(defaultValue='0D'),
+            'expiry':                                   dict(defaultValue='2Y'),
+            'notional1':                                dict(defaultValue=1),
+            'notional2_value':                          dict(defaultValue=1000000),
+            'foreignCurrency':                          dict(visible = False, defaultValue='HKD'),
+            'domesticCurrency':                         dict(defaultValue='USD'),
+            'settlementType':                           dict(defaultValue='Cash', visible=False),
+            'fixingSource' :                            dict(toolTip = "Expiry Cutoff",
+                                                        choiceListSource = ChoicesExprInstrument.getFixingSources(True)),
+            'tradeCurrency':                            dict(onChanged = "@OnChangedTradeCurrency"),
+            'baseType':                                 dict(defaultValue='Range Accrual', visible=False),
+
+            'spotReference_rateForeignPerDomestic':     dict(label = 'Spot Ref', visible=False),
+            'spotReference_rateDomesticPerForeign':     dict(label = 'Spot Ref', visible=False),
+            
+
+            'fixingEditer_fixingValue_rateDomesticPerForeign': dict(label="@LabelReplaceWithCurrency",
+                                                       _labelText = "Fixing (Domestic per Foreign)"),
+            'fixingEditer_fixingValue_rateForeignPerDomestic': dict(label="@LabelReplaceWithCurrency",
+                                                       _labelText = "Fixing (Foreign per Domestic)", visible=False),
+            'tradeNotional1_buySell':                   dict(label = "@LabelReplaceWithCurrency",
+                                                       _labelText = "Notional 1 (Foreign)"),
+            'tradeNotional2_buySell':                   dict(label = "@LabelReplaceWithCurrency",
+                                                       _labelText = "Notional 2 (Foreign)"),
+
+            'contractSize':                             dict(defaultValue= 1),
+             
+            'mmld_reference' :                          dict(defaultValue= 'USD/HKD'),
+            'mmld_maxYield' :                           dict(defaultValue= 0.07),
+            'mmld_minYield' :                           dict(defaultValue= 0),
+            'mmld_premiumOption' :                      dict(defaultValue= 0.04),
+            'mmld_dayBasis' :                           dict(defaultValue= 365),
+            'ExternalId' :                              dict(defaultValue= ""),
+            'dayMethod':                                dict(defaultValue = 'Mod. Following')
+            })
+
+    
+    
+    #-----------------------------------------
+    # Access components
+    #-----------------------------------------
+    def Option(self):
+        return self.DealPackage().InstrumentAt("Option")
+
+    def OptionNoDecorator(self):
+        return self.Option().DecoratedObject()
+
+    def OptionNoQuestionGui(self):
+        option = self.OptionNoDecorator()
+        gui = acm.FBusinessLogicGUIDefault()
+        gui.AskAdjustToFollowingBusinessDay(False)
+        return acm.FBusinessLogicDecorator.WrapObject(option, gui)
+
+    def OptionTrade(self):
+        return self.DealPackage().TradeAt("Option")
+    
+    def LeadTrade(self):
+        return self.OptionTrade()
+    
+    #-----------------------------
+    # Object Mappings
+    #-----------------------------   
+    def TradeNotional(self, value, scaleFactor):
+        if value == 'NoValue':
+            if scaleFactor:
+                return scaleFactor * self.OptionTrade().Quantity()
+            else:
+                return 0.0
+        else:
+            if scaleFactor:
+                self.OptionTrade().Quantity(value / scaleFactor)
+
+    @ReturnDomainDecorator('float')
+    def TradeNotional1(self, value = 'NoValue'):
+        return self.TradeNotional(value, self.notional1)
+    
+    @ReturnDomainDecorator('float')
+    def TradeNotional2(self, value = 'NoValue'):
+        return self.TradeNotional(value, self.notional2)
+    
+    
+    def DomesticCurrencyCalendar(self, *args):
+        return self.domesticCurrency.Calendar() if self.domesticCurrency else None
+    
+    @ReturnDomainDecorator('string')
+    def PackageExternalId(self, value="Reading"):
+        if value == "Reading":
+            return self.DealPackage().AdditionalInfo().Sp_ExternalId()
+        else:
+            self.DealPackage().AdditionalInfo().Sp_ExternalId(value)
+            for t in self.Trades():
+                t.Text2(value)
+    
+    @ReturnDomainDecorator('float')
+    def Celling(self, value = 'NoValue'):
+        if value == 'NoValue':
+            return self.Option().AdditionalInfo().Sp_MLDCeiling()
+        else:
+            self._CellingAttributeUpdated = False
+            self.Option().AdditionalInfo().Sp_MLDCeiling(value)
+            if self.Option().ForeignCurrency() == self.mmld_reference.Currency1():
+                self.Option().Exotic().RangeAccrualCapDomesticPerForeign(value)
+            else:
+                self.Option().Exotic().RangeAccrualFloorDomesticPerForeign(1/value) 
+    
+    @ReturnDomainDecorator('float')
+    def Floor(self, value = 'NoValue'):
+        if value == 'NoValue':
+            return self.Option().AdditionalInfo().Sp_MLDFloor()
+        else:
+            self._FloorAttributeUpdated = False
+            self.Option().AdditionalInfo().Sp_MLDFloor(value)
+            if self.Option().ForeignCurrency() == self.mmld_reference.Currency1():
+                self.Option().Exotic().RangeAccrualFloorDomesticPerForeign(value)
+            else:
+                self.Option().Exotic().RangeAccrualCapDomesticPerForeign(1/value)   
+
+    #-----------------------------------------
+    # Interface override
+    #-----------------------------------------
+    def Refresh(self):
+        self.SetQuotationPerContract()
+        self.SetStrikeQuotation()
+
+    def OnNew(self):
+        # Non visible traits
+        if self.InstrumentPackage().IsInfant():
+            self.baseType = "Range Accrual"
+        super().OnNew()
+        self.tradeValueDay = '0d'
+        # Make sure that quotation has not been changed
+        # Keep this last in OnNew as several Option Decorator
+        # fields will reset quotation based on underlying quotation
+        self.SetQuotationPerContract()
+        self.SetStrikeQuotation()
+
+    #-----------------------------
+    # Action Callbacks
+    #-----------------------------
+    def FlipBuySell(self, attrName = None, *rest):
+        self.Option().FxoChangeCallPut()
+
+    #-----------------------------
+    # On Changed
+    #-----------------------------
+    def OnChangedTradeCurrency(self, traitName, oldValue, newValue, *rest):
+        if newValue and (newValue != oldValue):
+            self.Option().Currency(newValue)
+
+    #-----------------------------------------
+    # Attribute Validation
+    #-----------------------------------------
+    def ValidateDate(self, attrName, value, *args):
+        if not value:
+            label = self.GetAttributeMetaData(attrName, 'label')()
+            str = 'Expected a %s' % label
+            raise DealPackageUserException(str)   
+
+    def TradeDayAndTimeFromPeriod(self, attrName, newDate, *rest):
+        dateTime = newDate
+        if acm.Time().PeriodSymbolToDate(newDate):
+            startTime = acm.Time().TimeNow()
+            startDate = acm.Time().DateNow()
+            currentTime = acm.Time.DateTimeToTime(startTime) - acm.Time.DateTimeToTime(startDate)
+            date = self.TradeDayFromPeriod(startDate, newDate)
+            dateTime = acm.Time.DateTimeFromTime(acm.Time.DateTimeToTime(date) + currentTime)
+        return dateTime 
+
+    #-----------------------------------------
+    # Other methods
+    #-----------------------------------------
+    def SetQuotationPerContract(self, *rest):
+        self.quotation = 'Per Contract'
+    
+    def SetStrikeQuotation(self, *rest):
+        self.strikeQuotation = 'Per Unit'     
+
+    '''
+    def ChangeBaseType(self, newValue):
+        # Store away values that will be reset by the decorator when changing base type
+        storeSettlementType     = self.settlementType
+        self.baseType           = newValue
+
+        # Reset the values that were changed by the base type change
+        self.settlementType                     = storeSettlementType
+        self.exoticType                         = 'Other'
+    '''
+
+    def TradeDayFromPeriod(self, startDate, period):
+        nonAdjustedDate = acm.Time.DateAdjustPeriod(startDate, period)
+        # When entering a period, automatically adjust to a banking day
+        date = AdjustBankingDaysFromMultiCalendars(nonAdjustedDate, 0, GetPairCalendars(self.instrumentPair))
+        return date
+
+    def BankingDayPeriodToDateFromTradeTimePlusSpot(self, attrName, newDate, *rest):
+        date = newDate
+        if acm.Time().PeriodSymbolToDate(newDate):
+            tradeDate = acm.Time.AsDate(self.tradeTime)
+            insPair = self.instrumentPair
+            tradeDatePlusSpot = insPair.SpotDate(tradeDate)
+            return BankingDayPeriodToDateFromStartDate(GetPairCalendars(self.instrumentPair), tradeDatePlusSpot, newDate)
+        return date
+
+    #-----------------------------
+    # Object Mappings
+    #-----------------------------
+    @ReturnDomainDecorator('FCurrencyPair')
+    def InstrumentPair(self, *rest):
+        return self.OptionTrade().CurrencyPair()
+
+    #-----------------------------
+    # Protected methods
+    #-----------------------------
+    def GetExpiryCalendars(self):
+        expiryCalendars =[]
+        if self.Option().AdditionalInfo().Sp_MLDCal1() is not None:
+            expiryCalendars.append(self.Option().AdditionalInfo().Sp_MLDCal1())
+        if self.Option().AdditionalInfo().Sp_MLDCal2() is not None:
+            expiryCalendars.append(self.Option().AdditionalInfo().Sp_MLDCal2())
+        if self.Option().AdditionalInfo().Sp_MLDCal3() is not None:
+            expiryCalendars.append(self.Option().AdditionalInfo().Sp_MLDCal3())
+        return expiryCalendars
+    
+    def _GetSettleCalendar(self):
+        return self.Option().SettlementCalendar()
+
+    def _GetCurrencyCalendars(self):
+        if self.Option().ForeignCurrency() is not None:
+            return [self.Option().ForeignCurrency().Calendar()]
+        else:
+            return []
+
+    def GetSettlementCalendars(self):
+        if (self._GetSettleCalendar() is None or self._GetSettleCalendar() == '') and self._GetCurrencyCalendars():
+            return self._GetCurrencyCalendars()
+        return [self._GetSettleCalendar()]
+    
+    def ExerciseAmount(self, date):
+        return CalculateTRFSettlementAmounts(self.OptionTrade(), date)
+
+    def ExerciseObjects(self, amount, event, date, openPart):
+        
+        if self.settlementType == 'Cash':
+            if abs(amount) > epsilon:
+                return AddExerciseCashPayment(self.OptionTrade(), event, amount * openPart, event.EndDate(), self.domesticCurrency if self.settleInCurr2 is True else self.foreignCurrency)
+            else:
+                raise DealPackageUserException('Exercise amount is 0, no exercise payment booked.')
+        else:
+            if abs(amount[0]) > epsilon and abs(amount[1]) > epsilon:
+                amount1 = acm.DenominatedValue(amount[0] * openPart, self.foreignCurrency, date)
+                amount2 = acm.DenominatedValue(amount[1] * openPart, self.domesticCurrency, date)
+                return CreatePhysicalDeliveryFxSpotExerciseTrade(self.OptionTrade(), amount1, amount2, event.EndDate(), self.OptionB2B())
+            else:
+                raise DealPackageUserException('Exercise amount is 0, no exercise trade booked.')
+        return []
+
+  
+    def GetFixingParams(self):
+        if not (self.foreignCurrency and self.domesticCurrency):
+            DealPackageUserException(
+                'Cannot generate date periods without currencies set'
+            )
+        currPair = self.instrumentPair
+        #payOffset = self.settleDaysOffset
+        return{
+                'startDate'             : self.startDate,
+                'endDate'               : self.expiry,
+                'method'                : self.dayMethod,
+                'rolling'               : self.datePeriod,
+                'calendars'             : self.GetExpiryCalendars(),
+                'settleDays'            : self.settleDays,
+                'settleCalendars'       : self.GetSettlementCalendars(),             
+                'instrumentPair'        : currPair,
+                'nbrOfPeriods'          : self.GetNumberOfPeriods(),
+                'frequency'             : 'Daily'
+                }
+
+
+    def GeneratePeriodDates(self):
+        return GenerateFXPeriodDates(**self.GetFixingParams())
+
+    def RegisterUpdatedAttribute(self, attrName, *args):
+        if attrName in ('domesticCurrency', 'foreignCurrency', 'startDate', 'datePeriod', 'expiry',
+                        'dayMethod', 'nbrOfPeriods', 'mmld_reference', 'mmld_dayBasis', 'fixingCalendar1', 
+                        'fixingCalendar2', 'fixingCalendar3', 'settlementCalendar', 'settleDays'):
+            self._generateAttributeUpdated = True
+        
+        if attrName in ('domesticCurrency', 'foreignCurrency', 'mmld_reference'):
+            self._CellingAttributeUpdated = True
+            self._FloorAttributeUpdated = True
+        
+
+    #-----------------------------
+    # Enabled Callbacks
+    #-----------------------------
+    def FieldsSetToGenerate(self):
+        return (self.startDate and self.datePeriod and self.expiry and self.dayMethod  and self.foreignCurrency and self.domesticCurrency and
+                self.mmld_reference and self.mmld_dayBasis and self.fixingCalendar1 and self.settlementCalendar and (self.settleDays is not None) )
+
+
+    #-----------------------------
+    # Columns callbacks
+    #-----------------------------
+    def ColumnsExoticEvents(self, traitName):
+        return [
+                {'methodChain': 'Date',                'label':'Fixing Date',   'formatter':'DateOnly'},
+                {'methodChain': 'PayDate',             'label':'Pay Date',   'formatter':'DateOnly'},
+                {'methodChain': 'MLDFixing',           'label':'Fixing',       'formatter':'FXRate'},
+                {'methodChain': 'MLDAmountInOut',      'label':'In/Out'}      
+                ]
+        
+    
+    #-----------------------------------------
+    # Choice List values
+    #-----------------------------------------
+    def ChoicesCurrencyPairs(self, traitName):
+        self.UpdateCurrencyPairChoices(traitName)
+        return self._MMLDCurrencyPairChoices.Source()
+    
+    def UpdateCurrencyPairChoices(self, traitName, *args):
+        domesticCurrency = self.Option().DomesticCurrency()
+        self.OptionTrade().Currency(domesticCurrency)
+        currPairs = None
+        if (domesticCurrency is not None):
+            self._MMLDCurrencyPairChoices.Clear()
+            currencyPairs = acm.FCurrencyPair.Select('')
+            currPairs =[currpair for currpair in currencyPairs if domesticCurrency.Name() in currpair.Name()]
+            self._MMLDCurrencyPairChoices.AddAll(currPairs)
+        if currPairs and len(args) > 0:
+            self.Option().AdditionalInfo().Sp_MLDReference(currPairs[0])
+    
+    def UpdateForeignCurrency(self, traitName, *args):
+        self.UpdateCurrencyPairChoices(traitName)
+        if self.mmld_reference is not None:
+            if self.Option().DomesticCurrency() == self.mmld_reference.Currency1():
+                self.Option().ForeignCurrency(self.mmld_reference.Currency2())
+            elif self.Option().DomesticCurrency() == self.mmld_reference.Currency2():
+                self.Option().ForeignCurrency(self.mmld_reference.Currency1())
+
+    #-----------------------------------------
+    # Define Labels
+    #-----------------------------------------   
+    def LabelReplaceWithCurrency(self, traitName):
+        label = self.GetAttributeMetaData(traitName, '_labelText')()
+        if label:
+            if label.find('Foreign') > 0:
+                if not self.foreignCurrency:
+                    return label.split('(')[0].strip()
+                label = label.replace('Foreign', self.foreignCurrency.Name())
+
+            if label.find('Domestic') > 0:
+                if not self.domesticCurrency:
+                     return label.split('(')[0].strip()
+                label = label.replace('Domestic', self.domesticCurrency.Name())
+        return label
+
+    def LabelCurrBox(self, traitName):
+        foreign  = self.foreignCurrency.Name() if self.foreignCurrency else 'Foreign'
+        domestic = self.domesticCurrency.Name() if self.domesticCurrency else 'Domestic'
+        if traitName.startswith('foreign'):
+            label = "%s per %s" % (foreign, domestic)
+        else:
+            label = "%s per %s" % (domestic, foreign)
+        return label
+
+
+    #-----------------------------------------
+    # FX Rate values
+    #-----------------------------------------
+    def TriggerFlipOfStorageDirection(self, direction):
+        # Tigger decorator driven updates if the storage direction is updated using a non standard field
+        '''
+        if ((direction == 'DomesticPerForeign' and self.strikeQuotation.Name() == 'Per Unit Inverse') or
+           (direction == 'ForeignPerDomestic' and self.strikeQuotation.Name() == 'Per Unit')):
+            self.GetAttribute('strike_store%s' % direction)()
+        '''
+        self.GetAttribute('strike_store%s' % direction)()
+
+    def SetNonStandardDomesticPerForeign(self, value, setMethod):
+        self.SetNonStandardRate(value, setMethod, 'DomesticPerForeign')
+
+    def SetNonStandardForeignPerDomestic(self, value, setMethod):
+        self.SetNonStandardRate(value, setMethod, 'ForeignPerDomestic')
+
+    def SetNonStandardRate(self, value, setMethod, direction):
+        value = TransformUsingDecorator(self.Option(), value, 'Strike%s' % direction)
+        # Trigger the decorator flip ahead of setting the value
+        self.TriggerFlipOfStorageDirection(direction)
+        setMethod(value)
+
+    def GetNonStandardDomesticPerForeign(self, value):
+        #if self.strikeQuotation is not None and self.strikeQuotation.Name() == 'Per Unit Inverse':
+        #    return GetInverseRate(value)
+        return value
+    
+    def GetNonStandardForeignPerDomestic(self, value):
+        #if self.strikeQuotation is None or self.strikeQuotation.Name() == 'Per Unit':
+        #    return GetInverseRate(value)
+        return value
+
+    #-----------------------------------------
+    # Other methods
+    #-----------------------------------------
+    def GetExoticEventReference(self):
+        #print(f"check currencies - {self.Option().Currency().Name()} /{self.Option().Underlying().Name()}")
+        return self.foreignCurrency
+
+    #Sport reference methods
+    def ReferencePriceDomPerFor(self, *args):
+        ref = args[0] if args else self.OptionTrade().ReferencePrice()
+        #ref = ref if self.strikeQuotation.Name() == "Per Unit" else GetInverseRate(ref)
+        if args:
+            if not isnan (ref):
+                self.OptionTrade().ReferencePrice(ref)
+        else:
+            return ref
+    
+    def ReferencePriceForPerDom(self, *args):
+        ref = args[0] if args else self.OptionTrade().ReferencePrice()
+        #ref = ref if self.strikeQuotation.Name() != "Per Unit" else GetInverseRate(ref)
+        if args:
+            if not isnan (ref):
+                self.OptionTrade().ReferencePrice(ref)
+        else:
+            return ref
+    
+    def InvertSpotReference(self, attrName, *rest):
+        '''
+        if self.strikeQuotation.Name() == 'Per Unit':
+            self.spotReference_rateDomesticPerForeign = GetInverseRate(self.spotReference_rateDomesticPerForeign)
+        else:
+            self.spotReference_rateForeignPerDomestic = GetInverseRate(self.spotReference_rateForeignPerDomestic)
+        '''
+        self.spotReference_rateForeignPerDomestic = GetInverseRate(self.spotReference_rateForeignPerDomestic)
+    
+    
+    def UpdateSpotReference(self, *args):
+        foreign = self.Option().ForeignCurrency()
+        domestic = self.Option().DomesticCurrency()
+        if (foreign is not None) and (domestic is not None):
+            if domestic == foreign:
+                if foreign.Name() == 'USD':
+                    foreign = acm.FCurrency['IDR']
+                else:
+                    foreign = acm.FCurrency['USD']
+            ccyPair = domestic.CurrencyPair(foreign, True)
+            isInvert = foreign == ccyPair.Currency1()
+            spotPrice = ccyPair.SpotPrice(self.OptionTrade().ValueDay(), isInvert)
+            #Default strike multiplier value 1.5% up / down 
+            strikeMultiplier = 0.015
+            #Spot rate below is as domestic per foreign
+            self.spotReference_rateForeignPerDomestic = spotPrice
+
+    
+    def CreateSuggestedSecurityId(self):
+        base_name = self.Option().SuggestName()
+
+    def SuggestNameAction(self, *args):
+        self.name = self.CreateSuggestedSecurityId()
+
+    def SetOptionName(self, *args):
+        self.Option().Name(self.CreateSuggestedSecurityId())
+
+    def SuggestName(self):
+        name = self.CreateSuggestedSecurityId()
+        self.Option().Name(name)
+        return name
+    
+    def SetTradeNominal(self):
+        try:
+            mldNotional = self.Option().AdditionalInfo().Sp_LeverageNotional()
+            observationDays = self.NumberOfObservationDays()
+            maxYield = self.mmld_maxYield/100
+            quantity = CalculateDailyAccrualReturn(self.startDate, self.expiry, maxYield , mldNotional, self.mmld_dayBasis , observationDays)
+            self.OptionTrade().Quantity( quantity)
+        except Exception as e:
+            raise DealPackageUserException(f'Unable to create deal package : failed to calculated DailyAccrualReturn, Please check the MLD parameters. Error : {e}')
+        
+        
+    #-----------------------------------------
+    # Interface override
+    #-----------------------------------------
+
+    def CustomPanes(self):
+        return self.GetCustomPanesFromExtValue("CustomPanes_SP_MLDRAFxDealPackage")
+
+    def OnInit(self):
+        self._foreignCurrencyChoices = DealPackageChoiceListSource()
+        self._domesticCurrencyChoices = DealPackageChoiceListSource()
+        self._MMLDCurrencyPairChoices = DealPackageChoiceListSource()
+        self.RegisterCallbackOnAttributeChanged(self.UpdateSpotReference, ('mmld_reference','domesticCurrency'))
+        super().OnInit()
+        
+    
+    def OnNew(self):
+        if self.InstrumentPackage().IsInfant():
+            # Non visible traits
+            self.exoticType = "Other"
+            #self.GenerateMLDExpiryEvents()
+            #self.GenerateAverageDates()
+        self.UpdateSpotReference()
+    
+    def OnSave(self, saveConfig):
+        if not self.name:
+            self.SetOptionName()
+        else:
+            self.Option().Name(self.name)
+        self.SetTradeNominal()
+        if self._CellingAttributeUpdated or self._FloorAttributeUpdated:
+            self.Celling(self.Option().AdditionalInfo().Sp_MLDCeiling())
+            self.Floor(self.Option().AdditionalInfo().Sp_MLDFloor())
+        super(MLDFxRABaseDefinition, self).OnSave(saveConfig)
+
+    def AssemblePackage(self):
+        ins = acm.DealCapturing().CreateNewInstrument("MarketLinkedDepositRangeAccrualFx")
+        trade = acm.DealCapturing().CreateNewTrade(ins)
+        self.DealPackage().AddTrade(trade, "Option")
+
+
+
+@Settings(ShowGraphInitially=False,
+          GraphApplicable=False)
+@TradeActions( exercise = TrfExerciseAction())
+class MarketLinkedDepositRangeAccrualFx(MLDFxRABaseDefinition):
+        
+    def AttributeOverrides(self, overrideAccumulator):
+        overrideAccumulator({
+            'productType': dict(defaultValue='Market Linked Deposit RAFx')
+        })
+    '''
+    def GraphYValues(self, xValues):
+        return self.BaseGraphYValues(xValues)
+
+    def GraphXValues(self):
+        return self.BaseGraphXValues()
+    '''
+
+
+
+
+...
+
+  SP_MarketLinkedDepositDealPackage
+
+import acm
+
+    
+def StartMLDRangeAccrualFx(eii):
+    acm.UX().SessionManager().StartApplication('Deal Package', 'SP_MarketLinkedDepositRangeAccrualFx')    
+
+
+def OnDoubleClick(eii):
+    sheet = eii.Parameter( "sheet" )
+    rows = sheet.Selection().SelectedRowObjects()
+    if rows and rows[0].IsKindOf(acm.FExoticEvent):
+        dpLinks = rows[0].Instrument().DealPackageInstrumentLinks()
+        if dpLinks:
+            ip = dpLinks.First().InstrumentPackage()
+            dps = ip.DealPackages()
+            entity = dps.First() if dps else ip
+            acm.StartApplication('Deal Package', entity)
+
+
+...
+
+  SP_MarketLinkedDeposit_Setup
+from __future__ import print_function
+from __future__ import division
+from __future__ import absolute_import
+import acm
+
+#----------------------
+# MLD Setup
+#----------------------
+#valuationGroupNameMLD = 'Vanna Volga'
+mappingContext = 'Global'
+
+add_info_specs = [['Instrument', 'sp_LeverageNotional', 'Double', 'Leveraged Notional', 'Standard', ['Option'], None, False],
+                 ['Instrument', 'sp_RollingPeriod', 'String', 'Frequency of date schedule', 'Standard', ['Option'], None, False],
+                 ['Instrument', 'sp_PayDayMethod', 'BusinessDayMethod', 'Business Day Method for calculating delivery dates', 'Enum', ['Option'], None, False],
+                 ['Instrument', 'StructureType', 'ChoiceList', 'StructureType', 'RecordRef', [], None, False],
+                 ['Instrument', 'sp_MLDCeiling', 'Double', 'MMLD Ceiling', 'Standard', ['Option'], None, False],
+                 ['Instrument', 'sp_MLDFloor', 'Double', 'MMLD Floor', 'Standard', ['Option'], None, False],
+                 ['Instrument', 'sp_MLDPremiumOption', 'Double', 'MMLD Premium Option', 'Standard', ['Option'], None, False],
+                 ['Instrument', 'sp_MLDReference', 'CurrencyPair', 'MMLD Reference', 'RecordRef', ['Option'], None, False],
+                 ['Instrument', 'sp_MLDMaxYield', 'Double', 'MMLD Premium Option', 'Standard', ['Option'], None, False],
+                 ['Instrument', 'sp_MLDMinYield', 'Double', 'MMLD Premium Option', 'Standard', ['Option'], None, False],
+                 ['Instrument', 'sp_MLDDayBasis', 'Integer', 'MMLD Premium Option', 'Standard', ['Option'], None, False],
+                 ['Instrument', 'sp_MLDCal1', 'Calendar', 'MMLD Calendar1', 'RecordRef', ['Option'], None, False],
+                 ['Instrument', 'sp_MLDCal2', 'Calendar', 'MMLD Calendar2', 'RecordRef', ['Option'], None, False],
+                 ['Instrument', 'sp_MLDCal3', 'Calendar', 'MMLD Calendar3', 'RecordRef', ['Option'], None, False],
+                 ['DealPackage', 'sp_ExternalId', 'String', 'External Identifier', 'Standard', [], None, False]]
+
+choice_list_specs = [('StructureType', 'Market Linked Deposit RAFx', 'MarketLinkedDepositRAFx')]
+
+
+def SetupMLD(definitionSetUp):
+    contextName = mappingContext
+    if not (contextName and acm.FContext[contextName]):
+        raise RuntimeError('No valid context for mappings specified in MLD parameters (FParameters)')
+    
+    from DealPackageSetUp import AddInfoSetUp, ChoiceListSetUp, ContextLinkSetUp, CustomMethodSetUp
+
+    for choiceList in choice_list_specs:
+        choiceListSetupObject = ChoiceListSetUp( list   = choiceList[0],
+                                                 entry  = choiceList[1],
+                                                 descr  = choiceList[2]
+                                               )
+        definitionSetUp.AddSetupItem( choiceListSetupObject )
+
+    for addinfo in add_info_specs:
+        addInfoSetupObject = AddInfoSetUp(  recordType      = addinfo[0],
+                                            fieldName       = addinfo[1],
+                                            dataType        = addinfo[2],
+                                            description     = addinfo[3],
+                                            dataTypeGroup   = addinfo[4],
+                                            subTypes        = addinfo[5],
+                                            defaultValue    = addinfo[6],
+                                            mandatory       = addinfo[7]
+                                        )
+        definitionSetUp.AddSetupItem( addInfoSetupObject )
+        
+    '''
+    for contextLink in context_links:
+        contextLinkSetUpObject = ContextLinkSetUp(  context     = contextName, 
+                                                    type        = contextLink[0], 
+                                                    name        = contextLink[1], 
+                                                    mappingType = contextLink[2], 
+                                                    chlItem     = contextLink[3]
+                                                 )
+        definitionSetUp.AddSetupItem( contextLinkSetUpObject )
+    '''
+
+...
+
+  SP_MarketLinkedDeposit_Utils
+
+from __future__ import print_function
+from __future__ import division
+from __future__ import absolute_import
+from builtins import next
+from FFixPerform import UsedPrice
+
+from builtins import object
+import acm, ael, math
+from CompositeAttributeDevKit import CompositeAttributeDefinition
+from DealPackageDevKit import ReturnDomainDecorator, Str, DealPackageUserException
+from SP_BusinessCalculations import GetHistoricalFxRate, GeneratePeriodEndDates, GenerateExpiryTableDates, AdjustBankingDaysFromMultiCalendars
+
+TargetAdjustmentTwoWayEnumMapping = {0 : 'No Adjustment',   'No Adjustment'   : 0,
+                                     1 : 'Adjust Strike',   'Adjust Strike'   : 1,
+                                     2 : 'Adjust Notional', 'Adjust Notional' : 2}
+
+
+
+def BuySellMappingDictionary():
+    return {'FromOptionType':{'Foreign' :{False:"SELL", True:"BUY"},
+                              'Domestic':{False:"BUY", True:"SELL"}},
+            'ToOptionType'  :{'Foreign' :{"SELL":False, "BUY":True},
+                              'Domestic':{"SELL":True, "BUY":False}}}
+                              
+                              
+def BuySellMappingFromOptionTypeDefault(direction):
+    return 'SELL' if direction == 'Foreign' else 'BUY'
+
+def BuySellMapping(instrument, direction, value = 'NoValue'):
+    if value == 'NoValue':
+        return BuySellMappingDictionary()['FromOptionType'][direction].get(instrument.OptionTypeIsCall(), BuySellMappingFromOptionTypeDefault(direction))
+    else:
+        optionType = BuySellMappingDictionary()['ToOptionType'][direction].get(value, False)
+        instrument.SuggestOptionType(optionType)
+    
+    
+'''
+class SelectPackageType(CompositeAttributeDefinition):
+    
+    def OnInit(self, label, choiceListSource, definitionPrefix):
+        self._label = label
+        self._choiceListSource = choiceListSource
+        self._currentlyOpeningen = None
+        self._definitionPrefix = definitionPrefix
+    
+    def Attributes(self):
+        return { 'packageType' : Str( label=self._label,
+                                      objMapping=self.UniqueCallback('PackageType'),
+                                      choiceListSource=self._choiceListSource)
+               }
+    
+    @ReturnDomainDecorator('string')
+    def PackageType(self, value = '*Reading*'):
+        if value == '*Reading*':
+            return self.TrimPrefix(self.Owner().DealPackage().DefinitionDisplayName())
+        else:
+            definitionDisplayName = self.AddPrefixToDefinition(value)
+            self._currentlyOpeningen = definitionDisplayName
+            obj = acm.DealPackage.New(definitionDisplayName)
+            self.OpenObject(obj)
+
+    def TrimPrefix(self, displayName):
+        nameNoPrefix = displayName.replace(self._definitionPrefix, '')
+        nameNoSpace = nameNoPrefix.strip()
+        return nameNoSpace
+
+    def AddPrefixToDefinition(self, selectedDefinition):
+        definitionName = '%s%s' % (self._definitionPrefix, selectedDefinition)
+        return definitionName
+
+    def OpenObject(self, obj):
+        uxCallbacks = self.Owner().GetAttribute('uxCallbacks')
+        if uxCallbacks:
+            openCb = uxCallbacks.At('open')
+            if openCb:
+                acm.AsynchronousCall(openCb, [obj, self.OnOpenFail])
+
+    def OnOpenFail(self):
+        print ('Failed to open package of type "%s"'%self._currentlyOpeningen)
+        
+    def GetLayout(self):
+        return self.UniqueLayout(""" 
+            vbox(;
+                packageType;
+            );
+            """)
+'''
+
+
+def CalculateAverageFixing(averagePriceEvents, roundingSpec = None):
+    def GetRounding(roundingSpec, attr):
+        r = None
+        rs = roundingSpec
+        if rs and type(rs) == type(acm.FRoundingSpec()):
+            r = next((r for r in rs.Roundings() if r.Attribute() == attr), None)
+        return r
+    
+    avg = -1.00
+    c1 = all(i.EventValue() > 0.0 for i in averagePriceEvents)
+
+    if not c1:
+        str = 'Missing daily fixings in period.'
+        raise DealPackageUserException(str)
+        
+    ev = [e.EventValue() for e in averagePriceEvents]
+    avg = sum(ev) / float(len(ev))
+    
+    round = GetRounding(roundingSpec, 'Settled Price')
+    Round = acm.GetFunction('round', 3)
+    if round:
+        avg = Round(avg, round.Decimals(), round.Type())
+    else:
+        avg = Round(avg, 3, 'Normal')
+        
+    return avg
+
+
+def ExpiryPeriodToDate(ins, periodOrDate, startDate = acm.Time.DateToday()):
+    # Note: ExpiryDateFromPeriod will create a pop up if called with
+    #       a period that ends on a non banking day.
+    #       In order to avoid pop-up, call this method with an instrment decorator
+    #       that has AskAdjustToFollowingBusinessDay set to False
+    value = periodOrDate
+    if acm.Time.PeriodSymbolToDate(periodOrDate):
+        if ins.UnderlyingType() == 'Curr':
+            if ins.ForeignCurrency() and ins.DomesticCurrency():
+                ccyPair = ins.ForeignCurrency().CurrencyPair(ins.DomesticCurrency())
+                returnDate = ccyPair.ExpiryDate(startDate, periodOrDate)
+            else:
+                returnDate = ins.ExpiryDateFromPeriod(periodOrDate)
+                if ins.ForeignCurrency():
+                    returnDate = ins.ForeignCurrency().Calendar().ModifyDate(None, None, returnDate)
+                elif ins.DomesticCurrency():
+                    returnDate = ins.DomesticCurrency().Calendar().ModifyDate(None, None, returnDate)
+            return returnDate
+        else:
+            returnDate = ins.ExpiryDateFromPeriod(periodOrDate)
+            if ins.Underlying() and ins.Underlying().SettlementCalendar():
+                returnDate = ins.Underlying().SettlementCalendar().ModifyDate(None, None, returnDate)
+            elif ins.Currency() and ins.Currency().Calendar():
+                returnDate = ins.Currency().Calendar().ModifyDate(None, None, returnDate)
+            return returnDate
+    return value
+
+def TransformUsingDecorator(obj, value, inputField, outputField = None):
+    tempObjDecorator = acm.FBusinessLogicDecorator.WrapObject(obj.StorageNew())
+    if hasattr(tempObjDecorator, inputField):
+        getattr(tempObjDecorator, inputField)(value)
+        outputField = inputField if outputField is None else outputField
+        transformedValue = getattr(tempObjDecorator, outputField)()
+        return transformedValue
+    return value
+
+def GetInverseRate(value):
+    if value == 0.0 or value is None:
+        return 0.0
+    return 1.0 / value
+
+def GetValueForeignPerDomestic(ins, storedValue):
+    if ins.StrikeQuotation() is None or ins.StrikeQuotation().Name() != 'Per Unit Inverse':
+        return GetInverseRate(storedValue)
+    return storedValue
+
+def GetValueDomesticPerForeign(ins, storedValue):
+    if ins.StrikeQuotation() is not None and ins.StrikeQuotation().Name() == 'Per Unit Inverse':
+        return GetInverseRate(storedValue)
+    return storedValue
+
+def FixingToUseForAccumulation(ee, inverted):
+    if inverted and ee.ComponentInstrument() and ee.ComponentInstrument().InsType() == 'Curr':
+        return -GetInverseRate(ee.EventValue())
+    else:
+        return ee.EventValue()
+
+
+def AccumulateValues(values, maxValue, adjustToMax, barrierValues = []):
+    def Accumulate(val, next, max, adjust):
+        if (val < max) or (max == 0.0):
+            val += next
+            if max and val > max and adjust:
+                val = max
+        return val
+
+    accumulated = []
+    
+    for v in values:
+        accumulated.append(Accumulate(accumulated[-1] if accumulated else 0, v, maxValue, adjustToMax))
+    return accumulated
+
+
+
+
+def GetAllMLDProductTypes():
+    subTypes = []
+    subTypes.append('Market Linked Deposit RAFx')
+    return subTypes
+
+def MLDExpiryEvents(ins):
+    return ins.GetExoticEventsOfKind('Price Fixing')
+
+def MLDExpiryEventsSortedByDate(ins):
+    return MLDExpiryEvents(ins).SortByProperty('Date')
+
+def MLDExpiryEvent(ins, date):
+    mldExpiries = MLDExpiryEvents(ins)
+    for mldExpiry in mldExpiries:
+        if mldExpiry.Date() == date:
+            return mldExpiry
+    return None
+
+def MLDExpiryEventPerPayDate(ins, date):
+    mldExpiries = MLDExpiryEvents(ins)
+    for mldExpiry in mldExpiries:
+        if mldExpiry.EndDate() == date:
+            return mldExpiry
+    return None
+
+def MLDExpiryEventsIncludeHistorical(instrument, dateToday, includeHistorical):
+    events = []
+    for event in MLDExpiryEvents(instrument):
+        if (acm.Time.DateDifference(event.Date(), dateToday) == 0 or (includeHistorical and acm.Time.DateDifference(event.Date(), dateToday) < 0)):
+            if event.EventValue() == -1.0:
+                events.append(event)
+    return events
+
+def GetNumberOfPaymentPeriods(instrument):
+    excEvents = instrument.ExerciseEvents()
+    numberOfPeriods = 0
+    if excEvents is not None: 
+        settlementDates = set([x.SettlementDate() for x in excEvents])
+        if settlementDates: 
+            numberOfPeriods = len(settlementDates)
+   
+    return numberOfPeriods
+
+#------------------------------------
+# Fixing the FX rate
+#------------------------------------
+def FixFxRateCalculation(insDecorator, event, instrumentPair):
+    #foreign = insDecorator.ForeignCurrency() if instrumentPair.IsKindOf('FCurrencyPair') else insDecorator.ForeignInstrument()
+    #domestic = insDecorator.DomesticCurrency()
+    return GetHistoricalFxRate(instrumentPair.Currency1(), instrumentPair.Currency2(), event.Date())
+
+# ----------------------------------------------------------------
+# Exotic fixings hook referenced from Custom Instrument Definition - FSQLDataMaint
+# ----------------------------------------------------------------
+def MLDExoticFixingsHook(instrument, dateToday, updateHistorical, updateResult):
+    return ['Price Fixing']
+
+
+def MLDExpiryEventsIncludeHistorical(instrument, dateToday, includeHistorical):
+    events = []
+    for event in MLDExpiryEvents(instrument):
+        if (acm.Time.DateDifference(event.Date(), dateToday) == 0 or (includeHistorical and acm.Time.DateDifference(event.Date(), dateToday) < 0)):
+            if event.EventValue() == -1.0:
+                events.append(event)
+    return events
+    
+def MtMPriceFromFixingSource(exoticEvent, currency = None):
+    fixingSource = None
+    if exoticEvent and exoticEvent.Instrument():
+        ins = exoticEvent.Instrument()
+        fixingSource = ins.FixingSource()
+        currPair = ins.ValuationUnderlying().CurrencyPair()
+        price = UsedPrice(currPair.Currency1(), exoticEvent.Date(), exoticEvent.Date(), currPair.Currency2(), fixingSource, False)
+        #print(f"price from MtMPriceFromFixingSource = {price}")
+        if (price is None) or (math.isnan(price)):
+            return None, False
+        return price, True
+        
+    return None, False
+    
+
+def MLDRAFxExoticFixingsHook(instrument, dateToday, updateHistorical, updateResult):
+    # Work-around: Class and method definitions below are redundant with FSEQDataMaint. 
+    # However, importing FSEQDataMaint cause performance penalty (due to 
+    # Selects being assigned to globals)
+    class FExoticEventUpdateResult(object):
+        def __init__(self):
+            self.nHistoricalSuccess = 0
+            self.nHistoricalFailed = 0
+
+        def addResult(self, anotherResult):
+            self.nHistoricalSuccess += anotherResult.nHistoricalSuccess
+            self.nHistoricalFailed += anotherResult.nHistoricalFailed
+
+        def hasFailedUpdates(self):
+            return (self.nHistoricalFailed > 0)
+
+        def logResult(self):
+            ael.log_all("Historical updates performed: " + str(self.nHistoricalSuccess))
+            ael.log_all("Historical updates failed:    " + str(self.nHistoricalFailed))
+            
+    def LogEventWritten(derivative, underlying, updatedEvent, oldValue, newValue):
+        ael.log_all("\nInstrument:    " + derivative.Name())
+        ael.log_all("Underlying:    " + updatedEvent.ComponentInstrument().Name())
+        ael.log_all("Event date:    " + str(updatedEvent.Date()))
+        ael.log_all("Old Value:     " + str(oldValue))
+        ael.log_all("New Value:     " + str(newValue))
+        ael.log_all("Event type:    " + str(updatedEvent.Type()))
+        ael.log_all("---------------------------------------")
+            
+    def UpdateExoticEventValue(exoticEvent, eventValue):
+        oldValue = exoticEvent.EventValue()
+        eClone = exoticEvent.Clone()
+        eClone.EventValue = eventValue
+        exoticEvent.Apply(eClone)
+        try:
+            exoticEvent.Commit()
+            LogEventWritten(exoticEvent.Instrument(), exoticEvent.Instrument().Underlying(), exoticEvent, oldValue, eventValue)
+        except Exception as e:
+            ael.log_all("Could not update Exotic Event Value, due to: %s" % str(e))
+                
+    totalFixingResult = FExoticEventUpdateResult()
+    eventsToProcess = MLDExpiryEventsIncludeHistorical(instrument, dateToday, updateHistorical)
+    for event in eventsToProcess:
+        eventUpdateResult = FExoticEventUpdateResult()
+        try:
+            mtmPrice, handled = MtMPriceFromFixingSource(event)
+            if mtmPrice is not None:
+                UpdateExoticEventValue(event, mtmPrice)
+                eventUpdateResult.nHistoricalSuccess = 1
+            else:
+                fixingSource = event.Instrument().FixingSource()
+                if fixingSource:
+                    msg = "Failed to retrieve MtM Price form fixing source {} for exotic event with Oid: {}".format(fixingSource.Name(), event.Oid())
+                else:
+                    msg = "Failed to retrieve MtM Price for exotic event with Oid: {}".format(event.Oid())
+                ael.log(msg)
+
+        except Exception as e:
+            eventUpdateResult.nHistoricalFailed = 1
+            ael.log_all(instrument.Name() +  
+                    ": ERROR: " + str(e) + \
+                    " (period ending %s)" % str(event.Date()))
+        totalFixingResult.addResult(eventUpdateResult)
+    if totalFixingResult.hasFailedUpdates():
+        ael.log_all("\n" + instrument.Name() + 
+            ": Failed to update exotic events for instrument.")
+        totalFixingResult.logResult()
+        ael.log_all("---------------------------------------")
+    updateResult.addResult(totalFixingResult)
+    return []
+
+
+# ----------------------------------------------------------------
+# End - Exotic fixings hook referenced from Custom Instrument Definition - FSQLDataMaint
+# ----------------------------------------------------------------
+
+
+#----------------------
+# General help methods
+#----------------------
+def GetPaymentsOfKinds(trade, kinds):
+    kindPayments = acm.FArray()
+    allPayments = trade.Payments()
+    for payment in allPayments:
+        if payment.Type() in kinds:
+            kindPayments.Add(payment)
+    return kindPayments
+
+def GetPaymentsOfKind(trade, kind):
+    kinds = acm.FArray()
+    kinds.Add(kind)
+    return GetPaymentsOfKinds(trade, kinds)
+
+def TargetAdjustmentTranslation(targetAdjustmentKey):
+    if targetAdjustmentKey not in TargetAdjustmentTwoWayEnumMapping:
+        raise RuntimeError('%s is not a valid Target Adjustment value' % str(targetAdjustmentKey))
+    return TargetAdjustmentTwoWayEnumMapping[targetAdjustmentKey]
+
+#-------------------------------------
+# Custom Methods (Exotic Events)
+#-------------------------------------
+
+def MLDFixingDomesticPerForeign(ee):
+    return ee.EventValue()
+    
+def PayDate(ee):
+    evtDate = ee.Date()
+    value=None
+    excEvts = [x for x in ee.Instrument().ExerciseEvents() if ( x.StartDate() <= evtDate) and (x.EndDate() >= evtDate)]
+    if excEvts and (len(excEvts) > 0 ):
+        excEvt = excEvts[0]
+        if(value is None) :
+            return excEvt.SettlementDate()
+        else:
+            excEvt.SettlementDate(value)
+    return None
+
+def SetPayDate(ee, value=None):
+    if(value is not None) :
+        evtDate = ee.Date()
+        #value=None
+        excEvts = [x for x in ee.Instrument().ExerciseEvents() if ( x.StartDate() <= evtDate) and (x.EndDate() >= evtDate)]
+        if excEvts and (len(excEvts) > 0 ):
+            excEvt = excEvts[0]
+            excEvt.SettlementDate(value)
+
+def MLDEndDate(ee, value=None):
+    evtDate = ee.Date()
+    #value=None
+    excEvts = [x for x in ee.Instrument().ExerciseEvents() if ( x.StartDate() <= evtDate) and (x.EndDate() >= evtDate)]
+    if excEvts and (len(excEvts) > 0 ):
+        excEvt = excEvts[0]
+        if(value is None) :
+            return excEvt.SettlementDate()
+        else:
+            excEvt.SettlementDate(value)
+    return value
+
+def MLDFixing(ee):
+    return ee.EventValue()
+
+def MLDAmount(ee):
+    return 0.0
+
+def MLDAmountInOut(ee):
+    if ( ee.EventValue() != -1) :
+        if( ee.EventValue() >= ee.Instrument().AdditionalInfo().Sp_MLDFloor() ) and ( ee.EventValue() <= ee.Instrument().AdditionalInfo().Sp_MLDCeiling() ):
+            return "In"
+        else:
+            return "Out"
+    else:
+        return ""
+    
+
+# -------------------------------
+# Default values
+# -------------------------------
+def DefaultSheetDefaultColumns():
+    return ['Price Theor', 
+            'Portfolio Theoretical Value', 
+            'Portfolio Underlying Price', 
+            'Portfolio Underlying Forward Price', 
+            'Portfolio Volatility', 
+            'Portfolio Carry Cost', 
+            'Instrument Delta']
+
+
+#----------------------
+# Custom Functions
+#----------------------
+
+
+def TargetAdjustmentToEnum(targetAdjustment):
+    return TargetAdjustmentTranslation(targetAdjustment)
+
+def TargetAdjustmentFromEnum(targetAdjustment):
+    return TargetAdjustmentTranslation(targetAdjustment)
+    
+def GenerateMLDPeriodEndDates(startDate, endDate, method, rolling, calendars, settleDays, settleCalendars, **rest):
+    return GeneratePeriodEndDates(startDate, endDate, method, rolling, calendars, settleDays, settleCalendars)
+
+
+def GenerateMLDExpiryTable(fixingParams):
+    
+        # 1) verify parameters or throw exception
+        #self._VerifyExpiryTableParameters(**fixingParams)
+
+        # 2) Generate dates
+        #print(fixingParams)
+        periodEndDates  = GenerateMLDPeriodEndDates( **fixingParams )
+        '''
+        print(f"period end dates : **************")
+        for pEndDate in periodEndDates:
+            print(pEndDate)
+        print(f"*********************************")
+        '''
+                                                
+        expiryTableData = GenerateExpiryTableDates( fixingParams['startDate'],
+                                                    fixingParams['calendars'] ,
+                                                    periodEndDates,
+                                                    fixingParams['frequency'])
+        
+        
+        # 3) If new dates are different from existing date, update exercise events
+
+        #allExerciseEvents = self._Accumulator().ExerciseEvents()
+
+        #allExerciseEvents.Unsimulate()
+        
+        #for observation in expiryTableData:
+            #CreateExerciseEvent(observation)
+    
+        # 5) generate price fixing events
+        #self._UpdatePriceFixingEvents()
+        return (expiryTableData, periodEndDates)
+    
+
+...
+
+  SP_MLDCalculations
+from __future__ import division
+
+import acm
+
+import operator
+from SP_TrfExerciseCalculations import  BaseSettlementParameters, CalculateCashAmount, GetFixingValue
+
+greater = operator.gt
+greaterOrEqual = operator.ge
+epsilon = 0.000001
+   
+
+def CalculateDailyAccrualReturn(optStartDate, optEndDate, maxReturn, mldNotional, dayBasis, observationDays):
+    dailyAccrualReturn = 0
+    # +1 to add the expiry day
+    noOfDay = acm.Time().DateDifference( optEndDate, optStartDate) + 1
+    maxTotalReturn = (noOfDay * maxReturn * mldNotional) / dayBasis
+    if (observationDays is not None) and (observationDays!=0 ):
+        dailyAccrualReturn = maxTotalReturn/observationDays
+    return dailyAccrualReturn
+    
+
+
+'''
+def CashSettlementParameters(instrument, date):
+    params = BaseSettlementParameters(instrument, date)
+    #params['settleInDomesticCurrency'] = instrument.AdditionalInfo().Sp_SettleInCurr2()
+    rateDirection = params['rateDirection']
+    rateDecimals = 6
+    fixing = round(GetFixingValue(instrument, date, rateDirection), rateDecimals)
+    strike = round(instrument.StrikePrice(), rateDecimals)
+    barrier = round(instrument.Barrier(), rateDecimals)
+    params['fixing']=fixing
+    params['strike']=strike
+    params['barrierLevel']=barrier
+    return params
+
+
+def CustomCalculateCashAmount(instrument, date):
+    if instrument.AdditionalInfo().StructureType() == 'Market Linked Deposit RAFx':
+        return CalculateCashAmount(**CashSettlementParameters(instrument, date))
+    else:
+        raise RuntimeError('MLD settlement calculations only implemented for Market Linked Deposit (Range Accrual FX)')
+
+        
+def CalculateSettlementAmounts(trade, date):
+    instrument = trade.Instrument()
+    if instrument.SettlementType() == 'Cash':
+        return CustomCalculateCashAmount(instrument, date)
+    else:
+        return None
+'''
+
+...
+
+  SP_MLDCompositeAttributes
+from __future__ import print_function
+from __future__ import division
+from __future__ import absolute_import
+
+
+from builtins import range
+from FFixPerform import UsedPrice
+import acm
+from DealPackageDevKit import CompositeAttributeDefinition, Object, Action, InstrumentPart, ReturnDomainDecorator, Date, DealPackageUserException, Float, Str
+from SP_DealPackageHelper import GetCurrencyPairPointsDomesticPerForeign, GetCurrencyPairPointsForeignPerDomestic, StringValueIsInteger
+from SP_BusinessCalculations import AdjustBankingDaysFromMultiCalendars, BankingDayPeriodToDateFromStartDate, GetPairCalendars
+from SP_MarketLinkedDeposit_Utils import MLDExpiryEvent, MLDExpiryEventPerPayDate, FixFxRateCalculation, GetInverseRate, CalculateAverageFixing, MtMPriceFromFixingSource
+
+#InstrumentPart,
+
+
+class MLDFxRateComposite(CompositeAttributeDefinition):
+
+    def Attributes(self):
+        
+        return {
+
+                'rateDomesticPerForeign' :    Object( objMapping = InstrumentPart(self.UniqueCallback('ObjectMappingDomesticPerForeign')),
+                                                      formatter = self.UniqueCallback('@FormatFXDomesticPerForeign')),
+                
+                'rateForeignPerDomestic' :    Object( objMapping = InstrumentPart(self.UniqueCallback('ObjectMappingForeignPerDomestic')),
+                                                      formatter = self.UniqueCallback('@FormatFXForeignPerDomestic')),
+                
+                'storeDomesticPerForeign' :   Action( action = self.UniqueCallback('@SetStorageDomesticPerForeign')),
+
+                'storeForeignPerDomestic' :   Action( action = self.UniqueCallback('@SetStorageForeignPerDomestic')),
+                
+                'reEvaluateObjectMappings' :  Action( action = self.UniqueCallback('@ReEvaluateObjectMappings')),
+                
+                'foreignFormatter' :          Str   ( defaultValue = 'foreignCurrency'),
+                
+                'domesticFormatter' :         Str   ( defaultValue = 'domesticCurrency'),
+                
+                'instrumentPairAttribute' :   Str   ( defaultValue = 'instrumentPair')
+                }
+                          
+    def OnInit(self, rateDomPerFor, rateForPerDom):
+        self._rateDomPerFor = rateDomPerFor
+        self._rateForPerDom = rateForPerDom
+        self._formatterFxDomesticPerForeign = None
+        self._formatterFxForeignPerDomestic = None
+
+    def ReadMapping(self, mapping):
+        parts = mapping.split('.')
+        value = self.GetMethod(parts[0])()
+        for part in range(1, len(parts)):
+            value = getattr(value, parts[part])()
+        return value
+    
+    def WriteMapping(self, mapping, value):
+        parts = mapping.split('.')
+        writeMethod = self.GetMethod(parts[0])
+        for part in range(1,len(parts)):
+            writeMethod = getattr(writeMethod(), parts[part])
+        writeMethod(value)
+
+    def ObjectMappingRates(self, mapping, value = 'NoValue'):
+        if value == 'NoValue':
+            return self.ReadMapping(mapping)
+        else:
+            self.WriteMapping(mapping, value)
+            self.GetAttribute('reEvaluateObjectMappings')()
+
+    @ReturnDomainDecorator('double')
+    def ObjectMappingDomesticPerForeign(self, value = 'NoValue'):
+        return self.ObjectMappingRates(self._rateDomPerFor, value)
+
+    @ReturnDomainDecorator('double')
+    def ObjectMappingForeignPerDomestic(self, value = 'NoValue'):
+        return self.ObjectMappingRates(self._rateForPerDom, value)
+
+    # Action to trigger re-draw of UI
+    def ReEvaluateObjectMappings(self, *rest):
+        pass
+
+    def SetStorageDomesticPerForeign(self, attrName, *rest):
+        silent = rest[0] if len(rest) > 0 else False
+        self.SetStorageDirection('rateDomesticPerForeign', silent)
+    
+    def SetStorageForeignPerDomestic(self, attrName, *rest):
+        silent = rest[0] if len(rest) > 0 else False
+        self.SetStorageDirection('rateForeignPerDomestic', silent)
+    
+    def SetStorageDirection(self, attrName, silent):
+        storageAttr = attrName.replace('store', 'rate')
+        currentValue = self.GetAttribute(storageAttr)
+        self.SetAttribute(storageAttr, currentValue + 0.00000001, silent)
+        self.SetAttribute(storageAttr, currentValue, silent)
+
+    def FormatFXDomesticPerForeign(self, traitName):
+        if not self._formatterFxDomesticPerForeign:
+            self._formatterFxDomesticPerForeign = acm.Get('formats/SP_MLDFXRate').Clone()
+        numDecimals = GetCurrencyPairPointsDomesticPerForeign(self.Owner().GetAttribute(self.foreignFormatter),
+                                                              self.Owner().GetAttribute(self.domesticFormatter),
+                                                              self.Owner().GetAttribute(self.instrumentPairAttribute))
+        self._formatterFxDomesticPerForeign.NumDecimals(numDecimals)
+        return self._formatterFxDomesticPerForeign
+    
+    def FormatFXForeignPerDomestic(self, traitName):
+        if not self._formatterFxForeignPerDomestic:
+            self._formatterFxForeignPerDomestic = acm.Get('formats/SP_MLDFXRate').Clone()
+        numDecimals = GetCurrencyPairPointsForeignPerDomestic(self.Owner().GetAttribute(self.foreignFormatter),
+                                                              self.Owner().GetAttribute(self.domesticFormatter),
+                                                              self.Owner().GetAttribute(self.instrumentPairAttribute))
+        self._formatterFxForeignPerDomestic.NumDecimals(numDecimals)
+        return self._formatterFxForeignPerDomestic
+
+
+class MLDFixingEditerComposite(CompositeAttributeDefinition):
+
+    #-----------------------------
+    # Interface Overrides
+    #-----------------------------
+    def Attributes(self):
+        attr = {
+            # vvv Fields vvv
+            'fixingDate' : Date(
+                label = 'Fixing Date',
+                enabled = self.UniqueCallback('@EnabledFixingDate'),
+                validate = self.UniqueCallback('@ValidateFixingDate'),
+                transform = self.UniqueCallback('@TransformFixingDate')),
+            'payDate' : Date(
+                label = 'Pay Date',
+                visible = self.UniqueCallback('@VisiblePayDate'),
+                validate = self.UniqueCallback('@ValidatePayDate'),
+                transform = self.UniqueCallback('@TransformPayDate')),
+            'fixingValue' : self.FixingValueAttr(),
+            # vvv Buttons vvv
+            'fixingAdd' : Action(
+                label = 'Add',
+                visible = self.UniqueCallback('@VisibleFixingAdd'),
+                enabled = self.UniqueCallback('@EnabledFixingAdd'),
+                action = self.UniqueCallback('@ActionFixingAdd')),
+            'fixingUpdate' : Action(
+                label = 'Update',
+                enabled = self.UniqueCallback('@EnabledFixingUpdate'),
+                action = self.UniqueCallback('@ActionFixingUpdate')),
+            'fixingRemove' : Action(
+                label = 'Delete',
+                visible = self.UniqueCallback('@VisibleFixingRemove'),
+                enabled = self.UniqueCallback('@EnabledFixingRemove'),
+                action = self.UniqueCallback('@ActionFixingRemove')),
+            'fixingFixRate' : Action(
+                label = 'Suggest Fixing',
+                enabled = self.UniqueCallback('@EnabledFixRate'),
+                action = self.UniqueCallback('@ActionFixRate'))
+        }
+        return attr
+
+    def OnInit(self, instrument):
+        self._instrument = instrument
+        self._fixingValue = 0.0
+        self._fixingEventSelected = None
+
+    def GetLayout(self):
+        raise NotImplementedError('GetLayout not implemented')
+        
+    #-----------------------------
+    # Protected Access Methods
+    #-----------------------------
+    def Instrument(self):
+        return self.GetMethod(self._instrument)()
+        
+    def FixingValueAttr(self):
+        attr = Object(
+            objMapping = self.UniqueCallback('FixingValue'))
+        return attr
+            
+    def GetFixingEventSelected(self, value = 'NoValue'):
+        if value == 'NoValue':
+            return self._fixingEventSelected
+        else:
+            self._fixingEventSelected = value
+    
+    @ReturnDomainDecorator('double')      
+    def FixingValue(self, value = 'NoValue'):
+        if value == 'NoValue':
+            return self._fixingValue
+        else:
+            self._fixingValue = value
+        
+    #-----------------------------
+    #  Public Access Callbacks
+    #-----------------------------
+    def OnSelectionChanged(self, rowObj):
+        if rowObj:
+            self._fixingEventSelected = rowObj
+            self._fixingValue = rowObj.EventValue()
+            self.fixingDate = rowObj.Date()
+            self.payDate = rowObj.PayDate() 
+        else:
+            self.ResetState()
+            
+    def ResetState(self):
+        self._fixingEventSelected = None
+        self._fixingValue = 0.0
+        self.fixingDate = None
+        self.payDate = None
+        
+    #-----------------------------
+    # Visible Callbacks
+    #-----------------------------  
+    def VisiblePayDate(self, traitName):
+        return True
+
+    def VisibleFixingAdd(self, traitName):
+        return True
+    
+    def VisibleFixingRemove(self, traitName):
+        return True
+        
+    #-----------------------------
+    # Enabled Callbacks
+    #-----------------------------
+    def EnabledFixingDate(self, traitName):
+        return True
+        
+    def EnabledFixingAdd(self, traitName):
+        enable = False
+        '''
+        tee = MLDExpiryEvent(self.Instrument(), self.fixingDate)
+        teeppd = MLDExpiryEventPerPayDate(self.Instrument(), self.payDate)
+        if (self.fixingDate and self.payDate and not (tee or teeppd)):
+        #if (self.fixingDate and not (tee)):
+            enable = True
+        '''
+        return enable
+        
+    def EnabledFixingUpdate(self, traitName):
+        enable = False
+        row = self._fixingEventSelected 
+        if row:
+            edited = (row.Date() != self.fixingDate 
+                or row.PayDate() != self.payDate 
+                or row.EventValue() != self._fixingValue)
+            if edited:
+                enable = True
+        return enable
+
+    def EnabledFixingRemove(self, traitName):
+        enable = (self._fixingEventSelected != None)
+        return enable
+        
+    def EnabledFixRate(self, traitName):
+        enable = False
+        row = self._fixingEventSelected
+        if row:
+            rd = row.Date()
+            today = acm.Time.DateToday()
+            if acm.Time.DateDifference(rd, today) <= 0:
+                enable = True
+        return enable
+
+    #-----------------------------
+    # Validate Callbacks
+    #-----------------------------
+    def ValidateFixingDate(self, traitName, newDate):
+        row = self._fixingEventSelected
+        if row and not newDate:
+            Md = self.GetMethod('GetAttributeMetaData')
+            label = Md(traitName, 'label')()
+            str = 'Expected a %s' % label
+            raise DealPackageUserException(str)    
+       
+    def ValidatePayDate(self, traitName, newDate):
+        row = self._fixingEventSelected
+        if row and not newDate:
+            Md = self.GetMethod('GetAttributeMetaData')
+            label = Md(traitName, 'label')()
+            str = 'Expected a %s' % label
+            raise DealPackageUserException(str) 
+
+        
+    #-----------------------------
+    # Action Callbacks
+    #-----------------------------
+    def ActionFixingAdd(self, traitName):
+        raise NotImplementedError('ActionFixingAdd not implemented')
+                
+    def ActionFixingUpdate(self, traitName):
+        row = self._fixingEventSelected
+        if row:
+            fvExist = (self._fixingValue and self._fixingValue > 0.0) 
+            ev = self._fixingValue if fvExist else -1.0
+            row.EventValue(ev)
+            row.Date(self.fixingDate)
+            row.SetPayDate(self.payDate)
+            
+    def ActionFixingRemove(self, traitName):
+        row = self._fixingEventSelected
+        if row:
+            row.Unsimulate()
+            
+    def ActionFixRate(self, traitName):
+        raise NotImplementedError('ActionFixRate not implemented')
+
+    #-----------------------------
+    # Transform Callbacks
+    #-----------------------------
+    def TransformFixingDate(self, attrName, newDate, *rest):
+        date = newDate
+        if date:
+            if acm.Time.PeriodSymbolToDate(date):
+                dateNow = acm.Time().DateNow()
+                nonAdjustedDate = acm.Time.DateAdjustPeriod(dateNow, newDate)
+                date = AdjustBankingDaysFromMultiCalendars(
+                    nonAdjustedDate, 0, self.GetBankingDateAdjustCalendars())
+        return date
+    
+    
+    def TransformPayDate(self, attrName, newDate, *rest):
+        date = newDate
+        if acm.Time().PeriodSymbolToDate(newDate):
+            if acm.Time.IsValidDateTime(self.fixingDate):
+                date = BankingDayPeriodToDateFromStartDate(
+                    self.GetBankingDateAdjustCalendars(), 
+                    self.fixingDate, 
+                    newDate, 
+                    self.Instrument().SettlementCalendar())
+            else:
+                raise DealPackageUserException(
+                    'Cannot enter pay date as a period '
+                    'without a valid fixing date')
+        return date
+    
+
+    def GetBankingDateAdjustCalendars(self):
+        raise NotImplementedError('GetBankingDateAdjustCalendars not implemented')
+
+class MLDFxFixingEditerComposite(MLDFixingEditerComposite):
+
+    class FxFixingValue(MLDFxRateComposite):
+        @ReturnDomainDecorator('double')
+        def ObjectMappingDomesticPerForeign(self, value = 'NoValue'):
+            return self.GetMethod(self._rateDomPerFor)(value)
+
+        @ReturnDomainDecorator('double')
+        def ObjectMappingForeignPerDomestic(self, value = 'NoValue'):
+            return self.GetMethod(self._rateForPerDom)(value)
+
+    def InstrumentPair(self):
+        return self.Owner().GetAttribute(self.fixingValue_instrumentPairAttribute)
+
+    def GetBankingDateAdjustCalendars(self):
+        return GetPairCalendars(self.InstrumentPair())
+    
+    #-----------------------------
+    # Interface Overrides
+    #-----------------------------
+
+    def GetLayout(self):
+        str = ( 
+        '''
+            vbox[Fixing;
+                hbox(;
+                    fixingDate;
+                    payDate;
+                );
+                hbox(;   
+                    fixingValue_rateDomesticPerForeign;
+                    fixingValue_rateForeignPerDomestic;
+                );
+                hbox(;
+                    fixingAdd;
+                    fixingUpdate;
+                    fixingRemove;
+                    fixingFixRate;
+                );
+            ];
+        ''')
+        layout = self.UniqueLayout(str)
+        return layout
+        
+    #-----------------------------
+    # Protected Access Methods
+    #-----------------------------    
+    def FixingValueAttr(self):
+        attr = self.FxFixingValue( 
+                rateDomPerFor = self.UniqueCallback('FixingValue'),
+                rateForPerDom = self.UniqueCallback('FixingValueInvRate'))
+        return attr
+        
+    @ReturnDomainDecorator('double')
+    def FixingValueInvRate(self, value = 'NoValue'):
+        if value == 'NoValue':
+            return GetInverseRate(self.FixingValue())
+        else:
+            self.FixingValue(GetInverseRate(value))
+    
+    #-----------------------------
+    # Action Callbacks
+    #-----------------------------
+    def ActionFixingAdd(self, traitName):
+        tee = MLDExpiryEvent(self.Instrument(), self.fixingDate)
+        #teeppd = MLDExpiryEventPerPayDate(self.Instrument(), self.payDate)
+        #if (self.fixingDate and self.payDate and not (tee or teeppd)):
+        if (self.fixingDate and not (tee)):
+            AddEe = self.GetMethod('AddExoticEvent')
+            AddEe('Price Fixing', self.fixingDate, 
+                None, self._fixingValue, -1,
+                self.Owner().GetExoticEventReference())
+        
+    def ActionFixRate(self, traitName):
+        row = self._fixingEventSelected 
+        threshold = 1e-6
+        if row and row.Date() <= acm.Time.DateToday():
+            try:
+                instrumentPair = self.InstrumentPair()
+                reset = self._fixingEventSelected 
+                if reset.EventValue() <= threshold:
+                    compIns = reset.ComponentInstrument()
+                    if compIns.IsKindOf(acm.FCurrency):
+                        currPair = reset.Instrument().ValuationUnderlying().CurrencyPair()
+                        price = UsedPrice(currPair.Currency1(), reset.Date(), reset.Date(), currPair.Currency2(), reset.Instrument().FixingSource(), False)
+                    else:
+                        price = UsedPrice(compIns, reset.Date(), reset.Date(), reset.Instrument().Currency(), reset.Instrument().FixingSource(), False)
+                #fxRate = FixFxRateCalculation(self.Instrument(), row, instrumentPair)
+                self.fixingValue_rateDomesticPerForeign = price
+            except RuntimeError as e:
+                raise DealPackageUserException(str(e))
+
+...
+
+}
+

@@ -1,0 +1,114 @@
+#
+# Front Arena exported extension module.
+# source          ""
+# timestamp (utc) "2023-12-04 08:57:20.8"
+# ***** DO NOT EDIT! *****
+#
+name        "BM_LIMASOutLimitUtilization"
+description ""
+
+groups {
+}
+
+decls[FPythonCode] {
+}
+
+clx FObject [FPythonCode] {
+  LimasLimitUtilizationRealtime
+
+import json
+import pyodbc
+import requests
+import datetime
+
+# Define the connection string for the database
+conn_str = (
+    r"DRIVER={SQL Server};"
+    r"SERVER=10.243.212.173;"
+    r"DATABASE=NTCSSTGDB;"
+    r"UID=AdminNTCS;"
+    r"PWD=P@ssw0rdNtcs#;"
+)
+
+# Define the URL of the API endpoint
+api_url = 'http://10.243.215.112:7001/ntcs/save-all'  # Replace with the actual API URL
+
+# Define the headers for the API request
+api_headers = {
+    'Content-Type': 'application/json',
+    'Authorization': 'e6bf950ddbe5732f9bde6c0c431ba561b0e3950ba7cead673659ea791556c254'  # Replace with your authentication method and token
+}
+
+ael_variables = []
+
+def decimal_to_float(number):
+    if number is not None:
+    # Convert to float
+        float_value = float(number)
+    else:
+        # Handle the case where the value is None (you can choose an appropriate default)
+        float_value = 0.0  # Set a default value or handle it as needed
+    return float_value
+
+def ael_main(params):    
+    try:
+        # Establish the database connection
+        conn = pyodbc.connect(conn_str)
+
+        # Create a cursor
+        cursor = conn.cursor()
+
+        # Execute an SQL query to fetch data from the database
+        query = "SELECT UniqueID,CIF,CCY,COALESCE( NotionalLimitThresholdValue,CEMLimitThresholdValue) as ThresholdValue , LimitExpiryDate, ComplianceRuleName, Status, COALESCE(RemainingCEM, RemainingNotionalLimitValue) AS RemainingLimit, COALESCE(UsedCEM, UsedNotionalLimitValue) AS UsedLimit  FROM LIMIT_UTILIZATION"
+        cursor.execute(query)
+        
+        
+        # Fetch the results
+        rows = cursor.fetchall()
+        
+        # Close the cursor and the database connection
+        cursor.close()
+        conn.close()
+        
+        # Process the rows and send them to the API
+        data_to_send = []
+        for row in rows:
+            # Access the columns by index and create a dictionary
+            if row[4] is not None:
+                row[4] = row[4].strftime("%Y-%m-%d %H:%M:%S")
+            data_item = {
+                "indexNumber": row[0],
+                "cifNo": row[1],
+                "currency": row[2],
+                "limitAwal": decimal_to_float(row[3]),
+                "limitExpiryData": row[4],
+                "noFasilitas": row[5],
+                "status": row[6],
+                "tfLimit": decimal_to_float(row[7]),
+                "tfOs": decimal_to_float(row[8])
+            }
+            data_to_send.append(data_item)
+        
+        print ("data_to_send",data_to_send)
+        # Convert the data to JSON format
+        json_data = json.dumps(data_to_send)
+        print ("json_data",json_data)
+        # Send the POST request with headers and JSON body to the API
+        response = requests.post(api_url, headers=api_headers, data=json_data)
+
+        # Check the response status code and content
+        if response.status_code == 200:
+            print(response.json())
+            print("Request to API successful")
+            
+        else:
+            print("Request to API failed with status code:", response.status_code)
+            print(response.text)
+
+    except Exception as e:
+        print("An error occurred:", str(e))
+
+...
+
+}
+

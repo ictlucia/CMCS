@@ -1,0 +1,604 @@
+#
+# Front Arena exported extension module.
+# source          ""
+# timestamp (utc) "2023-11-14 12:21:54.7"
+# ***** DO NOT EDIT! *****
+#
+name        "TS2957910_Send_to_Excel"
+description ""
+
+groups {
+}
+
+decls[FPythonCode] {
+}
+
+clx FObject [FPythonCode] {
+  ExportToExcelDlg
+import acm
+import FUxCore
+import FExcelUtilities
+
+class ExportToExcelDlg (FUxCore.LayoutDialog):
+    def __init__(self):
+        self.m_htmlText = ""
+        self.m_okBtn = None
+        self.m_cancelBtn = None
+        self.m_errMsgLbl = None
+        self.m_infoLbl = None
+        self.m_fuxDlg = None
+        self.m_xlApp = acm.Com.CreateOleObject('Excel.Application', False)
+        
+        if self.m_xlApp:
+            self.m_xlApp.PerformWith('Visible',[True])
+            self.m_xlApp.Invoke('Workbooks').Invoke('Add')
+        else:
+            shell = acm.UX.SessionManager().Shell()
+            acm.UX.Dialogs().MessageBoxInformation(shell, 'Could not find Excel', 'Excel Missing')
+        
+    def HandleApply( self ):
+        if self.TryPasteToExcel() == False:
+            return None #HandleApply should return None if it fails, not False
+        
+        return True #Anything except None to say its ok to close dialog
+        
+    def SetHTMLText(self, text):
+        self.m_htmlText = text
+    
+    def EnableRetry(self):    
+        self.m_okBtn.Enabled(True)
+        self.m_cancelBtn.Enabled(True)    
+        errMsg = "Failed to paste to excel"
+        self.m_errMsgLbl.Label(errMsg)
+    
+    def TryPasteToExcel(self):       
+        try:
+            FExcelUtilities.SendTabbedTextToExcel(self.m_htmlText, self.m_xlApp)
+            return True
+        except Exception as e:
+            if self.m_fuxDlg != None:
+                self.EnableRetry()
+                
+            acm.Log(str(e))
+            return False
+                    
+    def HandleCreate( self, dlg, layout):
+        self.m_fuxDlg = dlg
+        self.m_fuxDlg.Caption('Export to Excel')
+        self.m_okBtn = layout.GetControl("ok")
+        self.m_cancelBtn = layout.GetControl("cancel")
+        self.m_infoLbl = layout.GetControl("info")
+        self.m_errMsgLbl = layout.GetControl("errMsg")
+        
+        self.m_okBtn.Enabled(False)
+        self.m_cancelBtn.Enabled(False)
+        
+    def HandleDestroy(self):
+        pass
+    
+def CreateLayout():
+    b = acm.FUxLayoutBuilder()
+    b.BeginVertBox('None') 
+    b.  AddLabel('info', 'Pasting to Excel')
+    b.  AddLabel('errMsg', '')
+    b.  BeginHorzBox('None')
+    b.    AddFill()    
+    b.    AddButton('ok', 'Retry')
+    b.    AddButton('cancel', 'Cancel')
+    b.  EndBox()
+    b.EndBox()
+    return b
+    
+
+...
+
+  FSheetExport
+"""Efficiently write Trading Manager sheets to various formats for export
+
+(c) Copyright 2011,2022 by FIS Group/Fidelity Information Services Front Arena AB. All rights reserved.
+ 
+"""
+
+import os.path
+import io
+try:
+    import _winreg
+except ImportError:
+    import winreg as _winreg
+
+import acm
+import sys
+
+try:
+    import FClipboardUtilities
+    import FExcelUtilities
+except ImportError as err:
+    msg = "FSheetExport: Failed to import required modules. Python path is probably not configured correctly. Please contact system administrator. Error=" +  str(err)
+    acm.LogAll(msg)
+    
+import FReportAPI
+import FReportUtils
+import FXMLReportWriter
+import FUxCore
+import ExportToExcelDlg
+
+FPARMATER_NAME = "SheetExport"
+COPY_ALL_DECIMAL_SEPARATOR_KEY = "CopyAllDecimalSeparator"
+COPY_ALL_USE_FORMATED_DATA_KEY = "CopyAllUseFormattedData"
+COPY_ALL_FULLGROUPINGINFO = "CopyAllFullGroupingInfo"
+COPY_ALL_FULLGROUPINGSEPARATOR = "CopyAllFullGroupingSeparator"
+SEND_TO_BROWSER_PATH = "SendToBrowserPath"
+SEND_TO_BROWSER_TEMPLATE = "SendToBrowserTemplate"
+
+
+def get_settings_dictionary():
+    try:
+        return FReportUtils.GetParameterValues("SheetExport")
+    except Exception as err:
+        print ("FSheetExport: Failed to get FParameter 'SheetExport', using default settings, err=", err)
+    return {}
+
+
+
+# #############################################################################
+#    
+# Table writer classes
+#
+
+
+class IAsynchronousReportReceiver:
+
+    def OperationName(self):
+        raise NotImplementedError()
+
+    def CreateWriter(self):
+        raise NotImplementedError()
+        
+class IAsynchronousReportWriter:
+
+    def NewLine(self, depth, headerText ):
+        raise NotImplementedError()
+            
+    def WriteCell(self, value, formattedValue):
+        raise NotImplementedError()
+    
+    def Execute(self, shell):
+        raise NotImplementedError()
+        
+    
+   
+# #############################################################################
+#    
+# Table writer classes
+#
+
+
+class ITableWriter:
+    """Interface for efficiently streaming data to a table
+    
+    Write table left or right, top to bottom, no requirement on all rows 
+    having equal number of cells.
+    """
+
+    def get_cell_formatter(self):
+        """Optionaly return a custom cell formatter
+        
+        Sidnature: str cell_formatter(value, formattedValue)
+        """
+        return None
+    
+    def write_cell(self, val):
+        """Write a single cell
+
+        Note that val, can be string, number or any FObject
+        """
+        raise NotImplementedError()
+        
+    def new_row(self, indent_level = 0):
+        """End current row, set cursor to first cell in new row"""
+        raise NotImplementedError()
+
+    def get_table(self):
+        """Finalize all writing and return text version of table"""
+        raise NotImplementedError()
+
+
+class FullyBufferedTableWriter(ITableWriter):
+    """Base class for building full table in memory before outputting"""
+
+    def __init__(self):
+        self._current_row = []                   # ["cell1", "cell2" ..]
+        self._data = [ ( 0, self._current_row )] # [ (indentlevel, ["cell1", "cell2"] ) ..]
+        
+    def write_cell(self, val):
+        self._current_row.append(val)
+        
+    def new_row(self, indent_level = 0):
+        self._current_row = []
+        self._data.append( (indent_level, self._current_row ) )
+
+
+class TabbedTextWriter(FullyBufferedTableWriter):
+    """Create tab separated text representation, suitable for export to Excel
+    """
+    
+    def get_table(self):
+
+        return "\n".join( " "*indent + "\t".join(str(cell) for cell in row) 
+            for (indent,  row) in self._data )
+            
+
+class ReportXmlTableWriter(FullyBufferedTableWriter):
+    """Create XML in PRIME report format
+    """
+
+    def _generater_columns(self, writer, column_row):
+        xcolumns = writer.Columns()
+        for name in column_row[1:]: 
+            xcolumn = writer.Column()
+            writer.ColumnId( str(name) ).done()
+            writer.Label( str(name) ).done()
+            xcolumn.done()
+        xcolumns.done()
+    
+    def _generate_row(self, writer, row):        
+        writer.Label( row[0] ).done()
+        writer.RowType( "" ).done()
+        xcells = writer.Cells()
+        for cell in row[1:]:
+            xcell = writer.Cell()
+            writer.FormattedData( str(cell) ).done()
+            xcell.done()
+        xcells.done()
+
+    def _generate_rows(self, writer, rows):
+        writer.Rows()
+        current_indent = 0
+        xrow = None
+        for indent, row in rows:
+            if current_indent > indent:                
+                writer.end_tag() # closes Row()
+                while current_indent != indent:
+                    writer.end_tag() # closes Rows()
+                    writer.end_tag() # closes Row()
+                    current_indent -= 1
+            elif current_indent < indent:
+                if current_indent  + 1 !=  indent:
+                    raise Exception("Indent level can only be increased one step at a time")
+                writer.Rows()
+                current_indent += 1
+            elif xrow:
+                writer.end_tag()                
+                xrow = None
+            if row:
+                xrow = writer.Row()
+                self._generate_row(writer, row)
+    
+    def get_table(self):
+        writer, strbuf = FXMLReportWriter.FXMLReportWriter.make_iostring_writer()      
+        # Create report headers
+        writer.PRIMEReport()
+        writer.Name( 'Exported Table' ).done()
+        writer.Type( 'GenericSheet' ).done()        
+        writer.ReportContents()
+        writer.Table()
+        # Create table headers and columns
+        writer.Name( 'Exported Table' ).done()
+        writer.Type( 'GenericSheet' ).done()
+        _indent, column_names = self._data[0]
+        writer.NumberOfColumns( str( len( column_names) - 1 ) ).done()
+        self._generater_columns( writer, column_names)
+        # create rows
+        self._generate_rows(writer, self._data[1:])
+        writer.done()
+        return strbuf.getvalue()
+        
+
+class ExcelHTMLWriter(FullyBufferedTableWriter):
+    """Write to a 'special' html format that can be cut and pasted into Excel
+    """
+    
+    def __init__(self):
+        FullyBufferedTableWriter.__init__(self)
+        settings = get_settings_dictionary()
+        self._use_formatted_data = to_boolean( settings.get(COPY_ALL_USE_FORMATED_DATA_KEY, False) )
+
+    def get_cell_formatter(self):
+        return self._cell_formatter
+
+    def _get_header(self):
+        return r"""<html xmlns:o="urn:schemas-microsoft-com:office:office"
+                xmlns:x="urn:schemas-microsoft-com:office:excel"
+                xmlns="http://www.w3.org/TR/REC-html40">
+                <head>
+                <meta http-equiv=Content-Type content="text/html; charset=windows-1252">
+                <meta name=ProgId content=Excel.Sheet>
+                <meta name=Generator content="Microsoft Excel 11">
+                <link rel=File-List href="Book1_files/filelist.xml">
+                <link rel=Edit-Time-Data href="Book1_files/editdata.mso">
+                <link rel=OLE-Object-Data href="Book1_files/oledata.mso">
+                </head>
+                <body link=blue vlink=purple>
+                """
+
+    def _get_footer(self):
+        return r"</body></html>"
+        
+    def fix_nonbreakingspace_to_whitespace(self, value):
+        cell_val = value
+        #convert non-breaking-space chars to ordinary white spaces, as Excel will not accept non-breaking spaces.
+        if acm.IsUnicodeEnabled():
+            if sys.version_info[0] > 2:
+                cell_val = cell_val.replace(chr(160), chr(32))
+            else:
+                cell_val = cell_val.decode("utf-8").replace(unichr(160), unichr(32)).encode("utf-8")        
+        else:
+            cell_val = cell_val.replace(chr(160), chr(32))
+        
+        return cell_val
+        
+    def _cell_formatter(self, value, formattedValue):
+        if self._use_formatted_data:
+            cell_val = formattedValue
+        else:
+            cell_val = value
+        
+        if not cell_val:
+            cell_val = ""               
+                            
+        # Handle special case, early return
+        if hasattr(cell_val, "Number"):
+            val = cell_val.Number()
+            theValue = self.fix_nonbreakingspace_to_whitespace(str(val))
+            return "  <td x:num=\"" + theValue + "\">" + theValue + "</td>\n"
+        if isinstance(cell_val, float):
+            theValue = self.fix_nonbreakingspace_to_whitespace(str(cell_val))
+            return "  <td x:num=\"" + theValue + "\">" + theValue + "</td>\n"
+        if hasattr(cell_val, "StringKey"):        
+            cell_val = cell_val.StringKey()
+        else:
+            cell_val = cell_val
+        
+        theValue = self.fix_nonbreakingspace_to_whitespace(str(cell_val))        
+        return "  <td>" + theValue + "</td>\n"
+ 
+    def get_table(self):
+        #output = io.StringIO()
+        if sys.version_info[0] == 2:
+            output = io.BytesIO()
+        else:
+            output = io.StringIO()
+        output.write(self._get_header())
+        output.write("<table>\n")
+        for _indent, row in self._data:
+            output.write(" <tr style=\'white-space:nowrap;\'>\n")
+            for cell in row:
+                output.write(str(cell))
+            output.write(" </tr>\n")
+        output.write("</table>")
+        output.write(self._get_footer())
+        return output.getvalue()
+
+# #############################################################################
+#    
+# Sheet extraction, extract data from TM to a FTableWriter
+#
+
+def to_boolean(val):
+    """Convert a parameter value to a boolean """
+    if val in ["1", "true", "True" , True, 1]:
+        return True
+    return False
+
+class FSheetExtractor(IAsynchronousReportReceiver):  
+    """Class to extract data from Trading Manager sheet to ITableWriter"""
+
+    def __init__(self, writer,  postCallback, dlg):
+        settings = get_settings_dictionary()
+        self._depth = -1
+        self._writer = writer
+        self._postCallback = postCallback
+        self._custom_cell_formatter = writer.get_cell_formatter()
+        self._dlg = dlg
+
+        #Determine decimal separator to use for numbers
+        self._decimal_separtor = None
+        ext = settings.get(COPY_ALL_DECIMAL_SEPARATOR_KEY, None)
+        if ext:
+            # Override can be specified in extensions for people who have thier Excle configured differently etc
+            if len(ext) != 1:
+                acm.Log("Warning ExtensionValue CopyAllDecimalSeparator specifies invalid decimal separater, using '.' insted")
+                self._decimal_separtor = "."
+            else:
+                self._decimal_separtor = ext
+        else:
+            # default is to use windows registry setting for current locale, Python environemnt in prime is 
+            # using fixed locale.
+            key = _winreg.OpenKey(_winreg.HKEY_CURRENT_USER, "Control Panel\\International")
+            self._decimal_separtor = str(_winreg.QueryValueEx(key, "sDecimal")[0])            
+            
+        #Determine if we want to use 'raw' or formatted values
+        self._use_formatted_data = to_boolean( settings.get(COPY_ALL_USE_FORMATED_DATA_KEY, False) )
+        
+        #determine how to handle grouping
+        self._fullGroupingInfo = to_boolean(settings.get(COPY_ALL_FULLGROUPINGINFO, True))
+        self._groupingseparator = settings.get(COPY_ALL_FULLGROUPINGSEPARATOR, "")
+        if not self._groupingseparator:
+            self._groupingseparator = "\\"
+        self._groupstack = []
+    
+    def Start(self):
+        self.WriteCell('','')
+    
+    def AdjustGroupStack(self, depth):
+        if -1 != self._depth:
+            offset = self._depth - depth
+            if offset >= 0:
+                for i in range(offset+1):
+                    self._groupstack.pop()
+    
+    def NewLine(self, depth, headerText ):
+        actualDepth = depth
+        actualHeaderText = headerText
+        if self._fullGroupingInfo:  
+            self.AdjustGroupStack(depth)
+            
+            self._groupstack.append(headerText)
+            self._depth = depth
+            actualHeaderText = self._groupingseparator.join(self._groupstack)
+            actualDepth = 0
+        
+        self._writer.new_row(actualDepth)
+        self.WriteCell(actualHeaderText,actualHeaderText )
+
+            
+    def ExtractValue(self, value, formattedValue):
+        """Extract a single value from one cell"""
+        if self._custom_cell_formatter:
+            return self._custom_cell_formatter(value, formattedValue)
+        else:
+            if self._use_formatted_data:
+                val = formattedValue
+            else:
+                val = value
+
+        if hasattr(val, "Number"):
+            val = str(val.Number()).replace(".", self._decimal_separtor)
+        if isinstance(val, float):
+            val = str(val).replace(".", self._decimal_separtor)
+        elif hasattr(val, "StringKey"):
+            val = val.StringKey()
+        return str(val)
+        
+    def WriteCell(self, value, formattedValue):
+        self._writer.write_cell(self.ExtractValue(value, formattedValue) )
+    
+    def Execute(self, shell):
+        try:
+            self._postCallback(self._writer, shell, self._dlg )
+        except Exception as err:
+            acm.UX().Dialogs().MessageBoxInformation(shell, str(err))
+        
+    
+    
+       
+# #############################################################################
+#    
+# Export functions & utility functions
+#
+def default_report_params(filename):
+    """Return basic FReportAPI parameterss for export to a file"""
+    settings = get_settings_dictionary()
+    params = FReportAPI.FWorksheetReportApiParameters()    
+    params.htmlToScreen = False
+    params.htmlToFile = False
+    params.xmlToFile = False
+    params.fileName = os.path.splitext(os.path.split(filename)[1])[0]
+    params.printTemplate =  "FStandardTemplate"
+    params.filePath = os.path.split(filename)[0]
+    params.fileDateFormat = None
+    params.createDirectoryWithDate = False
+    return params
+    
+
+class AsynchronousReportReceiver:
+    
+    def __init__(self,operationName,  writerClass, postCallback, fullGroupingInfo, dlg ):
+        self._operationName = operationName
+        self._writerClass = writerClass
+        self._postCallback = postCallback
+        self._fullGroupingInfo = fullGroupingInfo
+        self._dlg = dlg
+
+    def OperationName(self):
+        return self._operationName
+
+    def CreateWriter(self):
+        extractor = FSheetExtractor(self._writerClass(), self._postCallback, self._dlg)
+        if None != self._fullGroupingInfo:
+            extractor._fullGroupingInfo = self._fullGroupingInfo
+        extractor.Start()
+        return extractor
+        
+def CreateReceiver(invokationInfo, writerClass, postCallback, fullGroupingInfo ):
+    operationName = str(invokationInfo.Definition().AtString('DisplayName') )
+    receiver = AsynchronousReportReceiver(operationName,  writerClass, postCallback, fullGroupingInfo, None )
+    return receiver
+
+def HandleCopyToClipboard(writer, shell, dlg ):
+    FClipboardUtilities.SetClipboardText( writer.get_table() )
+
+      
+def HandleSendToExcel(writer, shell, dlg ):    
+    if dlg == None:
+        builder = ExportToExcelDlg.CreateLayout()
+        dlg = ExportToExcelDlg.ExportToExcelDlg()
+
+    output = writer.get_table()    
+    dlg.SetHTMLText(output)    
+    if dlg.TryPasteToExcel() == True: # paste was succesful, no need to display the retry dialog
+        if dlg.m_fuxDlg != None:
+            dlg.m_fuxDlg.CloseDialogCancel()
+    else:
+        if dlg.m_fuxDlg != None:
+            dlg.m_fuxDlg.ShowDialog(True)
+            dlg.EnableRetry()
+        else:
+            builder = ExportToExcelDlg.CreateLayout()
+            acm.UX().Dialogs().ShowCustomDialog(shell, builder, dlg )
+            dlg.EnableRetry()
+    
+
+def HandleSendToBrowser(writer, shell, dlg ):
+    xml = writer.get_table()
+    settings = get_settings_dictionary()
+    params = FReportAPI.FWorksheetReportApiParameters()    
+    params.htmlToScreen = True
+    params.xmlToFile = True
+    params.fileName = "sheet_export"
+
+    params.printTemplate =  settings.get(SEND_TO_BROWSER_TEMPLATE, "FStandardTemplate")
+    params.filePath = settings.get(SEND_TO_BROWSER_PATH, r"c:\\sheetexport")
+    params.CreateReportByXml(xml)
+
+def CreateExcelReceiver(invokationInfo, excelDlg):    
+    operationName = str(invokationInfo.Definition().AtString('DisplayName') )
+    receiver = AsynchronousReportReceiver(operationName,  ExcelHTMLWriter, HandleSendToExcel, None, excelDlg )
+    return receiver
+
+def CreateBrowserReceiver(invokationInfo):
+    return CreateReceiver(invokationInfo, ReportXmlTableWriter, HandleSendToBrowser, False )
+
+def CreateCopyAllReceiver(invokationInfo):
+    return CreateReceiver( invokationInfo, TabbedTextWriter, HandleCopyToClipboard, None ) 
+
+
+
+
+
+...
+
+  HgcManagerUx
+import acm
+import FSheetExport
+
+def SendToExcel(invokationInfo):
+    receiver = FSheetExport.CreateExcelReceiver(invokationInfo, None)
+    invokationInfo.ExtensionObject().RunAsynchronousReportForSelectedSheet(receiver )
+
+def SendToBrowser(invokationInfo):
+    receiver = FSheetExport.CreateBrowserReceiver(invokationInfo)
+    invokationInfo.ExtensionObject().RunAsynchronousReportForSelectedSheet(receiver )
+
+def CopyAll(invokationInfo):
+    receiver = FSheetExport.CreateCopyAllReceiver(invokationInfo)
+    invokationInfo.ExtensionObject().RunAsynchronousReportForSelectedSheet(receiver )
+
+
+
+
+
+...
+
+}
+

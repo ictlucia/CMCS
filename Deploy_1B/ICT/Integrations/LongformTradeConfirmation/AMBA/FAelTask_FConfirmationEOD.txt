@@ -1,0 +1,20 @@
+[MESSAGE]
+  TYPE=INSERT_TASK
+  VERSION=1.0
+  TIME=2024-04-22 08:59:52
+  SOURCE=FAMBAMessageGenerator
+  [TASK]
+    CONTEXT=Standard
+    GROUP.NAME=EOD
+    MODULE=FConfirmationEOD
+    NAME=FConfirmationEOD
+    PARAMETER=chasersToStatusMatch=false;regenerateConfirmations=true;
+    SIZE=56
+    [TASKSCHEDULE]
+      CALNBR.CALID=Jakarta
+      ENABLED=Yes
+      SCHEDULE=1:D:1:O,1000:20240417
+      SEQNBR=278
+    [/TASKSCHEDULE]
+  [/TASK]
+[/MESSAGE]

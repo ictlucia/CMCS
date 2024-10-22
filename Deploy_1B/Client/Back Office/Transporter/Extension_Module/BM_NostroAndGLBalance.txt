@@ -1,0 +1,864 @@
+#
+# Front Arena exported extension module.
+# source          ""
+# timestamp (utc) "2024-09-13 02:12:21"
+# ***** DO NOT EDIT! *****
+#
+name        "BM_NostroAndGLBalance"
+description "$Id$"
+
+groups {
+}
+
+decls[FMenuExtension] {
+}
+
+clx FObject [FMenuExtension] {
+  GL Balance Inquiry =
+  Function=GLBalanceInquiryUtil.StartApplication
+  MenuType=Application
+  ModuleName=GL Balance Inquiry
+  ParentMenu=Tools
+  RibbonPosition=Reporting Menu/Balance Amount
+
+
+  Nostro Balance Inquiry =
+  Function=NostroBalanceInquiryUtil.StartApplication
+  MenuType=Application
+  ModuleName=Nostro Balance Inquiry
+  ParentMenu=Tools
+  RibbonPosition=Reporting Menu/Balance Amount
+
+
+}
+
+decls[FParameters] {
+}
+
+clx FObject [FParameters] {
+  DBParamNostroGL =
+  DATABASE=NTCSSTGDB
+  DRIVER=SQL Server
+  FileNameGL=GLBalance_{}.csv
+  FileNameNostro=NostroBalance_{}.csv
+  logFileNameGL=GL_Balance_POS_LOG_{}.txt
+  logFileNameNostro=Nostro_Balance_POS_LOG_{}.txt
+  PWD=UEBzc3cwcmQ=
+  REC_FETCH_PAGE_SIZE=50
+  SERVER=10.243.212.168
+  UID=sa
+
+
+}
+
+decls[FPythonCode] {
+}
+
+clx FObject [FPythonCode] {
+  GL_Balance
+"""----------------------------------------------------------------------------------------------------
+MODULE:
+    GL Balance
+
+DESCRIPTION:
+    Module to save historical GL Balance every EOD
+
+-------------------------------------------------------------------------------------------------------"""
+import pyodbc
+import ParametersReader
+import acm
+import FRunScriptGUI
+import ael
+import FLogger
+import os
+import traceback
+import InterfaceUtils
+import base64
+from datetime import datetime
+
+def initialize_logging(params, logfile_name, app_name):
+    """
+    Initialize logger
+    :param params: parameters
+    :return: FLogger object
+    """
+    logger = None
+    logfile = None
+    try:
+        logFolder = params['log_folder']
+        logfolderString = logFolder.SelectedDirectory().AsString()
+        if logfolderString:
+            if logfile_name:
+                logfile = os.path.join(logfolderString, logfile_name)
+            
+                
+
+        logLevel = params['log_level']
+        log_to_console = params['log_to_console']
+        level = InterfaceUtils.LogLevelNameToNumber(logLevel)
+        logger = FLogger.FLogger(level=level,
+                                 name=app_name,
+                                 logToPrime=True,
+                                 logToFileAtSpecifiedPath=logfile,
+                                 logToConsole=log_to_console)
+    except Exception as err:
+        print('Error in initializing logger {}'.format(err))
+        print(traceback.format_exc())
+    return logger
+    
+folderPicker = FRunScriptGUI.DirectorySelection()
+
+ael_gui_parameters =    {'windowCaption' : 'GL Balance EOD'}
+logLevels = [FLogger.FLogger.INFO, FLogger.FLogger.ERROR, FLogger.FLogger.WARNING, FLogger.FLogger.DEBUG]
+
+ael_variables=  [
+                ['log_folder', 'Log Folder_Logging', folderPicker, None, folderPicker, 0, 1, 'Select where to store the log file', 0, None],
+                 ['log_level', 'Log Level_Logging', 'string', logLevels, FLogger.FLogger.DEBUG, 1, 0],
+                 ['log_to_console', 'Log to console_Logging', 'int', [1, 0], 1, 1, 0,'Whether logging should be done in the Log Console or not.']]
+
+DB = ParametersReader.get_params("DBParamNostroGL") 
+log_file_name = DB['logFileNameGL'].format(acm.Time.DateToday().replace('-', ''))
+
+app_name = 'GLBalanceEOD'
+
+def ael_main(params):
+    try:
+        logger = initialize_logging(params, log_file_name, app_name)
+        logger.LOG('Execution started')
+        DbDriver=DB['DRIVER']
+        DbName=DB['DATABASE']
+        DbPassword=base64.b64decode(DB['PWD']).decode("utf-8")
+        DbServer=DB['SERVER']
+        DBUId = DB['UID']
+        todaydate = str(acm.Time.DateToday())
+        connection = pyodbc.connect("DRIVER={{{}}};SERVER={};DATABASE={};ENCRYPT=no;UID={};PWD={}".format(DbDriver, DbServer, DbName, DBUId, DbPassword ))
+        cursor = connection.cursor()
+        try:
+            stored_procedure = """SET NOCOUNT ON; EXEC SP_GLBalance_Daily_History"""
+            cursor.execute(stored_procedure)
+            rows = cursor.fetchall()
+            connection.commit()
+            for row in reversed(rows):
+                str_row = ''.join(map(str, row))
+                if str_row  != 'None':
+                    logger.info(str_row)
+        finally:
+            cursor.close()
+            connection.close()
+    except Exception as err:
+        logger.ELOG(str(err))
+        print(traceback.format_exc())
+        print('Error . {}'.format(err))
+    logger.LOG('Execution ended')
+
+...
+
+  GLBalanceInquiry
+"""----------------------------------------------------------------------------------------------------
+MODULE:
+    GL Balance Inquiry
+
+DESCRIPTION:
+    Module to inquiry GL Balance to CSV file
+
+-------------------------------------------------------------------------------------------------------"""
+import acm, ael
+from datetime import datetime
+import ParametersReader, InterfaceUtils
+import FRunScriptGUI
+import os
+import pyodbc
+import base64
+import traceback
+import csv
+import re
+import io
+
+
+ael_gui_parameters={'runButtonLabel':'&&Run',
+            'hideExtraControls': True,
+            'windowCaption':'GL Balance'}
+            
+folderPicker = FRunScriptGUI.DirectorySelection()
+DB = ParametersReader.get_params("DBParamNostroGL") 
+DbDriver=DB['DRIVER']
+DbName=DB['DATABASE']
+DbPassword=base64.b64decode(DB['PWD']).decode("utf-8")
+DbServer=DB['SERVER']
+DBUId = DB['UID']
+cursor = None
+connection = None
+#acc_name = None
+csv_name = DB['FileNameGL'].format(acm.Time.DateToday().replace('-', ''))
+
+def detect_dates(text):
+    date_formats = [
+        r'\d{1,2}/\d{1,2}/\d{2,4}',         # 12/31/2024 or 12/31/24
+        r'\d{1,2}-\d{1,2}-\d{2,4}',         # 12-31-2024 or 12-31-24
+        r'\d{4}-\d{1,2}-\d{1,2}',           # 2024-12-31
+        r'\d{1,2}\s(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s\d{2,4}', # 31 Dec 2024 or 31 Dec 24
+        r'(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s\d{1,2},\s\d{2,4}', # Dec 31, 2024
+        r'(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s\d{1,2}\s\d{2,4}',   # Dec 31 2024
+        r'\d{1,2}\s(?:January|February|March|April|May|June|July|August|September|October|November|December)\s\d{2,4}', # 31 December 2024
+        r'(?:January|February|March|April|May|June|July|August|September|October|November|December)\s\d{1,2},\s\d{2,4}', # December 31, 2024
+        r'(?:January|February|March|April|May|June|July|August|September|October|November|December)\s\d{1,2}\s\d{2,4}',   # December 31 2024
+        r'\d{1,2}-(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)-\d{2}',   # 12-May-24
+    ]
+
+    detected_dates = []
+    for date_format in date_formats:
+        dates = re.findall(date_format, text)
+        detected_dates.extend(dates)
+
+    return detected_dates
+
+def convert_to_yyyymmdd(dates):
+    converted_dates = []
+    for date_str in dates:
+        date_obj = None
+        if re.match(r'\d{1,2}/\d{1,2}/\d{2,4}', date_str):
+            try:
+                date_obj = datetime.strptime(date_str, "%m/%d/%Y")
+            except ValueError:
+                date_obj = datetime.strptime(date_str, "%d/%m/%Y")
+        elif re.match(r'\d{4}-\d{1,2}-\d{1,2}', date_str):
+            date_obj = datetime.strptime(date_str, "%Y-%m-%d")
+        elif re.match(r'\d{1,2}\s(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s\d{2,4}', date_str):
+            date_obj = datetime.strptime(date_str, "%d %b %Y")
+        elif re.match(r'(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s\d{1,2},\s\d{2,4}', date_str):
+            date_obj = datetime.strptime(date_str, "%b %d, %Y")
+        elif re.match(r'(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s\d{1,2}\s\d{2,4}', date_str):
+            date_obj = datetime.strptime(date_str, "%b %d %Y")
+        elif re.match(r'\d{1,2}\s(?:January|February|March|April|May|June|July|August|September|October|November|December)\s\d{2,4}', date_str):
+            date_obj = datetime.strptime(date_str, "%d %B %Y")
+        elif re.match(r'(?:January|February|March|April|May|June|July|August|September|October|November|December)\s\d{1,2},\s\d{2,4}', date_str):
+            date_obj = datetime.strptime(date_str, "%B %d, %Y")
+        elif re.match(r'(?:January|February|March|April|May|June|July|August|September|October|November|December)\s\d{1,2}\s\d{2,4}', date_str):
+            date_obj = datetime.strptime(date_str, "%B %d %Y")
+        elif re.match(r'\d{1,2}-(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)-\d{2}', date_str):
+            date_obj = datetime.strptime(date_str, "%d-%b-%y")
+        
+        if date_obj:
+            converted_dates.append(date_obj.strftime("%Y-%m-%d"))
+    return converted_dates
+
+
+def GetSelectedItem(index, fieldValues):
+    connection = pyodbc.connect("DRIVER={{{}}};SERVER={};DATABASE={};ENCRYPT=no;UID={};PWD={}".format(DbDriver, DbServer, DbName, DBUId, DbPassword ))
+    cursor = connection.cursor()
+    queryitem = """SET NOCOUNT ON; EXEC SP_GetGLSelectItem"""
+    cursor.execute(queryitem)
+    data = cursor.fetchall()
+    cursor.nextset()
+    data2 = cursor.fetchall()
+    cursor.nextset()
+    data3 = cursor.fetchall()
+    cursor.nextset()
+    data4 = cursor.fetchall()
+    cursor.nextset()
+    data5 = cursor.fetchall()
+    cursor.nextset()
+    data6 = cursor.fetchall()
+    cursor.nextset()
+    data7 = cursor.fetchall()
+    ael_variables[3][FRunScriptGUI.Controls.VALUES] = [item[0] for item in data]
+    #ael_variables[4][FRunScriptGUI.Controls.VALUES] = [item[0] for item in data2]
+    ael_variables[4][FRunScriptGUI.Controls.VALUES] = [item[0] for item in data2]
+    ael_variables[5][FRunScriptGUI.Controls.VALUES] = [item[0] for item in data3]
+    ael_variables[6][FRunScriptGUI.Controls.VALUES] = [item[0] for item in data4]
+    ael_variables[7][FRunScriptGUI.Controls.VALUES] = [item[0] for item in data5]
+    ael_variables[8][FRunScriptGUI.Controls.VALUES] = [item[0] for item in data6]
+    ael_variables[9][FRunScriptGUI.Controls.VALUES] = [item[0] for item in data7]
+    return fieldValues
+
+def get_substrings_before_pipe(array):
+    result = []
+    for item in array:
+        if '|' in item:
+            substring = item.split('|')[0]
+        else:
+            substring = item
+        result.append(substring)
+    return tuple(result)
+
+
+ael_variables=[
+    ['folder_save', 'Folder Path Save', folderPicker, None, folderPicker, 1, 1, 'The file path from where the files will be picked.', GetSelectedItem, 1],
+    ['froms','Posting Date From','date', None, acm.Time.DateNow(), 1,0,'The date of data from', None, 1],
+    ['to','Posting Date To', 'date', None, acm.Time.DateNow(), 1,0,'The date of data to', None, 1],
+    ['gl_account', 'Account', 'string', [], '', 0,1,'Number of GL Account', None, 1],
+    #['acc_name', 'Account Name', 'string', [], '', 0,1,'Number of GL Account', None, 1],
+    ['curr', 'Currency', 'string', [], '', 0,1,'The curr of GL Account', None, 1],
+    ['product','Product Type', 'string', [], '', 0,1,'The product of GL Account', None, 1],
+    ['category','Product Category', 'string', [], '', 0,1,'The category of product', None, 1],
+    ['party','Party Full Name', 'string', [], '', 0,1,'The party of GL Balance', None, 1],
+    ['portofolio','Portofolio', 'string', [], '', 0,1,'The portofolio of GL Balance', None, 1],
+    ['ins','Instrument', 'string', [], '', 0,1,'The Instrument of GL Balance', None, 1]
+]
+
+
+DEFAULT_REC_FETCH_PAGE_SIZE = 3000
+
+file_path = None
+
+#def is_csv_empty_by_row(file_path):
+#    try:
+#        with open(file_path, 'r', newline='', encoding='utf-8') as csv_file:
+#            csv_reader = csv.reader(csv_file)
+#            row_count = sum(1 for row in csv_reader)
+#            if row_count > 1:
+#                return False
+#            else:
+#                return True
+#    except:
+#        with open(file_path, 'w', newline='', encoding='utf-8') as csv_file:
+#            csv_writer = csv.writer(csv_file)
+#            return True
+    
+    
+#def append_to_csv(file_path, data, header):
+#    if is_csv_empty_by_row(file_path):
+#        with open(file_path, 'a', newline='', encoding='utf-8') as csv_file:
+#            #csv_writer = csv.writer(header)
+#            csv_writer = csv.writer(csv_file)
+#            csv_writer.writerow(header)
+#            csv_writer.writerows(data)
+#    else:
+#        with open(file_path, 'a', newline='', encoding='utf-8') as csv_file:
+#            csv_writer = csv.writer(csv_file)
+#            csv_writer.writerows(data)
+
+def append_to_csv(csv_writer, data, header_written, header):
+    if not header_written:
+        csv_writer.writerow(header)  # Tulis header jika belum ditulis
+    csv_writer.writerows(data)  # Tulis data
+
+def ael_main(var):
+    folder_save = var['folder_save'].SelectedDirectory().AsString()
+    file_path = os.path.join(str(folder_save), str(csv_name))
+    #print(folder_save)
+    #print(csv_name)
+    
+    froms = var['froms']
+    to = var['to']
+    gl_account = var['gl_account']
+    #if var['gl_account'] is not None or var['gl_account'] != ' ':
+    #    split1,split2 = var['gl_account'].split('_')
+    #    acc_name = split2
+    curr = var['curr']
+    product = var['product']
+    category = var['category']
+    party = var['party']
+    portofolio = var['portofolio']
+    ins = var['ins']
+    DEFAULT_REC_FETCH_PAGE_SIZE = 3000
+    str_gl_account = None
+    str_acc_name = None
+    str_curr = None
+    str_product = None
+    str_category = None
+    str_party = None
+    str_portofolio = None   
+    str_ins = None
+    str_from = None
+    str_to = None
+    
+    id_gl_account = get_substrings_before_pipe(gl_account)
+    id_party = get_substrings_before_pipe(party)
+    id_portofolio = get_substrings_before_pipe(portofolio)
+    #print(id_portofolio)
+    id_ins = get_substrings_before_pipe(ins)
+    
+    if len(id_gl_account) > 1:
+        str_gl_account = "IN " + str(id_gl_account)
+    elif len(gl_account) == 1:
+        str_gl_account = "='{}'".format(str(id_gl_account[0]))
+    '''
+    if len(gl_account) > 1:
+        str_acc_name = "IN " + str(gl_account)
+    elif len(gl_account) == 1:
+        str_acc_name = "='" + str(gl_account[0]) + "'"
+    '''
+    if len(curr) > 1:
+        str_curr = "IN " + str(curr)
+    elif len(curr) == 1:
+        str_curr = "='{}'".format(str(curr[0]))
+        
+    if len(product) > 1:
+        str_product = "IN " + str(product)
+    elif len(product) == 1:
+        str_product = "='{}'".format(str(product[0]))
+        
+    if len(category) > 1:
+        str_category = "IN " + str(category)
+    elif len(category) == 1:
+        str_category = "='{}'".format(str(category[0]))
+        
+    if len(id_party) > 1:
+        str_party = "IN " + str(id_party)
+    elif len(party) == 1:
+        str_party = "='{}'".format(str(id_party[0]))
+        
+    #print(len(id_portofolio))    
+    if len(id_portofolio) > 1:
+        str_portofolio = "IN " + str(id_portofolio)
+        #print(str_portofolio)
+    elif len(portofolio) == 1:
+        str_portofolio = "='{}'".format(str(id_portofolio[0]))
+        #print(str_portofolio)
+    
+    if len(id_ins) > 1:
+        str_ins = "IN " + str(id_ins)
+    elif len(id_ins) == 1:
+        str_ins = "='{}'".format(str(id_ins[0]))        
+    
+    try:
+        if os.path.exists(file_path):
+            os.remove(file_path)
+        row_count_per_page = int(DB.get('REC_FETCH_PAGE_SIZE', DEFAULT_REC_FETCH_PAGE_SIZE))
+        connection = pyodbc.connect("DRIVER={{{}}};SERVER={};DATABASE={};ENCRYPT=no;UID={};PWD={}".format(DbDriver, DbServer, DbName, DBUId, DbPassword ))
+        cursor = connection.cursor()
+        page_count = 0
+        header_written = False 
+                
+        str_from = convert_to_yyyymmdd(detect_dates(str(froms)))
+        str_to = convert_to_yyyymmdd(detect_dates(str(to)))
+        
+        with open(file_path, 'a', newline='', encoding='utf-8', buffering=io.DEFAULT_BUFFER_SIZE) as csv_file:
+            csv_writer = csv.writer(csv_file)
+            
+            while True:
+                starting_row_number = (page_count * row_count_per_page) + 1
+                #query = """SET NOCOUNT ON; EXEC SP_GetGLBalance @from=?, @to=?, @acc=?, @acc_name=?, @curr=?, @prod=?, @cat=?, @party=?, @portofolio=?, @StartingRowNumber=?, @RowCountPerPage=?"""
+                query = """SET NOCOUNT ON; EXEC SP_GetGLBalance @from=?, @to=?, @acc=?, @curr=?, @prod=?, @cat=?, @party=?, @portofolio=?, @ins_addr=?, @StartingRowNumber=?, @RowCountPerPage=?"""
+                #param = (str(froms), str(to), str_gl_account, str_acc_name, str_curr, str_product, str_category, str_party, str_portofolio, starting_row_number, row_count_per_page)
+                param = (''.join(str_from), ''.join(str_to), str_gl_account, str_curr, str_product, str_category, str_party, str_portofolio, str_ins, starting_row_number, row_count_per_page)
+                cursor.execute(query, param)
+                column_names = [column[0] for column in cursor.description]
+                data = cursor.fetchall()
+                #if data:
+                #    print(data)
+                if not data and page_count==0:
+                    break
+                elif not data:
+                    print('No Data Found')
+                    break
+                else:
+                    column_names = [column[0] for column in cursor.description]
+                    row = [list(rows) for rows in data]
+                    #append_to_csv(file_path, row, column_names)
+                    append_to_csv(csv_writer, row, header_written,column_names)
+                    if not header_written:
+                        header_written = True
+                page_count += 1
+    except Exception as err:
+        print(traceback.format_exc())
+        print('Error inquiry data')
+    finally:
+        if cursor:
+            cursor.close()
+        if connection:
+            connection.close()
+    
+   
+    
+   
+    
+        
+
+...
+
+  GLBalanceInquiryUtil
+
+import acm
+import UserProfileUtils as up
+
+def StartApplication(eii):
+    component = 'Back Office'
+    shell = acm.UX.SessionManager().Shell()
+    isallow = up.is_component_in_user_profile(component, 'Operation')
+    if isallow == 1:
+        acm.RunModuleWithParameters("GLBalanceInquiry", acm.GetDefaultContext())
+    else:
+        acm.UX().Dialogs().MessageBoxInformation(shell,"User not have access")
+
+...
+
+  Nostro_Balance
+"""----------------------------------------------------------------------------------------------------
+MODULE:
+    Nostro Balance
+
+DESCRIPTION:
+    Module to save historical Nostro Balance every EOD
+
+-------------------------------------------------------------------------------------------------------"""
+import pyodbc
+import ParametersReader
+import acm
+import FRunScriptGUI
+import ael
+import FLogger
+import os
+import traceback
+import InterfaceUtils
+import base64
+from datetime import datetime
+
+def initialize_logging(params, logfile_name, app_name):
+    """
+    Initialize logger
+    :param params: parameters
+    :return: FLogger object
+    """
+    logger = None
+    logfile = None
+    try:
+        logFolder = params['log_folder']
+        logfolderString = logFolder.SelectedDirectory().AsString()
+        if logfolderString:
+            if logfile_name:
+                logfile = os.path.join(logfolderString, logfile_name)
+            
+                
+
+        logLevel = params['log_level']
+        log_to_console = params['log_to_console']
+        level = InterfaceUtils.LogLevelNameToNumber(logLevel)
+        logger = FLogger.FLogger(level=level,
+                                 name=app_name,
+                                 logToPrime=True,
+                                 logToFileAtSpecifiedPath=logfile,
+                                 logToConsole=log_to_console)
+    except Exception as err:
+        print('Error in initializing logger {}'.format(err))
+        print(traceback.format_exc())
+    return logger
+    
+folderPicker = FRunScriptGUI.DirectorySelection()
+
+ael_gui_parameters =    {'windowCaption' : 'Nostro Balance EOD'}
+logLevels = [FLogger.FLogger.INFO, FLogger.FLogger.ERROR, FLogger.FLogger.WARNING, FLogger.FLogger.DEBUG]
+
+ael_variables=  [
+                ['log_folder', 'Log Folder_Logging', folderPicker, None, folderPicker, 0, 1, 'Select where to store the log file', 0, None],
+                 ['log_level', 'Log Level_Logging', 'string', logLevels, FLogger.FLogger.DEBUG, 1, 0],
+                 ['log_to_console', 'Log to console_Logging', 'int', [1, 0], 1, 1, 0,'Whether logging should be done in the Log Console or not.']]
+
+DB = ParametersReader.get_params("DBParamNostroGL") 
+log_file_name = DB['logFileNameNostro'].format(acm.Time.DateToday().replace('-', ''))
+
+app_name = 'NostroBalanceEOD'
+
+    
+def ael_main(params):
+    try:
+        logger = initialize_logging(params, log_file_name, app_name)
+        logger.LOG('Execution started')
+        DbDriver=DB['DRIVER']
+        DbName=DB['DATABASE']
+        DbPassword=base64.b64decode(DB['PWD']).decode("utf-8")
+        DbServer=DB['SERVER']
+        DBUId = DB['UID']
+        todaydate = str(acm.Time.DateToday())
+        connection = pyodbc.connect("DRIVER={{{}}};SERVER={};DATABASE={};ENCRYPT=no;UID={};PWD={}".format(DbDriver, DbServer, DbName, DBUId, DbPassword ))
+        cursor = connection.cursor()
+        try:
+            stored_procedure = """SET NOCOUNT ON; EXEC SP_NostroBalance_Daily_History"""
+            cursor.execute(stored_procedure)
+            rows = cursor.fetchall()
+            connection.commit()
+            for row in reversed(rows):
+                str_row = ''.join(map(str, row))
+                if str_row  != 'None':
+                    logger.info(str_row)
+        finally:
+            cursor.close()
+            connection.close()
+    except Exception as err:
+        logger.ELOG(str(err))
+        print(traceback.format_exc())
+        print('Error . {}'.format(err))
+    logger.LOG('Execution ended')
+
+...
+
+  NostroBalanceInquiry
+"""----------------------------------------------------------------------------------------------------
+MODULE:
+    Nostro Balance Inquiry
+
+DESCRIPTION:
+    Module to inquiry Nostro Balance to CSV file
+
+-------------------------------------------------------------------------------------------------------"""
+import acm, ael
+from datetime import datetime
+import ParametersReader, InterfaceUtils
+import FRunScriptGUI
+import os
+import pyodbc
+import base64
+import traceback
+import csv
+import re
+
+ael_gui_parameters={'runButtonLabel':'&&Run',
+            'hideExtraControls': True,
+            'windowCaption':'Nostro Balance'}
+            
+folderPicker = FRunScriptGUI.DirectorySelection()
+DB = ParametersReader.get_params("DBParamNostroGL") 
+DbDriver=DB['DRIVER']
+DbName=DB['DATABASE']
+DbPassword=base64.b64decode(DB['PWD']).decode("utf-8")
+DbServer=DB['SERVER']
+DBUId = DB['UID']
+cursor = None
+connection = None
+csv_name = DB['FileNameNostro'].format(acm.Time.DateToday().replace('-', ''))
+
+def detect_dates(text):
+    date_formats = [
+        r'\d{1,2}/\d{1,2}/\d{2,4}',         # 12/31/2024 or 12/31/24
+        r'\d{1,2}-\d{1,2}-\d{2,4}',         # 12-31-2024 or 12-31-24
+        r'\d{4}-\d{1,2}-\d{1,2}',           # 2024-12-31
+        r'\d{1,2}\s(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s\d{2,4}', # 31 Dec 2024 or 31 Dec 24
+        r'(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s\d{1,2},\s\d{2,4}', # Dec 31, 2024
+        r'(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s\d{1,2}\s\d{2,4}',   # Dec 31 2024
+        r'\d{1,2}\s(?:January|February|March|April|May|June|July|August|September|October|November|December)\s\d{2,4}', # 31 December 2024
+        r'(?:January|February|March|April|May|June|July|August|September|October|November|December)\s\d{1,2},\s\d{2,4}', # December 31, 2024
+        r'(?:January|February|March|April|May|June|July|August|September|October|November|December)\s\d{1,2}\s\d{2,4}',   # December 31 2024
+        r'\d{1,2}-(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)-\d{2}',   # 12-May-24
+    ]
+
+    detected_dates = []
+    for date_format in date_formats:
+        dates = re.findall(date_format, text)
+        detected_dates.extend(dates)
+
+    return detected_dates
+
+def convert_to_yyyymmdd(dates):
+    converted_dates = []
+    for date_str in dates:
+        date_obj = None
+        if re.match(r'\d{1,2}/\d{1,2}/\d{2,4}', date_str):
+            try:
+                date_obj = datetime.strptime(date_str, "%m/%d/%Y")
+            except ValueError:
+                date_obj = datetime.strptime(date_str, "%d/%m/%Y")
+        elif re.match(r'\d{4}-\d{1,2}-\d{1,2}', date_str):
+            date_obj = datetime.strptime(date_str, "%Y-%m-%d")
+        elif re.match(r'\d{1,2}\s(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s\d{2,4}', date_str):
+            date_obj = datetime.strptime(date_str, "%d %b %Y")
+        elif re.match(r'(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s\d{1,2},\s\d{2,4}', date_str):
+            date_obj = datetime.strptime(date_str, "%b %d, %Y")
+        elif re.match(r'(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s\d{1,2}\s\d{2,4}', date_str):
+            date_obj = datetime.strptime(date_str, "%b %d %Y")
+        elif re.match(r'\d{1,2}\s(?:January|February|March|April|May|June|July|August|September|October|November|December)\s\d{2,4}', date_str):
+            date_obj = datetime.strptime(date_str, "%d %B %Y")
+        elif re.match(r'(?:January|February|March|April|May|June|July|August|September|October|November|December)\s\d{1,2},\s\d{2,4}', date_str):
+            date_obj = datetime.strptime(date_str, "%B %d, %Y")
+        elif re.match(r'(?:January|February|March|April|May|June|July|August|September|October|November|December)\s\d{1,2}\s\d{2,4}', date_str):
+            date_obj = datetime.strptime(date_str, "%B %d %Y")
+        elif re.match(r'\d{1,2}-(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)-\d{2}', date_str):
+            date_obj = datetime.strptime(date_str, "%d-%b-%y")
+        
+        if date_obj:
+            converted_dates.append(date_obj.strftime("%Y-%m-%d"))
+    return converted_dates
+
+
+def GetSelectedItem(index, fieldValues):
+    connection = pyodbc.connect("DRIVER={{{}}};SERVER={};DATABASE={};ENCRYPT=no;UID={};PWD={}".format(DbDriver, DbServer, DbName, DBUId, DbPassword ))
+    cursor = connection.cursor()
+    queryitem = """SET NOCOUNT ON; EXEC SP_GetNotroSelectItem"""
+    cursor.execute(queryitem)
+    data = cursor.fetchall()
+    cursor.nextset()
+    data2 = cursor.fetchall()
+    cursor.nextset()
+    data3 = cursor.fetchall()
+    cursor.nextset()
+    data4 = cursor.fetchall()
+    cursor.nextset()
+    data5 = cursor.fetchall()
+    cursor.nextset()
+    data6 = cursor.fetchall()
+    ael_variables[3][FRunScriptGUI.Controls.VALUES] = [item[0] for item in data]
+    ael_variables[4][FRunScriptGUI.Controls.VALUES] = [item[0] for item in data2]
+    ael_variables[5][FRunScriptGUI.Controls.VALUES] = [item[0] for item in data3]
+    ael_variables[6][FRunScriptGUI.Controls.VALUES] = [item[0] for item in data4]
+    ael_variables[7][FRunScriptGUI.Controls.VALUES] = [item[0] for item in data5]
+    ael_variables[8][FRunScriptGUI.Controls.VALUES] = [item[0] for item in data6]
+    return fieldValues
+
+def get_substrings_before_pipe(array):
+    result = []
+    for item in array:
+        if '|' in item:
+            substring = item.split('|')[0]
+        else:
+            substring = item
+        result.append(substring)
+    return tuple(result)
+
+
+
+ael_variables=[
+    ['folder_save', 'Folder Path Save', folderPicker, None, folderPicker, 1, 1, 'The file path from where the files will be picked.', GetSelectedItem, 1],
+    ['froms','Posting Date From','date', None, acm.Time.DateNow(), 1,0,'The date of data from', None, 1],
+    ['to','Posting Date To', 'date', None, acm.Time.DateNow(), 1,0,'The date of data to', None, 1],
+    ['nostro', 'Nostro Name', 'string', [], '', 0,1,'Number of GL Account', None, 1],
+    ['curr', 'Currency', 'string', [], '', 0,1,'The curr of GL Account', None, 1],
+    ['portofolio','Portofolio', 'string', [], '', 0,1,'The portofolio of GL Balance', None, 1],
+    ['acc', 'Account', 'string', [], '', 0,1,'Number of GL Account', None, 1],
+    ['bic','BIC', 'string', [], '', 0,1,'The party of GL Balance', None, 1],
+    ['cus_id','Party Full Name', 'string', [], '', 0,1,'The party of GL Balance', None, 1]]
+
+DEFAULT_REC_FETCH_PAGE_SIZE = 50
+
+file_path = None
+
+def is_csv_empty_by_row(file_path):
+    try:
+        with open(file_path, 'r', newline='', encoding='utf-8') as csv_file:
+            csv_reader = csv.reader(csv_file)
+            row_count = sum(1 for row in csv_reader)
+            if row_count > 1:
+                return False
+            else:
+                return True
+    except:
+        with open(file_path, 'w', newline='', encoding='utf-8') as csv_file:
+            csv_writer = csv.writer(csv_file)
+            return True
+    
+    
+def append_to_csv(file_path, data, header):
+    if is_csv_empty_by_row(file_path):
+        with open(file_path, 'a', newline='', encoding='utf-8') as csv_file:
+            #csv_writer = csv.writer(header)
+            csv_writer = csv.writer(csv_file)
+            csv_writer.writerow(header)
+            csv_writer.writerows(data)
+    else:
+        with open(file_path, 'a', newline='', encoding='utf-8') as csv_file:
+            csv_writer = csv.writer(csv_file)
+            csv_writer.writerows(data)
+
+def ael_main(var):
+    folder = var['folder_save'].SelectedDirectory().AsString()
+    file_path = os.path.join(str(folder), str(csv_name))
+    froms = var['froms']
+    to = var['to']
+    nostro = var['nostro']
+    curr = var['curr']
+    portofolio = var['portofolio']
+    acc = var['acc']
+    bic = var['bic']
+    cus_id = var['cus_id']
+    DEFAULT_REC_FETCH_PAGE_SIZE = 50
+    str_nostro = None
+    str_curr = None
+    str_portofolio = None
+    str_acc = None
+    str_bic = None
+    str_cus_id = None
+    str_from = None
+    str_to = None
+    
+    id_portofolio = get_substrings_before_pipe(portofolio)
+    id_cus_id = get_substrings_before_pipe(cus_id)
+    
+    if len(nostro) > 1:
+        str_nostro = "IN " + str(nostro)
+    elif len(nostro) == 1:
+        str_nostro = "='{}'".format(str(nostro[0]))
+        
+    if len(curr) > 1:
+        str_curr = "IN " + str(curr)
+    elif len(curr) == 1:
+        str_curr = "='{}'".format(str(curr[0]))
+    
+    if len(portofolio) > 1:
+        str_portofolio = "IN " + str(id_portofolio)
+    elif len(portofolio) == 1:
+        str_portofolio = "='{}'".format(str(id_portofolio[0]))
+            
+    if len(acc) > 1:
+        str_acc = "IN " + str(acc)
+    elif len(acc) == 1:
+        str_acc = "='{}'".format(str(acc[0]))
+        
+    if len(bic) > 1:
+        str_bic = "IN " + str(bic)
+    elif len(bic) == 1:
+        str_bic = "='{}'".format(str(bic[0]))
+        
+    if len(cus_id) > 1:
+        str_cus_id = "IN " + str(id_cus_id)
+    elif len(cus_id) == 1:
+        str_cus_id = "='{}'".format(str(id_cus_id[0]))
+
+    try:
+        if os.path.exists(file_path):
+            os.remove(file_path)
+        row_count_per_page = int(DB.get('REC_FETCH_PAGE_SIZE', DEFAULT_REC_FETCH_PAGE_SIZE))
+        connection = pyodbc.connect("DRIVER={{{}}};SERVER={};DATABASE={};ENCRYPT=no;UID={};PWD={}".format(DbDriver, DbServer, DbName, DBUId, DbPassword ))
+        cursor = connection.cursor()
+        page_count = 0
+        
+        str_from = convert_to_yyyymmdd(detect_dates(str(froms)))
+        str_to = convert_to_yyyymmdd(detect_dates(str(to)))
+        
+        while True:
+            starting_row_number = (page_count * row_count_per_page) + 1
+            query = """SET NOCOUNT ON; EXEC SP_GetNostroBalance @from=?, @to=?, @nostro=?, @curr=?, @portofolio=?, @acc=?, @bic=?, @cust_id=?, @StartingRowNumber=?, @RowCountPerPage=?"""
+            param = (''.join(str_from), ''.join(str_to), str_nostro, str_curr, str_portofolio, str_acc, str_bic, str_cus_id, starting_row_number, row_count_per_page)
+            cursor.execute(query, param)
+            column_names = [column[0] for column in cursor.description]
+            data = cursor.fetchall()
+            #if data:
+            #    print(data)
+            if not data and page_count==0:
+                print('No Data Found')
+                break
+            elif not data and page_count>0 :
+                break
+            else:
+                column_names = [column[0] for column in cursor.description]
+                row = [list(rows) for rows in data]
+                append_to_csv(file_path, row, column_names)
+            page_count += 1
+    except Exception as err:
+        print(traceback.format_exc())
+        print('Error inquiry data')
+    finally:
+        if cursor:
+            cursor.close()
+        if connection:
+            connection.close()
+
+
+...
+
+  NostroBalanceInquiryUtil
+
+import acm
+import UserProfileUtils as up
+
+def StartApplication(eii):
+    component = 'Back Office'
+    shell = acm.UX.SessionManager().Shell()
+    isallow = up.is_component_in_user_profile(component, 'Operation')
+    if isallow == 1:
+        acm.RunModuleWithParameters("NostroBalanceInquiry", acm.GetDefaultContext())
+    else:
+        acm.UX().Dialogs().MessageBoxInformation(shell,"User not have access")
+
+...
+
+}
+

@@ -1,0 +1,9 @@
+CONFIGURATIONPARAMETER,,,,,/CONFIGURATIONPARAMETER
+VALUE,CATEGORY,SPECIFICATION,USER.USERID,ORGANISATION.ORGID,
+CE,calculations,defaultCalculationEnvironment,APS,,
+CE,calculations,defaultCalculationEnvironment,ARENASYS,,
+CE,calculations,defaultCalculationEnvironment,,MANDIRI,
+Local Workers,distribution,paceConfiguration,APS,,
+APS_DC,distribution,paceConfiguration,ARENASYS,,
+APS_DC,distribution,paceConfiguration,,MANDIRI,
+No,distribution,useDistributionAsDefault,APS,,

@@ -1,0 +1,9 @@
+Windows Registry Editor Version 5.00
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Front\Front Arena\ATS\FA_INSTANCE_NAME]
+"task"="PsRvm_PreLoadDistributedWorkbooks"
+"username"="ATS_PRELOAD_DIST"
+"password"="intas"
+"unicode"="1"
+
+

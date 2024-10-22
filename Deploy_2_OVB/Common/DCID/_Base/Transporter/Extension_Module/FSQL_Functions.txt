@@ -1,0 +1,383 @@
+#
+# Front Arena exported extension module.
+# source          ""
+# timestamp (utc) "2021-11-24 07:12:16.3"
+# ***** DO NOT EDIT! *****
+#
+name        "FSQL_Functions"
+description "(c) Copyright 2016- by FIS. All rights reserved."
+
+groups {
+}
+
+decls[FPythonCode] {
+}
+
+clx FObject [FPythonCode] {
+  FSQL_functions
+"""------------------------------------------------------------------------------------------------------------
+MODULE
+
+    FSQL_functions - This is a drop in python module to activate standard SQL string and list routines to ASQL.
+
+    Additional customer functions can be added in FSQL_functions_custom
+
+    (c) Copyright 2010-2015 by Sungard FRONT ARENA. All rights reserved.
+    (c) Copyright 2016-     by FIS. All rights reserved.
+
+---------------------------------------------------------------------------------------------------------------
+
+    Revision history
+    
+    Date        Who     Purpose
+    20080226    RL      Initial implementation
+    20110706    JML     Note on Return Type Identifier added
+
+    VERSION: 1.0.4
+
+    To test, run this as a ASQL script:
+
+    select u.name, 
+           u.grpnbr,u.usrnbr,
+           least#i(u.grpnbr,u.usrnbr,length(u.name)) 'least',
+           greatest#i(u.grpnbr,u.usrnbr,length(u.name)) 'greatest',
+           length#i(u.name) 'length',
+           concat#s(u.name,' This ','is ','concatenated') 'concat',
+           initcap#s(u.name) 'initcap',
+           instr#i(u.name,'f') 'instr("f")',
+           lower#s(u.name) 'lower',
+           lpad#s(u.name,20) 'lpad(20)',
+           rpad#s(u.name,20) 'rpad(20)',
+           rtrim#s(u.name) 'rtrim',
+           replace#s(u.name,'ab','cd') 'replace',
+           substr#s(u.name,2,2) 'substr(2,2)',
+           upper#s(u.name) 'upper',
+           coalesce#s(u.email,'noemail') 'coalesce(noemail)',
+           split#s(u.name,' ',0) 'split(u.name," ",0)'
+     from user u
+     order by 1
+	 
+    Note: When function is called as part of a ASQL union statement
+    the return type specifier be appended. For
+    example lower#s(u.name). Other return types are:
+    Identifier	|	Data Type
+    ---------------------------------------
+        #c      |    character
+        #d      |    date
+        #i      |    integer
+        #f      |    double
+        #s      |    string (max length = 256 char)
+        #t      |    time
+
+"""
+from FSQL_functions_tools import LogException, ASQLfunction
+
+@LogException(__name__)
+@ASQLfunction
+def concat(*args):
+    """ CONCATenate many strings to one: concat('string','string2',...)-> 'stringstring2...' """
+    return ''.join([str(p) for p in args if p != None])
+
+#print concat([['This ','is ','a ','test']]) 
+
+@LogException(__name__)
+@ASQLfunction
+def initcap(strg):
+    """ INITial CAPital. Capitalizes the first letter of a word or series of words: initcap('string') -> 'String' """
+    return ' '.join([str(word).capitalize() for word in strg.split(' ')])
+
+#print initcap([['this is a test']])
+@LogException(__name__)
+@ASQLfunction
+def instr(strg, search, start=0, occur=1):
+    """ Finds the location of a character IN a STRing: instr('string','ing',[start,[occurence]]) -> 3 """
+    for i in range(occur):
+        start += 1
+        start = strg.find(search,start)
+    return start
+
+#print instr([['this is a test','is',1,2]])
+@LogException(__name__,0)
+@ASQLfunction
+def length(strg):
+    """ Tells the LENGTH of a string: length('string') -> 6 """
+    return len(str(strg))
+
+#print length([['this is a test']])
+    
+@LogException(__name__)
+@ASQLfunction
+def lower(strg):
+    """ Converts every letter in a string to LOWERcase: lower('STRING') -> 'string' """
+    return str(strg).lower()
+    
+#print lower([['This is a TEST']])
+@LogException(__name__)
+@ASQLfunction
+def lpad(strg,length,set=' '):
+    """ Left PAD. Makes a string a certain length by adding a certain set of characters to the left. lpad(string,length[,set])"""
+    return str(strg).rjust(int(length),set)
+    
+#print lpad([['This is a TEST',20]])
+@LogException(__name__)
+@ASQLfunction
+def rpad(strg,length,set=' '):
+    """ Right PAD. Makes a string a certain length by adding a certain set of characters to the right. rpad(string,length[,set]) """
+    return str(strg).ljust(int(length),set)
+    
+#print rpad([['This is a TEST',20]])
+@LogException(__name__)
+@ASQLfunction
+def ltrim(strg,char=None):
+    """ Left TRIM. Trims all the occurrences of any one of a set of characters from the left. ltrim(string[, char]) """
+    return str(strg).lstrip(char)
+    
+#print ltrim([['########This is a TEST','#']])
+@LogException(__name__)
+@ASQLfunction
+def rtrim(strg,char=None):
+    """ Right TRIM. Trims all the occurrences of any one of a set of characters from the right. rtrim(string[, char])"""
+
+    return str(strg).rstrip(char)
+    
+#print trim([['This is a TEST#######','#']])
+@LogException(__name__)
+@ASQLfunction
+def trim(strg,char=None):
+    """ TRIM. Trims all the occurrences of any one of a set of characters from left & right. trim(string[, char]) """
+    return str(strg).strip(char)    
+
+#print trim([['This is a TEST#######','#']])
+@LogException(__name__)
+@ASQLfunction
+def replace(strg,orig,repl,count=0):
+    """ REPLACE. search and replace replace('string string',' ','',[count]) -> stringstring """
+    if count:
+        return str(strg).replace(orig,repl,count)
+    else:
+        return str(strg).replace(orig,repl)
+    
+#print replace([['This is a TEST','a TEST','two TESTS']])
+@LogException(__name__)
+@ASQLfunction
+def substr(strg,start=0, length=None):
+    """ SUBSTRing. Clips out a piece of a string. substr('string',[start,[length]]) """
+    if length:
+        return str(strg)[start:start+length]
+    else:
+        return str(strg)[start:]
+
+#print substr([['This is a TEST',8,2]])
+@LogException(__name__)
+@ASQLfunction
+def translate(strg,charinlist,chartolist):
+    """ Replaces ocurrences of characters in the string. translate('string','ig','uk') -> 'strunk'"""
+    strg = str(strg)
+    for i in xrange(len(charinlist)):
+        strg = strg.replace(charinlist[i],chartolist[i])
+
+    return strg
+
+#print translate([['This is a TEST','abcdefghijkl','000000000000']])
+
+@LogException(__name__)
+@ASQLfunction
+def upper(strg):
+    """ Converts every letter in a string to UPPERcase. upper('string') """
+    return str(strg).upper()
+    
+#print upper([['This is a TEST']])
+    
+""" ASQL list functions """
+@LogException(__name__,0)
+@ASQLfunction
+def greatest(*lst):
+    """ GREATEST value of a list. greatest(value,value,value ...) """
+    lst = [a for a in list(lst) if a != None]
+    lst.sort()
+    return lst[-1]
+#print greatest([[6,3,87,45,4,1]])
+
+@LogException (__name__,0)   
+@ASQLfunction
+def least(*lst):
+    """ LEAST value of a list. least(value,value,value ...) """
+    lst = [a for a in list(lst) if a]
+    lst.sort()
+    return lst[0]
+#print least([[6,3,87,45,4,2]])
+
+""" ASQL general functions """
+@LogException(__name__)
+@ASQLfunction
+def coalesce(value,substitute):
+    """ None VALUE test on value. coalesce(value, substitute) """
+    if str(value) in ('','None'):
+        return substitute
+    else:
+        return value
+
+@LogException(__name__)
+def group_concat(params):
+    """ Concat values in a "group by". group_concat(u.name,', ')
+to test:
+    select g.grpid, group_concat(u.name,', ') 'names'
+     from user u, front.group g
+     where u.grpnbr = g.grpnbr
+     group by g.grpid
+    """
+    strings = [str[0] for str in params]
+    return params[0][1].join(strings)
+#print group_concat([['User1',','],['User2',',']])
+
+@LogException(__name__)
+@ASQLfunction
+def split(strg,separator,select):
+    """split a string in parts, and return selected. split(string,separator,select)"""
+    """split('this is a string',' ',3) --> 'string' ,split('RDF DE12345=RBNDS','=',1) --> 'RBNDS' """    
+    return strg.split(separator)[select]
+	
+# Load Custom functions, ignore if not exists
+try:
+    from FSQL_functions_custom import *
+except ImportError as msg:
+    pass
+
+
+
+
+
+...
+
+  FSQL_functions_custom_template
+"""------------------------------------------------------------------------------------------------------------
+MODULE 
+       FSQL_functions_custom_template - This is a drop in python module to activate custom ASQL routines.
+	   
+       To activate: rename to FSQL_functions_custom
+
+    (c) Copyright 2010-2015 by Sungard FRONT ARENA. All rights reserved.
+    (c) Copyright 2016-     by FIS. All rights reserved.
+
+---------------------------------------------------------------------------------------------------------------
+
+    VERSION: %R%
+
+    If used in conjunction with FSQL_functions which loads this module correctly,
+    there is no need for module name in the query:
+    
+    select u.name, 
+           myfunction(u.name,' This ','is ','concatenated') 'custom'
+     from user u
+
+    instead of:
+
+    select u.name, 
+           FSQL_functions_custom.myfunction(u.name,' This ','is ','concatenated') 'custom'
+     from user u
+	 
+    In FSQL_functions_custom customers can define own functions to be used from ASQL.
+    An example function which can use dynamic parameters:
+	 
+    @LogException(__name__)
+    @ASQLfunction
+    def rtrim(strg,char=None):
+        ''' Right TRIM. Trims all the occurrences of any one of a set of characters from the right. rtrim(string[, char])'''
+        return str(strg).rstrip(char)
+
+"""
+from FSQL_functions_tools import LogException, ASQLfunction
+
+@LogException(__name__)
+@ASQLfunction
+def myfunction(a,b,c,d):
+    ''' Add your function here. this string is used as helptext on error'''
+    return str(a) + str(b) + str(c) + str(d)
+
+pass
+
+
+
+
+
+
+...
+
+  FSQL_functions_tools
+"""------------------------------------------------------------------------------------------------------------
+MODULE
+
+    FSQL_functions_tools
+
+    (c) Copyright 2010-2015 by Sungard FRONT ARENA. All rights reserved.
+    (c) Copyright 2016-     by FIS. All rights reserved.
+    
+---------------------------------------------------------------------------------------------------------------
+
+    Revision history
+    
+    Date        Who     Purpose
+    20101129    RL      Initial implementation
+    20120119    RL      Add deprecated decorator
+
+    VERSION: %R%
+
+"""
+import acm
+
+""" LogException decorator logs any exception occuring in the decorated function and logs it to acm.Log including documentation """
+def LogException(module, returnOnError=''):
+    def LogException_inner(fn):
+        def newfn(*args, **kwargs):
+            try:
+                return fn(*args,**kwargs)
+            except Exception as exc:
+                acm.Log("FSQL_functions: Error calling function %s.%s. (%s: %s)"%(module, fn.__name__, exc.__class__.__name__, exc))
+                if getattr(fn, "__doc__", None):
+                    acm.Log("FSQL_functions: %s usage: %s"%(fn.__name__, fn.__doc__.strip()))
+                return returnOnError
+
+        return newfn
+    return LogException_inner
+
+""" ASQLfunction decorator transforms a normal function into a "ASQL" function """
+def ASQLfunction(fn):
+    def ASQLfunction_inner(lst, *args, **kwargs):
+        if lst and type(lst) == type([]) and type(lst[0]) == type([]):
+            args = lst[0]
+            return fn(*args)
+        else:
+            return fn(lst, *args, **kwargs)
+    ASQLfunction_inner.__doc__ = fn.__doc__
+    ASQLfunction_inner.__name__ = fn.__name__
+    return ASQLfunction_inner
+
+class Deprecated(object):
+    """This is a decorator which can be used to mark functions
+    as deprecated. It will result in a warning being emitted
+    when the function is used.
+
+    It accepts a single paramter ``msg`` which is shown with the warning.
+    It should contain information which function or method to use instead.
+    """
+    def __init__(self, msg):
+        self.msg = msg
+
+    def __call__(self, func):
+        def newFunc(*args, **kwargs):
+            import warnings
+            warnings.warn("method %r is deprecated. %s" %
+                            (func.__name__, self.msg),
+                            category=DeprecationWarning,
+                            stacklevel=2)
+            return func(*args, **kwargs)
+        newFunc.__name__ = func.__name__
+        newFunc.__doc__ = func.__doc__
+        newFunc.__dict__.update(func.__dict__)
+        return newFunc
+
+
+...
+
+}
+

@@ -1,0 +1,8 @@
+Windows Registry Editor Version 5.00
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Front\Front Arena\ATS\FA_INSTANCE_NAME]
+"include_task"="{LimasSendAPI}"
+"username"="ATS_LIMAS"
+"password"="intas"
+"Unicode"="1"
+

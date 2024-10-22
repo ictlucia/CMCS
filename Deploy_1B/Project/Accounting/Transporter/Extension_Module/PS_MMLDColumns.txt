@@ -1,0 +1,263 @@
+#
+# Front Arena exported extension module.
+# source          ""
+# timestamp (utc) "2024-04-11 08:10:04.4"
+# ***** DO NOT EDIT! *****
+#
+name        "PS_MMLDColumns"
+description ""
+
+groups {
+}
+
+decls[FColumnDefinition] {
+  "Accounting MMLD Daily Accrual" ( "default accounting columns.tradeandcombinations" "sheet columns.portfoliosheet" "sheet columns.tradesheet" ) "";
+  "Accounting MMLD Daily Accrual IDR" ( "default accounting columns.tradeandcombinations" "sheet columns.portfoliosheet" ) "";
+  "Accounting MMLD Full Premium" ( "default accounting columns.tradeandcombinations" "sheet columns.dealpackagesheet" "sheet columns.dealsheet" "sheet columns.portfoliosheet" "sheet columns.tradesheet" ) "";
+  "Accounting MMLD Full Premium IDR" ( "default accounting columns.tradeandcombinations" "sheet columns.portfoliosheet" "sheet columns.tradesheet" ) "";
+  "Standard Calculations Profit And Loss End Date" ( "sheet columns.tradesheet" ) "";
+}
+
+clx FTradingSheet [FColumnDefinition] {
+  Accounting MMLD Daily Accrual =
+  Description=MMLD Daily Accrual
+  ExtensionAttribute=PsAccMmldDailyAccrual
+  GroupLabel=Accounting
+  labellist=Accounting  MMLD Daily Accrual
+  Name=Accounting MMLD Daily Accrual
+  Parameters=PortfolioProfitLossEndDate;PortfolioProfitLossEndDateCustom
+
+
+  Accounting MMLD Daily Accrual IDR =
+  Description=MMLD Daily Accrual IDR
+  ExtensionAttribute=PsAccMmldDailyAccrualIDR
+  GroupLabel=Accounting
+  labellist=Accounting  MMLD Daily Accrual IDR
+  Name=Accounting MMLD Daily Accrual IDR
+  Parameters=PortfolioProfitLossEndDate;PortfolioProfitLossEndDateCustom
+
+
+  Accounting MMLD Full Premium =
+  Description=MMLD Full Premium. Premium % * Notional * (Days Interest/Day Basis)
+  ExtensionAttribute=PsAccMmldFullPremium
+  GroupLabel=Accounting
+  labellist=Accounting MMLD Full Premium;MMLD Full Premium
+  Name=Accounting MMLD Full Premium
+
+
+  Accounting MMLD Full Premium IDR =
+  Description=MMLD Full Premium. Premium % * Notional * (Days Interest/Day Basis) in IDR
+  ExtensionAttribute=PsAccMmldFullPremiumIDR
+  GroupLabel=Accounting
+  labellist=Accounting MMLD Full Premium;MMLD Full Premium IDR
+  Name=Accounting MMLD Full Premium IDR
+
+
+}
+
+decls[FExtensionAttribute] {
+}
+
+clx FInstrument [FExtensionAttribute] {
+  PsAccMmldDailyAccrual = select(isMMLD, 
+  true->denominatedvalue(py("PsRvm_AccountingMmldColumn", context).calculateMmldDailyAccrual(object, profitAndLossEndDate, customPLEndDate), instrument.Currency, , ), 
+  false->nil);
+  PsAccMmldDailyAccrualIDR = convertToCurrency(denominatedvalue(round(PsAccMmldDailyAccrual.Number, 2), displayCurrency, , ), profitAndLossMtMFXRatesToAccountingCurr, accountingCurrency, filterUnit);
+  PsAccMmldFullPremium = select(isMMLD, 
+  true->denominatedvalue(py("PsRvm_CemEad_Custom", context).calculateMmldMaxTotalReturnFullPremium(object), instrument.Currency, , ).At(1), 
+  false->nil);
+  PsAccMmldFullPremiumIDR = convertToCurrency(denominatedvalue(round(PsAccMmldFullPremium.Number, 2), displayCurrency, , ), profitAndLossMtMFXRatesToAccountingCurr, accountingCurrency, filterUnit);
+}
+
+clx FInstrumentAndTrades [FExtensionAttribute] {
+  PsAccMmldDailyAccrual = nil;
+  PsAccMmldDailyAccrualIDR = nil;
+  PsAccMmldFullPremium = nil;
+  PsAccMmldFullPremiumIDR = nil;
+}
+
+clx FSingleInstrumentAndTrades [FExtensionAttribute] {
+  PsAccMmldDailyAccrual = instrument:PsAccMmldDailyAccrual;
+  PsAccMmldDailyAccrualIDR = convertToCurrency(denominatedvalue(round(PsAccMmldDailyAccrual.Number, 2), displayCurrency, , ), profitAndLossMtMFXRatesToAccountingCurr, accountingCurrency, filterUnit);
+  PsAccMmldFullPremium = instrument:PsAccMmldFullPremium;
+  PsAccMmldFullPremiumIDR = convertToCurrency(denominatedvalue(round(PsAccMmldFullPremium.Number, 2), displayCurrency, , ), profitAndLossMtMFXRatesToAccountingCurr, accountingCurrency, filterUnit);
+}
+
+clx FTradeRow [FExtensionAttribute] {
+  PsAccMmldDailyAccrual = select(instrument:isMMLD, 
+  true->denominatedvalue(py("PsRvm_AccountingMmldColumn", context).calculateMmldDailyAccrual(instrument, profitAndLossEndDate, customPLEndDate, object.Trade), instrument.Currency, , ), 
+  false->nil);
+  PsAccMmldDailyAccrualIDR = convertToCurrency(denominatedvalue(round(PsAccMmldDailyAccrual.Number, 2), displayCurrency, , ), profitAndLossMtMFXRatesToAccountingCurr, accountingCurrency, filterUnit);
+  PsAccMmldFullPremium = select(instrument:isMMLD, 
+  true->denominatedvalue(py("PsRvm_CemEad_Custom", context).calculateMmldMaxTotalReturnFullPremium(instrument, object.Trade), instrument.Currency, , ).At(1), 
+  false->nil);
+  PsAccMmldFullPremiumIDR = convertToCurrency(denominatedvalue(round(PsAccMmldFullPremium.Number, 2), displayCurrency, , ), profitAndLossMtMFXRatesToAccountingCurr, accountingCurrency, filterUnit);
+}
+
+decls[FPythonCode] {
+}
+
+clx FObject [FPythonCode] {
+  PsRvm_AccountingMmldColumn
+"""
+Notes:
+
+    
+Footprint:
+    [2023 08 17] richard.milford@fisglobal.com
+"""
+
+import acm
+
+import PsRvm_MmldAccountingUtils
+reload(PsRvm_MmldAccountingUtils)
+
+from FLogger import FLogger
+logger = FLogger(level=3)
+log_levl_dict = {'INFO' : 1, 'DEBUG' : 2, 'WARN' : 3, 'ERROR' : 4}
+
+def getCurrentPayPeriodDaysInfo(_instrument, _reportDate):
+    #[periodStartDate,periodEndDate,currentPeriodNoOfTranspiredDays,currentPeriodNoOfCalendarDays,currentPeriodPayDate]
+    [periodStartDate,periodEndDate,currentPeriodNoTranspiredDays,currentPeriodNoCalDays] = [None, None, 0, 0]
+
+    exerciseEvents = _instrument.ExerciseEvents()
+    endDates = sorted(set([x.EndDate() for x in exerciseEvents]))
+
+    payPeriodsDatesSets = PsRvm_MmldAccountingUtils.buildMmldPeriodCalDates(_instrument) #payPeriodsDatesSets = [[periodStart,periodEnd,periodLenInDays]]
+    logger.DLOG("instrument payPeriodsDatesSets %s" %[(_instrument.Name(),payPeriodsDatesSets)])
+    #print("instrument payPeriodsDatesSets %s" %(_instrument.Name(),payPeriodsDatesSets))
+    for payPeriodDatesSet in payPeriodsDatesSets:
+        logger.DLOG("instrument payPeriodDatesSet %s" %[(_instrument.Name(),payPeriodDatesSet)])
+        [periodStart,periodEnd,periodLenInDays] = payPeriodDatesSet
+        logger.DLOG("acm.Time.DateDifference(periodStart,_reportDate) %s" %(acm.Time.DateDifference(periodStart,_reportDate)))
+        logger.DLOG("acm.Time.DateDifference(_reportDate,periodEnd) %s" %(acm.Time.DateDifference(_reportDate,periodEnd)))
+        if (acm.Time.DateDifference(_reportDate,periodStart) >= 0) and (acm.Time.DateDifference(_reportDate,periodEnd) <= 0):
+            #we have found the current period
+            [periodStartDate,periodEndDate,currentPeriodNoCalDays] = payPeriodDatesSet
+            currentPeriodNoOfTranspiredDays = acm.Time().DateDifference(_reportDate, periodStartDate)
+            break #break the foor loop, as we have found the current period  - hoorah
+            
+    return [periodStartDate,periodEndDate,currentPeriodNoTranspiredDays,currentPeriodNoCalDays]
+
+
+def getCurrentPayPeriodMaxYield(_instrument, _reportDate, _currentPeriodNoCalendarDays):
+
+    maxYield = _instrument.AdditionalInfo().Sp_MLDMaxYield()
+    insNotional = _instrument.AdditionalInfo().Sp_LeverageNotional()
+    basis = _instrument.AdditionalInfo().Sp_MLDDayBasis()
+    
+    currentPayPeriodMaxYield = insNotional * (maxYield/float(100)) * _currentPeriodNoCalendarDays / basis
+    
+    return currentPayPeriodMaxYield
+
+def getNumObservationDaysWithinCurrentPeriod(_instrument,_reportDate,_currentPeriodStartDate,_currentPeriodEndDate):
+    observationDays = _instrument.GetExoticEventsOfKind('Price Fixing')
+    #note that event.Date() is the fixing date of the event; while event.PayDate() is the pay date of the event
+        
+    obsDaysInCurrentPayPeriod = [event for event in observationDays if (acm.Time.DateDifference(event.Date(), _currentPeriodStartDate) >= 0) and (acm.Time.DateDifference(event.Date(), _currentPeriodEndDate) <= 0)]
+    
+    logger.DLOG("d2.1 instrument %s obsDaysInCurrentPayPeriod %s" %(_instrument.Name(),len(obsDaysInCurrentPayPeriod)))
+    
+    return len(obsDaysInCurrentPayPeriod)
+    
+def getWithinRangeDaysWithinCurrentPeriod(_instrument,_reportDate,_currentPayPeriodStartDate):
+    observationDays = _instrument.GetExoticEventsOfKind('Price Fixing')
+    #note that event.Date() is the fixing date of the event; while event.PayDate() is the pay date of the event
+    obsDaysInCurrentPayPeriodUpUntilTodayIncludeToday = [event for event in observationDays if (acm.Time.DateDifference(event.Date(), _reportDate) <= 0) and (acm.Time.DateDifference(event.Date(), _currentPayPeriodStartDate) >= 0)]
+    
+    rangeFloorCeiling = [float(_instrument.AdditionalInfo().Sp_MLDFloor()),float(_instrument.AdditionalInfo().Sp_MLDCeiling())]
+    daysWithinRange = 0
+    for obsDay in obsDaysInCurrentPayPeriodUpUntilTodayIncludeToday:
+        rateOnDate = float(obsDay.EventValue())
+        logger.DLOG("instrument %s event date %s has event value %s" %(_instrument.Name(),obsDay.Date(),rateOnDate))
+        if rangeFloorCeiling[0] <= rateOnDate and rateOnDate <= rangeFloorCeiling[1]:
+            daysWithinRange = daysWithinRange +1
+    
+    return daysWithinRange
+    
+
+def calculateMmldDailyAccrual(instrument,_profitAndLossEndDate,_customPLEndDate,tradeObj=None):
+
+    """
+    _customPLEndDate returns function value based on the parameterised date set on the column.
+    This is used by the process to generate Journals, and hence given that this column is to be used for accounting
+    this function needs to use the same variable for determining calculation date
+    From 2nd line:
+        When the column is called from the accounting process a column configuration is created to set column parameters. 
+        The column parameters set with regards to the end date are PortfolioProfitLossEndDate which is set to "Custom Date" and 
+        PortfolioProfitLossEndDateCustom which is set to the event date. 
+        This is the same as if you right click on a column in the Trading Manager and select "Apply Parameters".
+        Column definition for âAccounting MMLD Daily Accrualâ hence includes these two parameters.
+        I.e. include the following in your column definition: Parameters=PortfolioProfitLossEndDate;PortfolioProfitLossEndDateCustom
+    """
+
+    logger.DLOG("d0 instrument %s _customPLEndDate is %s of type %s" %(instrument.Name(),_customPLEndDate,type(_customPLEndDate)))
+
+    if instrument.IsKindOf(acm.FOption):
+        reportDate = _customPLEndDate
+        logger.DLOG("d0.1 instrument %s _profitAndLossReportDate is %s of type %s" %(instrument.Name(),_profitAndLossEndDate,type(_profitAndLossEndDate)))
+        [currentPeriodStartDate,currentPeriodEndDate,currentPeriodNoOfTranspiredDays,currentPeriodNoOfCalendarDays] = getCurrentPayPeriodDaysInfo(instrument, reportDate)
+        logger.DLOG("d0.2 instrument %s getCurrentPayPeriodDaysInfo results in %s" %(instrument.Name(),[currentPeriodStartDate,currentPeriodEndDate,currentPeriodNoOfTranspiredDays,currentPeriodNoOfCalendarDays]))
+        
+        currentPayPeriodMaxYield = getCurrentPayPeriodMaxYield(instrument, reportDate, currentPeriodNoOfCalendarDays)
+        logger.DLOG("dd0.3 instrument %s max yield within current period is %s" %(instrument.Name(),currentPayPeriodMaxYield))
+        
+        numObservationDaysWithinCurrentPeriod = getNumObservationDaysWithinCurrentPeriod(instrument, reportDate, currentPeriodStartDate, currentPeriodEndDate)
+        logger.DLOG("d0.4 instrument %s number of observation days in current period is %s" %(instrument.Name(),numObservationDaysWithinCurrentPeriod))
+        
+        withinRangeDaysWithinCurrentPeriod = getWithinRangeDaysWithinCurrentPeriod(instrument, reportDate, currentPeriodStartDate)
+        logger.DLOG("d0.5 instrument %s number of days within range in current period is %s" %(instrument.Name(),withinRangeDaysWithinCurrentPeriod))
+        
+        if numObservationDaysWithinCurrentPeriod == 0: 
+            #logger.WLOG("PsRvm_AccountingMmldColumn numObservationDaysWithinCurrentPeriod cannot be 0. Verify that fixing schedule has been generated. Instrument %s" %(instrument.Name()))
+            #return "Warning: in numObservationDaysWithinCurrentPeriod cannot be 0. Verify that fixing schedule has been generated."
+            return 0
+        
+        logger.DLOG("d0.6 instrument %s _customPLEndDate is %s and currentPeriodEndDate is %s" %(instrument.Name(),_customPLEndDate,currentPeriodEndDate))
+        
+        logger.DLOG("d0.7 %s" %([instrument.Name(),currentPayPeriodMaxYield,withinRangeDaysWithinCurrentPeriod,numObservationDaysWithinCurrentPeriod]))
+        
+        closingTradeMultAsInt = 1
+        logger.DLOG("d0.8 %s" %(closingTradeMultAsInt*currentPayPeriodMaxYield*withinRangeDaysWithinCurrentPeriod/float(numObservationDaysWithinCurrentPeriod)))
+        if tradeObj != None:
+            if tradeObj.Type() == 'Closing':
+                closingTradeMultAsInt = -1
+        
+        return closingTradeMultAsInt*currentPayPeriodMaxYield*withinRangeDaysWithinCurrentPeriod/float(numObservationDaysWithinCurrentPeriod)
+        
+    return None
+
+
+...
+
+  PsRvm_MmldAccountingUtils
+"""
+Notes:
+    - return the [periodStart,periodEnd,periodLenInDays] of pay periods for MMLD
+    
+Footprint:
+    [2023 09 24] richard.milford@fisglobal.com
+"""
+
+import acm
+
+from FLogger import FLogger
+logger = FLogger(level=3,logToPrime=True,logToConsole=True)
+log_levl_dict = {'INFO' : 1, 'DEBUG' : 2, 'WARN' : 3, 'ERROR' : 4}
+
+def buildMmldPeriodCalDates(instrument):
+    #payPeriodsDatesSets = [periodStart,periodEnd,periodLenInDays]
+
+    payPeriodsDatesSets = []     
+    for event in instrument.ExerciseEvents():
+        periodStart = event.StartDate()
+        periodEnd = event.EndDate()
+        periodLenInDays = acm.Time.DateDifference(periodEnd,periodStart) #+1 because first day is inclusive in the accrual -1 because last day is excluded
+        payPeriodsDatesSets.append([periodStart,periodEnd,periodLenInDays])
+
+    return payPeriodsDatesSets
+
+...
+
+}
+

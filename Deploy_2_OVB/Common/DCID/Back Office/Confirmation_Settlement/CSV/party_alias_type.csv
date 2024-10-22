@@ -1,0 +1,6 @@
+INSTRALIASTYPE,,,,/INSTRALIASTYPE
+ALIAS_TYPE_DESCRIPTION,NETWORK,TYPE,ALIAS_TYPE_NAME,
+Internal,Yes,Party,Internal,
+OverAccount,Yes,Party,OverAccount,
+SWIFT network,Yes,Party,SWIFT,
+ISDASettlementSrc,,Party,ISDASettlementSrc,

@@ -1,0 +1,9 @@
+Keyword,Test Data(Optional Key),Expected Result,User
+Carry On Start Day Where Report Date Is Today And Accrued Inclusion Is None,Bond AC Buy,1000,ATS_ACCOUNTING
+Carry On Start Day Where Report Date Is Today And Accrued Inclusion Is Following,Bond AC Buy,1000,ATS_ACCOUNTING
+Carry On Start Day Where Report Date Is Instrument Spot And Accrued Inclusion Is None,Bond AC Buy,1000,ARENASYS
+Carry On Start Day Where Report Date Is Instrument Spot And Accrued Inclusion Is Following,Bond AC Buy,1000,ARENASYS
+ValidateDeprecStartDay,Bond AC Buy,0,ATS_ACCOUNTING
+ValidateDeprecStartDayPlus1BusinessDays,Bond AC Buy,-100,ATS_ACCOUNTING
+ValidateDeprecOnExpiry,Bond AC Buy,-3000,ATS_ACCOUNTING
+Validate Accounting Setup,,286,

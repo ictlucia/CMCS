@@ -1,0 +1,2 @@
+<?xml version='1.0' encoding='ISO-8859-1'?>
+<FAelTask><acm_version>2022.4.6, Jun 19 2023</acm_version><version>1 $Id$</version><update_time>2023-08-24 06:47:18</update_time><object_name>FA_Deploy_LCP_DataPrep</object_name><owner>TUSHAR.RATHI</owner><protection>3072</protection><module>RunSwiftDataPrep</module><context>Standard</context><parameter>context=+LongformConfirmation;modules=FLongformTradeConfirmationOut_DataPrep;</parameter><historylength /><description /><logfilename /><group /><groupstatus>None</groupstatus><historylengthunit>None</historylengthunit></FAelTask>

@@ -1,0 +1,13 @@
+INSTRUMENT,,,,,,,,,/INSTRUMENT
+MTM_FROM_FEED,QUOTATION_SEQNBR.NAME,INSID,SETTLEMENT,CONTR_SIZE,CURR.INSID,SPOT_BANKING_DAYS_OFFSET,INSTYPE,,
+Yes,Per Unit,USX,Cash,1,USD,0,Commodity,,
+Yes,Per Unit,EUX,Cash,1,EUR,0,Commodity,,
+Yes,Per Unit,AUX,Cash,1,AUD,0,Commodity,,
+Yes,Per Unit,NZX,Cash,1,NZD,0,Commodity,,
+Yes,Per Unit,SGX,Cash,1,SGD,0,Commodity,,
+Yes,Per Unit,JPX,Cash,1,JPY,0,Commodity,,
+Yes,Per Unit,HKX,Cash,1,HKD,0,Commodity,,
+Yes,Per Unit,CHX,Cash,1,CHF,0,Commodity,,
+Yes,Per Unit,GBX,Cash,1,GBP,0,Commodity,,
+Yes,Per Unit,CAX,Cash,1,CAD,0,Commodity,,
+Yes,Per Unit,CNX,Cash,1,CNY,0,Commodity,,

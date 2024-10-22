@@ -1,0 +1,7 @@
+INSTRUMENT,,,,,,,,,,LEG,,,,,,,,,,,,,/LEG,/INSTRUMENT
+CONTR_SIZE,CURR.INSID,GENERIC,INSID,INSTYPE,MTM_FROM_FEED,OTC,PAY_OFFSET_METHOD,QUOTATION_SEQNBR.NAME,SPOT_BANKING_DAYS_OFFSET,CURR.INSID,DAYCOUNT_METHOD,END_DATE_METHOD,END_PERIOD,INTEREST_PAYMENT_TIME,NOMINAL_AT_END,NOMINAL_FACTOR,PAYLEG,PAY_CALNBR.CALID,PAY_DAY_METHOD,ROLLING_CONVENTION,START_PERIOD,TYPE,,
+1,MYR,Yes,MYR/KLIBOR/1M,RateIndex,Yes,Yes,Business Days,Coupon,0,MYR,Act/365,Relative Start,1m,In Arrears,Yes,1,No,Singapore,Following,None,0d,Fixed,,
+1,MYR,Yes,MYR/KLIBOR/1Y,RateIndex,Yes,Yes,Business Days,Coupon,0,MYR,Act/365,Relative Start,1y,In Arrears,Yes,1,No,Singapore,Following,None,0d,Fixed,,
+1,MYR,Yes,MYR/KLIBOR/2M,RateIndex,Yes,Yes,Business Days,Coupon,0,MYR,Act/365,Relative Start,2m,In Arrears,Yes,1,No,Singapore,Following,None,0d,Fixed,,
+1,MYR,Yes,MYR/KLIBOR/3M,RateIndex,Yes,Yes,Business Days,Coupon,0,MYR,Act/365,Relative Start,3m,In Arrears,Yes,1,No,Singapore,Following,None,0d,Fixed,,
+1,MYR,Yes,MYR/KLIBOR/6M,RateIndex,Yes,Yes,Business Days,Coupon,0,MYR,Act/365,Relative Start,6m,In Arrears,Yes,1,No,Singapore,Following,None,0d,Fixed,,

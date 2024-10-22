@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="ISO-8859-1" ?>
+
+<RunScriptCMD>
+
+    <Command module="DeployCollateralManagement">
+    </Command>
+
+	<Command module="CSVUploadImportRunscript">
+        <folder>csv files</folder>
+        <include>MarginCall_StateChart_Permissioning_Type.csv</include>
+    </Command>
+
+</RunScriptCMD>

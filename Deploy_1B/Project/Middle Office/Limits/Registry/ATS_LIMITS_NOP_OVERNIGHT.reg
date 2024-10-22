@@ -1,0 +1,12 @@
+Windows Registry Editor Version 5.00
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Front\Front Arena\ATS\FA_INSTANCE_NAME]
+"task"="RealTimeMonitoring_NOP_Overnight"
+"username"="ATS_LIMITS_NOP_OVERN"
+"password"="intas"
+"unicode"="1"
+"logcategory"="compliance"
+"logdir"="D:\Front\Front Arena\LOG\ATS_LIMITS_NOP_OVERNIGHT"
+"exit_on_work_error"="0"
+
+

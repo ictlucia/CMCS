@@ -1,0 +1,205 @@
+#
+# Front Arena exported extension module.
+# source          ""
+# timestamp (utc) "2023-02-08 15:54:50.5"
+# ***** DO NOT EDIT! *****
+#
+name        "Test_PS_ATCI_RFXT"
+description ""
+
+groups {
+}
+
+decls[FPythonCode] {
+}
+
+clx FObject [FPythonCode] {
+  Test_SetProductType
+
+import PS_Custom
+import FRDExtensionPoint
+import ATCIRDMessageAdaptations
+from PS_Custom import GetProductTypeInfo 
+
+reload(PS_Custom)
+reload(FRDExtensionPoint)
+reload(ATCIRDMessageAdaptations)
+
+def Test_GetProductTypeInfo(dic, expectedOut):
+    print(f'input : {dic}')
+    output = GetProductTypeInfo(dic)
+    print(f'output : {output}')
+    res = all(x == y for x, y in zip(output, expectedOut))
+    return res
+    
+def TestCase_GetProductTypeInfo(dic, expectedOut):
+    result = Test_GetProductTypeInfo(dic, expectedOut)
+    print(f"passed : {result}")
+    print("*************************")
+
+
+print("Test Cases for Set ProductType and Category customization")
+print("**********************************************************")
+'''    
+Test Scenario - 
+Input - FID 569 (Pure Deal Type) = 2 (FX Spot), 
+        FID 515 (Period) = 1 (Today)
+expected output  productType:FX,   Category:TOD        
+'''
+TestCase_GetProductTypeInfo({569:'2', 515:'1'}, ('FX', 'TOD'))
+#print(f"passed : {result}")
+
+
+'''    
+Test Scenario - 
+Input - FID 569 (Pure Deal Type) = 2 (FX Spot), 
+        FID 515 (Period) = 2 (Tommorow)
+expected output : productType:FX,   Category:TOM     
+'''
+TestCase_GetProductTypeInfo({569:'2', 515:'2'}, ('FX', 'TOM'))
+
+
+'''    
+Test Scenario - 
+Input - FID 569 (Pure Deal Type)= 2 (FX Spot), 
+        FID 515 (Period) = 4 (Spot)
+expected output : productType:FX,   Category:SPOT    
+'''
+TestCase_GetProductTypeInfo({569:'2', 515:'4'}, ('FX', 'SPOT'))
+
+
+'''    
+Test Scenario - 
+Input - FID 569 (Pure Deal Type)= 4 or 128 ((FX Outright),
+        FID 674 (Settlement) = 1 (Deliverable)
+expected output : productType:FX,   Category:FWD 
+'''
+TestCase_GetProductTypeInfo({569:'4', 674:'1'}, ('FX', 'FWD'))
+TestCase_GetProductTypeInfo({569:'128', 674:'1'}, ('FX', 'FWD'))
+
+
+'''    
+Test Scenario - 
+Input - FID 569 (Pure Deal Type)= 4 or 128 (FX Outright), 
+        FID 674 (Settlement) = 2 (Non-Deliverable), 
+        FID 517 (Currency 1) = Non-IDR
+expected output : productType:FX,   Category:NDF
+'''
+TestCase_GetProductTypeInfo({569:'4', 674:'2', 517:'EUR'}, ('FX', 'NDF'))
+TestCase_GetProductTypeInfo({569:'128', 674:'2', 517:'USD'}, ('FX', 'NDF'))
+
+
+'''    
+Test Scenario - 
+Input - FID 569 (Pure Deal Type)= 4 or 128 (FX Outright), 
+        FID 674 (Settlement) = 2 (Non-Deliverable), 
+        FID 517 (Currency 1) = IDR
+expected output : productType:FX,   Category:NS
+'''
+TestCase_GetProductTypeInfo({569:'4', 674:'2', 517:'IDR'}, ('FX', 'NS'))
+TestCase_GetProductTypeInfo({569:'128', 674:'2', 517:'IDR'}, ('FX', 'NS'))
+
+
+'''    
+Test Scenario - 
+Input - FID 569 (Pure Deal Type)= 8 (Forex Swap)
+        FID 674 (Settlement) = 1 (Deliverable)
+expected output : productType:FX,   Category:SWAP
+'''
+TestCase_GetProductTypeInfo({569:'8', 674:'1', 517:'IDR'}, ('FX', 'SWAP'))
+TestCase_GetProductTypeInfo({569:'8', 674:'1', 517:'EUR'}, ('FX', 'SWAP'))
+
+
+#******************* Deposit/Loan test cases
+
+'''    
+Test Scenario - 
+Input - FID 569 (Pure Deal Type)= 16 (Deposit) & FID 553 (Comment Text) = CL
+expected output : productType:DL,   Category:CL
+'''
+TestCase_GetProductTypeInfo({569:'16', 553:'CL '}, ('DL', 'CL'))
+TestCase_GetProductTypeInfo({569:'16', 553:'CL'}, ('DL', 'CL'))
+
+
+'''    
+Test Scenario - 
+Input - FID 569 (Pure Deal Type)= 16 (Deposit) & FID 553 (Comment Text) = MD
+expected output : productType:DL,   Category:MD
+'''
+TestCase_GetProductTypeInfo({569:'16', 553:' MD '}, ('DL', 'MD'))
+TestCase_GetProductTypeInfo({569:'16', 553:'MD'}, ('DL', 'MD'))
+
+
+'''    
+Test Scenario - 
+Input - FID 569 (Pure Deal Type)= 16 (Deposit) & FID 553 (Comment Text) = CMP
+expected output : productType:DL,   Category:CMP
+'''
+TestCase_GetProductTypeInfo({569:'16', 553:' CMP'}, ('DL', 'CMP'))
+TestCase_GetProductTypeInfo({569:'16', 553:'CMP'}, ('DL', 'CMP'))
+
+
+'''    
+Test Scenario - 
+Input - FID 569 (Pure Deal Type)= 16 (Deposit) & FID 553 (Comment Text) = CMT
+expected output : productType:DL,   Category:CMT
+'''
+TestCase_GetProductTypeInfo({569:'16', 553:' CMT '}, ('DL', 'CMT'))
+TestCase_GetProductTypeInfo({569:'16', 553:'CMT'}, ('DL', 'CMT'))
+
+
+'''    
+Test Scenario - 
+Input - FID 569 (Pure Deal Type)= 16 (Deposit) & FID 553 (Comment Text) = OVP
+expected output : productType:DL,   Category:OVP
+'''
+TestCase_GetProductTypeInfo({569:'16', 553:'OVP '}, ('DL', 'OVP'))
+TestCase_GetProductTypeInfo({569:'16', 553:'OVP'}, ('DL', 'OVP'))
+
+
+'''    
+Test Scenario - 
+Input - FID 569 (Pure Deal Type)= 16 (Deposit) & FID 553 (Comment Text) = OVT
+expected output : productType:DL,   Category:OVT
+'''
+TestCase_GetProductTypeInfo({569:'16', 553:'OVT '}, ('DL', 'OVT'))
+TestCase_GetProductTypeInfo({569:'16', 553:'OVT'}, ('DL', 'OVT'))
+
+
+'''    
+Test Scenario - 
+Input - FID 569 (Pure Deal Type)= 16 (Deposit) & FID 553 (Comment Text) = BLT
+expected output : productType:DL,   Category:BLT
+'''
+TestCase_GetProductTypeInfo({569:'16', 553:'BLT '}, ('DL', 'BLT'))
+TestCase_GetProductTypeInfo({569:'16', 553:'BLT'}, ('DL', 'BLT'))
+
+
+'''    
+Test Scenario - 
+Input - FID 569 (Pure Deal Type)= 16 (Deposit) & FID 553 (Comment Text) = BLT
+expected output : productType:DL,   Category:SHAR
+'''
+TestCase_GetProductTypeInfo({569:'16', 553:' SHAR '}, ('DL', 'SHAR'))
+TestCase_GetProductTypeInfo({569:'16', 553:'SHAR'}, ('DL', 'SHAR'))
+
+
+'''    
+Test Scenario - 
+Input - Values not received correcly
+expected output : productType:None,   Category:None
+'''
+TestCase_GetProductTypeInfo({569:'', 553:' SHAR '}, (None, None))
+
+
+'''    
+Test Scenario - 
+Input - only product type set but no category info
+expected output : productType:None,   Category:None
+'''
+TestCase_GetProductTypeInfo({569:'16', 553:''}, ('DL', None))
+
+...
+
+}
+

@@ -1,0 +1,80 @@
+#
+# Front Arena exported extension module.
+# source          ""
+# timestamp (utc) "2024-09-24 11:36:00"
+# ***** DO NOT EDIT! *****
+#
+name        "BM_Reporting_Grouping_Menu"
+description "$Id$"
+
+groups {
+}
+
+decls[FCommandExtension] {
+}
+
+clx FSessionManagerFrame [FCommandExtension] {
+  Front Office.Category.Reporting Menu =
+  ChildOrder=Front Office.Category.Reporting Menu.Panel.Front Office Report;Front Office.Category.Reporting Menu.Panel.Back Office Report;Front Office.Category.Reporting Menu.Panel.Middle Office Report
+  RibbonLabel=Reporting Menu
+  SubType=Front Office
+  Type=Category
+
+
+  Front Office.Category.Reporting Menu.Panel.Back Office Report =
+  Category=Front Office.Category.Reporting Menu
+  ChildOrder=Front Office.Category.Reporting Menu.Panel.Back Office Report.MenuButton.Back Office
+  RibbonLabel=Back Office Report
+  SubType=Front Office
+  Type=Panel
+
+
+  Front Office.Category.Reporting Menu.Panel.Back Office Report.MenuButton.Back Office =
+  Category=Front Office.Category.Reporting Menu
+  ChildOrder=Interest Rate MtM Report;Laporan Penginputan NTR Akhir Hari;Monthly Report;Report Resume Tax Reconciliation;Yearly Report;Report Data Permintaan Nasabah;Report Data Pemutakhiran Nasabah;Audit Trail;TMPG Charges;Mark to Market Nasabah;TMPG Claim Invoice;PPE EBUS Sebagai Pedagang & Perantara;BO62
+  Panel=Front Office.Category.Reporting Menu.Panel.Back Office Report
+  RibbonLabel=Back Office
+  SubType=Front Office
+  Type=MenuButton
+
+
+  Front Office.Category.Reporting Menu.Panel.Front Office Report =
+  Category=Front Office.Category.Reporting Menu
+  ChildOrder=Front Office.Category.Reporting Menu.Panel.Front Office Report.MenuButton.Front Office
+  RibbonLabel=Front Office Report
+  SubType=Front Office
+  Type=Panel
+
+
+  Front Office.Category.Reporting Menu.Panel.Front Office Report.MenuButton.Front Office =
+  Category=Front Office.Category.Reporting Menu
+  ChildOrder=Cashflow Projection IDR;Cashflow Projection Non-IDR;Daily Cust Report;Daily Dashboard;TAS Report - Dashboard Performance Client;TAS Report - Target Monitoring;TRC BN Requirement - Target Monitoring;Data Cabang Daily SOD;New Customer Registration;Bond Holding Period
+  Panel=Front Office.Category.Reporting Menu.Panel.Front Office Report
+  RibbonLabel=Front Office
+  SubType=Front Office
+  Type=MenuButton
+
+
+  Front Office.Category.Reporting Menu.Panel.Middle Office Report =
+  Category=Front Office.Category.Reporting Menu
+  ChildOrder=Front Office.Category.Reporting Menu.Panel.Middle Office Report.MenuButton.Middle Office
+  RibbonLabel=Middle Office Report
+  SubType=Front Office
+  Type=Panel
+
+
+  Front Office.Category.Reporting Menu.Panel.Middle Office Report.MenuButton.Middle Office =
+  Category=Front Office.Category.Reporting Menu
+  ChildOrder=Counterparty Limit Utilization;Counterparty Limit Utilization DV;Counterparty Limit Utilization FX;Country Limit Utilization;Issuer Limit Utilization;Monthly and Yearly Loss Limit Client;Monthly and Yearly Loss Limit FXT;Monthly and Yearly Loss Limit IRT;Net Open Poisition Limit;PV01 Limit Custom Report;PV01 Limit per Asset Custom Report;PV01 Limit per Currency Custom Report; Report Generation
+  Panel=Front Office.Category.Reporting Menu.Panel.Middle Office Report
+  RibbonLabel=Middle Office
+  SubType=Front Office
+  Type=MenuButton
+
+
+  Front Office.Global =
+  ChildOrder=Front Office.Category.Home;Front Office.Category.Reporting Menu
+
+
+}
+

@@ -1,0 +1,2 @@
+<?xml version='1.0' encoding='ISO-8859-1'?>
+<FTradeFilter><acm_version>2022.2.6, Nov 14 2022</acm_version><version>1 $Id$</version><update_time>2024-09-26 03:52:07</update_time><object_name>SGMO03b - Trade Filters</object_name><owner>ARENASYS</owner><protection>W:R,O:RWD,G:RWD,U:RWD</protection><asql_query>SGMO03b - Trade Filters</asql_query></FTradeFilter>

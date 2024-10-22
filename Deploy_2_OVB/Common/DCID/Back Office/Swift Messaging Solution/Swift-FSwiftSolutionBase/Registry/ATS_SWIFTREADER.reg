@@ -1,0 +1,12 @@
+Windows Registry Editor Version 5.00
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Front\Front Arena\ATS\FA_INSTANCE_NAME]
+"log_to_server" ="0"
+"proc_frequency"=""
+"module_name"="FSwiftReaderMain"
+"username"="ATS_SWIFTREAD"
+"password"="intas"
+"sender_mb_name"="{}"
+"receiver_mb_name"="{SWIFT_READER,CASH_CONF_MSG_READER,FXMM_IN_MSG_READER,SECSETTLEMENT_CONF_MSG_READER}"
+
+

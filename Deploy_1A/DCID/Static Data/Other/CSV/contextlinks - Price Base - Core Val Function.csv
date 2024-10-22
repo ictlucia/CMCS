@@ -1,0 +1,9 @@
+CONTEXTLINK,,,,,,,,,,,,/CONTEXTLINK
+CONTEXT_SEQNBR.NAME,CURR.EXTERN_ID1,CURR.INSID,DISC_TYPE_CHLNBR.ENTRY,DISC_TYPE_CHLNBR.LIST,GROUP_CHLNBR.ENTRY,GROUP_CHLNBR.LIST,INSADDR.EXTERN_ID1,INSADDR.INSID,MAPPING_TYPE,NAME,TYPE,
+Global,,,,,PriceBase-TheorEqMkt,ValGroup,,,Val Group,Theoretical Equals Market,Price Base,
+Global,,,,,PriceBase-Theoretical,ValGroup,,,Val Group,Theoretical,Price Base,
+Global,,,,,PriceBase-MtMFromFeed,ValGroup,,,Val Group,MtM From Feed Flag,Price Base,
+Global,,,,,PriceBase-Market,ValGroup,,,Val Group,Market,Price Base,
+Global,,,,,TrinomialSwaption,ValGroup,,,Val Group,Trinomial Swaption,Core Valuation Function,
+Global,,,,,PricingToExercise,ValGroup,,,Val Group,Pricing To Exercise,Core Valuation Function,
+Global,,,,,IRF-NoConvexityAdj,ValGroup,,,Val Group,Non Convexity Adjusted IRF,Core Valuation Function,

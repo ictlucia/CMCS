@@ -1,0 +1,143 @@
+#
+# Front Arena exported extension module.
+# source          ""
+# timestamp (utc) "2022-07-15 14:21:12"
+# ***** DO NOT EDIT! *****
+#
+name        "FXNOP_TRADES_RECEIVER"
+description "$Id$"
+
+groups {
+}
+
+decls[FPythonCode] {
+}
+
+clx FObject [FPythonCode] {
+  FXNOP_TradesReceiver
+
+import ael, acm
+from FLogger import FLogger
+from InterfaceUtils import PickFolder, LogLevelNameToNumber
+import os
+from FRunScriptGUI import InputFileSelection
+import FXNOPTradesHandler
+
+
+logFileName = 'FXNOP_TRADES_RECEIVER_%s.txt' % acm.Time.DateToday().replace('-', '')
+logger        = FLogger.GetLogger('FXNOP_TRADES_RECEIVER')
+logLevels   = [ FLogger.INFO, FLogger.ERROR, FLogger.WARNING, FLogger.DEBUG ]
+fileSelection = InputFileSelection("CSV Files (*.csv)|*.csv")
+
+   
+ael_variables = [
+    ['inputFile', 'Input File', fileSelection, None, fileSelection, 1, 1, 'Input CSV file for FXNOP trades', None, 1],
+    ['archiveFilePath', 'Archive File Path', PickFolder(), None, PickFolder(), 1, 1, 'The file path where processed files will be archived.', None, 1],
+    ['errorFilePath', 'Error File Path', PickFolder(), None, PickFolder(), 1, 1, 'The file path where processed files will be archived in case of any error.', None, 1],
+    ['encoding', 'Encoding', 'string', [ 'default', 'latin1', 'utf-8'], 'default', 0, 0, 'File encoding', None, 1],
+    ['transactions', 'Use transactions', 'bool', [0, 1], None, 0, 0, 'Commit all records coming from the same file in a transaction', None, 1],
+    ['logToConsole', 'Log to console_Logging', 'int', [1, 0], 1, 1, 0, 'Whether logging should be done in the Log Console or not.'],
+    ['log_folder', 'Log folder_Logging', PickFolder(), None, PickFolder(), 0, 1, 'Select where to store the log file', 0, None],
+    ['log_level', 'Log level_Logging', 'string', logLevels, FLogger.INFO, 1, 0],
+    ['printAMBA', 'Print final AMBA message_Logging', 'bool', [0, 1], None, 0, 0, 'Print the final AMBA message after all transformations have been made', None, 1],
+    ]
+
+
+def initializeLogging(params):
+ 
+    logLevel     = params['log_level']
+    logFolder    = params['log_folder']
+    logToConsole = params['logToConsole']
+    
+    if logFolder:
+        logfolderString = logFolder.SelectedDirectory().AsString()
+        logPath = os.path.join(logfolderString, logFileName)
+        logger.Reinitialize(level=LogLevelNameToNumber(logLevel), logToConsole=logToConsole, logToFileAtSpecifiedPath=logPath)
+    else:
+        logger.Reinitialize(level=LogLevelNameToNumber(logLevel), logToConsole=logToConsole)
+        
+
+def ael_main(params):
+    initializeLogging(params)
+    logger.LOG("Execution started")
+
+    inputFile        = str(params['inputFile'])
+    archiveFilePath = params['archiveFilePath']
+    errorFilePath   = params['errorFilePath']
+    transactions    = params['transactions']
+    printAMBA       = params['printAMBA']
+    encoding        = params['encoding'] or None
+    encoding        = None if encoding == 'default' else encoding
+    #inFolderString      = filePath.SelectedDirectory().AsString()
+    archiveFolderString = archiveFilePath.SelectedDirectory().AsString()
+    errorFolderString   = errorFilePath.SelectedDirectory().AsString()
+    
+    filePathDict = {}
+    filePathDict['sourceFile']   = inputFile
+    filePathDict['archive']  = archiveFolderString
+    filePathDict['error']    = errorFolderString
+    
+    logger.LOG(f'Input file path: {inputFile}')
+    logger.LOG(f'Archive file path: {archiveFolderString}')
+    
+    FXNOPTradesHandler.perform(filePathDict, transactions, printAMBA, encoding)
+
+    logger.LOG("Execution complete")
+
+
+...
+
+  FXNOPTradesHandler
+
+import acm
+import os
+import csv
+import shutil
+from CSVImporter_ExecutionReporting import CSVImporterExecutionReporting
+
+import FLogger
+
+
+logger = FLogger.FLogger('FXNOP_TRADES_RECEIVER')
+
+
+def archive(file, filePath):
+    logger.DLOG(f'Moving file - {file} to {filePath} ')
+    try:
+        head, tail = os.path.split(file)
+        filePostFix = (acm.Time.TimeNow().translate(str.maketrans({'-': '', '.': '',':':'',' ':'_'})))
+        toFile = tail.replace('.csv', f'_{filePostFix}.csv')
+        toFilePath = os.path.join(filePath, toFile)
+        logger.DLOG(f'renaming file - {tail} to {toFile} ')
+        shutil.move(file, toFilePath)
+    except Exception as e:
+        logger.ELOG(f'Failed to move - {file} to {filePath} ')
+
+
+def perform(filePathDict, transactions, printAMBA, encoding):
+
+    inputFilePath      = filePathDict['sourceFile']
+    archiveFolderString = filePathDict['archive']
+    errorFolderString   = filePathDict['error']
+    
+    isSucessful = False
+    try:
+        importer = CSVImporterExecutionReporting(logger)
+        isSucessful = importer.ProcessFile(inputFilePath, transactions, printAMBA, encoding)
+        importer.ReportProcessSummary()
+    except Exception as e:
+        logger.ELOG(f'Failed to import {inputFilePath}: {e}')
+        isSucessful = False
+    
+    try:
+        archivePath =archiveFolderString if isSucessful else errorFolderString
+
+        archive(inputFilePath, archivePath)
+    except Exception as e:
+        logger.ELOG('Failed to archive file. Error:'+str(e))
+        
+
+...
+
+}
+

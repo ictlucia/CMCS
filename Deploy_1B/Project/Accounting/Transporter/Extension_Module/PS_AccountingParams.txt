@@ -1,0 +1,80 @@
+#
+# Front Arena exported extension module.
+# source          ""
+# timestamp (utc) "2024-09-12 06:14:57"
+# ***** DO NOT EDIT! *****
+#
+name        "PS_AccountingParams"
+description "$Id$"
+
+groups {
+  "ui validation hook"
+}
+
+decls[FPythonCode] {
+}
+
+clx FObject [FPythonCode] {
+  FAccountingParams
+""" Compiled: 2016-03-16 17:10:52 """
+
+"""----------------------------------------------------------------------------
+Basic paramaters for ATS-setup, logging and accounting processing.
+
+Changes to any of these settings require a restart of the accounting ATS
+for them to take affect
+----------------------------------------------------------------------------"""
+from FOperationsHook import CustomHook
+import FServerAddresses
+import acm
+
+ambAddress                      = FServerAddresses.GetAMBServerAddress()
+
+ambUnicode                      = acm.IsUnicodeEnabled()
+
+ambaConfig                      = ''
+
+receiverMBName                  = 'JOURNAL_RECEIVER'
+
+receiverSource                  = 'BO'
+
+detailedLogging                 = False
+
+daysBack                        = 5
+
+daysForward                     = 0
+
+createZeroAmountJournals        = False
+
+setProtectionAndOwnerFromTrade  = True
+
+realTimeAmendmentTriggerTypes    = ["Real Time"]
+
+tradeFilterQueries              = ['DoJournalProcessing_Trade']
+
+settlementFilterQueries         = ['DoJournalProcessing_Settlement']
+
+preventJournalCreationQueries   = []
+
+hooks                           = [CustomHook('FAccountingHooks', 'GetDynamicAccount')]
+
+
+...
+
+  PS_Liquidity_Acc_Hook
+
+import ael
+
+COST_AS_PREMIUM = ael.enum_from_string('FeeAllocMethod', 'In Cost As Premium')
+EXCLUDED = ael.enum_from_string('FeeAllocMethod', 'None')
+FEE_TRADE_DAY = ael.enum_from_string('FeeAllocMethod', 'As Fee On Trade Day')
+FEE_PAY_DAY = ael.enum_from_string('FeeAllocMethod', 'As Fee On Pay Day')
+def fee_alloc_method_from_payment_type(type):
+    if type == 'Broker Fee':
+        return EXCLUDED
+    return FEE_PAY_DAY
+
+...
+
+}
+

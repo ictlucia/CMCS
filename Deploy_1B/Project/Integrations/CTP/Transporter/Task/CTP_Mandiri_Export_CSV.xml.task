@@ -1,0 +1,2 @@
+<?xml version='1.0' encoding='ISO-8859-1'?>
+<FAelTask><acm_version>2022.4.5, May 22 2023</acm_version><version>1 $Id$</version><update_time>2023-08-23 09:07:43</update_time><object_name>CTP_Mandiri_Export_CSV</object_name><owner>ARENASYS</owner><protection>3072</protection><module>CTP_Mandiri_Export_CSV</module><context>Standard</context><parameter>export_path=C:\Users\Anugrah\Desktop;wb_name=CTP Mandiri;</parameter><historylength /><description /><logfilename /><group /><groupstatus>None</groupstatus><historylengthunit>None</historylengthunit></FAelTask>

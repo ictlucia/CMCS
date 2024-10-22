@@ -1,0 +1,190 @@
+#
+# Front Arena exported extension module.
+# source          ""
+# timestamp (utc) "2023-07-17 11:03:05.4"
+# ***** DO NOT EDIT! *****
+#
+name        "PS_ManageBaCvaCounterpartyHierarchy"
+description ""
+
+groups {
+}
+
+decls[FPythonCode] {
+}
+
+clx FObject [FPythonCode] {
+  BaCvaCalculationsOverrides
+import acm
+
+"""
+Function stubs for allocating FA parameters to BA-CVA coordinates in the hierarchy
+
+if the function returns None, the default implementation is used.
+"""
+
+#return string that is either 'Local government etc.', 'Financials etc.', 'Technology etc.', 'Health care etc.', 'Basic materials etc.', 'Sovereigns etc.', 'Consumer goods etc.' or 'Other sector'
+def Override_BaCvaSector( counterparty ):
+    mappingDict = {
+                    '4.12.Basic materials, energy,...':'Basic materials etc.',
+                    '5.13.Consumer goods and services,...':'Consumer goods etc.',
+                    '3.11.Financials,...':'Financials etc.',
+                    '7.15.Health care, utilities,...':'Health care etc.',
+                    '2.10.Local government, non-financial,..':'Local government etc.',
+                    '1.9.Sovereigns, central banks, MDB':'Sovereigns etc.',
+                    '6.14.Technology, telecommunications':'Technology etc.',
+                    '16.Other sector':'Other sector'
+                    }
+    if not counterparty.BusinessStatus(): 
+        print("INFO: party %s has no  Business Status" %counterparty.Name())
+    else:
+        if not (str(counterparty.BusinessStatus().Name()) in mappingDict):
+            print("INFO: party %s has no valid BA-CVA Business Status" %counterparty.Name())
+            return None
+        else:
+            return mappingDict[str(counterparty.BusinessStatus().Name())]
+    
+    return None
+
+#return string that is either 'HY and NR' or 'IG'
+def Override_BaCvaRating( counterparty ):
+
+    ratingsList = []
+
+	#NOTE: there are blank entries in the choice list that Mandiri have created, and these are assigned a Sandi_24; 
+	#hence ignore the case where the .rating() is NULL
+    if counterparty.Rating1() and counterparty.Rating1().Name() != "": ratingsList.append(int(counterparty.Rating1().Description()[6:8]))
+    if counterparty.Rating2() and counterparty.Rating2().Name() != "": ratingsList.append(int(counterparty.Rating2().Description()[6:8]))
+    if counterparty.Rating3() and counterparty.Rating3().Name() != "": ratingsList.append(int(counterparty.Rating3().Description()[6:8]))
+
+    if counterparty.AdditionalInfo().Pefindo_Rtg() and counterparty.AdditionalInfo().Pefindo_Rtg().lower() != 'blank': 
+        Pefindo_rating = counterparty.AdditionalInfo().Pefindo_Rtg()
+        choiceListItem = acm.FChoiceList.Select("name='%s' and list='%s'" %(Pefindo_rating,'Pefindo'))[0]
+        ratingsList.append(int(choiceListItem.Description()[6:8]))
+
+    if counterparty.AdditionalInfo().Fitch_Indonesia_Rtg() and counterparty.AdditionalInfo().Fitch_Indonesia_Rtg().lower() != 'blank': 
+        Fitch_Indonesia_rating = counterparty.AdditionalInfo().Fitch_Indonesia_Rtg()
+        choiceListItem = acm.FChoiceList.Select("name='%s' and list='%s'" %(Fitch_Indonesia_rating,'Fitch Indonesia'))[0]
+        ratingsList.append(int(choiceListItem.Description()[6:8]))
+
+    ratingsList.sort()
+
+    if len(ratingsList) == 1:
+        if ratingsList[0]<=10: 
+            return 'IG'
+        else:
+            return 'HY and NR'
+
+    if len(ratingsList) > 1:
+        if ratingsList[1]<=10: 
+            return 'IG'
+        else:
+            return 'HY and NR'
+    
+    return None
+
+
+
+
+...
+
+  CounterpartyQuery
+import acm, FUxCore
+
+class CounterpartyQueryMenuItem(FUxCore.MenuItem):
+    def __init__(self, extObj):
+        self.m_extObj = extObj
+    
+    def Invoke(self, eii):
+        classes = acm.FArray()
+        #classes.Add(acm.FCounterParty)
+        #2023 02 15: changed to FParty, to allow FParty types 'Client' and 'Issuer' to be included in the query
+        classes.Add(acm.FParty)
+        acm.StartFASQLEditor('', classes, None, None, None, '', False)
+    
+    def Applicable(self):
+        if 'Hierarchy Editor' == self.m_extObj.Name():
+            return True
+        return False
+        
+    def Enabled(self):
+        return True
+
+    def Checked(self):
+        return False
+
+def Create(extObj):
+    return CounterpartyQueryMenuItem(extObj)
+
+...
+
+  ManageBaCvaCounterpartyHierarchy
+import acm, ManageHierarchyFunctions, BaCvaCalculationsOverrides, RiskScriptsLogging, FRunScriptGUI, FUxCore
+
+def SectorFunction(counterparty):
+    sector = BaCvaCalculationsOverrides.Override_BaCvaSector(counterparty)
+    return sector if sector else 'Other sector'
+
+def RatingFunction(counterparty):
+    rating = BaCvaCalculationsOverrides.Override_BaCvaRating(counterparty)
+    return rating if rating else 'HY and NR'
+
+#counterpartyQueries = acm.FStoredASQLQuery.Select('subType = "FCounterParty" and user = 0').SortByProperty( 'Name')
+#2023 02 12: override so the filter covers FParty and not limited to FCounterParty, so as to include Clients and Issuers.
+counterpartyQueries = acm.FStoredASQLQuery.Select('subType = "FParty" and user = 0').SortByProperty( 'Name')
+hierarchies = acm.FHierarchy.Select('hierarchyType ="BA-CVA Parameters Type"')
+ael_variables = [
+    ['counterpartyQuery', 'Counterparty Query', 'FStoredASQLQuery', counterpartyQueries, None, 1, 0, None, None, True],
+    ['hierarchy', 'Hierarchy', 'FHierarchy', hierarchies, None, 1, 0, None, None, True]
+]
+ael_variables.extend(RiskScriptsLogging.getLoggingAelVariables(caller=RiskScriptsLogging.getCaller(), log_filename='manage_ba_cva_counterparty_hierarchy.log'))
+ael_variables = FRunScriptGUI.AelVariablesHandler(ael_variables, __name__)
+
+class ManageBaCvaCounterpartyHierarchyMenuItem(FUxCore.MenuItem):
+    def __init__(self, extObj):
+        self.m_extObj = extObj
+    
+    def Invoke(self, eii):
+        acm.RunModuleWithParameters('ManageBaCvaCounterpartyHierarchy', acm.GetDefaultContext()) 
+    
+    def Applicable(self):
+        if 'Hierarchy Editor' == self.m_extObj.Name():
+            return True
+        return False
+        
+    def Enabled(self):
+        return True
+
+    def Checked(self):
+        return False
+
+def CreateMenuItem(extObj):
+    return ManageBaCvaCounterpartyHierarchyMenuItem(extObj)
+
+def LogInfo(logger, msg):
+    if logger:
+        logger.info(msg)
+
+ael_gui_parameters = {
+    'windowCaption':'Manage BA-CVA Counterparty Hierarchy'
+}
+
+def ael_main(parameters):
+    reload(BaCvaCalculationsOverrides)
+    hierarchy = parameters['hierarchy']
+    counterparties = parameters['counterpartyQuery'].Query().Select()
+    logger = RiskScriptsLogging.createDefaultLogger('ManageBaCvaCounterpartyHierarchy', parameters)
+
+    LogInfo(logger, f'Updating {hierarchy.Name()} with {len(counterparties)} counterparties.')
+    changeLog = ManageHierarchyFunctions.UpdateHierarchy(hierarchy, counterparties, 'Counterparty', [SectorFunction, RatingFunction], logger)
+    changeCount = 0
+    for key in changeLog:
+        for counterpartyTuple in changeLog[key]:
+            changeCount += 1
+            LogInfo(logger, f'{key}: {counterpartyTuple[0]} with coordinates {counterpartyTuple[1]}.')
+    LogInfo(logger, f'Done with {changeCount} updates of {hierarchy.Name()}.')
+
+...
+
+}
+

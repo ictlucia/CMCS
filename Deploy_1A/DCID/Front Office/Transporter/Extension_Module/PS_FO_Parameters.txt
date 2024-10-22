@@ -1,0 +1,71 @@
+#
+# Front Arena exported extension module.
+# source          ""
+# timestamp (utc) "2022-02-18 10:14:03"
+# ***** DO NOT EDIT! *****
+#
+name        "PS_FO_Parameters"
+description "$Id$"
+
+groups {
+}
+
+decls[FCustomInstrumentDefinition] {
+}
+
+clx FObject [FCustomInstrumentDefinition] {
+  FX Forward =
+  Caption=FX Forward
+  DealPackageDefinition=
+  DefaultInstrumentName=
+  DefaultInstrumentUpdateHook=FXForward.UpdateDefaultInstrument
+  DefaultTradeUpdateHook=
+  DisabledControls=
+  ExoticFixingsHook=
+  ExtendsConfiguration=Currency Forward
+  FavoriteEnabledControls=
+  FilterCriteria=Instrument.SettlementType=Physical Delivery
+  HelpFileIndex=1154
+  InstantiatedAs=Concrete
+  InstrumentIcon=
+  LabelOverrides=trade_SettlementCurrency, P/L Curr;
+  PanesExotic=
+  PanesInstrument=CustomLayout_InstrumentPane_FX_Forward,General;CustomLayout_InsPropertiesPane_FX_Forward,Properties;CustomLayout_InsIDPane,Identifiers;CustomLayout_InstrumentRegulatoryInfo_FX_Forward,Regulatory;
+  PanesTrade=CustomLayout_FrontOfficePane_FX_Forward,General;CustomLayout_BackOfficePane_FX_Forward,Ref;CustomLayout_TradeIDPane,Identifiers;CustomLayout_TradeAccountsPane,Accounts;CustomLayout_TradeRegulatoryInfo,Regulatory;CustomLayout_AddInfoPane,Add Info;
+  ParentMenu=
+  PricingDefaultColumns=
+  PricingManualRefresh=
+  PricingShowRowHeaders=
+  ReplaceApplication=
+  SetUpFunction=
+  ShowPlaceExcluded=
+  ShowPlaceInDetail=ins_PriceFindingChlItem;
+  ShowPlaceInSlim=ins_DiscountingType;ins_suggest_discounting_type;trade_BaseCurrencyPerCurrency1;trade_BaseCurrencyPerCurrency2;trade_BaseCurrencyEquivalent;trade_OriginalDealPackageNumber;trade_OriginalTradePackageNumber;
+  SubMenu=
+  UpdateControls=
+  VisiblePanes=InstrumentPane;TradePane
+
+
+}
+
+decls[FPythonCode] {
+}
+
+clx FObject [FPythonCode] {
+  FInstrumentSuggestId
+
+import ael, acm
+
+def suggest_id(ael_ins, *rest):
+    ins = acm.Ael().AelToFObject(ael_ins)
+    if ins.InsType() == 'Cash Flow Future':
+        start = ins.ExpiryDateOnly()
+        end = ins.FirstLeg().EndDate()
+        period = '1M' if ins.FirstLeg().EndPeriodCount() < 60 else '3M'
+        name = ins.Currency().Name() + '/CFF/SOFR/' + period + '/' + str(start).replace('-', '') + '-' + str(end).replace('-', '')
+        return name
+
+...
+
+}
+

@@ -1,0 +1,81 @@
+#
+# Front Arena exported extension module.
+# source          ""
+# timestamp (utc) "2024-09-18 10:59:55.4"
+# ***** DO NOT EDIT! *****
+#
+name        "BM_Custom_Column_FO"
+description ""
+
+groups {
+}
+
+decls[FColumnDefinition] {
+"Difference_StartCash" ( "sheet columns.tradesheet" ) "";
+}
+
+clx FTradingSheet [FColumnDefinition] {
+  Difference_StartCash_FO =
+  Description=Difference of Start Cash Buy + Start Cash Sell
+  ExtensionAttribute=Difference_StartCash_FO
+  GroupLabel=BM_Custom_Column
+  LabelList=Difference_StartCash
+  Name=Difference Start Cash
+
+
+}
+
+decls[FExtensionAttribute] {
+}
+
+clx FMultiInstrumentAndTrades [FExtensionAttribute] {
+  Difference_StartCash_FO = select(object.GrouperOnLevel, 
+  "Currency"->py("Total_Trade_FO", context).sumStartCash_FO(object.Trades));
+}
+
+clx FPortfolioInstrumentAndTrades [FExtensionAttribute] {
+  Difference_StartCash_FO = ;
+}
+
+clx FTradeRow [FExtensionAttribute] {
+  Difference_StartCash_FO = ;
+}
+
+decls[FPythonCode] {
+}
+
+clx FObject [FPythonCode] {
+  Total_Trade_FO
+import acm, traceback
+from Report_Python import get_cashflow_proj_interest_amt
+
+def get_cashflow_proj_interest_amt(trd):
+    
+    mfs = trd.MoneyFlows()
+    
+    try:
+        total_proj = 0.0
+        for mf in mfs:
+            if mf.Type() in ['Fixed Rate', 'Float Rate']:
+                proj = float( mf.Calculation().Projected(stand_calc) )
+                total_proj += proj 
+        return total_proj
+    except:
+        return 0.0
+        
+def sumStartCash_FO(trades):
+    
+    sum = 0
+    for trd in trades:
+        if trd.Status()!="Void" and trd.Instrument().EndDate() > acm.DateToday():
+            if trd.OptKey3AsEnum()=="REPO" or trd.OptKey3AsEnum()=="REVREPO":
+                sum += (trd.Nominal() + get_cashflow_proj_interest_amt(trd))
+            else:
+                sum += trd.Nominal()
+
+    return sum
+
+...
+
+}
+

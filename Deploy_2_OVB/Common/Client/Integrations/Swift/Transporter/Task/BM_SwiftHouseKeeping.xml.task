@@ -1,0 +1,2 @@
+<?xml version='1.0' encoding='ISO-8859-1'?>
+<FAelTask><acm_version>2022.4.9, Oct 13 2023</acm_version><version>14 $Id$</version><update_time>2024-05-03 10:57:48</update_time><object_name>BM_SwiftHouseKeeping</object_name><owner>BUDI</owner><protection>3072</protection><module>BM_SwiftHouseKeeping</module><context>Standard</context><parameter>log_to_console=1;log_level=DEBUG;BackDate=7;log_folder=C:\temp;</parameter><historylength /><description /><logfilename /><group>INTEGRATIONS</group><groupstatus>None</groupstatus><historylengthunit>None</historylengthunit></FAelTask>

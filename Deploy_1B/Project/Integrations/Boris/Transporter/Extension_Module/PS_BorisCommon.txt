@@ -1,0 +1,227 @@
+#
+# Front Arena exported extension module.
+# source          ""
+# timestamp (utc) "2022-12-12 14:31:47.0"
+# ***** DO NOT EDIT! *****
+#
+name        "PS_BorisCommon"
+description ""
+
+groups {
+}
+
+decls[FPythonCode] {
+}
+
+clx FObject [FPythonCode] {
+  BorisUtils
+"""-----------------------------------------------------------------------------------------------------
+MODULE
+    BorisUtils
+
+DESCRIPTION: This module provides the utilities functions.
+
+-------------------------------------------------------------------------------------------------------"""
+import acm, re, datetime
+import os, shutil, traceback, time
+import FLogger, FRunScriptGUI
+
+HttpsServerResponses = {'InternalServerError':'500',
+                        'Created':'201'}
+                        
+class Parameters(object):
+    """ Class to read FParameters"""
+
+    def __init__(self, *names):
+        """
+        Initialize member variables
+        :param names: name of the parameter
+        """
+        try:
+            self.param_name_list = []
+            self.get_data(*names)
+        except Exception as error:
+            raise error
+
+    def get_data(self, *names):
+        """ Read the FParameters from the Extension Manager"""
+        for fparam in names:
+            ext_context = acm.FExtensionContext[acm.GetDefaultContext().Name()]
+            param_object = ext_context.GetExtension('FParameters',
+                                                    'FObject', fparam)
+            try:
+                template = param_object.Value()
+            except AttributeError as error:
+                if not param_object:
+                    raise Exception("FParameter %s not present" % fparam)
+                else:
+                    raise Exception("Unable to get content of FParameter %s. Exception : %s" % (fparam, error))
+
+            for k in template.Keys():  # First set all the parameters
+                param_name = str(k)
+                attribute_name = str(template.At(k)).split('#')[0].strip()
+                if (bool(re.search("(\%[A-Za-z0-9_A-Za-z0-9]+\%)|(\${[A-Za-z0-9_A-Za-z0-9]+})",
+                                   attribute_name)) == True):
+                    words_pattern = '[A-Z0-9(\_)A-Z0-9]+'
+                    env_variable = re.findall(words_pattern, attribute_name, flags=re.IGNORECASE)
+                    env_variable_list = []
+                    for curr_var in env_variable:
+                        temp_var = os.environ.get(curr_var)
+                        if temp_var is None:
+                            env_variable_list.append(curr_var)
+                            continue
+                        env_variable_list.append(temp_var)
+                    for i in range(0, len(env_variable)):
+                        attribute_name = str.replace(attribute_name, env_variable[i], env_variable_list[i])
+                    attribute_name = re.sub('\$|{|}|\%', "", attribute_name)
+                setattr(self, param_name, attribute_name)
+                self.param_name_list.append(param_name)
+
+            self.module_name = param_object.Module().Name()
+
+    def get_param_name_list(self):
+        """
+        This function returns the param name list.
+        :return: list
+        """
+        return self.param_name_list
+
+def create_dummy_bond(instr_name):
+    """
+    This function creates dummy bond
+    :return: acm.FInstrument object
+    """
+    dummy_instrument = None
+    dummy_instrument = acm.FInstrument[instr_name]
+    if dummy_instrument is None:
+        dummy_instrument = acm.FBond()
+        dummy_instrument.CreateLeg(True)
+        dummy_instrument.Name(instr_name)
+    try:
+        acm.BeginTransaction()        
+        dummy_instrument.ProductTypeChlItem('BOND')
+        dummy_instrument.CategoryChlItem('SPOT')            
+        dummy_instrument.Commit()
+        acm.CommitTransaction()
+    except Exception:
+        dummy_instrument = None
+        acm.AbortTransaction()
+        raise
+
+    return dummy_instrument
+
+def get_party_mnemonic(party):
+    """
+       This function extracts party alias
+    """    
+    party_alias_type = acm.FPartyAliasType['Customer Mnemonic']
+    alias_name = ''
+    if party_alias_type and party:
+        alias_name = party.Alias(party_alias_type)
+
+    return alias_name
+
+
+def generateFile(outputFolder, fileRow, logger, outputFile):
+    print('masuk generateFile')
+    logger.LOG('Start generateFile')
+    filename = os.path.join(outputFolder, outputFile)
+    logger.LOG(filename)
+    logger.LOG('open file')
+    with open(filename, 'w') as file:
+        try:
+            logger.LOG('start write file')
+            file.writelines(fileRow)
+            logger.LOG('finish write file')
+        except Exception as e:
+            logger.ELOG(str(e))
+        finally:
+            file.close()
+            logger.LOG('close file')
+
+
+def logLevelNametoNumber(logLevel):
+    print('masuk logLevelNametoNumber: ', logLevel)
+    log_level_map = {FLogger.FLogger.INFO: 1,
+                     FLogger.FLogger.DEBUG: 2,
+                     FLogger.FLogger.WARNING: 3,
+                     FLogger.FLogger.ERROR: 4}
+    return log_level_map.get(logLevel, 'undefined log level')
+
+
+class ExportData(FRunScriptGUI.AelVariablesHandler):
+    def __init__(self, query):
+        """
+        This function initializes the object
+        """
+        logLevels = [FLogger.FLogger.INFO, FLogger.FLogger.ERROR, FLogger.FLogger.WARNING, FLogger.FLogger.DEBUG]
+
+        folderPicker = FRunScriptGUI.DirectorySelection()
+                
+        # NAME = 0  # internal name
+        # TEXT = 1  # GUI Text
+        # TYPE = 2  # object type
+        # VALUES = 3  # valid values
+        # DEFAULT = 4  # default
+        # MANDATORY = 5  # mandatory
+        # MULTI = 6  # multiple selection
+        # TIP = 7  # floating tip
+        # CB = 8  # callback
+        # ENABLED = 9  # enabled
+
+        gui_vars = [
+            ['queryName', 'Stored Query Name_Input', 'string', query, None, 1, 0, 'Stored query', None, 1],
+            ['outputFolder', 'Folder Path_Output', folderPicker, None, folderPicker, 1, 1,
+             'The file path where summary result will be generated.', None, 1],
+            ['logToConsole', 'Log to console_Logging', 'int', [1, 0], 1, 1, 0,
+             'Whether logging should be done in the Log Console or not.'],
+            ['log_folder', 'Log folder_Logging', folderPicker, None, folderPicker, 0, 1,
+             'Select where to store the log file',
+             0, None],
+            ['log_level', 'Log level_Logging', 'string', logLevels, FLogger.FLogger.DEBUG, 1, 0]
+        ]
+        
+        self._logger = None
+        FRunScriptGUI.AelVariablesHandler.__init__(self, gui_vars)
+
+    def set_logger(self, logger):
+        """
+        This function sets the logger
+        :param logger: FLogger
+        :return: None
+        """
+        self._logger = logger
+
+    
+
+def initialize_logging(params, logfile_name, app_name):
+    """
+    Initialize logger
+    :param params: parameters
+    :return: FLogger object
+    """
+    logger = None
+    try:
+        logFolder = params['log_folder']
+        logfolderString = logFolder.SelectedDirectory().AsString()
+        logfile = os.path.join(logfolderString, logfile_name)
+        if logfile == '':
+            logfile = None
+
+        logLevel = params['log_level']
+        level = logLevelNametoNumber(logLevel)
+        print('level: ', level)
+        logger = FLogger.FLogger(level=level,
+                                 name=app_name,
+                                 logToPrime=True,
+                                 logToFileAtSpecifiedPath=logfile,
+                                 logToConsole=False)
+    except Exception as err:
+        print('Error in initializing logger {}'.format(err))
+        print(traceback.format_exc())
+    return logger
+
+...
+
+}
+

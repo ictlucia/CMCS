@@ -1,0 +1,123 @@
+#
+# Front Arena exported extension module.
+# source          ""
+# timestamp (utc) "2024-05-16 14:47:55"
+# ***** DO NOT EDIT! *****
+#
+name        "UtilizationFix"
+description "$Id$"
+
+groups {
+}
+
+decls[FColumnDefinition] {
+  "Alert Utilization %" ( "sheet columns.alertsheet" ) "";
+  "Violation Adjusted Value" ( "sheet columns.alertsheet" ) "";
+}
+
+clx FTradingSheet [FColumnDefinition] {
+  Alert Utilization % =
+  ColumnAppearance=utilizationAppearancePercent
+  ExtensionAttribute=ruleValueUtilizationPercent
+  Format=Percent
+  GroupLabel=Rule Result
+  InitialWidth=70
+  LabelList=Utilization %
+
+
+  Violation Adjusted Value =
+  ExtensionAttribute=violationThresholdValueAdjusted
+  GroupLabel=Threshold
+  InitialWidth=70
+  LabelList=Violation Adjusted Value;Adjusted Value
+
+
+}
+
+decls[FCustomFunction] {
+}
+
+clx FObject [FCustomFunction] {
+  getViolationThresholdValueAdjusted =
+  Definition=getViolationThresholdValueAdjusted(FAppliedRule appliedRule, FThresholdValue usedThresholdValue): double
+  Function=LimitsColumnsUtils.getViolationThresholdValueAdjusted
+
+
+}
+
+decls[FExtensionAttribute] {
+}
+
+clx FAlert [FExtensionAttribute] {
+  appliedRule = object.AppliedRule;
+  ruleValueUtilizationPercent = shunt(almostZero(violationThresholdValueAdjusted, 1e-05), 
+  true->0, 
+  default->max(currentValue / float(violationThresholdValueAdjusted), 0.0));
+  thresholdValue = object.ThresholdValue;
+  violationThresholdValueAdjusted = getViolationThresholdValueAdjusted(appliedRule, thresholdValue);
+}
+
+clx FRuleResult [FExtensionAttribute] {
+  appliedRule = object.AppliedRule;
+  ruleValueRemainingPercent = shunt(almostZero(violationThresholdValueAdjusted, 1e-05), 
+  true->0, 
+  default->ruleValueRemaining / abs(float(violationThresholdValueAdjusted)));
+  ruleValueUtilizationPercent = shunt(almostZero(violationThresholdValueAdjusted, 1e-05), 
+  true->0, 
+  default->max(ruleValue / float(violationThresholdValueAdjusted), 0.0));
+  violationThresholdValueAdjusted = getViolationThresholdValueAdjusted(appliedRule, thresholdValue);
+}
+
+clx FRuleValue [FExtensionAttribute] {
+  appliedRule = object.AppliedRule;
+  ruleValueRemainingPercent = shunt(almostZero(thresholdValueAdjusted, 1e-05), 
+  true->0, 
+  default->ruleValueRemaining / abs(float(thresholdValueAdjusted)));
+  ruleValueUtilizationPercent = shunt(almostZero(violationThresholdValueAdjusted, 1e-05), 
+  true->0, 
+  default->max(ruleValue / float(violationThresholdValueAdjusted), 0.0));
+  violationThresholdValueAdjusted = getViolationThresholdValueAdjusted(appliedRule, thresholdValueObj);
+}
+
+clx FRuleValueHistory [FExtensionAttribute] {
+  appliedRule = object.ResultHistory.AppliedRule;
+  ruleValueRemainingPercent = shunt(almostZero(thresholdValueAdjusted, 1e-05), 
+  true->0, 
+  default->ruleValueRemaining / abs(float(thresholdValueAdjusted)));
+  ruleValueUtilizationPercent = shunt(almostZero(violationThresholdValueAdjusted, 1e-05), 
+  true->0, 
+  default->max(ruleValue / float(violationThresholdValueAdjusted), 0.0));
+  violationThresholdValueAdjusted = getViolationThresholdValueAdjusted(appliedRule, thresholdValue);
+}
+
+clx FThresholdAdjustmentEntry [FExtensionAttribute] {
+  appliedRule = object.ThresholdValue.AppliedRule;
+  ruleValueRemainingPercent = shunt(almostZero(thresholdValueAdjusted, 1e-05), 
+  true->0, 
+  default->ruleValueRemaining / abs(float(thresholdValueAdjusted)));
+  ruleValueUtilizationPercent = shunt(almostZero(violationThresholdValueAdjusted, 1e-05), 
+  true->0, 
+  default->max(ruleValue / float(violationThresholdValueAdjusted), 0.0));
+  violationThresholdValueAdjusted = getViolationThresholdValueAdjusted(appliedRule, thresholdValue);
+}
+
+decls[FPythonCode] {
+}
+
+clx FObject [FPythonCode] {
+  LimitsColumnsUtils
+
+def getViolationThresholdValueAdjusted(appliedRule, usedThresholdValue):
+    res = 0
+    for thVal in appliedRule.ThresholdValues():
+        if thVal.Threshold().Type().Name() == 'Violation':
+            if thVal.ValueAdjusted() > 0.0 and usedThresholdValue.ValueAdjusted() > 0.0:
+                res = thVal.ValueAdjusted()
+            elif thVal.ValueAdjusted() < 0.0 and usedThresholdValue.ValueAdjusted() < 0.0:
+                res = thVal.ValueAdjusted()
+    return res
+
+...
+
+}
+

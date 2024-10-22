@@ -1,0 +1,51 @@
+#
+# Front Arena exported extension module.
+# source          ""
+# timestamp (utc) "2024-01-15 10:15:52.4"
+# ***** DO NOT EDIT! *****
+#
+name        "PS_InterfaceSettings"
+description ""
+
+groups {
+}
+
+decls[FParameters] {
+}
+
+clx FObject [FParameters] {
+  InterfaceParams =
+  Environment=SG
+
+
+}
+
+decls[FPythonCode] {
+}
+
+clx FObject [FPythonCode] {
+  InterfaceSettingUtils
+"""----------------------------------------------------------------------------------------------------
+MODULE:
+    InterfaceSettingUtils
+
+DESCRIPTION:
+    Common InterfaceSettingUtils utils functions
+
+-------------------------------------------------------------------------------------------------------"""
+import ParametersReader
+
+interface_params = ParametersReader.get_params('InterfaceParams')
+
+def get_env_name():
+    """ This function returns name of the OVB"""
+    env_name = interface_params['Environment']
+    return env_name
+    
+    
+    
+
+...
+
+}
+

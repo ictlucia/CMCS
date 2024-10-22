@@ -1,0 +1,964 @@
+#
+# Front Arena exported extension module.
+# source          ""
+# timestamp (utc) "2024-10-02 02:18:51.2"
+# ***** DO NOT EDIT! *****
+#
+name        "PS_FRTBSACustom"
+description ""
+
+groups {
+}
+
+decls[FColumnDefinition] {
+  "FRTB Residual Risk Notional_Local" ( "sheet columns.portfoliosheet" ) "";
+}
+
+clx FTradingSheet [FColumnDefinition] {
+  FRTB Residual Risk Notional_Local =
+  Description=The notional amount of the position per Residual Risk Type, if eligeble for Residual Risk
+  Dimensions=FRTB Residual Risk Types:Residual Risk Type
+  ExtensionAttribute=frtbResidualRiskNotional
+  GroupLabel=FRTB Standardised Approach
+  InheritsFrom=Portfolio Risk Column Base
+  Name=FRTB Residual Risk Notional Per Type Local
+
+
+}
+
+decls[FPythonCode] {
+}
+
+clx FObject [FPythonCode] {
+  FRTBCalculationsOverrides
+import acm
+import ael
+
+"""
+Function stubs for allocating FA parameters to FRTBA SA coordinates
+
+Note! Override implementations should be made performant as they are frequently invoked in the FRTB SA calculations! 
+
+if the function returns None, the default implementation is used, e.g. for bucket number methods,
+the respective rest bucket number is returned.
+"""
+
+#return string that is either "None", "OIS", "IBOR1M", "IBOR3M", "IBOR6M", "IBOR12M", "Onshore" or "Offshore"
+def Override_FRTBGIRRBasis( yieldCurve ):
+    return None
+
+#return string that is either "Interest Rate", "Inflation", "Cross Currency Basis"
+def Override_FRTBGIRRSubType( yieldCurve ):
+
+    if yieldCurve.RiskType() == "FX":
+        #yieldCurve.AddInfoValue('FRTB_isCCSBasis') is of type 'bool'
+        if not yieldCurve.AddInfoValue('FRTB_isCCSBasis'): return "Interest Rate"
+    return None
+    
+#return string that is either "Interest Rate", "Inflation", "Cross Currency Basis"
+def Override_FRTBGIRRSubTypeVol( volatilitySurface ):
+    return None
+
+#return string that is either "None", "Bond" or "CDS", if no diversification is needed return "None"
+def Override_FRTBCSRSubType( curve ):
+    return None
+
+#return int representing the bucket number
+def Override_FRTBCSR_NSBucketNumber( party, **kvargs ):
+    return None
+
+def Override_FRTBCSR_NSBucketNumber_Mandiri( party ):
+
+    import BaCvaCalculationsOverrides
+    reload(BaCvaCalculationsOverrides)
+
+    CsrNsBucketLookupDict = {
+                            ('IG','1.9.Sovereigns, central banks, MDB'):1,
+                            ('IG','2.10.Local government, non-financial,..'):2,
+                            ('IG','3.11.Financials,...'):3,
+                            ('IG','4.12.Basic materials, energy,...'):4,
+                            ('IG','5.13.Consumer goods and services,...'):5,
+                            ('IG','6.14.Technology, telecommunications'):6,
+                            ('IG','7.15.Health care, utilities,...'):7,
+                            ('IG','8.Covered bonds'):8,
+                            ('HY and NR','1.9.Sovereigns, central banks, MDB'):9,
+                            ('HY and NR','2.10.Local government, non-financial,..'):10,
+                            ('HY and NR','3.11.Financials,...'):11,
+                            ('HY and NR','4.12.Basic materials, energy,...'):12,
+                            ('HY and NR','5.13.Consumer goods and services,...'):13,
+                            ('HY and NR','6.14.Technology, telecommunications'):14,
+                            ('HY and NR','7.15.Health care, utilities,...'):15,
+                            ('None','16.Other sector'):16,
+                            ('None','18.HY indices'):17,
+                            ('None','17.IG indices'):18
+                            }
+
+    #use logic developed in BaCvaCalculationsOverrides module to get credit quality as "IG" or "HY and NR"    
+    partyCreditQuality = BaCvaCalculationsOverrides.Override_BaCvaRating(party)
+
+    #2023 07 26
+    #if the Issuer does not have any rating assigned: it is mapped to HY/NR Credit Quality (bucket 9 to 15, except when the business status choice list chosen is between bucket 16, 17, or 18
+    if partyCreditQuality == None: partyCreditQuality = 'HY and NR'
+    
+    #2023 07 26
+    #if Issuer does not have any sector assigned: it is mapped to "16 Other Sector" 
+    if party.BusinessStatus() == None:
+        partySector = '16.Other sector'
+    else: partySector = str(party.BusinessStatus().Name()) 
+    
+    if partySector in ['16.Other sector','18.HY indices','17.IG indices']: partyCreditQuality = 'None'
+    
+    partyCsrBucketMappingKeysList = []
+    partyCsrBucketMappingKeysList.insert(0,partyCreditQuality)
+    partyCsrBucketMappingKeysList.insert(1,partySector)
+    partyCsrBucketMappingKeysListAsTuple = tuple(partyCsrBucketMappingKeysList)
+    
+    if not partyCsrBucketMappingKeysListAsTuple in CsrNsBucketLookupDict:
+        print("WARNING: CSR counterparty %s does not have a complete list of equity CSR NS BUCKETS data. Existing data: %s." %(party.Name(),partyCsrBucketMappingKeysListAsTuple))
+        return None
+    else:
+        return CsrNsBucketLookupDict[partyCsrBucketMappingKeysListAsTuple]   
+
+    return None
+    
+#return int representing the bucket number    
+def Override_FRTBCSR_SCBucketNumber( party, **kvargs ):
+    return None
+
+#return int representing the bucket number
+def Override_FRTBEquityBucketNumber( instrument ):
+    FrtbEquityBucketNumberMappingDict = {
+                                        ('Large','Emerging','Consumer goods, transportation,...'):1,
+                                        ('Large','Emerging','Telecommunication and industries,...'):2,
+                                        ('Large','Emerging','Basic Material, energy,...'):3,
+                                        ('Large','Emerging','Financial (inc: BUMN),...'):4,
+                                        ('Large','Advanced','Consumer goods, transportation,...'):5,
+                                        ('Large','Advanced','Telecommunication and industries,...'):6,
+                                        ('Large','Advanced','Basic Material, energy,...'):7,
+                                        ('Large','Advanced','Financial (inc: BUMN),...'):8,
+                                        ('Small','Emerging','na'):9,
+                                        ('Small','Advanced','na'):10
+                                        }
+                                        
+    instrumentMappingKeyAsList = []
+    insIssuer = instrument.Issuer()  
+    
+    if hasattr(insIssuer.AdditionalInfo(),'FRTB_Eq_MarketCap'): instrumentMappingKeyAsList.insert(0,getattr(insIssuer.AdditionalInfo(),'FRTB_Eq_MarketCap')())
+    if hasattr(insIssuer.AdditionalInfo(),'FRTB_Eq_Economy'): instrumentMappingKeyAsList.insert(1,getattr(insIssuer.AdditionalInfo(),'FRTB_Eq_Economy')())
+    #note on below: if Market_Cap is 'small' then regardless of the issuer sector, the bucket is determined based only on the size of the Economy
+    if hasattr(insIssuer.AdditionalInfo(),'FRTB_Eq_MarketCap'):
+        if getattr(insIssuer.AdditionalInfo(),'FRTB_Eq_MarketCap')() == 'Small':
+            instrumentMappingKeyAsList.insert(2,'na')
+        else:
+            if hasattr(insIssuer.AdditionalInfo(),'FRTB_Eq_Sector'): instrumentMappingKeyAsList.insert(2,getattr(insIssuer.AdditionalInfo(),'FRTB_Eq_Sector')()) 
+    
+    instrumentMappingKeyListAsTuple = tuple(instrumentMappingKeyAsList)
+    if not instrumentMappingKeyListAsTuple in FrtbEquityBucketNumberMappingDict:
+        print("INFO: equity %s issuer %s does not have a complete list of equity FRTB equity BUCKETS data. Existing data: %s." %(instrument.Name(),insIssuer.Name(),instrumentMappingKeyListAsTuple))
+        return None
+    else:
+        return FrtbEquityBucketNumberMappingDict[instrumentMappingKeyListAsTuple]
+    
+    return None    
+
+
+#return string representing the commodity delivery location
+def Override_FRTBCommodityLocation( instrument ):
+    return None
+
+#return string representing the commodity
+def Override_FRTBCommodity( instument ):
+    return None
+
+#return int representing the bucket number
+def Override_FRTBCommodityBucketNumber( instrument ):
+    return None
+
+#return True if issuer is to be used in CSR calculations, else False
+def Override_IssuerIsCSRSensitive( issuer ):
+    return True
+
+#return string "Corporates", "Sovereigns","Local governments/municipalities"
+def Override_FRTBDRCIssuerType( party ):
+    if str(party.BusinessStatus()) == "None":
+        return "Corporates"
+    elif party.BusinessStatus().Name() == "1.9.Sovereigns, central banks, MDB":
+        return "Sovereigns"
+    elif party.BusinessStatus().Name() == "2.10.Local government, non-financial,..":
+        return "Local governments/municipalities"
+    elif party.BusinessStatus().Name() == "3.11.Financials,...":
+        return "Corporates"
+    elif party.BusinessStatus().Name() == "4.12.Basic materials, energy,...":
+        return "Corporates"
+    elif party.BusinessStatus().Name() == "5.13.Consumer goods and services,...":
+        return "Corporates"
+    elif party.BusinessStatus().Name() == "6.14.Technology, telecommunications":
+        return "Corporates"
+    elif party.BusinessStatus().Name() == "7.15.Health care, utilities,...":
+        return "Corporates"
+    elif party.BusinessStatus().Name() == "8.16.Covered bonds":
+        return "Corporates"
+    
+
+#return string "Equity", "Non-Senior Debt", "Senior Debt", "Covered Bonds"
+def Override_FRTBDRCSeniority( instrument ):
+    if str(instrument.SeniorityChlItem()) == "None":
+        return "Non-Senior Debt"
+    else:
+        seniority = str(instrument.SeniorityChlItem().Name())
+        return seniority
+
+#return string "Other", Exotic" or "None"
+def Override_FRTBResidualRiskType( instrument ):
+    if instrument.Name() == "EUR/P/USD/C/280731/1.18": return "Exotic"
+    
+    return None
+    
+#return boolean value, return False if issuer is to be excluded from DRC calculations
+def Override_FRTBDRCIsIssuerSensitive(issuer):
+    return True
+    
+#return string "AAA", "AA", "A", "BBB", "BB", "B", "CCC", "Unrated", "Defaulted"
+def Override_FRTBDRCCreditQuality( party, **kvargs ):
+
+    #Our internal policy prohibits any position with non-investment grade rating, so we can ignore those sandi with lower grade than Sandi_19
+    sandiToBaselDrcCreditQualityDict = {
+                                        'Sandi_01':'AAA',
+                                        'Sandi_02':'AA',
+                                        'Sandi_03':'AA',
+                                        'Sandi_04':'AA',
+                                        'Sandi_05':'A',
+                                        'Sandi_06':'A',
+                                        'Sandi_07':'A',
+                                        'Sandi_08':'BBB',
+                                        'Sandi_09':'BBB',
+                                        'Sandi_10':'BBB',
+                                        'Sandi_11':'BB',
+                                        'Sandi_12':'BB',
+                                        'Sandi_13':'BB',
+                                        'Sandi_14':'B',
+                                        'Sandi_15':'B',
+                                        'Sandi_16':'B',
+                                        'Sandi_17':'CCC',
+                                        'Sandi_18':'CCC',
+                                        'Sandi_19':'CCC',
+                                        }
+    
+    instrumentIssuer = party
+    ratingsList = []
+    
+    #return the Sandi_xx; as int(xx) which can be sorted from lowest to highest
+    #requirement is to use the 2nd best Sandi to assign DRC Credit Quality
+    #but for AddInfo's (i) Pefindo and (ii) Fitch Indonesia; must ignore the entry "blank"
+    if instrumentIssuer.Rating1(): ratingsList.append(int(instrumentIssuer.Rating1().Description()[6:8]))
+    if instrumentIssuer.Rating2(): ratingsList.append(int(instrumentIssuer.Rating2().Description()[6:8]))
+    if instrumentIssuer.Rating3(): ratingsList.append(int(instrumentIssuer.Rating3().Description()[6:8]))
+    
+    # AddInfo name = Pefindo_Rtg; while choice list name = Pefindo
+    if hasattr(instrumentIssuer.AdditionalInfo(),'Pefindo_Rtg') and (str(getattr(instrumentIssuer.AdditionalInfo(),'Pefindo_Rtg')()).lower() != 'blank')  and (getattr(instrumentIssuer.AdditionalInfo(),'Pefindo_Rtg')() != None): 
+        Pefindo_rating = getattr(instrumentIssuer.AdditionalInfo(),'Pefindo_Rtg')()
+        choiceListItem = acm.FChoiceList.Select("name='%s' and list='%s'" %(Pefindo_rating,'Pefindo'))[0]
+        ratingsList.append(int(choiceListItem.Description()[6:8]))
+    
+    # AddInfo name = Fitch_Indonesia_Rtg; while choice list name = Fitch Indonesia
+    if hasattr(instrumentIssuer.AdditionalInfo(),'Fitch_Indonesia_Rtg') and (str(getattr(instrumentIssuer.AdditionalInfo(),'Fitch_Indonesia_Rtg')()).lower() != 'blank') and (getattr(instrumentIssuer.AdditionalInfo(),'Fitch_Indonesia_Rtg')() != None):
+        Fitch_Indonesia_rating = getattr(instrumentIssuer.AdditionalInfo(),'Fitch_Indonesia_Rtg')()
+        choiceListItem = acm.FChoiceList.Select("name='%s' and list='%s'" %(Fitch_Indonesia_rating,'Fitch Indonesia'))[0]
+        ratingsList.append(int(choiceListItem.Description()[6:8]))
+
+    #sort from lowest int value to highest int value
+    ratingsList.sort()
+    
+    #for requirement, "Indonesia sovereign bond that should be zero weighted"
+    if (str(instrumentIssuer.BusinessStatus().Name()) == "1.9.Sovereigns, central banks, MDB") and (instrumentIssuer.Country() == "ID"):
+        return "ZeroWeight"
+        
+    #pre-pend the integer returned in the ratingsList with "Sandi_" so that e.g. '3' becomes 'Sandi_3' to lookup with the sandiToBaselDrcCreditQualityDict dictionary
+    #.zfill will add preceding zero, in this case '8' becomes '08'
+    
+    if len(ratingsList) == 1: 
+        returnForFrtbDrcCreditQuality = sandiToBaselDrcCreditQualityDict.get("Sandi_" + str(ratingsList[0]).zfill(2),None)
+        return returnForFrtbDrcCreditQuality
+    
+    if len(ratingsList) > 1: 
+        returnForFrtbDrcCreditQuality = sandiToBaselDrcCreditQualityDict.get("Sandi_" + str(ratingsList[1]).zfill(2),None)
+        if returnForFrtbDrcCreditQuality != None:
+            return returnForFrtbDrcCreditQuality
+    
+        #NOTE: there are blank entries in the choice list that Mandiri have created, and these are assigned a Sandi_24; 
+        #hence if this blank entry is encountered as the 2nd best credit quality entry, then fall back to reading the 1st best credit quality entry
+        #if this is still none, then return none
+        elif returnForFrtbDrcCreditQuality == None:
+                returnForFrtbDrcCreditQuality = sandiToBaselDrcCreditQualityDict.get("Sandi_" + str(ratingsList[0]).zfill(2),None)
+                return returnForFrtbDrcCreditQuality
+
+    return None
+
+    
+#return double value (instrument maturity in years).
+def Override_FRTBDRCRemainingMaturity( instrument ):
+    #20230222 override to set remaining maturity to 0.25 years for all stock positions
+    if instrument.IsKindOf(acm.FStock): return 0.25
+    return None
+
+#return risk class for instrument
+def Override_FRTBRiskClass( instrument ):
+    """
+    Add logic for which credit risk class an instrument
+    is sensitivie to, has to be one of:
+    "CSR (NS)", "CSR (S-C)" or "CSR (S-NC)".
+    Return type: string.
+    Return None to fallback to default implementation.
+    """
+    if str(instrument.InsType()) == "MBS/ABS":
+        return "CSR (S-NC)"
+    else:
+        return None
+
+def Override_BookType( portfolio ):
+    """
+    "TradingBook" or "BankingBook"
+    """
+    return None
+
+def Override_FRTBCSR_SNCBucketNumber( instrument, **kvargs ):
+    if str(instrument.Rating1ChlItem()) == "None":
+        mo = "NR"
+    else:
+        mo = str(instrument.Rating1ChlItem().Name())
+    if str(instrument.Rating2ChlItem()) == "None":
+        sp = "NR"
+    else:
+        sp = str(instrument.Rating2ChlItem().Name())
+    if str(instrument.Rating3ChlItem()) == "None":
+        fi = "NR"
+    else:
+        fi = str(instrument.Rating3ChlItem().Name())
+
+    pe = str(instrument.AdditionalInfo().Pefindo())
+    if instrument.AdditionalInfo().Pefindo() == None:
+        pe_set = instrument.AddInfoValue('Pefindo','NR')
+        instrument.Commit()
+        pe = str(instrument.AddInfoValue('Pefindo'))
+    
+    findo = str(instrument.AdditionalInfo().Fitch_Indonesia())
+    if instrument.AdditionalInfo().Fitch_Indonesia() == None:
+        findo_set=instrument.AddInfoValue('Fitch_Indonesia','NR')
+        instrument.Commit()
+        findo=str(instrument.AddInfoValue('Fitch_Indonesia'))
+    
+    #Instrument Security
+    if str(instrument.AddInfoValue('Securitisation_Type')) == "None":
+        security = "Other sector"
+    else:
+        security = str(instrument.AddInfoValue('Securitisation_Type'))
+    if str(instrument.SeniorityChlItem()) == "None":
+        seniority = "Non-Senior Debt"
+    else:
+        seniority = str(instrument.SeniorityChlItem().Name())
+    
+        #FITCH Rating Bucketing
+    fi_bucket=0
+
+        #Fitch Senior Investment Grade Bucketing
+
+    if fi in ["AAA","AA+","AA","AA-","A+","A","A-","BBB+","BBB"] and security=="RMBS Prime" and seniority=="Senior Debt":
+        fi_bucket=1
+    elif fi in ["AAA","AA+","AA","AA-","A+","A","A-","BBB+","BBB"] and security=="RMBS Mid-prime" and seniority=="Senior Debt":
+        fi_bucket=2
+    elif fi in ["AAA","AA+","AA","AA-","A+","A","A-","BBB+","BBB"] and security=="RMBS Sub-prime" and seniority=="Senior Debt":
+        fi_bucket=3
+    elif fi in ["AAA","AA+","AA","AA-","A+","A","A-","BBB+","BBB"] and security=="CMBS" and seniority=="Senior Debt":
+        fi_bucket=4
+    elif fi in ["AAA","AA+","AA","AA-","A+","A","A-","BBB+","BBB"] and security=="ABS Student loans" and seniority=="Senior Debt":
+        fi_bucket=5
+    elif fi in ["AAA","AA+","AA","AA-","A+","A","A-","BBB+","BBB"] and security=="ABS Credit cards" and seniority=="Senior Debt":
+        fi_bucket=6
+    elif fi in ["AAA","AA+","AA","AA-","A+","A","A-","BBB+","BBB"] and security=="ABS Auto" and seniority=="Senior Debt":
+        fi_bucket=7
+    elif fi in ["AAA","AA+","AA","AA-","A+","A","A-","BBB+","BBB"] and security=="CLO non-CTP" and seniority=="Senior Debt":
+        fi_bucket=8
+
+        #Fitch Non Senior Investment Grade Bucketing
+
+    if fi in ["AAA","AA+","AA","AA-","A+","A","A-","BBB+","BBB"] and security=="RMBS Prime" and seniority=="Non-Senior Debt":
+        fi_bucket=9
+    elif fi in ["AAA","AA+","AA","AA-","A+","A","A-","BBB+","BBB"] and security=="RMBS Mid-prime" and seniority=="Non-Senior Debt":
+        fi_bucket=10
+    elif fi in ["AAA","AA+","AA","AA-","A+","A","A-","BBB+","BBB"] and security=="RMBS Sub-prime" and seniority=="Non-Senior Debt":
+        fi_bucket=11
+    elif fi in ["AAA","AA+","AA","AA-","A+","A","A-","BBB+","BBB"] and security=="CMBS" and seniority=="Non-Senior Debt":
+        fi_bucket=12
+    elif fi in ["AAA","AA+","AA","AA-","A+","A","A-","BBB+","BBB"] and security=="ABS Student loans" and seniority=="Non-Senior Debt":
+        fi_bucket=13
+    elif fi in ["AAA","AA+","AA","AA-","A+","A","A-","BBB+","BBB"] and security=="ABS Credit cards" and seniority=="Non-Senior Debt":
+        fi_bucket=14
+    elif fi in ["AAA","AA+","AA","AA-","A+","A","A-","BBB+","BBB"] and security=="ABS Auto" and seniority=="Non-Senior Debt":
+        fi_bucket=15
+    elif fi in ["AAA","AA+","AA","AA-","A+","A","A-","BBB+","BBB"] and security=="CLO non-CTP" and seniority=="Non-Senior Debt":
+        fi_bucket=16
+        
+        
+        #Fitch High Yield and Non-Rated Bucketing
+
+    if fi in ["BBB-","BB+","BB","BB-","B+","B","B-","CCC+","CCC","CCC-","CC","C","D","NR"] and security=="RMBS Prime":
+        fi_bucket=17
+    elif fi in ["BBB-","BB+","BB","BB-","B+","B","B-","CCC+","CCC","CCC-","CC","C","D","NR"] and security=="RMBS Mid-prime":
+        fi_bucket=18
+    elif fi in ["BBB-","BB+","BB","BB-","B+","B","B-","CCC+","CCC","CCC-","CC","C","D","NR"] and security=="RMBS Sub-prime":
+        fi_bucket=19
+    elif fi in ["BBB-","BB+","BB","BB-","B+","B","B-","CCC+","CCC","CCC-","CC","C","D","NR"] and security=="CMBS":
+        fi_bucket=20
+    elif fi in ["BBB-","BB+","BB","BB-","B+","B","B-","CCC+","CCC","CCC-","CC","C","D","NR"] and security=="ABS Student loans":
+        fi_bucket=21
+    elif fi in ["BBB-","BB+","BB","BB-","B+","B","B-","CCC+","CCC","CCC-","CC","C","D","NR"] and security=="ABS Credit cards":
+        fi_bucket=22
+    elif fi in ["BBB-","BB+","BB","BB-","B+","B","B-","CCC+","CCC","CCC-","CC","C","D","NR"] and security=="ABS Auto":
+        fi_bucket=23
+    elif fi in ["BBB-","BB+","BB","BB-","B+","B","B-","CCC+","CCC","CCC-","CC","C","D","NR"] and security=="CLO non-CTP":
+        fi_bucket=24
+
+    elif security=="Other sector":
+        fi_bucket=25       
+    
+
+        #S&P Rating Bucketing
+    sp_bucket=0
+
+        #S&P Senior Investment Grade Bucketing
+
+    if sp in ["AAA","AA+","AA","AA-","A+","A","A-","BBB+","BBB"] and security=="RMBS Prime" and seniority=="Senior Debt":
+        sp_bucket=1
+    elif sp in ["AAA","AA+","AA","AA-","A+","A","A-","BBB+","BBB"] and security=="RMBS Mid-prime" and seniority=="Senior Debt":
+        sp_bucket=2
+    elif sp in ["AAA","AA+","AA","AA-","A+","A","A-","BBB+","BBB"] and security=="RMBS Sub-prime" and seniority=="Senior Debt":
+        sp_bucket=3
+    elif sp in ["AAA","AA+","AA","AA-","A+","A","A-","BBB+","BBB"] and security=="CMBS" and seniority=="Senior Debt":
+        sp_bucket=4
+    elif sp in ["AAA","AA+","AA","AA-","A+","A","A-","BBB+","BBB"] and security=="ABS Student loans" and seniority=="Senior Debt":
+        sp_bucket=5
+    elif sp in ["AAA","AA+","AA","AA-","A+","A","A-","BBB+","BBB"] and security=="ABS Credit cards" and seniority=="Senior Debt":
+        sp_bucket=6
+    elif sp in ["AAA","AA+","AA","AA-","A+","A","A-","BBB+","BBB"] and security=="ABS Auto" and seniority=="Senior Debt":
+        sp_bucket=7
+    elif sp in ["AAA","AA+","AA","AA-","A+","A","A-","BBB+","BBB"] and security=="CLO non-CTP" and seniority=="Senior Debt":
+        sp_bucket=8
+
+        #S&P Non-Senior Investment Grade Bucketing
+
+    if sp in ["AAA","AA+","AA","AA-","A+","A","A-","BBB+","BBB"] and security=="RMBS Prime" and seniority=="Non-Senior Debt":
+        sp_bucket=9
+    elif sp in ["AAA","AA+","AA","AA-","A+","A","A-","BBB+","BBB"] and security=="RMBS Mid-prime" and seniority=="Non-Senior Debt":
+        sp_bucket=10
+    elif sp in ["AAA","AA+","AA","AA-","A+","A","A-","BBB+","BBB"] and security=="RMBS Sub-prime" and seniority=="Non-Senior Debt":
+        sp_bucket=11
+    elif sp in ["AAA","AA+","AA","AA-","A+","A","A-","BBB+","BBB"] and security=="CMBS" and seniority=="Non-Senior Debt":
+        sp_bucket=12
+    elif sp in ["AAA","AA+","AA","AA-","A+","A","A-","BBB+","BBB"] and security=="ABS Student loans" and seniority=="Non-Senior Debt":
+        sp_bucket=13
+    elif sp in ["AAA","AA+","AA","AA-","A+","A","A-","BBB+","BBB"] and security=="ABS Credit cards" and seniority=="Non-Senior Debt":
+        sp_bucket=14
+    elif sp in ["AAA","AA+","AA","AA-","A+","A","A-","BBB+","BBB"] and security=="ABS Auto" and seniority=="Non-Senior Debt":
+        sp_bucket=15
+    elif sp in ["AAA","AA+","AA","AA-","A+","A","A-","BBB+","BBB"] and security=="CLO non-CTP" and seniority=="Non-Senior Debt":
+        sp_bucket=16
+        
+        
+        #S&P High Yield and Non-Rated Bucketing
+
+    if sp in ["BBB-","BB+","BB","BB-","B+","B","B-","CCC+","CCC","CCC-","CC","C","D","NR"] and security=="RMBS Prime":
+        sp_bucket=17
+    elif sp in ["BBB-","BB+","BB","BB-","B+","B","B-","CCC+","CCC","CCC-","CC","C","D","NR"] and security=="RMBS Mid-prime":
+        sp_bucket=18
+    elif sp in ["BBB-","BB+","BB","BB-","B+","B","B-","CCC+","CCC","CCC-","CC","C","D","NR"] and security=="RMBS Sub-prime":
+        sp_bucket=19
+    elif sp in ["BBB-","BB+","BB","BB-","B+","B","B-","CCC+","CCC","CCC-","CC","C","D","NR"] and security=="CMBS":
+        sp_bucket=20
+    elif sp in ["BBB-","BB+","BB","BB-","B+","B","B-","CCC+","CCC","CCC-","CC","C","D","NR"] and security=="ABS Student loans":
+        sp_bucket=21
+    elif sp in ["BBB-","BB+","BB","BB-","B+","B","B-","CCC+","CCC","CCC-","CC","C","D","NR"] and security=="ABS Credit cards":
+        sp_bucket=22
+    elif sp in ["BBB-","BB+","BB","BB-","B+","B","B-","CCC+","CCC","CCC-","CC","C","D","NR"] and security=="ABS Auto":
+        sp_bucket=23
+    elif sp in ["BBB-","BB+","BB","BB-","B+","B","B-","CCC+","CCC","CCC-","CC","C","D","NR"] and security=="CLO non-CTP":
+        sp_bucket=24
+
+    elif security=="Other sector":
+        sp_bucket=25       
+        
+
+        #Moodys Rating Bucketing
+    mo_bucket=0
+
+        #Moodys Senior Investment Grade Bucketing
+
+    if mo in ["Aaa","Aa1","Aa2","Aa3","A1","A2","A3","Baa1","Baa2","Baa3"] and security=="RMBS Prime" and seniority=="Senior Debt":
+        mo_bucket=1
+    elif mo in ["Aaa","Aa1","Aa2","Aa3","A1","A2","A3","Baa1","Baa2","Baa3"] and security=="RMBS Mid-prime" and seniority=="Senior Debt":
+        mo_bucket=2
+    elif mo in ["Aaa","Aa1","Aa2","Aa3","A1","A2","A3","Baa1","Baa2","Baa3"] and security=="RMBS Sub-prime" and seniority=="Senior Debt":
+        mo_bucket=3
+    elif mo in ["Aaa","Aa1","Aa2","Aa3","A1","A2","A3","Baa1","Baa2","Baa3"] and security=="CMBS" and seniority=="Senior Debt":
+        mo_bucket=4
+    elif mo in ["Aaa","Aa1","Aa2","Aa3","A1","A2","A3","Baa1","Baa2","Baa3"] and security=="ABS Student loans" and seniority=="Senior Debt":
+        mo_bucket=5
+    elif mo in ["Aaa","Aa1","Aa2","Aa3","A1","A2","A3","Baa1","Baa2","Baa3"] and security=="ABS Credit cards" and seniority=="Senior Debt":
+        mo_bucket=6
+    elif mo in ["Aaa","Aa1","Aa2","Aa3","A1","A2","A3","Baa1","Baa2","Baa3"] and security=="ABS Auto" and seniority=="Senior Debt":
+        mo_bucket=7
+    elif mo in ["Aaa","Aa1","Aa2","Aa3","A1","A2","A3","Baa1","Baa2","Baa3"] and security=="CLO non-CTP" and seniority=="Senior Debt":
+        mo_bucket=8
+        
+        
+ #Moodys Non-Senior Investment Grade Bucketing
+
+    if mo in ["Aaa","Aa1","Aa2","Aa3","A1","A2","A3","Baa1","Baa2"] and security=="RMBS Prime" and seniority=="Non-Senior Debt":
+        mo_bucket=9
+    elif mo in ["Aaa","Aa1","Aa2","Aa3","A1","A2","A3","Baa1","Baa2"] and security=="RMBS Mid-prime" and seniority=="Non-Senior Debt":
+        mo_bucket=10
+    elif mo in ["Aaa","Aa1","Aa2","Aa3","A1","A2","A3","Baa1","Baa2"] and security=="RMBS Sub-prime" and seniorty=="Non-Senior Debt":
+        mo_bucket=11
+    elif mo in ["Aaa","Aa1","Aa2","Aa3","A1","A2","A3","Baa1","Baa2"] and security=="CMBS" and seniority=="Non-Senior Debt":
+        mo_bucket=12
+    elif mo in ["Aaa","Aa1","Aa2","Aa3","A1","A2","A3","Baa1","Baa2"] and security=="ABS Student loans" and seniority=="Non-Senior Debt":
+        mo_bucket=13
+    elif mo in ["Aaa","Aa1","Aa2","Aa3","A1","A2","A3","Baa1","Baa2"] and security=="ABS Credit cards" and seniority=="Non-Senior Debt":
+        mo_bucket=14
+    elif mo in ["Aaa","Aa1","Aa2","Aa3","A1","A2","A3","Baa1","Baa2"] and security=="ABS Auto" and seniority=="Non-Senior Debt":
+        mo_bucket=15
+    elif mo in ["Aaa","Aa1","Aa2","Aa3","A1","A2","A3","Baa1","Baa2"] and security=="CLO non-CTP" and seniority=="Non-Senior Debt":
+        mo_bucket=16
+
+        #Moodys High Yield Bucketing
+
+    elif mo in ["Baa3","Ba1","Ba2","Ba3","B1","B2","B3","Caa1","Caa2","Caa3","Ca","C","NR"] and security=="RMBS Prime":
+        mo_bucket=17
+    elif mo in ["Baa3","Ba1","Ba2","Ba3","B1","B2","B3","Caa1","Caa2","Caa3","Ca","C","NR"] and security=="RMBS Mid-prime":
+        mo_bucket=18
+    elif mo in ["Baa3","Ba1","Ba2","Ba3","B1","B2","B3","Caa1","Caa2","Caa3","Ca","C","NR"] and security=="RMBS Sub-prime":
+        mo_bucket=19
+    elif mo in ["Baa3","Ba1","Ba2","Ba3","B1","B2","B3","Caa1","Caa2","Caa3","Ca","C","NR"] and security=="CMBS":
+        mo_bucket=20
+    elif mo in ["Baa3","Ba1","Ba2","Ba3","B1","B2","B3","Caa1","Caa2","Caa3","Ca","C","NR"] and security=="ABS Student loans":
+        mo_bucket=21
+    elif mo in ["Baa3","Ba1","Ba2","Ba3","B1","B2","B3","Caa1","Caa2","Caa3","Ca","C","NR"] and security=="ABS Credit cards":
+        mo_bucket=22
+    elif mo in ["Baa3","Ba1","Ba2","Ba3","B1","B2","B3","Caa1","Caa2","Caa3","Ca","C","NR"] and security=="ABS Auto":
+        mo_bucket=23
+    elif mo in ["Baa3","Ba1","Ba2","Ba3","B1","B2","B3","Caa1","Caa2","Caa3","Ca","C","NR"] and security=="CLO non-CTP":
+        mo_bucket=24
+
+    elif security=="Other sector":
+        mo_bucket=25     
+
+
+        #Pefindo Rating Bucketing
+    pe_bucket=0
+
+        #Pefindo Senior Investment Grade Bucketing
+
+    if pe in ["idAAA","idAA+","idAA","idAA-","idA+","idA","idA-","idBBB+","idBBB"] and security=="RMBS Prime" and seniority=="Senior Debt":
+        pe_bucket=1
+    elif pe in ["idAAA","idAA+","idAA","idAA-","idA+","idA","idA-","idBBB+","idBBB"] and security=="RMBS Mid-prime" and seniority=="Senior Debt":
+        pe_bucket=2
+    elif pe in ["idAAA","idAA+","idAA","idAA-","idA+","idA","idA-","idBBB+","idBBB"] and security=="RMBS Sub-prime" and seniority=="Senior Debt":
+        pe_bucket=3
+    elif pe in ["idAAA","idAA+","idAA","idAA-","idA+","idA","idA-","idBBB+","idBBB"] and security=="CMBS" and seniority=="Senior Debt":
+        pe_bucket=4
+    elif pe in ["idAAA","idAA+","idAA","idAA-","idA+","idA","idA-","idBBB+","idBBB"] and security=="ABS Student loans" and seniority=="Senior Debt":
+        pe_bucket=5
+    elif pe in ["idAAA","idAA+","idAA","idAA-","idA+","idA","idA-","idBBB+","idBBB"] and security=="ABS Credit cards" and seniority=="Senior Debt":
+        pe_bucket=6
+    elif pe in ["idAAA","idAA+","idAA","idAA-","idA+","idA","idA-","idBBB+","idBBB"] and security=="ABS Auto" and seniority=="Senior Debt":
+        pe_bucket=7
+    elif pe in ["idAAA","idAA+","idAA","idAA-","idA+","idA","idA-","idBBB+","idBBB"] and security=="CLO non-CTP" and seniority=="Senior Debt":
+        pe_bucket=8
+
+
+        #Pefindo Non-Senior Investment Grade Bucketing
+
+    if pe in ["idAAA","idAA+","idAA","idAA-","idA+","idA","idA-","idBBB+","idBBB"] and security=="RMBS Prime" and seniority=="Non-Senior Debt":
+        pe_bucket=9
+    elif pe in ["idAAA","idAA+","idAA","idAA-","idA+","idA","idA-","idBBB+","idBBB"] and security=="RMBS Mid-prime" and seniority=="Non-Senior Debt":
+        pe_bucket=10
+    elif pe in ["idAAA","idAA+","idAA","idAA-","idA+","idA","idA-","idBBB+","idBBB"] and security=="RMBS Sub-prime" and seniority=="Non-Senior Debt":
+        pe_bucket=11
+    elif pe in ["idAAA","idAA+","idAA","idAA-","idA+","idA","idA-","idBBB+","idBBB"] and security=="CMBS" and seniority=="Non-Senior Debt":
+        pe_bucket=12
+    elif pe in ["idAAA","idAA+","idAA","idAA-","idA+","idA","idA-","idBBB+","idBBB"] and security=="ABS Student loans" and seniority=="Non-Senior Debt":
+        pe_bucket=13
+    elif pe in ["idAAA","idAA+","idAA","idAA-","idA+","idA","idA-","idBBB+","idBBB"] and security=="ABS Credit cards" and seniority=="Non-Senior Debt":
+        pe_bucket=14
+    elif pe in ["idAAA","idAA+","idAA","idAA-","idA+","idA","idA-","idBBB+","idBBB"] and security=="ABS Auto" and seniority=="Non-Senior Debt":
+        pe_bucket=15
+    elif pe in ["idAAA","idAA+","idAA","idAA-","idA+","idA","idA-","idBBB+","idBBB"] and security=="CLO non-CTP" and seniority=="Non-Senior Debt":
+        pe_bucket=16
+        
+        
+        #Pefindo High Yield and Non-Rated Bucketing
+
+    if pe in ["idBBB-","idBB+","idBB","idBB-","idB+","idB","idB-","idCCC","idD","NR"] and security=="RMBS Prime":
+        pe_bucket=17
+    elif pe in ["idBBB-","idBB+","idBB","idBB-","idB+","idB","idB-","idCCC","idD","NR"] and security=="RMBS Mid-prime":
+        pe_bucket=18
+    elif pe in ["idBBB-","idBB+","idBB","idBB-","idB+","idB","idB-","idCCC","idD","NR"] and security=="RMBS Sub-prime":
+        pe_bucket=19
+    elif pe in ["idBBB-","idBB+","idBB","idBB-","idB+","idB","idB-","idCCC","idD","NR"] and security=="CMBS":
+        pe_bucket=20
+    elif pe in ["idBBB-","idBB+","idBB","idBB-","idB+","idB","idB-","idCCC","idD","NR"] and security=="ABS Student loans":
+        pe_bucket=21
+    elif pe in ["idBBB-","idBB+","idBB","idBB-","idB+","idB","idB-","idCCC","idD","NR"] and security=="ABS Credit cards":
+        pe_bucket=22
+    elif pe in ["idBBB-","idBB+","idBB","idBB-","idB+","idB","idB-","idCCC","idD","NR"] and security=="ABS Auto":
+        pe_bucket=23
+    elif pe in ["idBBB-","idBB+","idBB","idBB-","idB+","idB","idB-","idCCC","idD","NR"] and security=="CLO non-CTP":
+        pe_bucket=24
+
+    elif security=="Other sector":
+        pe_bucket=25
+
+        #FitchIndo Rating Bucketing
+    findo_bucket=0
+
+        #FitchIndo Senior Investment Grade Bucketing
+
+    if findo in ["AAA(idn)","AA+(idn)","AA(idn)","AA-(idn)","A+(idn)","A(idn)","A-(idn)","BBB+(idn)","BBB(idn)"] and security=="RMBS Prime" and seniority=="Senior Debt":
+        findo_bucket=1
+    elif findo in ["AAA(idn)","AA+(idn)","AA(idn)","AA-(idn)","A+(idn)","A(idn)","A-(idn)","BBB+(idn)","BBB(idn)"] and security=="RMBS Mid-prime" and seniority=="Senior Debt":
+        findo_bucket=2
+    elif findo in ["AAA(idn)","AA+(idn)","AA(idn)","AA-(idn)","A+(idn)","A(idn)","A-(idn)","BBB+(idn)","BBB(idn)"] and security=="RMBS Sub-prime" and seniority=="Senior Debt":
+        findo_bucket=3
+    elif findo in ["AAA(idn)","AA+(idn)","AA(idn)","AA-(idn)","A+(idn)","A(idn)","A-(idn)","BBB+(idn)","BBB(idn)"] and security=="CMBS" and seniority=="Senior Debt":
+        findo_bucket=4
+    elif findo in ["AAA(idn)","AA+(idn)","AA(idn)","AA-(idn)","A+(idn)","A(idn)","A-(idn)","BBB+(idn)","BBB(idn)"] and security=="ABS Student loans" and seniority=="Senior Debt":
+        findo_bucket=5
+    elif findo in ["AAA(idn)","AA+(idn)","AA(idn)","AA-(idn)","A+(idn)","A(idn)","A-(idn)","BBB+(idn)","BBB(idn)"] and security=="ABS Credit cards" and seniority=="Senior Debt":
+        findo_bucket=6
+    elif findo in ["AAA(idn)","AA+(idn)","AA(idn)","AA-(idn)","A+(idn)","A(idn)","A-(idn)","BBB+(idn)","BBB(idn)"] and security=="ABS Auto" and seniority=="Senior Debt":
+        findo_bucket=7
+    elif findo in ["AAA(idn)","AA+(idn)","AA(idn)","AA-(idn)","A+(idn)","A(idn)","A-(idn)","BBB+(idn)","BBB(idn)"] and security=="CLO non-CTP" and seniority=="Senior Debt":
+        findo_bucket=8
+
+
+        #FitchIndo Non-Senior Investment Grade Bucketing
+
+    if findo in ["AAA(idn)","AA+(idn)","AA(idn)","AA-(idn)","A+(idn)","A(idn)","A-(idn)","BBB+(idn)","BBB(idn)"] and security=="RMBS Prime" and seniority=="Non-Senior Debt":
+        findo_bucket=9
+    elif findo in ["AAA(idn)","AA+(idn)","AA(idn)","AA-(idn)","A+(idn)","A(idn)","A-(idn)","BBB+(idn)","BBB(idn)"] and security=="RMBS Mid-prime" and seniority=="Non-Senior Debt":
+        findo_bucket=10
+    elif findo in ["AAA(idn)","AA+(idn)","AA(idn)","AA-(idn)","A+(idn)","A(idn)","A-(idn)","BBB+(idn)","BBB(idn)"] and security=="RMBS Sub-prime" and seniority=="Non-Senior Debt":
+        findo_bucket=11
+    elif findo in ["AAA(idn)","AA+(idn)","AA(idn)","AA-(idn)","A+(idn)","A(idn)","A-(idn)","BBB+(idn)","BBB(idn)"] and security=="CMBS" and seniority=="Non-Senior Debt":
+        findo_bucket=12
+    elif findo in ["AAA(idn)","AA+(idn)","AA(idn)","AA-(idn)","A+(idn)","A(idn)","A-(idn)","BBB+(idn)","BBB(idn)"] and security=="ABS Student loans" and seniority=="Non-Senior Debt":
+        findo_bucket=13
+    elif findo in ["AAA(idn)","AA+(idn)","AA(idn)","AA-(idn)","A+(idn)","A(idn)","A-(idn)","BBB+(idn)","BBB(idn)"] and security=="ABS Credit cards" and seniority=="Non-Senior Debt":
+        findo_bucket=14
+    elif findo in ["AAA(idn)","AA+(idn)","AA(idn)","AA-(idn)","A+(idn)","A(idn)","A-(idn)","BBB+(idn)","BBB(idn)"] and security=="ABS Auto" and seniority=="Non-Senior Debt":
+        findo_bucket=15
+    elif findo in ["AAA(idn)","AA+(idn)","AA(idn)","AA-(idn)","A+(idn)","A(idn)","A-(idn)","BBB+(idn)","BBB(idn)"] and security=="CLO non-CTP" and seniority=="Non-Senior Debt":
+        findo_bucket=16
+
+        
+        #FitchIndo High Yield and Non-Rated Bucketing
+
+    if findo in ["BBB-(idn)","BB+(idn)","BB(idn)","BB-(idn)","B+(idn)","B(idn)","B-(idn)","CCC(idn)","D(idn)","NR"] and security=="RMBS Prime":
+        findo_bucket=17
+    elif findo in ["BBB-(idn)","BB+(idn)","BB(idn)","BB-(idn)","B+(idn)","B(idn)","B-(idn)","CCC(idn)","D(idn)","NR"] and security=="RMBS Mid-prime":
+        findo_bucket=18
+    elif findo in ["BBB-(idn)","BB+(idn)","BB(idn)","BB-(idn)","B+(idn)","B(idn)","B-(idn)","CCC(idn)","D(idn)","NR"] and security=="RMBS Sub-prime":
+        findo_bucket=19
+    elif findo in ["BBB-(idn)","BB+(idn)","BB(idn)","BB-(idn)","B+(idn)","B(idn)","B-(idn)","CCC(idn)","D(idn)","NR"] and security=="CMBS":
+        findo_bucket=20
+    elif findo in ["BBB-(idn)","BB+(idn)","BB(idn)","BB-(idn)","B+(idn)","B(idn)","B-(idn)","CCC(idn)","D(idn)","NR"] and security=="ABS Student loans":
+        findo_bucket=21
+    elif findo in ["BBB-(idn)","BB+(idn)","BB(idn)","BB-(idn)","B+(idn)","B(idn)","B-(idn)","CCC(idn)","D(idn)","NR"] and security=="ABS Credit cards":
+        findo_bucket=22
+    elif findo in ["BBB-(idn)","BB+(idn)","BB(idn)","BB-(idn)","B+(idn)","B(idn)","B-(idn)","CCC(idn)","D(idn)","NR"] and security=="ABS Auto":
+        findo_bucket=23
+    elif findo in ["BBB-(idn)","BB+(idn)","BB(idn)","BB-(idn)","B+(idn)","B(idn)","B-(idn)","CCC(idn)","D(idn)","NR"] and security=="CLO non-CTP":
+        findo_bucket=24
+
+    elif security=="Other sector":
+        findo_bucket=25
+
+    IG = sIG = 0
+    IG_mo = s_mo = 0
+    IG_fi = s_fi = 0
+    IG_sp = s_sp = 0
+    IG_pe = s_pe = 0
+    IG_findo = s_findo = 0
+    HY = 0
+
+    if mo == "NR":
+        IG_mo = 1
+    if fi == "NR":
+        IG_fi = 1
+    if sp == "NR":
+        IG_sp = 1
+    if pe == "NR":
+        IG_pe = 1
+    if findo == "NR":
+        IG_findo = 1
+
+    if mo_bucket<=8:
+        sIG = 1
+        s_mo = 1
+    else:
+        if mo_bucket<=16:
+            IG = 1
+        else:
+            HY = 1
+
+    if fi_bucket<=8:
+        sIG += 1
+        s_fi=1
+    else:
+        if fi_bucket<=16:
+            IG += 1
+        else:
+            HY += 1
+        
+    if sp_bucket<=8:
+        sIG += 1
+        s_sp=1
+    else:
+        if sp_bucket<=16:
+            IG += 1
+        else:
+            HY += 1
+        
+    if pe_bucket<=8:
+        sIG += 1
+        s_pe=1
+    else:
+        if pe_bucket<=16:
+            IG += 1
+        else:
+            HY += 1
+        
+    if findo_bucket<=8:
+        sIG += 1
+        s_findo=1
+    else:
+        if findo_bucket<=16:
+            IG += 1
+        else:
+            HY += 1
+    
+    if sIG > 1:
+        return min(mo_bucket,fi_bucket,sp_bucket,pe_bucket,findo_bucket)
+    else:
+        if sIG == 1:
+            if (IG_mo==0 and IG_fi==1 and IG_sp==1 and IG_pe==1 and IG_findo==1):
+                return mo_bucket
+            elif (IG_mo==1 and IG_fi==0 and IG_sp==1 and IG_pe==1 and IG_findo==1):
+                return fi_bucket
+            elif (IG_mo==1 and IG_fi==1 and IG_sp==0 and IG_pe==1 and IG_findo==1):
+                return sp_bucket
+            elif (IG_mo==1 and IG_fi==1 and IG_sp==1 and IG_pe==0 and IG_findo==1):
+                return pe_bucket
+            elif (IG_mo==1 and IG_fi==1 and IG_sp==1 and IG_pe==1 and IG_findo==0):
+                return findo_bucket
+            elif IG > 0:
+                if s_mo==1:
+                    return min(fi_bucket,sp_bucket,pe_bucket,findo_bucket)
+                elif s_fi==1:
+                    return min(mo_bucket,sp_bucket,pe_bucket,findo_bucket)
+                elif s_pe==1:
+                    return min(mo_bucket,fi_bucket,sp_bucket,findo_bucket)
+                elif s_findo==1:
+                    return min(mo_bucket,fi_bucket,sp_bucket,pe_bucket)
+                else:		
+                    return max(mo_bucket,fi_bucket,sp_bucket,pe_bucket,findo_bucket)
+                    
+        elif sIG == 0 and IG > 0:
+            if (IG_mo==0 and IG_fi==1 and IG_sp==1 and IG_pe==1 and IG_findo==1):
+                return mo_bucket
+            elif (IG_mo==1 and IG_fi==0 and IG_sp==1 and IG_pe==1 and IG_findo==1):
+                return fi_bucket
+            elif (IG_mo==1 and IG_fi==1 and IG_sp==0 and IG_pe==1 and IG_findo==1):
+                return sp_bucket
+            elif (IG_mo==1 and IG_fi==1 and IG_sp==1 and IG_pe==0 and IG_findo==1):
+                return pe_bucket
+            elif (IG_mo==1 and IG_fi==1 and IG_sp==1 and IG_pe==1 and IG_findo==0):
+                return findo_bucket
+            elif IG > 1:
+                return min(mo_bucket,fi_bucket,sp_bucket,pe_bucket,findo_bucket)
+            else:
+                return max(mo_bucket,fi_bucket,sp_bucket,pe_bucket,findo_bucket)
+                
+        else:
+            return max(mo_bucket,fi_bucket,sp_bucket,pe_bucket,findo_bucket)
+
+def Override_FRTBDRC_SNCTrancheClass( instrument, **kvargs ):
+    if str(instrument.AddInfoValue('Securitisation_Type')) == "None":
+        return "Other wholesale"
+    elif str(instrument.AddInfoValue('Securitisation_Type')) == "ABS Auto":
+        return "Auto loans and auto leases"
+    elif str(instrument.AddInfoValue('Securitisation_Type')) in ("RMBS Prime","RMBS Mid-prime","RMBS Sub-prime"):
+        return "RMBS"
+    elif str(instrument.AddInfoValue('Securitisation_Type')) == "ABS Credit cards":
+        return "Credit cards"
+    elif str(instrument.AddInfoValue('Securitisation_Type')) == "CMBS":
+        return "Commercial MBS"
+    elif str(instrument.AddInfoValue('Securitisation_Type')) == "CLO non-CTP":
+        return "Collateralised loan obligations"
+    elif str(instrument.AddInfoValue('Securitisation_Type')) == "ABS Student loans":
+        return "Student loans"
+    else:
+        return "Other wholesale"
+
+def Override_FRTBDRC_SNCTrancheRegion( instrument, **kvargs ):
+    if str(instrument.Currency().Name()) == "None":
+        return "All Regions"
+    elif str(instrument.Currency().Name()) in ("IDR","JPY","CNY","CNH","INR","SEK"):
+        return "Asia"
+    elif str(instrument.Currency().Name()) in ("EUR","GBP","CHF"):
+        return "Europe"
+    elif str(instrument.Currency().Name()) in ("USD","CAD"):
+        return "North America"
+    else:
+        return "All Other Regions"
+    
+def Override_FRTBDRC_SNCCreditQuality( instrument, **kvargs ):
+    return None
+    
+def Override_DRCTrancheThickness( instrument, **kvargs ):
+    return None
+
+...
+
+  FRTBCSRTools
+
+import acm
+import FRTBBaseDRCTools
+import FRTBCalculationsOverrides
+import FRTBSACSRMapping
+
+def FRTBMappedIssuerIsSatisfiedBy( object, innerCriteria ):
+    if not object:
+        return False
+    
+    object = object.Value()
+    if not hasattr( object, "IsKindOf" ):
+        return False
+        
+    if object.IsKindOf( acm.FMappingLink ):
+        instrument = object.Instrument()
+        if instrument and instrument.Issuer() and instrument.IsKindOf( acm.FCashFlowInstrument ):
+            return innerCriteria.IsSatisfiedBy( instrument.Issuer() )
+    return False
+    
+def FRTBMappedIssuerCriteria( innerCriteria ):
+    func = acm.FRTB().SA().SBA().GetMethod( "MappedIssuerIsSatisfiedBy", 2 ).Delegatee()
+    return func.CreateCall( [None, innerCriteria] )
+
+def FRTBIssuersFromCreditReference( creditReference ):
+    def AddIssuer( issuerList, issuer ):
+        if issuer:
+            if FRTBCalculationsOverrides.Override_IssuerIsCSRSensitive( issuer ):
+                issuerList.append( issuer )
+        
+    issuers = []
+    if creditReference.IsKindOf( acm.FCreditIndex ):
+        
+        forceSumOfConstituentsEnum = creditReference.IndexAsSumOfConstituents()
+        forceConstituents = False
+            
+        if forceSumOfConstituentsEnum == "True":
+            forceConstituents = True
+        elif forceSumOfConstituentsEnum == "False":
+            forceConstituents = False
+        else:
+            forceConstituents = acm.Valuation().MappedValuationParameters().Parameter().IndexAsSumOfConstituents()
+        
+        if forceConstituents:
+            for constituent in creditReference.Instruments():
+                AddIssuer( issuers, constituent.Issuer() )
+        else:
+            AddIssuer( issuers, creditReference.Issuer() )
+            
+    elif creditReference.IsKindOf( acm.FCombination ):
+        for constituent in creditReference.Instruments():
+            AddIssuer( issuers, constituent.Issuer() )
+    elif creditReference.IsKindOf( acm.FCashFlowInstrument ):
+        AddIssuer( issuers, creditReference.Issuer() )
+    
+    return [ iss.AsSymbol() for iss in issuers if iss is not None]
+    
+def FRTBCSRIssuers( instrument ):
+    
+    issuers = []
+    
+    if instrument.IsKindOf( acm.FDerivative ):
+        reference = instrument.ValuationUnderlying()
+        issuers = FRTBCSRIssuers( reference )
+        
+    elif instrument.IsKindOf( acm.FCombination ):
+        for constituent in instrument.Instruments():
+            issuers.extend( FRTBCSRIssuers( constituent ) )
+        
+    elif instrument.IsKindOf( acm.FCashFlowInstrument ):
+        creditReference = instrument.CreditReferenceOrSelf()
+        issuers.extend( FRTBIssuersFromCreditReference( creditReference  ) )
+        
+    return issuers
+    
+
+def FRTBCSRSubtypes( curveEvaluators ):
+    subTypes = []
+    transformer = acm.FRiskFactorTransformCurveComponent()
+    
+    for curveEval in curveEvaluators:
+        curve = transformer.GetCoordinate( "Yield Curve", curveEval )
+        subTypes.append( acm.FSymbol( curve.FRTBCSRSubType() ) )
+
+    return subTypes
+    
+def __RatingIsInvestmentGrade( creditQuality, jurisdiction ):
+    return str(creditQuality) in FRTBSACSRMapping.investementGradeRatings.get( jurisdiction, [] )
+    
+def FRTBCSRBucket( instrument, issuer, jurisdiction ):
+    bucket = None
+    
+    if FRTBBaseDRCTools.DRCSeniority( instrument, False, True ) == "Covered Bonds" and __RatingIsInvestmentGrade( acm.FRTB().DRC().CreditQuality( issuer, jurisdiction, instrument ), jurisdiction ):
+        bucket = FRTBSACSRMapping.csrCoveredBondsBucket[ jurisdiction ]
+    else:
+        if acm.FRTB().SA().CsrRiskClass(instrument) == "CSR (S-C)":
+            bucket = issuer.FRTBCSR_SCBucketNumber( jurisdiction )
+        else:
+            #bucket = issuer.FRTBCSR_NSBucketNumber( jurisdiction )
+            bucket = FRTBCalculationsOverrides.Override_FRTBCSR_NSBucketNumber_Mandiri( issuer )
+    return bucket
+    
+# CSR S-Non CTP
+
+def FRTBCSR_SNCTranches( instrument ):
+    if acm.FRTB().SA().CsrRiskClass(instrument).Name() == "CSR (S-NC)":
+        return [instrument.CreditReferenceOrSelf().Name()]
+    return []
+
+def FRTBMappedTrancheIsSatisfiedBy( object, innerCriteria ):
+    if not object:
+        return False
+    
+    object = object.Value()
+    if not hasattr( object, "IsKindOf" ):
+        return False
+        
+    if object.IsKindOf( acm.FMappingLink ):
+        instrument = object.Instrument()
+        if instrument:
+            return innerCriteria.IsSatisfiedBy( instrument )
+            
+    return False
+
+def FRTBMappedTrancheCriteria( innerCriteria ):
+    func = acm.FRTB().SA().SBA().GetMethod( "MappedTrancheIsSatisfiedBy", 2 ).Delegatee()
+    return func.CreateCall( [None, innerCriteria] )
+
+...
+
+}
+

@@ -1,0 +1,10 @@
+Windows Registry Editor Version 5.00
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Front\Front Arena\ATS\FA_INSTANCE_NAME]
+"module_name"="FFTPATSOperations"
+"username"="ATS_FFTPLIB"
+"password"="intas"
+"sender_mb_name"="{FFTP_MESSAGE_SENDER}"
+"receiver_mb_name"="{FFTP_MESSAGE_RECEIVER}"
+
+

@@ -1,0 +1,1049 @@
+<?xml version='1.0' encoding='ISO-8859-1'?>
+<FStoredASQLQuery><acm_version>2022.4.13, Mar 16 2024</acm_version><acm_unicode>True</acm_unicode><py2_ads>False</py2_ads><version>0 $Id$</version><update_time>2024-06-18 11:47:19</update_time><object_name>A_AC_TD_RepoToMaturity_AccountingCCY</object_name><owner>ARENASYS</owner><protection>0</protection><shared>True</shared><subtype>tAccountMapping</subtype><data>&lt;?xml version='1.0' encoding='UTF-8'?&gt;
+&lt;FDictionary type ="AcmDomain"&gt;
+  &lt;Element&gt;
+  &lt;FAssociation type ="AcmDomain"&gt;
+    &lt;associationKey type ="Property"&gt;
+      &lt;FSymbol type ="AcmDomain"&gt;
+        &lt;Text type ="Property"&gt;
+          &lt;string type ="AcmDomain"&gt;Query&lt;/string&gt;
+        &lt;/Text&gt;
+      &lt;/FSymbol&gt;
+    &lt;/associationKey&gt;
+    &lt;associationValue type ="Property"&gt;    
+
+    &lt;FASQLQuery type ="AcmDomain"&gt;
+
+      &lt;asqlNodes type ="Property"&gt;
+
+        &lt;FArray type ="AcmDomain"&gt;
+
+          &lt;Element&gt;
+
+          &lt;FASQLOpNode type ="AcmDomain"&gt;
+
+            &lt;asqlNodes type ="Property"&gt;
+
+              &lt;FArray type ="AcmDomain"&gt;
+
+                &lt;Element&gt;
+
+                &lt;FASQLAttrNode type ="AcmDomain"&gt;
+
+                  &lt;asqlAttribute type ="Property"&gt;
+
+                    &lt;FASQLAttribute type ="AcmDomain"&gt;
+
+                      &lt;attributeString type ="Property"&gt;
+
+                        &lt;FString type ="AcmDomain"&gt;
+
+                          &lt;Text type ="Property"&gt;
+
+                            &lt;string type ="AcmDomain"&gt;JournalTrade.OptKey4AsEnum&lt;/string&gt;
+
+                          &lt;/Text&gt;
+
+                        &lt;/FString&gt;
+
+                      &lt;/attributeString&gt;
+
+                    &lt;/FASQLAttribute&gt;
+
+                  &lt;/asqlAttribute&gt;
+
+                  &lt;asqlValue type ="Property"&gt;
+
+                    &lt;FEnumValue type ="AcmDomain"&gt;
+
+                      &lt;enumeration type ="Property"&gt;
+
+                        &lt;FDomain type ="AcmDomain"&gt;
+
+                          &lt;DomainName type ="Property"&gt;
+
+                            &lt;string type ="AcmDomain"&gt;enum(cl_Category)&lt;/string&gt;
+
+                          &lt;/DomainName&gt;
+
+                        &lt;/FDomain&gt;
+
+                      &lt;/enumeration&gt;
+
+                      &lt;tag type ="Property"&gt;
+
+                        &lt;FString type ="AcmDomain"&gt;
+
+                          &lt;Text type ="Property"&gt;
+
+                            &lt;string type ="AcmDomain"&gt;CWFDIS&lt;/string&gt;
+
+                          &lt;/Text&gt;
+
+                        &lt;/FString&gt;
+
+                      &lt;/tag&gt;
+
+                      &lt;value type ="Property"&gt;
+
+                        &lt;int type ="AcmDomain"&gt;32&lt;/int&gt;
+
+                      &lt;/value&gt;
+
+                    &lt;/FEnumValue&gt;
+
+                  &lt;/asqlValue&gt;
+
+                  &lt;asqlOperator type ="Property"&gt;
+
+                    &lt;int type ="AcmDomain"&gt;0&lt;/int&gt;
+
+                  &lt;/asqlOperator&gt;
+
+                  &lt;scaleFactor type ="Property"&gt;
+
+                    &lt;double type ="AcmDomain"&gt;NaN&lt;/double&gt;
+
+                  &lt;/scaleFactor&gt;
+
+                &lt;/FASQLAttrNode&gt;
+
+                &lt;/Element&gt;
+
+                &lt;Element&gt;
+
+                &lt;FASQLAttrNode type ="AcmDomain"&gt;
+
+                  &lt;asqlAttribute type ="Property"&gt;
+
+                    &lt;FASQLAttribute type ="AcmDomain"&gt;
+
+                      &lt;attributeString type ="Property"&gt;
+
+                        &lt;FString type ="AcmDomain"&gt;
+
+                          &lt;Text type ="Property"&gt;
+
+                            &lt;string type ="AcmDomain"&gt;JournalTrade.OptKey4AsEnum&lt;/string&gt;
+
+                          &lt;/Text&gt;
+
+                        &lt;/FString&gt;
+
+                      &lt;/attributeString&gt;
+
+                    &lt;/FASQLAttribute&gt;
+
+                  &lt;/asqlAttribute&gt;
+
+                  &lt;asqlValue type ="Property"&gt;
+
+                    &lt;FEnumValue type ="AcmDomain"&gt;
+
+                      &lt;enumeration type ="Property"&gt;
+
+                        &lt;FDomain type ="AcmDomain"&gt;
+
+                          &lt;DomainName type ="Property"&gt;
+
+                            &lt;string type ="AcmDomain"&gt;enum(cl_Category)&lt;/string&gt;
+
+                          &lt;/DomainName&gt;
+
+                        &lt;/FDomain&gt;
+
+                      &lt;/enumeration&gt;
+
+                      &lt;tag type ="Property"&gt;
+
+                        &lt;FString type ="AcmDomain"&gt;
+
+                          &lt;Text type ="Property"&gt;
+
+                            &lt;string type ="AcmDomain"&gt;CWFGOV&lt;/string&gt;
+
+                          &lt;/Text&gt;
+
+                        &lt;/FString&gt;
+
+                      &lt;/tag&gt;
+
+                      &lt;value type ="Property"&gt;
+
+                        &lt;int type ="AcmDomain"&gt;33&lt;/int&gt;
+
+                      &lt;/value&gt;
+
+                    &lt;/FEnumValue&gt;
+
+                  &lt;/asqlValue&gt;
+
+                  &lt;asqlOperator type ="Property"&gt;
+
+                    &lt;int type ="AcmDomain"&gt;0&lt;/int&gt;
+
+                  &lt;/asqlOperator&gt;
+
+                  &lt;scaleFactor type ="Property"&gt;
+
+                    &lt;double type ="AcmDomain"&gt;NaN&lt;/double&gt;
+
+                  &lt;/scaleFactor&gt;
+
+                &lt;/FASQLAttrNode&gt;
+
+                &lt;/Element&gt;
+
+                &lt;Element&gt;
+
+                &lt;FASQLAttrNode type ="AcmDomain"&gt;
+
+                  &lt;asqlAttribute type ="Property"&gt;
+
+                    &lt;FASQLAttribute type ="AcmDomain"&gt;
+
+                      &lt;attributeString type ="Property"&gt;
+
+                        &lt;FString type ="AcmDomain"&gt;
+
+                          &lt;Text type ="Property"&gt;
+
+                            &lt;string type ="AcmDomain"&gt;JournalTrade.OptKey4AsEnum&lt;/string&gt;
+
+                          &lt;/Text&gt;
+
+                        &lt;/FString&gt;
+
+                      &lt;/attributeString&gt;
+
+                    &lt;/FASQLAttribute&gt;
+
+                  &lt;/asqlAttribute&gt;
+
+                  &lt;asqlValue type ="Property"&gt;
+
+                    &lt;FEnumValue type ="AcmDomain"&gt;
+
+                      &lt;enumeration type ="Property"&gt;
+
+                        &lt;FDomain type ="AcmDomain"&gt;
+
+                          &lt;DomainName type ="Property"&gt;
+
+                            &lt;string type ="AcmDomain"&gt;enum(cl_Category)&lt;/string&gt;
+
+                          &lt;/DomainName&gt;
+
+                        &lt;/FDomain&gt;
+
+                      &lt;/enumeration&gt;
+
+                      &lt;tag type ="Property"&gt;
+
+                        &lt;FString type ="AcmDomain"&gt;
+
+                          &lt;Text type ="Property"&gt;
+
+                            &lt;string type ="AcmDomain"&gt;CWFNON&lt;/string&gt;
+
+                          &lt;/Text&gt;
+
+                        &lt;/FString&gt;
+
+                      &lt;/tag&gt;
+
+                      &lt;value type ="Property"&gt;
+
+                        &lt;int type ="AcmDomain"&gt;34&lt;/int&gt;
+
+                      &lt;/value&gt;
+
+                    &lt;/FEnumValue&gt;
+
+                  &lt;/asqlValue&gt;
+
+                  &lt;asqlOperator type ="Property"&gt;
+
+                    &lt;int type ="AcmDomain"&gt;0&lt;/int&gt;
+
+                  &lt;/asqlOperator&gt;
+
+                  &lt;scaleFactor type ="Property"&gt;
+
+                    &lt;double type ="AcmDomain"&gt;NaN&lt;/double&gt;
+
+                  &lt;/scaleFactor&gt;
+
+                &lt;/FASQLAttrNode&gt;
+
+                &lt;/Element&gt;
+
+                &lt;Element&gt;
+
+                &lt;FASQLAttrNode type ="AcmDomain"&gt;
+
+                  &lt;asqlAttribute type ="Property"&gt;
+
+                    &lt;FASQLAttribute type ="AcmDomain"&gt;
+
+                      &lt;attributeString type ="Property"&gt;
+
+                        &lt;FString type ="AcmDomain"&gt;
+
+                          &lt;Text type ="Property"&gt;
+
+                            &lt;string type ="AcmDomain"&gt;JournalTrade.OptKey4AsEnum&lt;/string&gt;
+
+                          &lt;/Text&gt;
+
+                        &lt;/FString&gt;
+
+                      &lt;/attributeString&gt;
+
+                    &lt;/FASQLAttribute&gt;
+
+                  &lt;/asqlAttribute&gt;
+
+                  &lt;asqlValue type ="Property"&gt;
+
+                    &lt;FEnumValue type ="AcmDomain"&gt;
+
+                      &lt;enumeration type ="Property"&gt;
+
+                        &lt;FDomain type ="AcmDomain"&gt;
+
+                          &lt;DomainName type ="Property"&gt;
+
+                            &lt;string type ="AcmDomain"&gt;enum(cl_Category)&lt;/string&gt;
+
+                          &lt;/DomainName&gt;
+
+                        &lt;/FDomain&gt;
+
+                      &lt;/enumeration&gt;
+
+                      &lt;tag type ="Property"&gt;
+
+                        &lt;FString type ="AcmDomain"&gt;
+
+                          &lt;Text type ="Property"&gt;
+
+                            &lt;string type ="AcmDomain"&gt;CWFOTH&lt;/string&gt;
+
+                          &lt;/Text&gt;
+
+                        &lt;/FString&gt;
+
+                      &lt;/tag&gt;
+
+                      &lt;value type ="Property"&gt;
+
+                        &lt;int type ="AcmDomain"&gt;35&lt;/int&gt;
+
+                      &lt;/value&gt;
+
+                    &lt;/FEnumValue&gt;
+
+                  &lt;/asqlValue&gt;
+
+                  &lt;asqlOperator type ="Property"&gt;
+
+                    &lt;int type ="AcmDomain"&gt;0&lt;/int&gt;
+
+                  &lt;/asqlOperator&gt;
+
+                  &lt;scaleFactor type ="Property"&gt;
+
+                    &lt;double type ="AcmDomain"&gt;NaN&lt;/double&gt;
+
+                  &lt;/scaleFactor&gt;
+
+                &lt;/FASQLAttrNode&gt;
+
+                &lt;/Element&gt;
+
+                &lt;Element&gt;
+
+                &lt;FASQLAttrNode type ="AcmDomain"&gt;
+
+                  &lt;asqlAttribute type ="Property"&gt;
+
+                    &lt;FASQLAttribute type ="AcmDomain"&gt;
+
+                      &lt;attributeString type ="Property"&gt;
+
+                        &lt;FString type ="AcmDomain"&gt;
+
+                          &lt;Text type ="Property"&gt;
+
+                            &lt;string type ="AcmDomain"&gt;JournalTrade.OptKey4AsEnum&lt;/string&gt;
+
+                          &lt;/Text&gt;
+
+                        &lt;/FString&gt;
+
+                      &lt;/attributeString&gt;
+
+                    &lt;/FASQLAttribute&gt;
+
+                  &lt;/asqlAttribute&gt;
+
+                  &lt;asqlValue type ="Property"&gt;
+
+                    &lt;FEnumValue type ="AcmDomain"&gt;
+
+                      &lt;enumeration type ="Property"&gt;
+
+                        &lt;FDomain type ="AcmDomain"&gt;
+
+                          &lt;DomainName type ="Property"&gt;
+
+                            &lt;string type ="AcmDomain"&gt;enum(cl_Category)&lt;/string&gt;
+
+                          &lt;/DomainName&gt;
+
+                        &lt;/FDomain&gt;
+
+                      &lt;/enumeration&gt;
+
+                      &lt;tag type ="Property"&gt;
+
+                        &lt;FString type ="AcmDomain"&gt;
+
+                          &lt;Text type ="Property"&gt;
+
+                            &lt;string type ="AcmDomain"&gt;CWFSBI&lt;/string&gt;
+
+                          &lt;/Text&gt;
+
+                        &lt;/FString&gt;
+
+                      &lt;/tag&gt;
+
+                      &lt;value type ="Property"&gt;
+
+                        &lt;int type ="AcmDomain"&gt;36&lt;/int&gt;
+
+                      &lt;/value&gt;
+
+                    &lt;/FEnumValue&gt;
+
+                  &lt;/asqlValue&gt;
+
+                  &lt;asqlOperator type ="Property"&gt;
+
+                    &lt;int type ="AcmDomain"&gt;0&lt;/int&gt;
+
+                  &lt;/asqlOperator&gt;
+
+                  &lt;scaleFactor type ="Property"&gt;
+
+                    &lt;double type ="AcmDomain"&gt;NaN&lt;/double&gt;
+
+                  &lt;/scaleFactor&gt;
+
+                &lt;/FASQLAttrNode&gt;
+
+                &lt;/Element&gt;
+
+                &lt;Element&gt;
+
+                &lt;FASQLAttrNode type ="AcmDomain"&gt;
+
+                  &lt;asqlAttribute type ="Property"&gt;
+
+                    &lt;FASQLAttribute type ="AcmDomain"&gt;
+
+                      &lt;attributeString type ="Property"&gt;
+
+                        &lt;FString type ="AcmDomain"&gt;
+
+                          &lt;Text type ="Property"&gt;
+
+                            &lt;string type ="AcmDomain"&gt;JournalTrade.OptKey4AsEnum&lt;/string&gt;
+
+                          &lt;/Text&gt;
+
+                        &lt;/FString&gt;
+
+                      &lt;/attributeString&gt;
+
+                    &lt;/FASQLAttribute&gt;
+
+                  &lt;/asqlAttribute&gt;
+
+                  &lt;asqlValue type ="Property"&gt;
+
+                    &lt;FEnumValue type ="AcmDomain"&gt;
+
+                      &lt;enumeration type ="Property"&gt;
+
+                        &lt;FDomain type ="AcmDomain"&gt;
+
+                          &lt;DomainName type ="Property"&gt;
+
+                            &lt;string type ="AcmDomain"&gt;enum(cl_Category)&lt;/string&gt;
+
+                          &lt;/DomainName&gt;
+
+                        &lt;/FDomain&gt;
+
+                      &lt;/enumeration&gt;
+
+                      &lt;tag type ="Property"&gt;
+
+                        &lt;FString type ="AcmDomain"&gt;
+
+                          &lt;Text type ="Property"&gt;
+
+                            &lt;string type ="AcmDomain"&gt;IWFDIS&lt;/string&gt;
+
+                          &lt;/Text&gt;
+
+                        &lt;/FString&gt;
+
+                      &lt;/tag&gt;
+
+                      &lt;value type ="Property"&gt;
+
+                        &lt;int type ="AcmDomain"&gt;60&lt;/int&gt;
+
+                      &lt;/value&gt;
+
+                    &lt;/FEnumValue&gt;
+
+                  &lt;/asqlValue&gt;
+
+                  &lt;asqlOperator type ="Property"&gt;
+
+                    &lt;int type ="AcmDomain"&gt;0&lt;/int&gt;
+
+                  &lt;/asqlOperator&gt;
+
+                  &lt;scaleFactor type ="Property"&gt;
+
+                    &lt;double type ="AcmDomain"&gt;NaN&lt;/double&gt;
+
+                  &lt;/scaleFactor&gt;
+
+                &lt;/FASQLAttrNode&gt;
+
+                &lt;/Element&gt;
+
+                &lt;Element&gt;
+
+                &lt;FASQLAttrNode type ="AcmDomain"&gt;
+
+                  &lt;asqlAttribute type ="Property"&gt;
+
+                    &lt;FASQLAttribute type ="AcmDomain"&gt;
+
+                      &lt;attributeString type ="Property"&gt;
+
+                        &lt;FString type ="AcmDomain"&gt;
+
+                          &lt;Text type ="Property"&gt;
+
+                            &lt;string type ="AcmDomain"&gt;JournalTrade.OptKey4AsEnum&lt;/string&gt;
+
+                          &lt;/Text&gt;
+
+                        &lt;/FString&gt;
+
+                      &lt;/attributeString&gt;
+
+                    &lt;/FASQLAttribute&gt;
+
+                  &lt;/asqlAttribute&gt;
+
+                  &lt;asqlValue type ="Property"&gt;
+
+                    &lt;FEnumValue type ="AcmDomain"&gt;
+
+                      &lt;enumeration type ="Property"&gt;
+
+                        &lt;FDomain type ="AcmDomain"&gt;
+
+                          &lt;DomainName type ="Property"&gt;
+
+                            &lt;string type ="AcmDomain"&gt;enum(cl_Category)&lt;/string&gt;
+
+                          &lt;/DomainName&gt;
+
+                        &lt;/FDomain&gt;
+
+                      &lt;/enumeration&gt;
+
+                      &lt;tag type ="Property"&gt;
+
+                        &lt;FString type ="AcmDomain"&gt;
+
+                          &lt;Text type ="Property"&gt;
+
+                            &lt;string type ="AcmDomain"&gt;IWFGOV&lt;/string&gt;
+
+                          &lt;/Text&gt;
+
+                        &lt;/FString&gt;
+
+                      &lt;/tag&gt;
+
+                      &lt;value type ="Property"&gt;
+
+                        &lt;int type ="AcmDomain"&gt;61&lt;/int&gt;
+
+                      &lt;/value&gt;
+
+                    &lt;/FEnumValue&gt;
+
+                  &lt;/asqlValue&gt;
+
+                  &lt;asqlOperator type ="Property"&gt;
+
+                    &lt;int type ="AcmDomain"&gt;0&lt;/int&gt;
+
+                  &lt;/asqlOperator&gt;
+
+                  &lt;scaleFactor type ="Property"&gt;
+
+                    &lt;double type ="AcmDomain"&gt;NaN&lt;/double&gt;
+
+                  &lt;/scaleFactor&gt;
+
+                &lt;/FASQLAttrNode&gt;
+
+                &lt;/Element&gt;
+
+                &lt;Element&gt;
+
+                &lt;FASQLAttrNode type ="AcmDomain"&gt;
+
+                  &lt;asqlAttribute type ="Property"&gt;
+
+                    &lt;FASQLAttribute type ="AcmDomain"&gt;
+
+                      &lt;attributeString type ="Property"&gt;
+
+                        &lt;FString type ="AcmDomain"&gt;
+
+                          &lt;Text type ="Property"&gt;
+
+                            &lt;string type ="AcmDomain"&gt;JournalTrade.OptKey4AsEnum&lt;/string&gt;
+
+                          &lt;/Text&gt;
+
+                        &lt;/FString&gt;
+
+                      &lt;/attributeString&gt;
+
+                    &lt;/FASQLAttribute&gt;
+
+                  &lt;/asqlAttribute&gt;
+
+                  &lt;asqlValue type ="Property"&gt;
+
+                    &lt;FEnumValue type ="AcmDomain"&gt;
+
+                      &lt;enumeration type ="Property"&gt;
+
+                        &lt;FDomain type ="AcmDomain"&gt;
+
+                          &lt;DomainName type ="Property"&gt;
+
+                            &lt;string type ="AcmDomain"&gt;enum(cl_Category)&lt;/string&gt;
+
+                          &lt;/DomainName&gt;
+
+                        &lt;/FDomain&gt;
+
+                      &lt;/enumeration&gt;
+
+                      &lt;tag type ="Property"&gt;
+
+                        &lt;FString type ="AcmDomain"&gt;
+
+                          &lt;Text type ="Property"&gt;
+
+                            &lt;string type ="AcmDomain"&gt;IWFNON&lt;/string&gt;
+
+                          &lt;/Text&gt;
+
+                        &lt;/FString&gt;
+
+                      &lt;/tag&gt;
+
+                      &lt;value type ="Property"&gt;
+
+                        &lt;int type ="AcmDomain"&gt;62&lt;/int&gt;
+
+                      &lt;/value&gt;
+
+                    &lt;/FEnumValue&gt;
+
+                  &lt;/asqlValue&gt;
+
+                  &lt;asqlOperator type ="Property"&gt;
+
+                    &lt;int type ="AcmDomain"&gt;0&lt;/int&gt;
+
+                  &lt;/asqlOperator&gt;
+
+                  &lt;scaleFactor type ="Property"&gt;
+
+                    &lt;double type ="AcmDomain"&gt;NaN&lt;/double&gt;
+
+                  &lt;/scaleFactor&gt;
+
+                &lt;/FASQLAttrNode&gt;
+
+                &lt;/Element&gt;
+
+                &lt;Element&gt;
+
+                &lt;FASQLAttrNode type ="AcmDomain"&gt;
+
+                  &lt;asqlAttribute type ="Property"&gt;
+
+                    &lt;FASQLAttribute type ="AcmDomain"&gt;
+
+                      &lt;attributeString type ="Property"&gt;
+
+                        &lt;FString type ="AcmDomain"&gt;
+
+                          &lt;Text type ="Property"&gt;
+
+                            &lt;string type ="AcmDomain"&gt;JournalTrade.OptKey4AsEnum&lt;/string&gt;
+
+                          &lt;/Text&gt;
+
+                        &lt;/FString&gt;
+
+                      &lt;/attributeString&gt;
+
+                    &lt;/FASQLAttribute&gt;
+
+                  &lt;/asqlAttribute&gt;
+
+                  &lt;asqlValue type ="Property"&gt;
+
+                    &lt;FEnumValue type ="AcmDomain"&gt;
+
+                      &lt;enumeration type ="Property"&gt;
+
+                        &lt;FDomain type ="AcmDomain"&gt;
+
+                          &lt;DomainName type ="Property"&gt;
+
+                            &lt;string type ="AcmDomain"&gt;enum(cl_Category)&lt;/string&gt;
+
+                          &lt;/DomainName&gt;
+
+                        &lt;/FDomain&gt;
+
+                      &lt;/enumeration&gt;
+
+                      &lt;tag type ="Property"&gt;
+
+                        &lt;FString type ="AcmDomain"&gt;
+
+                          &lt;Text type ="Property"&gt;
+
+                            &lt;string type ="AcmDomain"&gt;IWFOTH&lt;/string&gt;
+
+                          &lt;/Text&gt;
+
+                        &lt;/FString&gt;
+
+                      &lt;/tag&gt;
+
+                      &lt;value type ="Property"&gt;
+
+                        &lt;int type ="AcmDomain"&gt;63&lt;/int&gt;
+
+                      &lt;/value&gt;
+
+                    &lt;/FEnumValue&gt;
+
+                  &lt;/asqlValue&gt;
+
+                  &lt;asqlOperator type ="Property"&gt;
+
+                    &lt;int type ="AcmDomain"&gt;0&lt;/int&gt;
+
+                  &lt;/asqlOperator&gt;
+
+                  &lt;scaleFactor type ="Property"&gt;
+
+                    &lt;double type ="AcmDomain"&gt;NaN&lt;/double&gt;
+
+                  &lt;/scaleFactor&gt;
+
+                &lt;/FASQLAttrNode&gt;
+
+                &lt;/Element&gt;
+
+                &lt;Element&gt;
+
+                &lt;FASQLAttrNode type ="AcmDomain"&gt;
+
+                  &lt;asqlAttribute type ="Property"&gt;
+
+                    &lt;FASQLAttribute type ="AcmDomain"&gt;
+
+                      &lt;attributeString type ="Property"&gt;
+
+                        &lt;FString type ="AcmDomain"&gt;
+
+                          &lt;Text type ="Property"&gt;
+
+                            &lt;string type ="AcmDomain"&gt;JournalTrade.OptKey4AsEnum&lt;/string&gt;
+
+                          &lt;/Text&gt;
+
+                        &lt;/FString&gt;
+
+                      &lt;/attributeString&gt;
+
+                    &lt;/FASQLAttribute&gt;
+
+                  &lt;/asqlAttribute&gt;
+
+                  &lt;asqlValue type ="Property"&gt;
+
+                    &lt;FEnumValue type ="AcmDomain"&gt;
+
+                      &lt;enumeration type ="Property"&gt;
+
+                        &lt;FDomain type ="AcmDomain"&gt;
+
+                          &lt;DomainName type ="Property"&gt;
+
+                            &lt;string type ="AcmDomain"&gt;enum(cl_Category)&lt;/string&gt;
+
+                          &lt;/DomainName&gt;
+
+                        &lt;/FDomain&gt;
+
+                      &lt;/enumeration&gt;
+
+                      &lt;tag type ="Property"&gt;
+
+                        &lt;FString type ="AcmDomain"&gt;
+
+                          &lt;Text type ="Property"&gt;
+
+                            &lt;string type ="AcmDomain"&gt;IWFSBI&lt;/string&gt;
+
+                          &lt;/Text&gt;
+
+                        &lt;/FString&gt;
+
+                      &lt;/tag&gt;
+
+                      &lt;value type ="Property"&gt;
+
+                        &lt;int type ="AcmDomain"&gt;64&lt;/int&gt;
+
+                      &lt;/value&gt;
+
+                    &lt;/FEnumValue&gt;
+
+                  &lt;/asqlValue&gt;
+
+                  &lt;asqlOperator type ="Property"&gt;
+
+                    &lt;int type ="AcmDomain"&gt;0&lt;/int&gt;
+
+                  &lt;/asqlOperator&gt;
+
+                  &lt;scaleFactor type ="Property"&gt;
+
+                    &lt;double type ="AcmDomain"&gt;NaN&lt;/double&gt;
+
+                  &lt;/scaleFactor&gt;
+
+                &lt;/FASQLAttrNode&gt;
+
+                &lt;/Element&gt;
+
+              &lt;/FArray&gt;
+
+            &lt;/asqlNodes&gt;
+
+            &lt;asqlOperator type ="Property"&gt;
+
+              &lt;int type ="AcmDomain"&gt;1&lt;/int&gt;
+
+            &lt;/asqlOperator&gt;
+
+            &lt;asqlNodeName type ="Property"&gt;
+
+              &lt;FString type ="AcmDomain"&gt;
+
+                &lt;Text type ="Property"&gt;
+
+                  &lt;string type ="AcmDomain"&gt;&lt;/string&gt;
+
+                &lt;/Text&gt;
+
+              &lt;/FString&gt;
+
+            &lt;/asqlNodeName&gt;
+
+            &lt;not type ="Property"&gt;
+
+              &lt;bool type ="AcmDomain"&gt;false&lt;/bool&gt;
+
+            &lt;/not&gt;
+
+          &lt;/FASQLOpNode&gt;
+
+          &lt;/Element&gt;
+
+          &lt;Element&gt;
+
+          &lt;FASQLOpNode type ="AcmDomain"&gt;
+
+            &lt;asqlNodes type ="Property"&gt;
+
+              &lt;FArray type ="AcmDomain"&gt;
+
+                &lt;Element&gt;
+
+                &lt;FASQLAttrNode type ="AcmDomain"&gt;
+
+                  &lt;asqlAttribute type ="Property"&gt;
+
+                    &lt;FASQLAttribute type ="AcmDomain"&gt;
+
+                      &lt;attributeString type ="Property"&gt;
+
+                        &lt;FString type ="AcmDomain"&gt;
+
+                          &lt;Text type ="Property"&gt;
+
+                            &lt;string type ="AcmDomain"&gt;IsCurrencyEqualAccountingCurr&lt;/string&gt;
+
+                          &lt;/Text&gt;
+
+                        &lt;/FString&gt;
+
+                      &lt;/attributeString&gt;
+
+                    &lt;/FASQLAttribute&gt;
+
+                  &lt;/asqlAttribute&gt;
+
+                  &lt;asqlValue type ="Property"&gt;
+
+                    &lt;FInteger type ="AcmDomain"&gt;
+
+                      &lt;Number type ="Property"&gt;
+
+                        &lt;int64 type ="AcmDomain"&gt;1&lt;/int64&gt;
+
+                      &lt;/Number&gt;
+
+                    &lt;/FInteger&gt;
+
+                  &lt;/asqlValue&gt;
+
+                  &lt;asqlOperator type ="Property"&gt;
+
+                    &lt;int type ="AcmDomain"&gt;0&lt;/int&gt;
+
+                  &lt;/asqlOperator&gt;
+
+                  &lt;scaleFactor type ="Property"&gt;
+
+                    &lt;double type ="AcmDomain"&gt;NaN&lt;/double&gt;
+
+                  &lt;/scaleFactor&gt;
+
+                &lt;/FASQLAttrNode&gt;
+
+                &lt;/Element&gt;
+
+              &lt;/FArray&gt;
+
+            &lt;/asqlNodes&gt;
+
+            &lt;asqlOperator type ="Property"&gt;
+
+              &lt;int type ="AcmDomain"&gt;0&lt;/int&gt;
+
+            &lt;/asqlOperator&gt;
+
+            &lt;asqlNodeName type ="Property"&gt;
+
+              &lt;FString type ="AcmDomain"&gt;
+
+                &lt;Text type ="Property"&gt;
+
+                  &lt;string type ="AcmDomain"&gt;&lt;/string&gt;
+
+                &lt;/Text&gt;
+
+              &lt;/FString&gt;
+
+            &lt;/asqlNodeName&gt;
+
+            &lt;not type ="Property"&gt;
+
+              &lt;bool type ="AcmDomain"&gt;false&lt;/bool&gt;
+
+            &lt;/not&gt;
+
+          &lt;/FASQLOpNode&gt;
+
+          &lt;/Element&gt;
+
+        &lt;/FArray&gt;
+
+      &lt;/asqlNodes&gt;
+
+      &lt;asqlOperator type ="Property"&gt;
+
+        &lt;int type ="AcmDomain"&gt;0&lt;/int&gt;
+
+      &lt;/asqlOperator&gt;
+
+      &lt;asqlNodeName type ="Property"&gt;
+
+        &lt;FString type ="AcmDomain"&gt;
+
+          &lt;Text type ="Property"&gt;
+
+            &lt;string type ="AcmDomain"&gt;&lt;/string&gt;
+
+          &lt;/Text&gt;
+
+        &lt;/FString&gt;
+
+      &lt;/asqlNodeName&gt;
+
+      &lt;not type ="Property"&gt;
+
+        &lt;bool type ="AcmDomain"&gt;false&lt;/bool&gt;
+
+      &lt;/not&gt;
+
+      &lt;asqlQueryClass type ="Property"&gt;
+
+        &lt;FDomain type ="AcmDomain"&gt;
+
+          &lt;DomainName type ="Property"&gt;
+
+            &lt;string type ="AcmDomain"&gt;FJournal&lt;/string&gt;
+
+          &lt;/DomainName&gt;
+
+        &lt;/FDomain&gt;
+
+      &lt;/asqlQueryClass&gt;
+
+    &lt;/FASQLQuery&gt;
+    &lt;/associationValue&gt;
+  &lt;/FAssociation&gt;
+  &lt;/Element&gt;
+&lt;/FDictionary&gt;</data></FStoredASQLQuery>

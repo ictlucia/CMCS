@@ -1,0 +1,9 @@
+Windows Registry Editor Version 5.00
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Front\Front Arena\ATS\FA_INSTANCE_NAME]
+"username"="ATS_INTEGRATIONS"
+"group"="INTEGRATIONS"
+"password"="intas"
+"Unicode"="1"
+"ats_restart"="1"
+"recover"="12"

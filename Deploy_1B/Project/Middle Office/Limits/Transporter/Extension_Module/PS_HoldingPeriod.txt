@@ -1,0 +1,1037 @@
+#
+# Front Arena exported extension module.
+# source          ""
+# timestamp (utc) "2024-09-18 07:43:33.9"
+# ***** DO NOT EDIT! *****
+#
+name        "PS_HoldingPeriod"
+description "$Id$"
+
+groups {
+}
+
+decls[FColumnDefinition] {
+  "Holding Period Days" ( "sheet columns.portfoliosheet" "sheet columns.tradesheet" ) "";
+  "Holding Period Remaining Position" ( "sheet columns.portfoliosheet" "sheet columns.tradesheet" ) "";
+  "Holding Period Start Date" ( "sheet columns.portfoliosheet" "sheet columns.tradesheet" ) "";
+}
+
+clx FTradingSheet [FColumnDefinition] {
+  Holding Period Days =
+  Access=ReadOnly
+  Description=How long the position has been open (in days)
+  ExtensionAttribute=holdingPeriodDay
+  Format=Imprecise
+  GroupLabel=Limits
+  LabelList=Holding Period;Holding Period Days
+  Name=Holding Period Days
+
+
+  Holding Period Remaining Position =
+  Access=ReadOnly
+  Description=Remaining Position for Holding Period Limits
+  ExtensionAttribute=holdingPeriodRemainingPosition
+  GroupLabel=Limits
+  LabelList=Rem. Position;Holding Period Remaining Position
+  Name=Holding Period Remaining Position
+
+
+  Holding Period Start Date =
+  Access=ReadOnly
+  Description=The date of buy trade
+  ExtensionAttribute=holdingPeriodGrouperReference
+  GroupLabel=Limits
+  LabelList=Start Date;Holding Period Start Date
+  Name=Holding Period Start Date
+
+
+}
+
+decls[FCustomMethod] {
+}
+
+clx FTrade [FCustomMethod] {
+  HoldingPeriodGrouper =
+  Definition=HoldingPeriodGrouper:FArray read
+  Function=HoldingPeriodUtils.tradeHoldingPeriodGrouper
+
+
+  TradeTimeDateOnly =
+  Definition=TradeTimeDateOnly:string read
+  Function=HoldingPeriodUtils.tradeTimeDateOnly
+
+
+}
+
+decls[FExtensionAttribute] {
+}
+
+clx FInstrumentAndTrades [FExtensionAttribute] {
+  holdingPeriodDay = shunt(holdingPeriodGrouperReference, 
+  nil->nil, 
+  default->dateToday - holdingPeriodGrouperReference);
+  holdingPeriodGrouperReference = value(grouping.GroupingValueAtGrouper(holdingPeriodGrouper));
+  holdingPeriodRemainingPosition = py("HoldingPeriodUtils", context).remainingPositionHoldingPeriod(object);
+}
+
+clx FObject [FExtensionAttribute] {
+  holdingPeriodGrouper = nilObject:holdingPeriodGrouper;
+}
+
+clx FPortfolioInstrumentAndTrades [FExtensionAttribute] {
+  holdingPeriodGrouperReference = nil;
+}
+
+clx FUndefinedObject [FExtensionAttribute] {
+  holdingPeriodGrouper = acm.Risk.GetGrouperFromName("Holding Period Grouper");
+}
+
+decls[FExtensionValue] {
+  "Holding Period Grouper" ( "standard groupers" ) "";
+}
+
+clx FInstrumentAndTradesGrouperSubject [FExtensionValue] {
+  Holding Period Grouper
+MethodSplit;Trade.HoldingPeriodGrouper
+...
+
+}
+
+decls[FParameterGUIDefinition] {
+  "InsDefPreSaveUiValidationMinHoldingPeriod" ( "ui validation hook" ) "";
+}
+
+clx FTrade [FParameterGUIDefinition] {
+  InsDefPreSaveUiValidationMinHoldingPeriod =
+  DisplayName=Ins Def Pre Save Trade Validation Min Holding Period
+  Module=InsDefPreSaveUiValidationMinHoldingPeriod
+
+
+}
+
+decls[FParameters] {
+}
+
+clx FObject [FParameters] {
+  HoldingPeriodParameters =
+  logger_level=1
+  mail_password=aaSF4c7j!
+  mail_sender=ntcs_sit@devmandiri.co.id
+  mail_server=webmail.supporting.devmandiri.co.id
+  mail_subject=HoldingPeriodReport
+  mail_user=ntcs_sit
+  minhold_task=Pre-Deal Min Holding Period AFS
+
+
+}
+
+decls[FPythonCode] {
+}
+
+clx FObject [FPythonCode] {
+  HoldingPeriodReport
+
+import acm
+from FLogger import FLogger
+from HoldingPeriodUtils import LOG_LEVEL, MAIL_SENDER, MAIL_SERVER, MAIL_SUBJECT_PREFIX, MINHOLDING_TASK, MAIL_USER, MAIL_PASS
+
+logger = FLogger.GetLogger("HoldingPeriodReport")
+logger.Reinitialize(level=LOG_LEVEL)
+
+
+class HoldingPeriodReport:
+    def __init__(self, ports, type):
+        self._portfolios = ports
+        self._type = type
+        self._column_id = {
+            "hold_period": "Holding Period",
+            "AFS": "AvailableForSale",
+        }
+        self._calc_space = None
+        self._result = []
+
+    def generate(self, p):
+        grouper = acm.Risk().GetGrouperFromName("Holding Period Grouper")
+        result_list = list()
+        #self._calcspace()
+        if str(p.ClassName()) in ['FPhysicalPortfolio', 'FAdhocPortfolio']:
+            top_node = self._calcspace().InsertItem(p)
+            top_node.ApplyGrouper(grouper)
+            self._calcspace().Refresh()
+            self._generate(result_list, top_node, self._calcspace(), self._column_id)
+        self._result = result_list
+        return self._result
+
+    def _generate(self, result_list, node, calc_space, column_id):
+        """ Recurse grid and compute values"""
+        # only FSingleInstrumentAndTrades and acm.FTradeRow node result is calculated
+        if str(node.Item().ClassName()) in ['FTradeRow', 'FSingleInstrumentAndTrades']:
+            hold_period = self._get_column_value(node, calc_space, column_id["hold_period"])
+            available_for_sale = self._get_column_value(node, calc_space, column_id["AFS"])
+            ins = node.Item().Instrument()
+            if available_for_sale and not ins.IsExpired() :
+                portfolio = node.Item().Trade().Portfolio().Name()
+                instrument = node.Item().Instrument().Name()
+                tradnbr = node.Item().Trade().Oid()
+
+                buy_date = node.Item().Parent().AsString()
+                if '-' in buy_date:
+                    buy_date = eval(buy_date)
+                    columns = {
+                        "hold_period": hold_period
+                    }
+                    result_list.append(
+                        {
+                            "portfolio": portfolio,
+                            "buy_date": str(buy_date),
+                            "instrument": instrument,
+                            "trdnbr" : tradnbr,
+                            "columns": columns,
+                        }
+                    )
+        # Recurse tree
+        if node.NumberOfChildren():
+            child_iter = node.Iterator().FirstChild()
+            while child_iter:
+                self._generate(result_list, child_iter.Tree(), calc_space, column_id)
+                child_iter = child_iter.NextSibling()
+
+    def _get_column_value(self, node, calc_space, column_id):
+        column_val = None
+        try:
+            column = calc_space.CreateCalculation(node, column_id)
+            if column:
+                column_val = column.FormattedValue()
+        except Exception as ex:
+            pass
+        return column_val
+
+    def _calcspace(self):
+        """ create CalculationSPace (virtual Trading Manager)"""
+
+        if self._calc_space is None:
+            self._calc_space = acm.Calculations().CreateCalculationSpace(
+                acm.GetDefaultContext(), "FTradeSheet"
+            )
+        return self._calc_space
+
+    def show_table(self, report_days, hold_period = None):
+        for p in self._portfolios:
+            self.generate(p)
+
+            result_table = []
+            headers = ["Portfolio", "Instrument Name", "Deal Number", "Date", "Holding Period"]
+            max_len = [len(x) for x in headers]
+            hold_perid_day = None
+            for row in self._result:
+                pos_holdperiod = row["columns"]["hold_period"]
+                pos_holdperiod = pos_holdperiod.replace(".", "")
+                if pos_holdperiod == "": pos_holdperiod = 0
+                pos_holdperiod = pos_holdperiod.replace(',', '') if type(pos_holdperiod) == str and (',' in  pos_holdperiod) else pos_holdperiod
+                i_pos_holdperiod = int(pos_holdperiod)
+                if any(i_pos_holdperiod >= report_day for report_day in report_days) or i_pos_holdperiod > hold_period:
+
+                    if row["columns"]["hold_period"] == 1:
+                        hold_period_day = "1 day"
+                    elif row["columns"]["hold_period"]:
+                        if i_pos_holdperiod > hold_period:
+                            hold_period_day = f"[BREACHED] {row['columns']['hold_period']} days"
+                        else:
+                            hold_period_day = f"[WARNING] {row['columns']['hold_period']} days"
+                    else:
+                        hold_period_day = "0 day"
+                    row = [
+                        row["portfolio"],
+                        row["instrument"],
+                        row["trdnbr"],
+                        row["buy_date"],
+                        hold_period_day
+                    ]
+
+                    result_table.append(row)
+                    result_table.append(["", "", "", "", ""])
+                    for index, col in enumerate(row):
+                        if max_len[index] < len(str(col)):
+                            max_len[index] = len(str(col))
+            output = "-" * (sum(max_len) + 6) + "\n"
+            output += "|" + "".join([h + " " * (l - len(h)) + "|" for h, l in zip(headers, max_len)]) + "\n"
+            output += "-" * (sum(max_len) + 6) + "\n"
+            for row in result_table[:-1]:
+                output += (
+                    "|" + "".join([str(c) + " " * (l - len(str(c))) + "|" for c, l in zip(row, max_len)]) + "\n"
+                )
+            output += "-" * (sum(max_len) + 6) + "\n"
+            logger.LOG(f"Printing result table\n{output}")
+
+
+    def send_bond_holding_report(
+        self,
+        recipients,
+        report_days,
+        hold_period=None,
+        smtp_server=MAIL_SERVER,
+        smtp_port=25,
+        smtp_user=None,
+        smtp_password=None,
+        smtp_tls=False,
+    ):
+
+
+        for p in self._portfolios:
+            self._result = []
+            self.generate(p)
+            recipients_list = HoldingPeriodReport._get_email_addresses(recipients)
+            logger.DLOG("Sending email for warning")
+            payload = HoldingPeriodReport._get_email_content(self._result, report_days, hold_period)
+
+            if payload and self._type:
+                subject = HoldingPeriodReport._get_email_subject(MAIL_SUBJECT_PREFIX, MINHOLDING_TASK, self._type, report_days)
+                self.send_email(subject, payload, recipients_list )
+            elif payload:
+                subject = HoldingPeriodReport._get_email_subject(MAIL_SUBJECT_PREFIX, MINHOLDING_TASK, p.Name(), report_days)
+                self.send_email(subject, payload, recipients_list )
+
+            logger.DLOG("Sending email for breach")
+            payload = HoldingPeriodReport._get_email_content(self._result, report_days=[], hold_period=hold_period)
+            if payload and self._type:
+                subject = HoldingPeriodReport._get_email_subject(MAIL_SUBJECT_PREFIX, MINHOLDING_TASK, self._type, report_days=[])
+                self.send_email(subject, payload, recipients_list )
+            elif payload:
+                subject = HoldingPeriodReport._get_email_subject(MAIL_SUBJECT_PREFIX, MINHOLDING_TASK, p.Name(), report_days=[])
+                self.send_email(subject, payload, recipients_list )
+
+
+
+    def send_email(self, subject, payload, recipients, smtp_server=MAIL_SERVER,
+        smtp_port=25,
+        smtp_user=None,
+        smtp_password=None,
+        smtp_tls=False,):
+        import smtplib
+        from email.mime.text import MIMEText
+        from email.mime.multipart import MIMEMultipart
+
+        smtpserver = None
+        if MAIL_SERVER not in  ("", None):
+            smtp_server = MAIL_SERVER
+        try:
+            smtpserver = smtplib.SMTP(smtp_server,smtp_port)
+            smtpserver.ehlo()
+            smtpserver.starttls()
+            smtpserver.login(MAIL_USER, MAIL_PASS)
+            logger.DLOG("SMTP object created!")
+        except Exception as e:
+            logger.ELOG(f"Failed to create SMTP object. Reason: {e}")
+
+        if smtpserver:
+            logger.DLOG(f"text payload =\n{payload['text']}")
+            logger.DLOG(f"html payload =\n{payload['html']}")
+
+            message = MIMEMultipart("alternative")
+            message["Subject"] = subject
+            message["From"] = MAIL_SENDER
+            message["To"] = ', '.join(recipients)
+            recipients_list = recipients
+            part1 = MIMEText(payload["text"], "plain")
+            part2 = MIMEText(payload["html"], "html")
+            message.attach(part1)
+            message.attach(part2)
+
+            try:
+                smtpserver.sendmail(MAIL_SENDER, recipients_list, message.as_string())
+                logger.LOG("mail sent!")
+                smtpserver.quit()
+            except Exception as e:
+                logger.ELOG(f"Failed to send email message. Reason: {e}")
+
+    @staticmethod
+    def _get_email_addresses(recipients):
+        import re
+
+        EMAIL_REGEX = r"^[_a-z0-9-]+(\.[_a-z0-9-]+)*@[a-z0-9-]+(\.[a-z0-9-]+)*(\.[a-z]{2,4})$"
+        emails = []
+        for rec in recipients:
+            recipient = rec.strip()
+            user = acm.FUser[recipient]
+            if user:
+                email = user.Email()
+                if email:
+                    emails.append(email)
+                else:
+                    logger.ELOG(f"User {recipient} doesn't have email address.")
+            elif re.match(EMAIL_REGEX, recipient):
+                emails.append(recipient)
+            else:
+                logger.ELOG(f"{recipient} is not valid user nor email address.")
+        return emails
+
+    @staticmethod
+    def _get_email_subject(subject_prefix, minmax, portfolio, report_days):
+        subject = "Bond Holding Period Report"
+
+        # adding the violation type like warning or breach
+        if report_days:
+            subject = f"{subject} Warning"
+        else:
+            subject = f"{subject} Breach"
+
+        # adding the portfolio name
+        subject = f"{subject} - {portfolio}\n"
+        return subject
+
+    @staticmethod
+    def _get_email_content(report, report_days, hold_period):
+        payload = dict()
+        textcontent = ""
+        htmlcontent = ""
+        for each_row in report:
+            pos_holdperiod = each_row["columns"]["hold_period"]
+            pos_holdperiod = pos_holdperiod.replace(".", "")
+            if pos_holdperiod == "": pos_holdperiod = 0
+
+            pos_holdperiod = pos_holdperiod.replace(',', '') if type(pos_holdperiod) == str and (',' in  pos_holdperiod) else pos_holdperiod
+            i_pos_holdperiod = int(pos_holdperiod)
+
+            if not report_days and  i_pos_holdperiod > hold_period:
+                row = each_row
+
+            elif report_days and any(i_pos_holdperiod >= report_day for report_day in report_days) and i_pos_holdperiod <= hold_period:
+                row = each_row
+
+            else:
+                continue
+
+
+            if i_pos_holdperiod > hold_period:
+                hold_period_day = f"<b>[BREACHED] {row['columns']['hold_period']} days</b>"
+            elif i_pos_holdperiod == 1:
+                hold_period_day = "1 day"
+            elif pos_holdperiod:
+                hold_period_day = f"{row['columns']['hold_period']} days"
+            else:
+                hold_period_day = "0 day"
+            textrow = f'{row["portfolio"]}, {row["instrument"]}, {row["trdnbr"]}, {row["buy_date"]}, {hold_period_day}\n\n'
+            #logger.DLOG(f"textrow content\n{textrow}")
+            textcontent += textrow
+
+            if textcontent:
+                tablerow = f"""
+                                <tr>
+                                    <td>{row["portfolio"]}</td>
+                                    <td>{row["instrument"]}</td>
+                                    <td>{row["trdnbr"]}</td>
+                                    <td>{row["buy_date"]}</td>
+                                    <td>{hold_period_day}</td>
+
+                                </tr>
+                            """
+                #logger.DLOG(f"tablerow content\n{tablerow}")
+                htmlcontent += tablerow
+
+            payload["text"] = HoldingPeriodReport._create_text_body(acm.Time.DateToday(), 'Bond holding', hold_period, report_days, textcontent)
+            payload["html"] = HoldingPeriodReport._create_html_body(acm.Time.DateToday(), 'Bond holding', hold_period, htmlcontent)
+        return payload
+
+    @staticmethod
+    def _create_text_body(date, hold_type, hold_period, report_days, content):
+
+        text = f"""
+                    {date}, {hold_period} days {hold_type} Report.\n Report days : {report_days}\n\n{content}
+                    
+                """
+
+        return text
+            
+    @staticmethod
+    def _create_html_body(date, hold_type, hold_period, content):
+
+        html = f"""
+                    <html><body>
+                    <style>
+                    table, th, td {{
+                      border: 1px solid black;
+                      border-collapse: collapse;
+                    }}
+                    th, td {{
+                      padding: 5px;
+                    }}
+                    </style>
+                    <h3>{date}, {hold_period} days {hold_type} Report.</h3>
+                    <table style="width:80%">
+                        <tr>
+                            <th> Portfolio </th>
+                            <th> Instrument Name </th>
+                            <th> Deal Number </th>
+                            <th> Date </th>
+                            <th> Holding Period </th>
+                        </tr>
+                        {content}
+                    </table>
+                    </body></html>
+                """
+
+        return html
+
+...
+
+  HoldingPeriodRunScript
+
+import acm, ael
+import FRunScriptGUI
+from FLogger import FLogger
+import os
+from InterfaceUtils import PickFolder, LogLevelNameToNumber
+from HoldingPeriodReport import HoldingPeriodReport
+
+
+logFileName = f"HoldingPeriodRunScript_{acm.Time.DateToday().replace('-', '')}.txt"
+log = FLogger.GetLogger("HoldingPeriodRunScript")
+logLevels = [FLogger.INFO, FLogger.ERROR, FLogger.WARNING, FLogger.DEBUG]
+recipients = acm.FUser.Select('')
+
+def getParameterQueriesInstruments():
+    return acm.FStoredASQLQuery.Select("user=0 and subType in ('FTrade','FInstrument','FPhysicalPortfolio')")
+
+        
+ael_variables = [
+                    # [VariableName,
+                    #       DisplayName,
+                    #       Type, CandidateValues, Default,
+                    #       Mandatory, Multiple, Description, InputHook, Enabled]
+                    ['trades',
+                        'Trades',
+                        'FTrade', None, None, 0, 1],
+                    ['instruments',
+                        'Instruments',
+                        'FInstrument', None, None, 0, 1],
+                    ['portfolios',
+                        'Portfolios',
+                        'FPhysicalPortfolio', None, None, 0, 1],
+                    ['queryFolders',
+                        'Query Folders',
+                        'FStoredASQLQuery', getParameterQueriesInstruments, None, 0, 1],
+                    ['tradeFilters',
+                        'Trade Filters',
+                        'FTradeFilter', None, None, 0, 1],
+                    ['hold_period', 
+                        'Holding Period (days)', 
+                        'int', None, 180,
+                        1, 0, 'Holding period in days', None, 1],
+                    ['send_mail', 
+                        'Send email_Notifications', 
+                        'int', [1, 0], 1,
+                        1, 0, 'Send notification via email.', None, 1],
+                    ['mail_recipients', 
+                        'Recipients_Notifications', 
+                        'string', recipients, None,
+                        0, 1, 'Select users or enter email recipient addresses (comma separated).', None, 1],
+                    ['report_days', 
+                        'Reporting Days_Notifications', 
+                        'int', None, "151, 173, 174",
+                        0, 1, 'Mail will be sent out for position that reach these days (comma separated).', None, 1],
+                    ['logToConsole',
+                        'Log to Console_Logging',
+                        'int', [1, 0], 1,
+                        1, 0, 'Whether logging should be done in the Log Console or not.', None, 1],
+                    ['log_folder',
+                        'Log Folder_Logging',
+                        PickFolder(), None, PickFolder(),
+                        0, 1, "Select where to store the log file", 0, None],
+                    ['log_level',
+                        'Log level_Logging',
+                        'string', logLevels, FLogger.INFO,
+                        1, 0]
+]
+    
+
+def ael_main(params):
+
+    # logging parameters
+    logLevel = params["log_level"]
+    logFolder = params["log_folder"]
+    logToConsole = params["logToConsole"]
+    log.Reinitialize(level=LogLevelNameToNumber(logLevel), logToConsole=logToConsole)
+    if logFolder:
+        logfolderString = logFolder.SelectedDirectory().AsString()
+        logPath = os.path.join(logfolderString, logFileName)
+        log.Reinitialize(logToFileAtSpecifiedPath=logPath)
+        
+    log.LOG("Execution started")
+
+    portfolios = list()
+    type = ""
+    if params['trades']:
+        type = 'Trades'
+        port = acm.FAdhocPortfolio()
+        port.AddAll(params['trades'])
+        portfolios.append(port)
+        
+    if params['instruments']:
+        type = "Instruments"
+        port = acm.FAdhocPortfolio()
+        for instrument in params['instruments']:
+            trades = instrument.Trades()
+            if trades:
+                port.AddAll(trades)
+        portfolios.append(port)
+        
+    if params['portfolios']:
+        portfolios.extend(params['portfolios'])
+        
+    if params['queryFolders']:
+        type="Query Folder - "
+        qf_names = [qf.Name() for qf in params['queryFolders']]
+        type = type + ', '.join(qf_names)
+        for qf in params['queryFolders']:            
+            port = acm.FAdhocPortfolio()
+            trades = qf.Query().Select()
+            for trade in trades:
+                recod_type = trade.RecordType()
+                if recod_type == 'Instrument':
+                    trades1 = trade.Trades()
+                    if trades1:
+                        port.AddAll(trades1)
+                        portfolios.append(port)
+                        break
+                    
+            for trade in trades:
+                if recod_type == 'Portfolio':
+                    portfolios.extend(trades)
+                    break
+                    
+                elif recod_type == 'Trade':
+                    port.AddAll(trades)
+                    portfolios.append(port)
+                    break
+                    
+    if params['tradeFilters']:
+        type = "TradeFilter"
+        for tf in params['tradeFilters']:
+            ad = acm.FAdhocPortfolio()
+            trades = tf.Select()
+            #a = tf.Traders()
+            
+            if trades:
+                ad.AddAll(trades)
+                portfolios.append(ad)
+            
+
+    if not portfolios:
+        print('no data to process')
+        return
+    holdingPeriodReport = HoldingPeriodReport(portfolios, type)
+    report_days = params["report_days"]
+    max_holdperiod = params["hold_period"]
+    if params["send_mail"]:
+        recipients = params["mail_recipients"]
+        report_days = params["report_days"]
+        max_holdperiod = params["hold_period"]
+        if not recipients:
+            log.ELOG("Failed to send email message. No recipients on the Holding Period task")
+        elif not report_days:
+            log.ELOG("Failed to send email message. No reporting days on the Holding Period task")
+        else:
+            holdingPeriodReport.send_bond_holding_report(recipients, report_days, hold_period=max_holdperiod)
+    holdingPeriodReport.show_table(report_days, max_holdperiod)
+                
+    log.LOG("Execution completed")
+
+
+
+...
+
+  HoldingPeriodUtils
+
+import acm
+from FLogger import FLogger
+from collections import deque
+
+
+HoldingPeriodSetting = (acm.GetDefaultContext().GetExtension(acm.FParameters, acm.FObject, "HoldingPeriodParameters").Value())
+LOG_LEVEL = int(HoldingPeriodSetting["logger_level"].Text())
+logger = FLogger.GetLogger("HoldingPeriodUtils")
+logger.Reinitialize(level=LOG_LEVEL)
+
+try:
+    configNotification = (acm.GetDefaultContext().GetExtension(acm.FParameters, acm.FObject, "SMTPSettings").Value())
+    MAIL_SERVER = configNotification["SMTPServer"].Text()
+    MAIL_SENDER = configNotification["SenderAddress"].Text()
+    MAIL_USER = configNotification["SMTPUsername"].Text()
+    MAIL_PASS = configNotification["SMTPPassword"].Text()
+except Exception as e:
+    logger.WLOG("WARNING: HoldingPeriodUtils %s." %e)
+    MAIL_SERVER = HoldingPeriodSetting["mail_server"].Text()
+    MAIL_SENDER = HoldingPeriodSetting["mail_sender"].Text()
+    MAIL_USER = HoldingPeriodSetting["mail_user"].Text()
+    MAIL_PASS = HoldingPeriodSetting["mail_password"].Text()
+
+# INFO/LOG: 1, DEBUG/DLOG: 2, WARN: 3, ERROR/ELOG: 4
+MAIL_SUBJECT_PREFIX = HoldingPeriodSetting["mail_subject"].Text()
+MINHOLDING_TASK = HoldingPeriodSetting["minhold_task"].Text()
+STATUS_LIST = "('FO Confirmed', 'BO Confirmed', 'BO-BO Confirmed')"
+
+remPosHoldingPeriod = dict()
+
+
+def remainingPositionHoldingPeriod(singleInsTrades):
+    """
+    Function for column "Holding Period Remaining Position"
+    
+    Parameters
+    ----------
+    singleInsTrades : FSingleInstrumentAndTrades
+    
+    Returns
+    -------
+    None, (Re)Build the dictionary of position of Port/Ins per buy trade date.
+    And fetch relevant position per FSingleInstrumentAndTrades line.
+    
+    """
+    if singleInsTrades.Class() == acm.FSingleInstrumentAndTrades:
+        global remPosHoldingPeriod
+        buyTradeDate = singleInsTrades.Grouping().GroupingValue()
+        port = singleInsTrades.Portfolio()
+        ins = singleInsTrades.Instrument()
+        positionKey = f"{port.Name()}-{ins.Name()}"
+        logger.DLOG("-"*80)
+        logger.DLOG(f"remainingPositionHoldingPeriod::calculate position for {positionKey}")
+        if positionKey in remPosHoldingPeriod:
+            if buyTradeDate in remPosHoldingPeriod[positionKey]:
+                pass
+            else:
+                _calculatePosDict(remPosHoldingPeriod, port, ins, positionKey)
+        else:
+            _calculatePosDict(remPosHoldingPeriod, port, ins, positionKey)
+            
+        if buyTradeDate in remPosHoldingPeriod[positionKey]:
+            return remPosHoldingPeriod[positionKey][buyTradeDate]
+    
+    return None
+    
+
+def _calculatePosDict(remPosHoldingPeriod, portfolio, instrument, positionKey):
+    """ 
+    Build the dictionary of position of Port/Ins per buy trade date.
+    
+    Parameters
+    ----------
+    remPosHoldingPeriod : dict, global variable containing pos per trade date
+    portfolio : FPortfolio
+    instrument : FInstrument
+    positionKey : String
+        defining part of the position "port-ins"
+
+    Returns
+    -------
+    None, it is modifying the content of global dict remPosHoldingPeriod
+    
+    """
+    tradeCollectionQuery = f"portfolio = '{portfolio.Oid()}' AND instrument = '{instrument.Oid()}' AND status in {STATUS_LIST}"
+    tradeCollection = acm.FTrade.Select(tradeCollectionQuery).SortByProperty("TradeTime", ascending=True)
+    buyTradesInCollection = [t for t in tradeCollection if t.Quantity() > 0]
+    sellTradesInCollection = [t for t in tradeCollection if t.Quantity() < 0]
+    remPosHoldingPeriod[positionKey] = dict()
+    for t in buyTradesInCollection:
+        d = tradeTimeDateOnly(t)
+        if d in remPosHoldingPeriod[positionKey]:
+            remPosHoldingPeriod[positionKey][d] += t.Position()
+        else:
+            remPosHoldingPeriod[positionKey][d] = t.Position()
+    logger.DLOG(f"_calculatePosDict::initial position dictionary with no sell tradeds:\n{remPosHoldingPeriod}")
+    
+    for st in sellTradesInCollection:
+        logger.DLOG(f"_calculatePosDict::finding matches buy trade for sell trade {st.Oid()}, for calculation")
+        matchedBT, partialMatchedBTPos = _findMatchesForSellTrade(st)
+        logger.DLOG(f"_calculatePosDict::trade {st.Oid()} closing trade {[t.Oid() for t in matchedBT]}")
+        if partialMatchedBTPos:
+            logger.DLOG(f"_calculatePosDict::remaining partially matched position {partialMatchedBTPos[1]}")
+            for bt in matchedBT:
+                d = tradeTimeDateOnly(bt)
+                if bt == partialMatchedBTPos[0]:
+                    remPosHoldingPeriod[positionKey][d] -= partialMatchedBTPos[1]
+                else:
+                    remPosHoldingPeriod[positionKey][d] -= bt.Position()
+                remPosHoldingPeriod[positionKey][d] = max(remPosHoldingPeriod[positionKey][d], 0.0)
+        else:
+            for bt in matchedBT:
+                d = tradeTimeDateOnly(bt)
+                remPosHoldingPeriod[positionKey][d] -= bt.Position()
+                remPosHoldingPeriod[positionKey][d] = max(remPosHoldingPeriod[positionKey][d], 0.0)
+    logger.DLOG(f"_calculatePosDict::updated position dictionary including sell trades:\n{remPosHoldingPeriod}")
+                    
+
+def tradeTimeDateOnly(trade):
+    """ 
+    Get the date part from FTrade
+    
+    Parameters
+    ----------
+    trade : FTrade
+
+    Returns
+    -------
+    TradeDate : TradeTime method returning "DATE TIME", take the DATE part only
+    
+    """
+    
+    return trade.TradeTime().split(" ")[0]
+
+
+def tradeHoldingPeriodGrouper(trade):
+    """ 
+    Grouping sell trade and matched buy trades into one trade date group
+    
+    Parameters
+    ----------
+    trade : FTrade
+
+    Returns
+    -------
+    list : for sell trade, collection of buy trade date that it matched. 
+           buy trade return the trade date, and zero position return "No Position"
+           
+    """
+    
+    pos = _calculatePosition(trade)
+    if pos == 0:
+        logger.DLOG(f"No position on trade {trade.Oid()}")
+        return ["No Position"]
+        
+    if trade.BoughtAsString() == "Buy":
+        return [tradeTimeDateOnly(trade)]
+        
+    logger.DLOG(f"tradeHoldingPeriodGrouper::finding matches trade for trade {trade.Oid()}, for grouper")
+    matchedBuyTrades, _ = _findMatchesForSellTrade(trade)
+    
+    return [tradeTimeDateOnly(t) for t in matchedBuyTrades]
+    
+
+def _calculatePosition(trade):
+    tradeQuery = f"portfolio = '{trade.Portfolio().Oid()}' AND instrument = '{trade.Instrument().Name()}'"
+    trades = acm.FTrade.Select(tradeQuery)
+    
+    return sum([t.Position() for t in trades if t.Status() not in ("Void", "Void Input", "Simulated")])
+    
+    
+def _findMatchesForSellTrade(trade):
+    """ 
+    Get matching Trades for sell trade using FIFO method
+    
+    Parameters
+    ----------
+    trade : FTrade
+        sell trade used to match
+
+    Returns
+    -------
+    matchedTrades : list, collection of trades that are matched by the sell trade
+    tuplePartialPos : tuple, index[0] trade that's partially matched
+                             index[1] remaining sell position to be used to reduce the total position in place of the partially matched trade
+                             index[2] remaining sell position to be used to reduce the next sell trade
+
+    """
+    
+    if trade.Quantity() > 0:
+        return None
+    
+    ins = trade.Instrument()
+    prevSellTradesQuery = f"quantity < 0 AND tradeTime < '{trade.TradeTime()}' AND portfolio = '{trade.Portfolio().Oid()}' AND instrument = '{ins.Name()}' AND status in {STATUS_LIST}"
+    prevSellTrades = acm.FTrade.Select(prevSellTradesQuery)
+    prevSellTrades = prevSellTrades.SortByProperty("TradeTime", ascending=True)
+    if trade.StorageId() < 0: # extra condition for pre-deal validation
+        prevSellTrades.AddLast(trade)
+    logger.DLOG(f"_findMatchesForSellTrade::sell trade before {trade.Oid()} prevSellTrades {prevSellTrades}")
+    
+    buyTradesCollectionQuery = f"quantity > 0 AND portfolio = '{trade.Portfolio().Oid()}' AND instrument = '{ins.Name()}' AND status in {STATUS_LIST}"
+    buyTrades = acm.FTrade.Select(buyTradesCollectionQuery)
+    buyTrades = buyTrades.SortByProperty("TradeTime", ascending=True)
+    
+    buyTradesQueue = deque()
+    for bt in buyTrades:
+        buyTradesQueue.append(bt)
+    
+    matchedTrades = dict()
+    tuplePartialPos = tuple()
+    for t in prevSellTrades:
+        if t.TradeTime() > trade.TradeTime():
+            # sometime query prevSellTradesQuery still include trade with later time!
+            logger.DLOG(f"_findMatchesForSellTrade::ignore trade {t.Oid()} because trade time is later than {trade.Oid()}")
+            continue
+        else:
+            logger.DLOG(f"_findMatchesForSellTrade::finding matches for sell trade {t.Oid()}")
+            matchedTrades[t] = list()
+            sellPos = t.Position()
+            if not tuplePartialPos:
+                while sellPos < 0 and buyTradesQueue:
+                    bt = buyTradesQueue.popleft()
+                    matchedTrades[t].append(bt)
+                    sellPos += bt.Position()
+                    if sellPos == 0:
+                        tuplePartialPos = tuple()
+                        break
+                    elif sellPos > 0:
+                        tuplePartialPos = (bt, bt.Position() - sellPos, sellPos)
+                        break
+            else:
+                sellPos += tuplePartialPos[2]
+                matchedTrades[t].append(tuplePartialPos[0])
+                if sellPos == 0:
+                    tuplePartialPos = tuple()
+                    pass
+                elif sellPos > 0:
+                    tuplePartialPos = (bt, -t.Position(), sellPos)
+                    pass
+                while sellPos < 0 and buyTradesQueue:
+                    bt = buyTradesQueue.popleft()
+                    matchedTrades[t].append(bt)
+                    sellPos += bt.Position()
+                    if sellPos == 0:
+                        tuplePartialPos = tuple()
+                        break
+                    elif sellPos > 0:
+                        tuplePartialPos = (bt, bt.Position() - sellPos, sellPos)
+                        break
+        
+        logger.DLOG(f"_findMatchesForSellTrade::trade {t.Oid()} closing {[bt.Oid() for bt in matchedTrades[t]]}")
+        logger.DLOG(f"_findMatchesForSellTrade::partial position on trade {tuplePartialPos[0].Oid() if tuplePartialPos else None}, remaining sell {tuplePartialPos[1] if tuplePartialPos else None}")
+
+    return matchedTrades[trade], tuplePartialPos
+
+...
+
+  InsDefPreSaveUiValidationMinHoldingPeriod
+
+import acm, ael
+from FLogger import FLogger
+from HoldingPeriodUtils import (
+    LOG_LEVEL,
+    MINHOLDING_TASK,
+    _findMatchesForSellTrade,
+    tradeTimeDateOnly,
+)
+import operator
+
+logger = FLogger.GetLogger("InsDefPreSaveUiValidationMinHoldingPeriod")
+logger.Reinitialize(level=LOG_LEVEL)
+
+
+def ael_custom_dialog_show(shell, params):
+    """ Main hook function for UI Validation """
+
+    callData = params["initialData"]
+    if not callData:
+        return None
+
+    origObject = callData["originalObject"]
+    editObject = callData["editObject"]
+    action = callData["action"]
+    extendedData = callData["extendedData"]
+
+    minhold_task = acm.FAelTask[MINHOLDING_TASK]
+    if not minhold_task:
+        logger.ELOG("No minimum hoding period task set in the parameters")
+        return None
+
+    returnParameters = acm.FDictionary()
+    if editObject and editObject.IsKindOf(acm.FTrade):
+        if editObject.Quantity() < 0 and editObject.Instrument().InsType() in ("Bill", "Bond", "FRN", "CD"):
+            validator = HoldingPeriodUIPreDeal(editObject, minhold_task)
+            if validator.statuscheck():
+                breached, msg_breached = validator.validate()
+                if breached:
+                    if not validator.useraccept(shell, msg_breached):
+                        returnParameters = None
+
+    return returnParameters
+
+
+def ael_custom_dialog_main(parameters, dictExtra):
+    # Not used for validation
+    return dictExtra
+
+
+class HoldingPeriodUIPreDeal:
+    def __init__(self, trade, taskparams):
+        self._trade = trade
+        self.taskparams = taskparams
+
+    taskparams = property(operator.attrgetter("_taskparams"))
+
+    @taskparams.setter
+    def taskparams(self, p):
+        self._taskparams = p
+
+    def validate(self):
+        """ 
+        Main validation function, returning False if no validation action required
+
+        Returns
+        -------
+        breached : bool
+        msg_breached : string, message related to breached
+        """
+        breached = False
+        msg_breached = None
+
+        task_ports = [
+            acm.FPhysicalPortfolio[p.strip()]
+            for p in self.taskparams.Parameters().At("portfolios").split(",")
+        ]
+        trade_port = self._trade.Portfolio()
+        if self._trade.InstrumentSubType().Text() == "Discounted Term Deposit":
+            logger.DLOG("No minimum holding period checking for Discounted Term Deposit")
+        elif trade_port in task_ports:
+            TODAY = acm.Time.DateToday()
+            matched_buytrades, _ = _findMatchesForSellTrade(self._trade)
+            #logger.DLOG(f"This trade is going to close trade: {[t.Oid() for t in matched_buytrades]}")
+            posdates = [tradeTimeDateOnly(t) for t in matched_buytrades]
+            hold_period = int(self.taskparams.Parameters().At("hold_period"))
+            for d in posdates:
+                if acm.Time.DateDifference(TODAY, d) < hold_period:
+                    breached = True
+                    msg_breached = (
+                        f"This is going to violate Minimum {hold_period} days holding period in portfolio {trade_port.Name()}.\n"
+                        f"Closing position bought on {d}\n"
+                        "Do you still want to continue?"
+                    )
+                    break
+        else:
+            logger.DLOG("No minimum holding period checking, trade not in task portfolios")
+
+        return breached, msg_breached
+
+    def useraccept(self, shell, msg):
+        """Return True if user click the OK button"""
+
+        choice = acm.UX().Dialogs().MessageBoxOKCancel(shell, "Warning", msg)
+        if choice == "Button1":  # OK button
+            return True
+        return False
+
+    def check_pos(self, origTrade):
+        tradeQuery = f"portfolio = '{self._trade.Portfolio().Oid()}' AND instrument = '{self._trade.Instrument().Name()}'"
+        trades = acm.FTrade.Select(tradeQuery)
+        total_qty = (
+            sum(
+                [
+                    t.Quantity()
+                    for t in trades
+                    if (t.Status() not in ("Void", "Void Input", "Simulated") and t != origTrade)
+                ]
+            )
+            + self._trade.Quantity()
+        )
+
+        return total_qty
+
+    def statuscheck(self):
+        status_check = False
+        if self._trade.Status() in ("Simulated", "Reserved", "Pending FO Verification", "FO Confirmed"):
+            status_check = True
+
+        return status_check
+
+...
+
+}
+

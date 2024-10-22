@@ -1,0 +1,13 @@
+CONTEXTLINK,,,,,,,,,,/CONTEXTLINK
+CONTEXT_SEQNBR.NAME,INSADDR.INSID,GROUP_CHLNBR.LIST,GROUP_CHLNBR.ENTRY,CURR.INSID,DISC_TYPE_CHLNBR.LIST,DISC_TYPE_CHLNBR.ENTRY,MAPPING_TYPE,NAME,TYPE,
+Global,GBP/LIBOR/3M,,,GBP,,,Instrument,GBP-3M,Yield Curve,
+Global,GBP/LIBOR/6M,,,GBP,,,Instrument,GBP-6M,Yield Curve,
+Global,,,,GBP,DiscType,FX,Instrument,GBP-FX,Yield Curve,
+Global,USD,,,GBP,,,Instrument,GBP-FX,Yield Curve,
+Global,,,,GBP,,,Instrument,GBP-SONIA,Yield Curve,
+Global,GBP/SONIA,,,GBP,,,Instrument,GBP-SONIA,Yield Curve,
+Global,,,,GBP,DiscType,IBOR,Instrument,GBP-SWAP,Yield Curve,
+Global,,ValGroup,RateIndex,GBP,,,Val Group,GBP-SWAP,Yield Curve,
+Global,,,,GBP,DiscType,COLL-USD,Instrument,GBP-COLL-USD,Yield Curve,
+Global,,ValGroup,CCS-Basis,GBP,,,Val Group,GBP-COLL-USD,Yield Curve,
+Global,USD,,,GBP,DiscType,COLL-USD,Instrument,GBP-COLL-USD,Yield Curve,

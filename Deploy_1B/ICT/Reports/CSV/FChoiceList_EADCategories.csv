@@ -1,0 +1,11 @@
+CHOICELIST,,,/CHOICELIST
+LIST,ENTRY,DESCRIPTION,
+MASTER,EAD Categories,This requirement is needed for MO15 rep,
+EAD Categories,1.a. EAD To Indonesia Government,,
+EAD Categories,1.b. EAD To Sovereign,,
+EAD Categories,2. EAD To Public Sector Entity,,
+EAD Categories,3. EAD To Multilateral Development Bank,,
+EAD Categories,4.a. EAD To Other Bank - Short Term,,
+EAD Categories,4.b. EAD To Other Bank - Long Term,,
+EAD Categories,5. EAD To SME Counterparty & Retail,,
+EAD Categories,6. EAD To Corporate Counterparty,,

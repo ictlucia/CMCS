@@ -1,0 +1,8 @@
+CHOICELIST,,,,/CHOICELIST
+DESCRIPTION,ENTRY,LIST,SORT_ORDER,
+Seniority,Seniority,MASTER,,
+Equity,Equity,Seniority,1,
+Non-Senior Debt,Non-Senior Debt,Seniority,2,
+Senior Debt,Senior Debt,Seniority,3,
+Covered Bonds,Covered Bonds,Seniority,4,
+Other,Other,Seniority,5,

@@ -1,0 +1,2 @@
+<?xml version='1.0' encoding='ISO-8859-1'?>
+<FTradeFilter><acm_version>2022.4.3, Mar 19 2023</acm_version><version>0 $Id$</version><update_time>2024-08-06 09:32:29</update_time><object_name>BO03 - PBC Marketable Securit</object_name><owner>YUDHI</owner><protection>W:R,O:RWD,G:RWD,U:RWD</protection><asql_query>BO03 - PBC Marketable Securities - Trade Filter</asql_query></FTradeFilter>

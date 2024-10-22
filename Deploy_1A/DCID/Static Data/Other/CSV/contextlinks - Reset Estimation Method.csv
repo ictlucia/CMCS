@@ -1,0 +1,6 @@
+CONTEXTLINK,,,,,,,,,,/CONTEXTLINK
+CONTEXT_SEQNBR.NAME,CURR.INSID,DISC_TYPE_CHLNBR.ENTRY,DISC_TYPE_CHLNBR.LIST,GROUP_CHLNBR.ENTRY,GROUP_CHLNBR.LIST,INSADDR.INSID,MAPPING_TYPE,NAME,TYPE,
+Global,,,,SynthBenchResetEst,ValGroup,,Val Group,Current Rate,Reset Estimation Method,
+Global,,,,,,EUR/EURIBOR/12M,Instrument,Float Ref,Reset Estimation Method,
+Global,,,,,,EUR/EURIBOR/1M,Instrument,Float Ref,Reset Estimation Method,
+Global,,,,,,EUR/EURIBOR/3M,Instrument,Float Ref,Reset Estimation Method,

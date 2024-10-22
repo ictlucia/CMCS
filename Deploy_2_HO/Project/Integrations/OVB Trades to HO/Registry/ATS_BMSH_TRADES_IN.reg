@@ -1,0 +1,9 @@
+Windows Registry Editor Version 5.00
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Front\Front Arena\ATS\FA_INSTANCE_NAME]
+"username"="ATS_BMSH_TRADES_IN"
+"password"="intas"
+"Unicode"="1"
+"receiver_mb_name"="BMSH_TRADES_RECEIVER"
+"sender_mb_name"="BMSH_TRADES_SENDER"
+"task"="BMSH_TRADES_IN"

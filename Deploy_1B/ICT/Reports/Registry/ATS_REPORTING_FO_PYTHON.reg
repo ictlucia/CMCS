@@ -1,0 +1,7 @@
+Windows Registry Editor Version 5.00
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Front\Front Arena\ATS\FA_INSTANCE_NAME]
+"username"="ATS_REPORTING_FO_PYTHON"
+"password"="intas"
+"group"="FO_PYTHON_REPORTING"
+"Unicode"="1"

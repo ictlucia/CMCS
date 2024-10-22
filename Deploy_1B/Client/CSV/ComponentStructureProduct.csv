@@ -1,0 +1,9 @@
+COMPONENT,,/COMPONENT
+COMPNAME,TYPE,
+DepositSwap,Application,
+DualCurrencyDeposit,Application,
+FX Option Pricer,Application,
+FxRatioParForward,Application,
+MarketLinkedDepositDeal,Application,
+MarketLinkedDepositIr,Application,
+MarketLinkedDepositRaFX,Application,

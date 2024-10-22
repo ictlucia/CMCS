@@ -1,0 +1,106 @@
+[MESSAGE]
+  TYPE=INSERT_TEXTOBJECT
+  VERSION=1.0
+  TIME=2024-04-03 09:56:21
+  SOURCE=FAMBAMessageGenerator
+  [TEXTOBJECT]
+    TYPE=Customizable
+    DATA={\
+    "MSWordTemplates": [\
+        {\
+            "name": "TC BONDS NASABAH VALAS",\
+            "type": "LongFormTPL",\
+            "version": "13",\
+            "checksumFields": {\
+                "RegularFields": [\
+                    {\
+                        "fieldName": "Trade"\
+                    },\
+                    {\
+                        "fieldName": "Counterparty"\
+                    },\
+                    {\
+                        "fieldName": "LongFormInstrument"\
+                    },\
+                    {\
+                        "fieldName": "LongFormIsin"\
+                    },\
+                    {\
+                        "fieldName": "LongFormIssuer"\
+                    },\
+                    {\
+                        "fieldName": "LongFormValueDay"\
+                    },\
+                    {\
+                        "fieldName": "SettlementDate"\
+                    },\
+                    {\
+                        "fieldName": "LongFormEndDate"\
+                    },\
+                    {\
+                        "fieldName": "LongFormCurrency"\
+                    },\
+                    {\
+                        "fieldName": "LongFormQuantity"\
+                    },\
+                    {\
+                        "fieldName": "LongFormFixedRate"\
+                    },\
+                    {\
+                        "fieldName": "LongFormLastCouponDate"\
+                    },\
+                    {\
+                        "fieldName": "LongFormNextCouponDate"\
+                    },\
+                    {\
+                        "fieldName": "LongFormPrice"\
+                    },\
+                    {\
+                        "fieldName": "LongFormYield"\
+                    },\
+                    {\
+                        "fieldName": "LongFormNominalAmount"\
+                    },\
+                    {\
+                        "fieldName": "LongFormAccruedInterest"\
+                    },\
+                    {\
+                        "fieldName": "LongFormSettlement"\
+                    },\
+                    {\
+                        "fieldName": "LongFormSettleInstruction"\
+                    },\
+                    {\
+                        "fieldName": "LongFormOurAccount"\
+                    },\
+                    {\
+                        "fieldName": "LongFormYourAccount"\
+                    }\
+                ],\
+                "LoopFields": []\
+            }\
+        }\
+    ],\
+    "PrimeSheetTemplates": [\
+        {\
+            "name": "TC BOND NASABAH VALAS",\
+            "classType": "Confirmation Sheet",\
+            "type": "Primary",\
+            "insertItem": "",\
+            "insertQuery": ""\
+        },\
+        {\
+            "name": "TC BOND NASABAH VALAS",\
+            "classType": "Confirmation Sheet",\
+            "type": "Supplement",\
+            "insertItem": "Confirmation",\
+            "insertQuery": ""\
+        }\
+    ],\
+    "FormattedColumnSet": []\
+}
+    NAME=BONDS NASABAH VALAS
+    SIZE=2918
+    SUBTYPE=ReportForm
+  [/TEXTOBJECT]
+[/MESSAGE]

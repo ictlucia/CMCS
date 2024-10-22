@@ -1,0 +1,13 @@
+[MESSAGE]
+  TYPE=INSERT_TASK
+  VERSION=1.0
+  TIME=2022-07-19 08:03:33
+  SOURCE=FAMBAMessageGenerator
+  [TASK]
+    CONTEXT=Standard
+    MODULE=FRTBSAReport
+    NAME=FRTB_Standard_report
+    PARAMETER=Enable_Simple CSV=1;OutputDir_Simple CSV=C:\\temp;Extension_Example Writer=.csv;Prefix_Simple CSV=FRTB_SA_Standard_report;Portfolios=;Extension_Simple CSV=.csv;Extension_Isda Crif=.tsv;DrcVariant_Isda Crif=Variant 1;SensitivityBaseCalculation=Theoretical Total Profit/Loss;RiskClasses=CSR (NS),CSR (S-C),CSR (S-NC),Commodity,Equity,FX,GIRR;OutputDir_Example Writer=;Filename_Isda Crif=;CalcBEqMV=1;CalcIsLongExposure=0;CalcRRAO=1;Enable_Printer=1;Position Attributes Extension_Isda Crif=;Overwrite_Simple CSV=1;Trade Queries=QF_Trading_Book;Enable_Example Writer=0;Trade Filters=;DateDir_Simple CSV=1;JTD Unscaled=1;FXReferenceCurrency=FX Base Currency;OutputDir_Isda Crif=;Overwrite_Isda Crif=1;DateDir_Isda Crif=1;hierarchy=FRTB SA Basel Data;JTD Scaling Factor=0;CalcRemainingMaturity=0;GIRRRiskFactorType=Zero Coupon;CalcBEqN=1;CurvatureForNonOptions=0;Position Specification=Portfolio and Instrument;Enable_Isda Crif=0;
+    SIZE=923
+  [/TASK]
+[/MESSAGE]

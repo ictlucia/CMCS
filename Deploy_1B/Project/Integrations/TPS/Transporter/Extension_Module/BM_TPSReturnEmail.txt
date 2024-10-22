@@ -1,0 +1,271 @@
+#
+# Front Arena exported extension module.
+# source          ""
+# timestamp (utc) "2024-01-02 09:44:22.8"
+# ***** DO NOT EDIT! *****
+#
+name        "BM_TPSReturnEmail"
+description ""
+
+groups {
+}
+
+decls[FParameters] {
+}
+
+clx FObject [FParameters] {
+  TPSReturnEmailParams =
+  channel_id=154
+  db_name=NTCSSTGDB
+  db_name_fa=ADM_MANDIRI_1B_DEV
+  host_db=10.243.212.162,1434
+  host_email=webmail.supporting.devmandiri.co.id
+  msg_email_from=ntcs_sit@devmandiri.co.id
+  msg_email_to=willy.willy@bankmandiri.co.id
+  pass_db=P@ssw0rd
+  password_email=aaSF4c7j!
+  port_email=587
+  subject_email=[DEV] RETURN RTGS Payment For Treasury Transaction with ID
+  user_db=sa
+  username_email=ntcs_sit
+
+
+}
+
+decls[FPythonCode] {
+}
+
+clx FObject [FPythonCode] {
+  TPSReturnEmail
+
+
+import requests
+import json
+import pyodbc
+import traceback
+import datetime
+import ParametersReader
+import acm
+import FRunScriptGUI
+import ael
+import FLogger
+import os
+import InterfaceUtils
+import smtplib
+import socket
+from email.mime.text import MIMEText
+from decimal import Decimal
+import datetime
+
+socket.setdefaulttimeout(10)
+
+folderPicker = FRunScriptGUI.DirectorySelection()
+
+TPSReturnEmailParamAPI  = ParametersReader.get_params('TPSReturnEmailParams')
+port = TPSReturnEmailParamAPI['port']
+msg_email_from=TPSReturnEmailParamAPI['msg_email_from']
+#msg_email_to="dian.ronaldo@bankmandiri.co.id,sendhy.dwiputra@bankmandiri.co.id,willy.willy@bankmandiri.co.id"
+msg_email_to=TPSReturnEmailParamAPI['msg_email_to']
+list_email_to=msg_email_to.replace(' ','').split(',')
+subject_email=TPSReturnEmailParamAPI['subject_email']
+host = TPSReturnEmailParamAPI['host_email']
+port = TPSReturnEmailParamAPI['port_email']
+username = TPSReturnEmailParamAPI['username_email']
+password = TPSReturnEmailParamAPI['password_email']
+
+channel_id=TPSReturnEmailParamAPI['channel_id']
+host_db = TPSReturnEmailParamAPI['host_db']
+user_db = TPSReturnEmailParamAPI['user_db']
+pass_db = TPSReturnEmailParamAPI['pass_db']
+db_name = TPSReturnEmailParamAPI['db_name']
+db_name_fa = TPSReturnEmailParamAPI['db_name_fa']
+
+
+ael_gui_parameters = {'windowCaption' : 'TPS Return Email'}
+logLevels = [FLogger.FLogger.INFO, FLogger.FLogger.ERROR, FLogger.FLogger.WARNING, FLogger.FLogger.DEBUG]
+
+
+ael_variables=  [['log_level', 'Log Level_Logging', 'string', logLevels, FLogger.FLogger.DEBUG, 1, 0],
+                 ['log_to_console', 'Log to console_Logging', 'int', [1, 0], 1, 1, 0,'Whether logging should be done in the Log Console or not.']]
+
+
+LOG_PARAM = 'TPS RETURN EMAIL' 
+log_file_name = 'TPS RETURN EMAIL'.format(acm.Time.DateToday().replace('-', ''))
+app_name = 'TPS RETURN EMAIL'
+
+
+
+def get_settlement_id(out_remit_no):
+    size = len(out_remit_no)
+    
+    if size == 16:
+        return out_remit_no[7:14]
+    return None
+
+
+def send_email(data_id, val_dt, out_remit_no,trx_amt):
+    counterpty_name = None
+    try:
+        conn_str2 = "Driver={};Server={};DATABASE={};UID={};PWD={};".format("{SQL SERVER}",host_db,db_name_fa,user_db,pass_db)
+        
+        conn2 = pyodbc.connect(conn_str2)
+        cursor2 = conn2.cursor()
+        
+        settlement_id = get_settlement_id(out_remit_no)
+        
+        if settlement_id != None:
+            query = """
+select t.counterparty_ptynbr, p.fullname from settlement t
+inner join party p on p.ptyid = t.party_ptyid
+where t.seqnbr = ?
+            """
+        values = (settlement_id)
+        cursor2.execute(query,values)
+        rows = cursor2.fetchall()
+        
+        if len(rows) == 1:
+            counterpty_name = rows[0][1]
+    except:
+        traceback.print_exc()
+        return False
+    finally:
+        cursor2.close()
+        conn2.close()
+ 
+    print(counterpty_name)
+ 
+    # three separator places
+    dTrx_amt = Decimal(trx_amt)
+    
+    val_dt = (datetime.datetime.strptime(val_dt, "%d%m%y").strftime("%Y-%m-%d"))
+
+    try:
+        mimeText = """
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<title>html title</title>
+<style type="text/css" media="screen">
+table, th,td{{ border: 1px solid black; border-collapse: collapse; }}
+th,td {{ padding: 5px; }}
+</style>
+</head>
+<body>
+Dear Sir/Madam<br>
+<br>
+We hereby inform you for RETURN RTGS payment of treasury transaction<br>
+<br>
+<table>
+<tr>
+    <th>SETTLEMENT ID</th>
+    <th>COUNTERPARTY</th>
+    <th>AMOUNT</th>
+    <th>VALUE DAY</th>
+</tr>
+<tr>
+    <td>{}</td>
+    <td>{}</td>
+    <td>{}</td>
+    <td>{}</td>
+</tr>
+</table>
+<br>
+Please check and follow up accordingly<br>
+<br>
+<br>
+This is an automated email account.  Please do not reply to this email as the account is not monitored.<br>
+</body>
+</html>""".format(out_remit_no,counterpty_name,"{:,.0f}".format(dTrx_amt),val_dt)
+        
+        msg = MIMEText(mimeText, 'html')
+        msg['Subject']=subject_email + out_remit_no
+        msg['From']=msg_email_from
+        msg['To']=msg_email_to
+        
+        print(host)
+        print(port)
+        
+        with smtplib.SMTP(host,port) as server:
+            server.ehlo()
+            server.starttls()
+            server.ehlo()
+            server.set_debuglevel(1)
+            server.login(username,password)
+            server.sendmail(msg['From'],list_email_to,msg.as_string())
+            print("Successfully sent email")
+        return True
+    except:
+        traceback.print_exc()
+        return False
+        pass
+        
+    return False
+
+
+# GET DATA WHICH IS_SENT still N
+def get_data(conn,cursor):
+    query = """SELECT data_id, val_dt, out_remit_no, trx_amt FROM NTCS_TPS_TRX_RETURN t WHERE t.is_sent='N'"""
+    cursor.execute(query)
+    rows = cursor.fetchall()
+    
+    return rows
+
+
+# UPDATE DATA IS_SENT FROM N TO Y AFTER SENT EMAIL NOTIFICATION
+def update_db(conn,cursor,data_id):
+    try:
+        query = """UPDATE NTCS_TPS_TRX_RETURN SET is_sent='Y', updated_at = CURRENT_TIMESTAMP WHERE data_id = ?"""
+        values = (data_id)
+        cursor.execute(query,values)   
+        conn.commit()
+        print(query,data_id)
+    except:
+        traceback.print_exc()
+
+    return
+
+
+def ael_main(params):
+    print('-----')
+    print('START')
+    print('-----')
+    
+    try:
+        conn_str = "Driver={};Server={};DATABASE={};UID={};PWD={};".format("{SQL SERVER}",host_db,db_name,user_db,pass_db)
+        
+        conn = pyodbc.connect(conn_str)
+        cursor = conn.cursor()
+        
+        rows = get_data(conn,cursor)
+        
+        if(len(rows) == 0):
+            print('tidak ada data')
+        else:
+            for row in rows:
+                print('proses send email dilakukan')
+                status = send_email(row[0],row[1],row[2],row[3])
+                if status == True:
+                    print('proses send email berhasil')
+                    print('proses update db dilakukan')
+                    update_db(conn,cursor,row[0])
+                    print('proses update db berhasil')
+    except:
+        traceback.print_exc()
+    finally:
+        cursor.close()
+        conn.close()
+        
+    
+    print('-----')
+    print('*END*')
+    print('-----')
+
+
+
+
+
+
+...
+
+}
+

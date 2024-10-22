@@ -1,0 +1,340 @@
+#
+# Front Arena exported extension module.
+# source          ""
+# timestamp (utc) "2023-05-02 02:26:26.1"
+# ***** DO NOT EDIT! *****
+#
+name        "BM_IAM"
+description "$Id$"
+
+groups {
+}
+
+decls[FParameters] {
+}
+
+clx FObject [FParameters] {
+  IAMParams =
+  D=disabled
+  E=enabled
+  Password=vitoo
+  port=8001
+  Username=vitoo
+
+
+}
+
+decls[FPythonCode] {
+}
+
+clx FObject [FPythonCode] {
+  UserControl
+
+import acm
+import ParametersReader
+from flask import Flask
+from flask import jsonify
+from flask import request
+from flask import abort
+from flask_httpauth import HTTPBasicAuth
+from werkzeug.security import generate_password_hash, check_password_hash
+import json
+import re
+import APIRequestResponseMonitoring as am        
+app = Flask(__name__)
+auth = HTTPBasicAuth()
+IAMParams  = ParametersReader.get_params('IAMParams')
+
+auth_username = IAMParams["Username"]
+auth_password = IAMParams["Password"]
+
+#User authetification when IAM hit NTCS
+users = {
+    auth_username: generate_password_hash(auth_password),
+}
+
+
+def check(email):
+    """-----------------------------------------------------------------------------------------
+    This function check email valid or not valid
+    :param email: string of email
+    :return bool
+    -----------------------------------------------------------------------------------------"""
+    regex = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'
+    
+    if (re.fullmatch(regex, email)):
+        return True
+    else:
+        return False
+
+@auth.verify_password
+def verify_password(username, password):
+    """-----------------------------------------------------------------------------------------
+    This function to Authectification user
+    :param username: string of username
+    :param password: string of password
+    :return string
+    -----------------------------------------------------------------------------------------"""
+    if username in users and check_password_hash(users.get(username), password):
+        return username
+        
+@app.route('/api/v1/user/enabledisable', methods=['POST'])
+@auth.login_required(optional = True) 
+def enableDisableUser():
+    """-----------------------------------------------------------------------------------------
+    This function to register user and update user based on action code
+    Logic:
+        if actionCode =A, then activate user
+        if actionCode =D, then inactive user
+    :return dict 
+    -----------------------------------------------------------------------------------------"""  
+    
+    #Authentification
+    if auth.current_user() == None :
+        return jsonify({"errorStatus":"Y" , "result" :"unauthorized"}),401
+    
+    #Get data
+    record = json.loads(request.data)
+    idlog = am.Loging("enableDisableUser", json.dumps(json.loads(request.data)), "", "", "", "", "")
+    
+    try:
+        status = record['status'].upper()
+        username = record['UserID'].upper()
+    except:
+        am.Loging("enableDisableUser", json.dumps({"errorStatus":"Y" , "result" :"invalid format"}), None, None, idlog, "503", "invalid format")
+        return jsonify({"errorStatus":"Y" , "result" :"invalid format"}),503
+    
+    
+    status = IAMParams[status]
+    u = acm.FUser[username]
+    
+    #Check user in Database
+    if u == None:
+        am.Loging("enableDisableUser", json.dumps({"errorStatus":"Y" , "result" :"user "+username+" not found"}), None, None, idlog, "200", "user "+username+" not found")
+        return jsonify({"errorStatus":"Y" , "result" :"user "+username+" not found"}),200
+    
+    #Check current user status
+    statusnow = u.Inactive()
+    if (statusnow == True and status == 'disabled')or (statusnow == False and status == 'enabled'):
+        am.Loging("enableDisableUser", json.dumps({"errorStatus":"Y" , "result" :"user status already " + status }), None, None, idlog, "200", "user status already " + status)
+        return jsonify({"errorStatus":"Y" , "result" :"user status already " + status }),200
+    
+    #Change user status
+    uc = u.Clone()
+    if status == 'disabled': 
+        uc.Inactive('YES')
+        u.Apply(uc)
+        u.Commit()
+        am.Loging("enableDisableUser", json.dumps({"errorStatus":"N" , "result" :"user disabled" }), None, None, idlog, "200", "user disabled")
+        return jsonify({"errorStatus":"N" , "result" :"user disabled" }),200
+        
+    elif status == 'enabled':
+        uc.Inactive('NO')
+        u.Apply(uc)
+        u.Commit()
+        am.Loging("enableDisableUser", json.dumps({"errorStatus":"N" , "result" :"user enable" }), None, None, idlog, "200", "user enabled")
+        return jsonify({"errorStatus":"N" , "result" :"user enabled"}),200
+        
+    else:
+        am.Loging("enableDisableUser", json.dumps({"errorStatus":"Y" , "result" :"invalid status"}), None, None, idlog, "200", "invalid status")
+        return jsonify({"errorStatus":"Y" , "result" :"invalid status"}),200
+        
+        
+
+@app.route('/api/v1/user/registerupdate', methods=['POST'])
+@auth.login_required(optional = True) #Authectification user
+def registerUpdateUser():
+    """-----------------------------------------------------------------------------------------
+    This function to register user and update user based on action code
+    Logic:
+        if actionCode =U, then update user
+        if actionCode =C, then Register or Create user
+    :return dict 
+    -----------------------------------------------------------------------------------------"""
+    #Authectification user
+    if auth.current_user() == None :
+        return jsonify({"errorStatus":"Y" , "result" :"unauthorized"}),401
+    
+    #Load request data from IAM
+    record = json.loads(request.data)
+    idlog = am.Loging("registerUser", json.dumps(json.loads(request.data)), "", "", "", "", "")
+    #Assign value to variable
+    try:
+        actionCode = record["actionCode"].upper() #
+        username = record["UserID"].upper() #alpnum
+        print (username)
+        role = record["Role"]
+        nip = record["NIP"] #alpnum
+        email = record["Email"] 
+        contact = record["MobileNumber"]#number
+        directorate = record["Directorate"]
+        group = record["Group"]
+        position = record["Position"]
+        section = record["Section"]
+        subarea = record["Subarea"]
+        subareadesc = record["SubareaDesc"]
+        groupFA = record["groupFA"].upper() #
+        department = record["Department"]
+    except:
+        am.Loging("enableDisableUser", json.dumps({"errorStatus":"Y" , "result" :"invalid format"}), None, None, idlog, "503", "invalid format")
+        return jsonify({"errorStatus":"Y" , "result" :"invalid format"}),503
+    checkgroupFA = acm.FUserGroup[groupFA]
+    if checkgroupFA == None :
+        am.Loging("enableDisableUser", json.dumps({"errorStatus":"Y" , "result" :"invalid groupFA"}), None, None, idlog, "200", "invalid groupFA")
+        return jsonify({"errorStatus":"Y" , "result" :"invalid groupFA"}),200
+    
+    checkusername = username.isalnum()
+    if checkusername == False :
+        am.Loging("enableDisableUser", json.dumps({"errorStatus":"Y" , "result" :"invalid username format"}), None, None, idlog, "200", "invalid username format")
+        return jsonify({"errorStatus":"Y" , "result" :"invalid username format"}),200
+    
+    #Assign email to variable and check email format
+    checkemail = check(email)
+    if checkemail == False :
+        am.Loging("enableDisableUser", json.dumps({"errorStatus":"Y" , "result" :"invalid email format"}), None, None, idlog, "200", "invalid email format")
+        return jsonify({"errorStatus":"Y" , "result" :"invalid email format"}),200
+    
+    #check nip format is numeric
+    checknip = nip.isalnum()
+    if checknip == False :
+        am.Loging("enableDisableUser", json.dumps({"errorStatus":"Y" , "result" :"invalid nip format"}), None, None, idlog, "200", "invalid nip format")
+        return jsonify({"errorStatus":"Y" , "result" :"invalid nip format"}),200
+    
+    #check contact format is numeric    
+    checkcontact = contact.isnumeric()
+    if checkcontact == False :
+        am.Loging("enableDisableUser", json.dumps({"errorStatus":"Y" , "result" :"invalid contact format"}), None, None, idlog, "200", "invalid contact format")
+        return jsonify({"errorStatus":"Y" , "result" :"invalid contact format"}),200
+        
+    u = acm.FUser[username]
+    #actionCode = 'C' for Create User/ Register User
+    if actionCode == 'C': 
+        print('1')
+        #Check if user in DB or not
+        if not (u == None) :
+            am.Loging("enableDisableUser", json.dumps({"errorStatus":"Y" , "result" :"user "+username+" already exist"}), None, None, idlog, "200", "user "+username+" already exist")
+            return jsonify({"errorStatus":"Y" , "result" :"user "+username+" already exist"}),200
+        #Check if mandatory field not empty   
+        else:
+            u = acm.FUser()
+            u.Name(username) #UserID / user_name <!Mandatory!>
+            u.FullName(nip) #NIP / Description <!Mandatory!>
+            u.Email(email) #Email / email
+            u.AddInfoValue('Contact', contact) #Mobile Number / Add Info - Contact
+            u.AddInfoValue('Role', role)
+            u.AddInfoValue('Directorate', directorate) #Directorate / Add Info - Directorate
+            u.AddInfoValue('Group', group) #Group / Add Info - Group
+            u.AddInfoValue('Department', department) #Department / Add Info - Department
+            u.AddInfoValue('Position', position) #Position / Add Info - Position
+            u.AddInfoValue('Section', section) #Section / Add Info - Section
+            u.AddInfoValue('Subarea', subarea) #Branch Code / Add Info - BCode
+            u.AddInfoValue('SubareaDesc', subareadesc) #Branch Name / Add Info - BName
+            u.UserGroup(groupFA) #Group_FA / Group <!Mandatory!>
+            u.Commit()
+            am.Loging("enableDisableUser", json.dumps({"errorStatus":"Y" , "result" :"user created"}), None, None, idlog, "200", "user created")
+            return jsonify({"errorStatus":"N" , "result" :"user created"}),200  
+    
+    #actionCode = 'U' for Update User
+    elif actionCode == 'U':
+    
+        #Check if user in database or not
+        if u == None:
+            am.Loging("enableDisableUser", json.dumps({"errorStatus":"Y" , "result" :"user "+username+" not found"}), None, None, idlog, "200", "user "+username+" not found")
+            return jsonify({"errorStatus":"Y" , "result" :"user "+username+" not found"}),200
+        
+        #Check if mandatory field not empty 
+        else:
+        
+            if not nip ==''or nip == None:
+                u.FullName(nip) 
+                
+            if not email =='' or email == None:
+                u.Email(email) 
+            
+            if not contact =='' or contact == None:
+                u.AddInfoValue('Contact', contact) 
+            
+            if not role =='' or role == None:
+                u.AddInfoValue('Role', role)
+                
+            if not directorate =='' or directorate == None:
+                u.AddInfoValue('Directorate', directorate) 
+            
+            if not group =='' or group == None:
+                u.AddInfoValue('Group', group) 
+            
+            if not department =='' or department == None:
+                u.AddInfoValue('Department', department) 
+            
+            if not position =='' or position == None:
+                u.AddInfoValue('Position', position) 
+                
+            if not section =='' or section == None:
+                u.AddInfoValue('Section', section) 
+            
+            if not subarea =='' or subarea == None:
+                u.AddInfoValue('Subarea', subarea) 
+            
+            if not subareadesc =='' or subareadesc == None:
+                u.AddInfoValue('SubareaDesc', subareadesc) 
+            
+            if not groupFA =='' or groupFA == None:
+                u.UserGroup(groupFA)
+            u.Commit()
+            am.Loging("enableDisableUser", json.dumps({"errorStatus":"Y" , "result" :"user updated"}), None, None, idlog, "200", "user updated")
+            return jsonify({"errorStatus":"N" , "result" :"user updated"}),200
+            
+    else:
+        am.Loging("enableDisableUser", json.dumps({"errorStatus":"Y" , "result" :"invalid action code"}), None, None, idlog, "200", "invalid action code")
+        return jsonify({"errorStatus":"Y" , "result" :"invalid action code"}),200
+
+...
+
+  UserControlAPIMain
+
+"""--------------------------------------------------------------------------------------------------
+MODULE:
+    CIFSyncAPIMain : Main module for ATS
+
+DESCRIPTION: This module uses gevent to run the webserver in start method.
+             The start never returns and hence work and stop functions are not called.
+-------------------------------------------------------------------------------------------------------"""
+from gevent.pywsgi import WSGIServer
+import UserControl
+import ParametersReader
+
+IAMParams  = ParametersReader.get_params('IAMParams')
+
+def server_routine():
+    """
+    This function starts the gevent WSGI
+    :return: None
+    """
+    try:
+        #deal_posting_config = FDealPostingUtils.Parameters('FDealPostingConfig')
+        #key_file = getattr(deal_posting_config, 'KeyFile', None)
+        #server_port = getattr(deal_posting_config, 'ServerPort', None)
+        #cert_file = getattr(deal_posting_config, 'CertificateFile', None)
+
+        bind = ('0.0.0.0', int(IAMParams["port"]))
+        app = UserControl.app
+        #g_server = WSGIServer(bind, app, keyfile=key_file, certfile=cert_file)
+        g_server = WSGIServer(bind, app)
+        print('Started webserver.', g_server)
+        g_server.serve_forever()
+    except Exception as err:
+        print(err)
+        return False
+
+
+def start():
+    """ ATS start """
+    try:
+        server_routine()
+    except Exception as err:
+        print(err)
+
+...
+
+}
+

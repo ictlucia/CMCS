@@ -1,0 +1,180 @@
+#
+# Front Arena exported extension module.
+# source          ""
+# timestamp (utc) "2024-06-07 06:44:14.2"
+# ***** DO NOT EDIT! *****
+#
+name        "PS_IRSSettlementReconciliation"
+description ""
+
+groups {
+}
+
+decls[FParameters] {
+}
+
+clx FObject [FParameters] {
+  SettlementReconciliationParams =
+  SETL_PREFIX=9912001
+  TRADE_PREFIX=9912002
+
+
+}
+
+decls[FPythonCode] {
+}
+
+clx FObject [FPythonCode] {
+  IRSSettlementReconciliation
+import acm
+import csv
+import traceback
+import os
+import FLogger
+from FRunScriptGUI import InputFileSelection, DirectorySelection
+import datetime
+import glob
+import ParametersReader
+
+LOG_MODE = {}
+LOG_MODE['NORMAL' ] = 1
+LOG_MODE['DEBUG'  ] = 2
+LOG_MODE['WARNING'] = 3
+LOG_MODE['ERROR'  ] = 4
+date_today = acm.Time.DateToday().replace('-', '')
+
+ttTemplateFile = 'Choose source folder from which csv file(s) to take for processing the settlements'
+ttLogMode = 'Select log level'
+ttLogToCon = 'Whether logging should be done in the Log Console or not.'
+ttLogToFile = 'Defines whether logging should be done to file.'
+ttLogPath = 'Log file will be saved in this directory.'
+ttLogFile = 'Name of the logfile.'
+
+file_selection = InputFileSelection("csv files (.csv)|*.csv")
+dir_selection = DirectorySelection()
+settlements_params = ParametersReader.get_params('SettlementReconciliationParams')
+SETL_PREFIX = settlements_params['SETL_PREFIX']
+TRADE_PREFIX = settlements_params['TRADE_PREFIX']
+
+
+# [VariableName, DisplayName, Type, CandidateValues, Default, Mandatory, Multiple, Description, InputHook, Enabled]
+ael_template_variables = [
+['sourceFolder', 'Select Source Folder', dir_selection, None, dir_selection, 1, 1, ttTemplateFile],
+]
+
+ael_log_variables = [
+['logMode', 'Log Mode_Logging', 'string', ['NORMAL', 'DEBUG', 'WARNING', 'ERROR'], 'NORMAL', True, False, ttLogMode],
+['logPath', 'Log Directory_Logging', dir_selection, None, dir_selection, 1, 1, ttLogPath],
+['logFile', 'Log File_Logging', 'string', None, 'IRSSettlement.log', False, False, ttLogFile],
+]
+
+ael_variables = ael_template_variables + ael_log_variables
+
+def GetPaths(params):
+    source_folder = params['sourceFolder'].SelectedDirectory().Text()
+    #if not os.path.exists(source_folder):
+    #    raise ValueError('Template file path %s does not exists.' % template_file)
+    return source_folder
+    
+
+def CreateLogger(params, name):
+    log_mode = LOG_MODE.get(params['logMode'], 1)
+    log_path = params['logPath'].SelectedDirectory().Text()
+    log_file_original = params['logFile']
+    log_file = '{}_{}.log'.format(log_file_original.replace('.log',''), date_today)
+
+    if not os.path.exists(log_path):
+        raise ValueError('Directory %s does not exists.' % log_path)
+
+    log_target = os.path.join(log_path, log_file)
+    logger = FLogger.FLogger(level=log_mode, 
+                        name=name,
+                        logToPrime=False,
+                        logToFileAtSpecifiedPath=log_target,
+                        logToConsole=True)
+    return logger
+
+def archive_file(file_path, logger, file_name):
+    
+    try:
+        logger.LOG('Moving File {0} to Processed folder'.format(file_name))  
+        abs_path = os.path.dirname(file_path)
+        #file_name = os.path.basename(file_path)
+        new_file_name =  '{}_{}.csv'.format(file_name.replace('.csv',''), date_today) 
+        path = abs_path + os.sep + 'Processed' 
+        isExist = os.path.exists(path)
+        if not isExist:
+            logger.LOG("Creating 'Processed' folder at %s" %abs_path)
+            os.makedirs(path)
+        new_path = path + os.sep + new_file_name    
+        os.rename(file_path, path + os.sep + new_file_name) 
+        logger.LOG("File '{0}' moved to {1} folder".format(file_name, new_path))  
+    except Exception as e:
+        logger.ELOG('Error while archiving the file {}'.format(file_path))  
+    
+def verify_date_format(settle_date, settId):
+    date_formate = 'dd-mm-yyyy'
+    msg = 'Date is correct format for settlement {0}'.format(settId)
+    try:
+        datetime.datetime.strptime(settle_date, date_formate)
+    except ValueError:    
+        msg = 'Date should be in DD-MM-YYYY format for settlement {0} Skipping Settlement.'.format(settId)
+    return msg     
+    
+def ael_main(params):
+    logger = CreateLogger(params, __name__)
+    sourceFolder = GetPaths(params)
+    logger.LOG('Executing task IRSSettlementReconciliation')
+    logger.LOG('Processing csv file(s) from folder {}'.format(sourceFolder))
+    
+    csv_files = glob.glob(os.path.join(sourceFolder, "*.csv"))
+    for each_file in csv_files:
+        logger.LOG('********************************************************************')
+        file_name = os.path.basename(each_file)
+        logger.LOG('Started Processing data from file {}'.format(file_name))
+        with open(each_file, 'r') as file:
+          csvreader = csv.reader(file)
+          header = next(csvreader)
+          
+          for row in csvreader:
+            settle_date = row[0]
+            
+            settId = row[1].replace(SETL_PREFIX, '')
+            status = row[-1]
+            sett = acm.FSettlement[settId]
+            msg = verify_date_format(settle_date, settId)
+            logger.DLOG(msg)
+            if sett :
+                if sett.Status() == 'Pending Closure':
+                    try:
+                        if status.casefold() == 'Match'.casefold():
+                            sett.Status('Closed')
+                            #sett.settle_date
+                            sett.AdditionalInfo().ActualSettleDate = settle_date
+                            sett.Commit()
+                            logger.LOG('Settlement {0} status changed to {1} and Addinfo ActualSettleDate set to {2} '.format(settId, 'Closed', settle_date) )
+                        elif status.casefold() == 'Unmatch'.casefold():
+                            #sett.Status('Incorrect Payment')
+                            sett.AdditionalInfo().ActualSettleDate = settle_date
+                            sett.Commit()
+                            logger.LOG('Settlement {0} status unchanged as IRS status is {1}'.format(settId, status))              
+                        else:
+                            logger.LOG('Skiping Settlement {0} as Reconciliation Status is not in MATCH/UNMATCHED'.format(settId))              
+                
+                    except Exception as e:
+                        logger.ELOG(str(err))
+                        logger.ELOG(traceback.format_exc())
+                        logger.ELOG('Error in ael main. {}'.format(err))
+                else:
+                    logger.LOG('Skiping Settlement {0} as status is not Pending Closure'.format(settId))    
+            else:
+                logger.LOG('Skiping Settlement {0} as not present in FA'.format(settId))
+        logger.LOG('Finished Processing data from file {}'.format(file_name))
+         
+        archive_file(each_file,logger, file_name)    
+    logger.LOG('Finished Task IRSSettlementReconciliation')
+
+...
+
+}
+

@@ -1,0 +1,255 @@
+#
+# Front Arena exported extension module.
+# source          ""
+# timestamp (utc) "2023-10-18 04:01:56.6"
+# ***** DO NOT EDIT! *****
+#
+name        "BM_IRS_UploadDownload"
+description ""
+
+groups {
+}
+
+decls[FMenuExtension] {
+}
+
+clx FSessionManagerFrame [FMenuExtension] {
+  IRS Reconciliation =
+  Function=IRSUtil.StartApplication
+  MenuType=Application
+  ModuleName=IRS Reconciliation
+  ParentMenu=Tools
+  RibbonPosition=Reporting Menu
+
+
+}
+
+decls[FPythonCode] {
+}
+
+clx FObject [FPythonCode] {
+  IRS_UploadDownload
+"""----------------------------------------------------------------------------------------------------
+MODULE:
+    IRS UploadDownload
+
+DESCRIPTION:
+    Module to download, upload or delete Rekon data from IRS. where the data will be access from server by using FTP with SSL
+
+-------------------------------------------------------------------------------------------------------"""
+
+import ftplib
+import os
+import ParametersReader
+import FRunScriptGUI
+import socket
+import pyodbc
+import base64
+import acm
+import io
+
+folderPicker = FRunScriptGUI.DirectorySelection()
+    
+ael_gui_parameters = {
+  'windowCaption' : 'FTPS File Transporter',
+  'runButtonLabel':'&&Go',
+  'runButtonTooltip':'Execute',
+  'hideExtraControls':True,
+  'closeWhenFinished':False,
+  'InsertItemsShowExpired':False
+}
+
+listdata = []
+action = ['Upload','Download', 'Delete']
+folder = []
+file = []
+run = False
+runcb = False
+selectedfolder = None
+isDownload = False
+selectedRekon = None
+selectedDate = None
+isProcess = False
+
+
+DB = ParametersReader.get_params("DBParam") 
+ftpPar = ParametersReader.get_params("ReportPar")
+server = ftpPar['server']
+user = ftpPar['user']
+passwd = ftpPar['passwd']
+
+def uplodORdownload(index, fieldValues):
+    global runcb
+    global isDownload
+    global isdelete
+    if runcb:
+        ael_variables[2][3] = getfolder(False, None)
+        if fieldValues[index] == 'Download' or fieldValues[index] == 'Delete':
+            ael_variables[5][9] = 1
+            ael_variables[5][5] = 1
+            isDownload = True
+        else:
+            ael_variables[5][9] = 0
+            ael_variables[5][5] = 0
+        return fieldValues
+    runcb = True
+
+def snapshot_cb(index, fieldValues):
+    global folder
+    global selectedRekon
+    selectedRekon = fieldValues[index]
+    ael_variables[3][FRunScriptGUI.Controls.VALUES]=getfolder(True, selectedRekon)    
+    return fieldValues
+
+def snapshot_file(index, fieldValues):
+    global file
+    global run
+    global selectedfolder
+    global isProcess
+    if run:
+        selectedfolder = fieldValues[index]
+        if fieldValues[index] != None:
+            if isDownload and selectedfolder != 'Process':
+                ael_variables[4][9] = 0
+                ael_variables[4][5] = 0
+                ael_variables[5][3] = ftp(selectedRekon, selectedfolder)
+            elif isDownload and selectedfolder == 'Process':
+                ael_variables[4][9] = 1
+                ael_variables[4][5] = 1
+                isProcess = True
+            else:
+                ael_variables[4][9] = 0
+                ael_variables[4][5] = 0
+        else:
+            ael_variables[4][9] = 0
+            ael_variables[4][5] = 0
+            
+        return fieldValues
+    run = True
+
+def GetDate(index, fieldValues):
+    global selectedDate
+    selectedDate = fieldValues[4]
+    ael_variables[5][3] = ftp(selectedRekon, selectedfolder, selectedDate)
+    return fieldValues
+    
+
+ael_variables = [
+    ['inputFolder', 'Folder Path', folderPicker, None, folderPicker, 1, 1, 'The file path from where the files will be picked.', None, 1],
+    ['Action','Action','string',action,None,1, None, 'Action', uplodORdownload, 1, ''],
+    ['RekonName', 'Rekon Name', 'string', listdata, None, 1, None, 'Rekon Name', snapshot_cb, 1, ''],
+    ['Folder','Folder','string',folder,None,1, None, 'Folder Name', snapshot_file, 1, ''],
+    ['Date','Date (YYYY-MM-DD)','date',None,acm.Time.DateNow(),0, None, 'Date Of Rekon', GetDate, 0, ''],
+    ['File','File','string',file,None,0, None, 'Folder Name', None, 0, ''],
+    ]
+
+def getfolder(isFolder, rekonid):
+    paswrd = base64.b64decode(DB['PWD']).decode("utf-8")
+    cnxn = pyodbc.connect('DRIVER='+DB['DRIVER'] + ';SERVER='+DB['SERVER'] + ';DATABASE='+DB['DATABASE'] + ';UID='+DB['UID']  +';PWD='+ paswrd)
+    cursor = cnxn.cursor()
+    query = """SET NOCOUNT ON; EXEC SP_GetFolderRekon @isFolder=?, @rekonid=?"""
+    param = (isFolder, rekonid)
+    cursor.execute(query, param)
+    data = cursor.fetchall()
+    record = []
+    for row in data:
+        record += row
+    return record
+
+def ftp(selectedRekon, var, selectedDate = None):
+    session = ftplib.FTP_TLS(server)
+    session.login(user, base64.b64decode(passwd).decode("utf-8"))
+    session.prot_p()
+    session.af = socket.AF_INET6
+    if var != None:
+        session.cwd(selectedRekon)
+        session.cwd(var)
+        if selectedDate != None:
+            session.cwd(selectedDate)
+        file = session.nlst()
+        return file
+
+
+def ael_main(var):
+    input_folder = var['inputFolder'].SelectedDirectory().AsString()
+    if var['Action'] == 'Upload':
+        listfile = os.listdir(input_folder)
+        for row in listfile:
+            try:
+                UploadFTP(var['inputFolder'], var['RekonName'], var['Folder'], row, var['Date'])
+            except Exception as err:
+                processed_successfully = False
+    elif var['Action'] == 'Download':
+        DownloadFTP(var['inputFolder'], var['RekonName'], var['Folder'], var['File'], var['Date'], False)
+    else:
+        DownloadFTP(var['inputFolder'], var['RekonName'], var['Folder'], var['File'], var['Date'], True)
+        
+        
+def UploadFTP(inputFolder, RekonName, Folder, row, date):
+    try:
+        session = ftplib.FTP_TLS(server, timeout=5)                       #Connect to FTP
+        #session.set_debuglevel(2)
+        session.auth()
+        session.login(user,base64.b64decode(passwd).decode("utf-8"))                                      #Input User and Password
+        session.prot_p()
+        session.af = socket.AF_INET6                                    #Set Secure Connection
+        session.set_pasv(True)                                          #Set Pasive Mode
+        session.cwd(RekonName)                                          #Change Folder Rekon
+        session.cwd(Folder)
+        if isProcess == True:
+            session.cwd(date)
+        Pathfile = os.path.join(str(inputFolder),str(row))
+        serverResponse = session.sendcmd('TYPE A')
+        print(Pathfile)
+        with open(Pathfile,'rb') as fd:
+            with session.ntransfercmd('STOR ' + str(row))[0] as dataConnection:
+                while 1:
+                    buffer = fd.read(1024)
+                    if buffer == b'':
+                        break
+                    dataConnection.sendall(buffer)
+    except ftplib.all_errors as ex:
+        print(ex)
+    finally:
+        session.quit()
+
+
+def DownloadFTP(inputFolder, RekonName, Folder, File, date, isdelete):
+    with ftplib.FTP_TLS(server) as session:                    #Connect to FTP
+        session.login(user, base64.b64decode(passwd).decode("utf-8"))                            #Input User and Password
+        #session.set_debuglevel(2)
+        session.prot_p()
+        session.af = socket.AF_INET6
+        session.set_pasv(True)                                          #Set Secure Connection
+        session.cwd(RekonName)                                          #Change Folder Rekon
+        session.cwd(Folder)
+        if isProcess == True:
+            session.cwd(date)
+        if isdelete == False:
+            filename = os.path.join(str(inputFolder),str(File))                                                  
+            with open( filename, 'wb') as my_file:                          #Open a local file to store the downloaded file
+                session.retrbinary('RETR ' + str(File), my_file.write, 1024)#Download File
+        else:
+            session.delete(str(File))
+
+
+...
+
+  IRSUtil
+import acm
+import UserProfileUtils as up
+import ParametersReader
+
+def StartApplication(eii):
+    profile = ParametersReader.get_params("ReportPar")
+    shell = acm.UX.SessionManager().Shell()  
+    isallow = up.is_component_in_user_profile(str(profile['IrsProfile']))
+    if isallow == 1:
+        acm.RunModuleWithParameters("IRS_UploadDownload", acm.GetDefaultContext())
+    else :
+        acm.UX().Dialogs().MessageBoxInformation(shell, "user doesn't have access right for this menu")
+
+...
+
+}
+

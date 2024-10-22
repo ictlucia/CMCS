@@ -1,0 +1,283 @@
+#
+# Front Arena exported extension module.
+# source          ""
+# timestamp (utc) "2024-07-30 03:57:22.4"
+# ***** DO NOT EDIT! *****
+#
+name        "PS_DWHReport"
+description "$Id$"
+
+groups {
+}
+
+decls[FColumnDefinition] {
+  "Depreciation Yield" ( "sheet columns.tradesheet" ) "";
+  "Interest Income/Reward to be Received" ( "sheet columns.tradesheet" ) "";
+  "Remaining Premium Discount" ( "sheet columns.tradesheet" ) "";
+}
+
+clx FTradingSheet [FColumnDefinition] {
+  Depreciation Yield =
+  Access=ReadOnly
+  Description=The yield used in lot based depreciation. Use this for DWH report.
+  ExtensionAttribute=lotDepreciationYieldColumn
+  Format=Percent
+  GroupLabel=Profit/Loss
+  InheritsFrom=Portfolio Profit and Loss Base (Historical FX parametrization)
+  LabelList=Depreciation Yield
+  Name=DWH Lot Depreciation Yield
+
+
+  EndInterest =
+  Description=Sum of projected cash flows filtered per factor.
+  ExtensionAttribute=endinterestcalculation
+  GroupLabel=ETL Data WareHouse
+  Name=End Interest
+
+
+  Interest =
+  Description=The profit/loss interest. Use this for DWH report.
+  ExtensionAttribute=interest
+  GroupLabel=Profit/Loss
+  InheritsFrom=Profit/Loss
+  LabelList=Interest
+  Name=Interest
+
+
+  Interest Income/Reward to be Received =
+  Description=Sum of projected cash flows filtered per factor.
+  ExtensionAttribute=endinterestcalculation
+  GroupLabel=ETL Data WareHouse
+  Name=Interest Income/Reward to be Received
+
+
+  Remaining Premium Discount =
+  Description=The remaining premium/discount for a position or portfolio. Use this for DWH report.
+  ExtensionAttribute=remainingPremiumDiscountColumn
+  InheritsFrom=Portfolio Profit and Loss Base (Historical FX parametrization)
+  LabelList=Remaining Prem/Disc;Remaining Premium/Discount
+  Name=DWH Remaining Premium/Discount
+
+
+}
+
+decls[FExtensionAttribute] {
+}
+
+clx FInstrumentAndTrades [FExtensionAttribute] {
+  endinterestcalculation = projectedFactorForStandardCalculationsEndInterest;
+  factorFilterForStandardCalculationsEndInterest = "Interest";
+  projectedFactorForStandardCalculationsEndInterest = object:projectedFactor [factorFilter = factorFilterForStandardCalculationsEndInterest, cashFlowRightCutOffDate = projectedEndDateForStandardCalculations];
+}
+
+clx FPortfolioInstrumentAndTrades [FExtensionAttribute] {
+  endinterestcalculation = nil;
+}
+
+decls[FPythonCode] {
+}
+
+clx FObject [FPythonCode] {
+  DWHCustomColumnUpdateScript
+
+import acm
+import json
+import traceback
+import os
+import FLogger
+import glob
+import ParametersReader
+from FRunScriptGUI import InputFileSelection, DirectorySelection
+from DWHReport_Layout import REPORT_COLUMNS, VALUE_ROUNDING_PRECISION
+
+LOG_MODE = {}
+LOG_MODE['NORMAL' ] = 1
+LOG_MODE['DEBUG'  ] = 2
+LOG_MODE['WARNING'] = 3
+LOG_MODE['ERROR'  ] = 4
+date_today = acm.Time.DateToday().replace('-', '')
+
+ttQueryFolder = 'Choose Query folder'
+ttReportName = 'Choose Report Name'
+ttLogMode = 'Select log level'
+ttLogToCon = 'Whether logging should be done in the Log Console or not.'
+ttLogToFile = 'Defines whether logging should be done to file.'
+ttLogPath = 'Log file will be saved in this directory.'
+ttLogFile = 'Name of the logfile.'
+
+allQueries = acm.FStoredASQLQuery.Select('subType="FTrade"').SortByProperty('Name')
+dir_selection = DirectorySelection()
+REPORT_NAMES = list(REPORT_COLUMNS.keys())
+REPORT_NAMES.sort()
+
+# [VariableName, DisplayName, Type, CandidateValues, Default, Mandatory, Multiple, Description, InputHook, Enabled]
+ael_log_variables = [
+['queryFolder', 'Select Query Folder', acm.FStoredASQLQuery, allQueries, None, 1, 0, ttQueryFolder],
+['reportName', 'Select Report Name', 'string', REPORT_NAMES, None, 1, 0, ttReportName],
+['logMode', 'Log Mode_Logging', 'string', ['NORMAL', 'DEBUG', 'WARNING', 'ERROR'], 'NORMAL', True, False, ttLogMode],
+['logPath', 'Log Directory_Logging', dir_selection, None, dir_selection, 1, 1, ttLogPath],
+['logFile', 'Log File_Logging', 'string', None, 'Output.log', False, False, ttLogFile],
+]
+
+ael_variables = ael_log_variables
+logger = None
+def CreateLogger(params, name):
+    global logger
+    log_mode = LOG_MODE.get(params['logMode'], 1)
+    log_path = params['logPath'].SelectedDirectory().Text()
+    log_file = params['logFile']
+
+    if not os.path.exists(log_path):
+        raise ValueError('Directory %s does not exists.' % log_path)
+
+    log_target = os.path.join(log_path, log_file)
+    logger = FLogger.FLogger(level=log_mode, 
+                        name=name,
+                        logToPrime=False,
+                        logToFileAtSpecifiedPath=log_target,
+                        logToConsole=True)
+    return logger
+
+calc_space = acm.Calculations().CreateCalculationSpace(acm.GetDefaultContext(), 'FTradeSheet')
+calc_space_p = acm.Calculations().CreateCalculationSpace(acm.GetDefaultContext(), 'FPortfolioSheet')
+calc_space_std = acm.FCalculationMethods().CreateStandardCalculationsSpaceCollection()
+
+def SaveDataInTextObject(textObjName, valueDict):
+    textObject = acm.FCustomTextObject.Select01("cid = 'Customizable' and name={0}".format(textObjName), None)
+    textObjDict = {}
+    if textObject:
+        textObjDict = json.loads(textObject.Text())
+        textObjDict = valueDict
+        textObject.Text(json.dumps(textObjDict))
+    else:
+        textObject = acm.FCustomTextObject()
+        textObject.Name(textObjName)
+        textObject.SubType('Trade')
+        
+    textObjDict = valueDict
+    textObject.Text(json.dumps(textObjDict))
+    textObject.Commit()
+    print('textObject',textObject.Name())
+
+    
+def _generate(node, calc_space, COLUMNS):
+    """ Recurse grid and compute values"""
+    if node.Item().Class() == acm.FMultiInstrumentAndTrades:
+        portfolio_type = eval(node.Item().Value().AsString())
+        if node.NumberOfChildren():
+            child_iter = node.Iterator().FirstChild()
+
+            while child_iter:
+                node = child_iter.Tree()
+                if node.Item().Class() != acm.FSingleInstrumentAndTrades:
+                    continue
+
+                ins = node.Item().Instrument()
+                textobject_name = '{0}_{1}'.format(ins.Name(), portfolio_type)
+                value_dict = {}
+                for column_id in COLUMNS:
+                    col_value = _get_column_value(child_iter.Tree(), calc_space, column_id)
+                    value_dict[column_id] = col_value
+                SaveDataInTextObject(textobject_name, value_dict)
+                child_iter = child_iter.NextSibling()
+
+    if node.NumberOfChildren():
+        child_iter = node.Iterator().FirstChild()
+        while child_iter:
+            _generate(child_iter.Tree(), calc_space, COLUMNS)
+            child_iter = child_iter.NextSibling()
+
+def _get_column_value(node, calc_space, column_id):
+    column_val = None
+    try:
+        column = calc_space.CreateCalculation(node, column_id)
+        if column:
+            column_val = column.FormattedValue()            
+            
+        if column_val:
+            column_val = column_val.replace(',','')            
+        
+        if column_val == 'NaN':
+            column_val = ''
+            
+    except Exception as ex:
+        pass
+    return column_val
+
+def save_tradesheet_columns(query, reportName, COLUMNS):
+    trades = query.Query().Select()
+    for trade in trades:
+        top_node = calc_space.InsertItem(trade)
+        valueDict = {}
+        for column in COLUMNS:
+            value = ''
+            try:
+                if column == 'End Cash' and trade.Instrument().InsType() == 'BasketRepo/Reverse':
+                    value  = trade.Calculation().ProjectedFactor(calc_space_std)
+                else:
+                    value = calc_space.CalculateValue(top_node, column)
+                if not isinstance(value, float):
+                    value = value.Value().Number() if value else 0.0
+                value = round(value, VALUE_ROUNDING_PRECISION)
+                valueDict[column] = value
+            except Exception as ex:
+                pass
+            valueDict[column] = value
+        textObjName = reportName.replace(' ', '') + '_' + str(trade.Oid())
+        logger.LOG('Trade Oid: {0}, TextObjName: {1}, Values: {2}'.format(trade.Oid(), textObjName, valueDict))
+        SaveDataInTextObject(textObjName, valueDict)
+
+
+def save_portfoliosheet_columns(query, reportName, COLUMNS):
+    grouper = acm.Risk().GetGrouperFromName(reportName.split("_")[1])
+    top_node = calc_space_p.InsertItem(query)
+    top_node.ApplyGrouper(grouper)
+    calc_space_p.Refresh()
+    if not top_node.NumberOfChildren():
+        logger.LOG('Query : {} shows on trades'.format(query.Name()))
+    else:
+        _generate(top_node, calc_space_p, COLUMNS)
+
+
+def ael_main(params):
+    logger = CreateLogger(params, __name__)
+    reportName = params['reportName']
+    logger.LOG('Generating DWHReport for report : {}'.format(reportName))
+    try:
+        query = params['queryFolder']
+        COLUMNS = REPORT_COLUMNS.get(reportName)
+        if '_' in reportName and 'Portfolio' in reportName.split("_")[1]:
+            save_portfoliosheet_columns(query, reportName, COLUMNS)
+        else:
+            save_tradesheet_columns(query, reportName, COLUMNS)
+    except Exception as e:
+        logger.ELOG('Error while running the report')
+        logger.ELOG(e)
+        logger.ELOG(traceback.format_exc())
+    logger.LOG('Finished Task DWHReport')
+
+
+...
+
+  DWHReport_Layout
+
+from collections import OrderedDict
+VALUE_ROUNDING_PRECISION = 5
+
+REPORT_COLUMNS = OrderedDict()
+REPORT_COLUMNS['SYM01_Portfolio Type'] =  ['Portfolio Position', 'Portfolio Accrued Interest', 'AveragePrice', 'Portfolio PL Market Value', 'Portfolio Book Net Asset Value']
+REPORT_COLUMNS['SYM01'] = ['Remaining Premium']
+REPORT_COLUMNS['SRP01'] = ['Remaining Premium', 'End Cash', 'StartCash', 'Portfolio Accrued Interest']
+REPORT_COLUMNS['PBL01'] = ['Interest Income/Reward to be Received']
+REPORT_COLUMNS['TSB01'] = ['Present Value']
+REPORT_COLUMNS['REV01'] = ['Portfolio Accrued Interest']
+REPORT_COLUMNS['LCRStg'] = ['Portfolio Value']
+REPORT_COLUMNS['IFRS9'] = ['Portfolio Accrued Interest', 'Remaining Premium Discount', 'Present Value', 'Interest', 'Trade Yield']
+REPORT_COLUMNS['SPSH01'] = ['Trade Yield']
+REPORT_COLUMNS['BUNGA_PAK'] = ['Interest Income/Reward to be Received']
+
+
+...
+
+}
+

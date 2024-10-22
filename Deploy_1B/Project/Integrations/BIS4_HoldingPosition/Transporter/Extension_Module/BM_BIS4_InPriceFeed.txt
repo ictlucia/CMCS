@@ -1,0 +1,134 @@
+#
+# Front Arena exported extension module.
+# source          ""
+# timestamp (utc) "2024-03-07 06:48:16.3"
+# ***** DO NOT EDIT! *****
+#
+name        "BM_BIS4_InPriceFeed"
+description ""
+
+groups {
+}
+
+decls[FParameters] {
+}
+
+clx FObject [FParameters] {
+  InPriceFeedParams =
+  logFilename=BIS4_InPriceFeed_LOG_{}.txt
+
+
+}
+
+decls[FPythonCode] {
+}
+
+clx FObject [FPythonCode] {
+  BI_SSSS_In_PriceFeed
+"""----------------------------------------------------------------------------------------------------
+MODULE:
+    BI_SSSS_In_PriceFeed
+
+DESCRIPTION:
+    Entry point to invoke the BIS4 In PriceFeed run task gui.
+
+-------------------------------------------------------------------------------------------------------"""
+import acm, traceback
+import ParametersReader
+import BIS4Common
+from datetime import datetime
+
+# get value from FPArameter
+PriceFeedParams = ParametersReader.get_params('InPriceFeedParams')
+
+log_file_name = PriceFeedParams['logFilename'].format(acm.Time.DateToday().replace('-', ''))
+TIME_LAST_BIT = 1024
+PARTY_NAME = 'BI-SSSS'
+
+
+class BIS4PriceFeed(BIS4Common.BIS4_TaskBase):
+    def __init__(self):
+        super(BIS4PriceFeed, self).__init__()        
+        
+    def process_input_record(self, data):
+        ret_val = False
+        
+        isin_or_alias = data[0]
+        closing_price = data[1]
+        price_curr = data[2]
+        trade_date = data[3]
+        isin_or_alias = isin_or_alias.strip('"')
+        party_object = acm.FParty[PARTY_NAME]
+
+        trade_time = datetime.strptime(trade_date, '%Y-%m-%d')
+        trade_time = int(trade_time.timestamp())
+        trade_time_save = acm.Time.DateTimeFromTime(trade_time)
+        trade_time_query = acm.Time.LocalToUtc(trade_time_save)
+        if party_object:
+            alias_obj = acm.FInstrumentAlias.Select01(
+            "type = '{}' and alias = '{}'".format(BIS4Common.BIS4_INS_ALIAS, isin_or_alias), None)
+            if alias_obj:
+                bond_instr = alias_obj.Instrument()
+                if bond_instr:
+                    date_now = acm.Time.DateNow()
+                    whereClause = "instrument='{}' and market='{}' and currency='{}'".format(bond_instr.Oid(), PARTY_NAME, price_curr)
+                    price_record = acm.FPrice.Select01(whereClause, None)
+                    if price_record is None:
+                        price_record = acm.FPrice()
+                        price_record.Instrument(bond_instr)
+                        price_record.Currency(acm.FInstrument[price_curr])
+                        price_record.Market(party_object)
+                        price_record.Bid(float(closing_price))
+                        price_record.Ask(float(closing_price))
+                        price_record.Last(float(closing_price))
+                        price_record.Day(date_now)
+                        price_record.TradeTime(trade_time_save)
+                        price_record.Bits(price_record.Bits() | TIME_LAST_BIT)
+                    else:
+                        price_record_clone = price_record.Clone()
+                        price_record_clone.Bid(float(closing_price))
+                        price_record_clone.Ask(float(closing_price))
+                        price_record_clone.Last(float(closing_price))
+                        price_record_clone.Day(date_now)
+                        price_record_clone.TradeTime(trade_time_save)
+                        price_record.Apply(price_record_clone)
+                    price_record.Commit()
+                    ret_val = True
+            if not ret_val:
+                self._logger.LOG('No instrument with alias {} found in FrontArena. Data row {}.'.format(isin_or_alias, data))
+            else:
+                self._logger.LOG('Instrument with alias {} updated with last price in FrontArena. Data row {}.'.format(isin_or_alias, data))
+        else:
+            self._logger.LOG('Market with name {} not found in FrontArena.'.format(PARTY_NAME))
+        return ret_val
+
+ael_gui_parameters = {'windowCaption': "BIS4 In PriceFeed"}
+
+ael_variables = BIS4PriceFeed()
+ael_variables.LoadDefaultValues(__name__)
+app_name = 'InPriceFeed'
+
+
+def ael_main(params):
+    """
+    AEL main function
+    :param params: GUI parameters
+    :return: None
+    """
+    bis4_pricefeed_loger = None
+    try:
+        bis4_pricefeed_loger = BIS4Common.initialize_logging(params, log_file_name, app_name)
+        if bis4_pricefeed_loger:
+            bis4_pricefeed_loger.LOG('Execution started.')
+            ael_variables.set_logger(bis4_pricefeed_loger)
+            ael_variables.process_task(params)
+    except Exception as err:
+        if bis4_pricefeed_loger is not None:
+            bis4_pricefeed_loger.ELOG(str(err))
+        print(traceback.format_exc())
+        print('Error in ael main. {}'.format(err))
+
+...
+
+}
+

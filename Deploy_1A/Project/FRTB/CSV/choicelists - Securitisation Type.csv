@@ -1,0 +1,12 @@
+CHOICELIST,,/CHOICELIST
+LIST,ENTRY,
+MASTER,Securitisation Type,
+Securitisation Type,RMBS Prime,
+Securitisation Type,RMBS Mid-prime,
+Securitisation Type,RMBS Sub-prime,
+Securitisation Type,CMBS,
+Securitisation Type,ABS Student loans,
+Securitisation Type,ABS Credit cards,
+Securitisation Type,ABS Auto,
+Securitisation Type,CLO non-CTP,
+Securitisation Type,Other sector,

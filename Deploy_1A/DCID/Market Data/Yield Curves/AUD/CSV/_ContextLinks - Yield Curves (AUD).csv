@@ -1,0 +1,10 @@
+CONTEXTLINK,,,,,,,,,,,,/CONTEXTLINK
+CONTEXT_SEQNBR.NAME,CURR.EXTERN_ID1,CURR.INSID,DISC_TYPE_CHLNBR.ENTRY,DISC_TYPE_CHLNBR.LIST,GROUP_CHLNBR.ENTRY,GROUP_CHLNBR.LIST,INSADDR.EXTERN_ID1,INSADDR.INSID,MAPPING_TYPE,NAME,TYPE,
+Global,,AUD,,,,,,AUD/BANKBILL/90D,Instrument,AUD-3M,Yield Curve,
+Global,,AUD,,,,,,AUD/BBSW/3M,Instrument,AUD-3M,Yield Curve,
+Global,,AUD,IBOR,DiscType,,,,AUD/BBSW/3M,Instrument,AUD-3M,Yield Curve,
+Global,,AUD,,,,,,AUD/BBSW/6M,Instrument,AUD-6M,Yield Curve,
+Global,,AUD,,,,,,,Instrument,AUD-AONIA,Yield Curve,
+Global,,AUD,,,,,,AUD/RBA/ON,Instrument,AUD-AONIA,Yield Curve,
+Global,,AUD,IBOR,DiscType,,,,,Instrument,AUD-SWAP,Yield Curve,
+Global,,AUD,,,RateIndex,ValGroup,,,Val Group,AUD-SWAP,Yield Curve,

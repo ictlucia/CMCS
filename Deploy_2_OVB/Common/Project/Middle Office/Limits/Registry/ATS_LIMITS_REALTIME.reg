@@ -1,0 +1,9 @@
+Windows Registry Editor Version 5.00
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Front\Front Arena\ATS\FA_INSTANCE_NAME]
+"task"="RealTimeMonitoringTask"
+"username"="ATS_LIMITS_REALTIME"
+"password"="intas"
+"unicode"="1"
+
+

@@ -1,0 +1,856 @@
+#
+# Front Arena exported extension module.
+# source          ""
+# timestamp (utc) "2024-02-20 12:19:26.6"
+# ***** DO NOT EDIT! *****
+#
+name        "PS_CVA"
+description ""
+
+groups {
+}
+
+decls[FColumnDefinition] {
+  "CVA Counterparty" ( "sheet columns.portfoliosheet" ) "";
+  "CVA CrB Credit Curve" ( "sheet columns.tradesheet" ) "";
+  "CVA Display" ( "sheet columns.portfoliosheet" "sheet columns.tradesheet" ) "";
+  "CVA Display (Netting Set)" ( "sheet columns.portfoliosheet" ) "";
+  "CVA EAD" ( "sheet columns.portfoliosheet" "sheet columns.tradesheet" ) "";
+  "CVA EAD Trade Sheet" ( "sheet columns.tradesheet" ) "";
+  "CVA Effective Maturity M" ( "sheet columns.portfoliosheet" "sheet columns.tradesheet" ) "";
+  "CVA LGD" ( "sheet columns.dealsheet" "sheet columns.portfoliosheet" "sheet columns.tradesheet" ) "";
+  "CVA PD" ( "sheet columns.portfoliosheet" "sheet columns.tradesheet" ) "";
+  "CVA Supervisory Discount Factor DF" ( "sheet columns.portfoliosheet" "sheet columns.tradesheet" ) "";
+  "CVA Weighted Effective Maturity" ( "sheet columns.portfoliosheet" "sheet columns.tradesheet" ) "";
+  "DVA Display" ( "sheet columns.tradesheet" ) "";
+  "DVA Display (Netting Set)" ( "sheet columns.portfoliosheet" ) "";
+}
+
+clx FTradingSheet [FColumnDefinition] {
+  CVA Counterparty =
+  Description=CVA Counterparty for Netting Sets
+  ExtensionAttribute=cvaCounterparty
+  GroupLabel=CVA
+  LabelList=CVA Counterparty
+  Name=CVA Counterparty
+
+
+  CVA CrB Credit Curve =
+  Description=CVA Credit Balance insturment mapped credit curve and used attribute.
+  ExtensionAttribute=creditCurve
+  format=DetailedHideNaN
+  GroupLabel=CVA
+  LabelList=CVA Credit Curve;CVA CrB Credit Curve
+  Name=CVA CrB Credit Curve
+
+
+  CVA Display =
+  Description=CVA Display is calcualted as LGD(Counterparty) × PD(Counterparty,M) × EAD(NS) × DF(NS). The above formula for calculating CVA per netting set, is derived from the formula for Standardized CVA as per BCBS5072 paragraph 50.15. Adopting this approach is congruent to the situation in which the Bank does not have approval to use the Internal Models Approach for calculating CVA capital charges (CRE53). Front Arena will calculate CVA per netting set. This means that, if a master agreement exists, then all trades (positions) will be netted when performing the CVA calculation. If no master agreement exists, then CVA will be calculated per row in Trading Manager. As a result, it is possible to calculate CVA either at trade level (E.g. if there is more than one USD/IDR FX Cash/Swap/Forward transaction, then CVA can be calculated for each trade individually), or at position level (E.g. if there is more than one USD/IDR FX Cash/Swap/Forward transaction, then “position” would imply the net aggregate notional outstanding in the instrument “USD/IDR”)
+  ExtensionAttribute=cvaDisplay
+  GroupLabel=CVA
+  LabelList=CVA;CVA Display
+  Name=CVA Display
+
+
+  CVA Display (Netting Set) =
+  Description=CVA Display is calcualted as LGD(Counterparty) × PD(Counterparty,M) × EAD(NS) × DF(NS). The above formula for calculating CVA per netting set, is derived from the formula for Standardized CVA as per BCBS5072 paragraph 50.15. Adopting this approach is congruent to the situation in which the Bank does not have approval to use the Internal Models Approach for calculating CVA capital charges (CRE53). Front Arena will calculate CVA per netting set. This means that, if a master agreement exists, then all trades (positions) will be netted when performing the CVA calculation. If no master agreement exists, then CVA will be calculated per row in Trading Manager. As a result, it is possible to calculate CVA either at trade level (E.g. if there is more than one USD/IDR FX Cash/Swap/Forward transaction, then CVA can be calculated for each trade individually), or at position level (E.g. if there is more than one USD/IDR FX Cash/Swap/Forward transaction, then “position” would imply the net aggregate notional outstanding in the instrument “USD/IDR”)
+  ExtensionAttribute=cvaDisplayNettingSet
+  GroupLabel=CVA
+  LabelList=CVA;CVA Display
+  Name=CVA Display (Netting Set)
+
+
+  CVA EAD =
+  Description=EAD(NS) is the Exposure at Default. As per BCBS507 paragraph 50.15, Front Arena will use the EAD calculated for SA-CCR for the netting set, as the EAD for CVA for the respective netting set.
+  Dimensions=Master Agreements Vertical
+  ExtensionAttribute=cvaEAD
+  GroupLabel=CVA
+  InputColumnDefinition=SA-CCR SubResults Input
+  LabelList=CVA EAD;CVA Exposure at Default
+  Name=CVA EAD
+
+
+  CVA EAD Trade Sheet =
+  Description=This column should be used for Trade Sheet CVA. EAD(NS) is the Exposure at Default. As per BCBS507 paragraph 50.15, Front Arena will use the EAD calculated for SA-CCR for the netting set, as the EAD for CVA for the respective netting set.
+  ExtensionAttribute=cvaEADTradeSheet
+  GroupLabel=CVA
+  LabelList=CVA EAD (Trade);CVA Exposure at Default (Trade)
+  Name=CVA EAD Trade
+
+
+  CVA Effective Maturity M =
+  Description=CVA effective maturity "M" of the netting set, calculated as per BCBS CRE32 paragraph 32.49. If the netting set contains more than one transaction, then the effective maturity is equal to the weighted average maturity of the transactions within the netting set. The weighting will be done based on the SA-CCR Notional (or SA-CCR Adjusted Notional) amount of each transaction. If the netting set contains one single transaction, then the effective maturity is equal to the maturity of that transaction.
+  ExtensionAttribute=cvaEffectiveMaturityM
+  GroupLabel=CVA
+  LabelList=CVA Effective Maturity;CVA M;M;CVA Effective Maturity ("M")
+  Name=CVA Effective Maturity M
+
+
+  CVA LGD =
+  Description=LGD (Counterparty) is the Loss Given Default parameter configured for a counterparty. LGD = 1 - Recovery Rate.
+  ExtensionAttribute=cvaLGD
+  GroupLabel=CVA
+  LabelList=CVA LGD;CVA Loss Given Default
+  Name=CVA LGD
+
+
+  CVA PD =
+  Description=PD (Counterparty,M) is the Probablity of Default of the counterparty, at tenor point M.
+  ExtensionAttribute=cvaPD
+  Format=FourDecimalDetailed
+  GroupLabel=CVA
+  LabelList=CVA PD;CVA Probability of Default
+  Name=CVA PD
+
+
+  CVA Supervisory Discount Factor DF =
+  Description=DF(NS) is the supervisory discount factor as per BCBS5072 paragraph 50.15.
+  ExtensionAttribute=cvaSupervisorDF
+  Format=FourDecimalDetailed
+  GroupLabel=CVA
+  LabelList=CVA Supervisory DF;CVA DF
+  Name=CVA Supervisory DF
+
+
+  CVA Weighted Effective Maturity =
+  Description=CVA effective maturity "M" multiplied by SA-CCR Notional (or SA-CCR Adjusted Notional) amount of each transaction.
+  ExtensionAttribute=cvaWeightedEffectiveMaturity
+  Format=DetailedHideNaN
+  GroupLabel=CVA
+  LabelList=CVA Weighted Effective Maturity;CVA Weighted Maturity
+  Name=CVA Weighted Effective Maturity
+
+
+  DVA Display =
+  Description=DVA Display is calcualted as LGD(Bank) × PD(Bank,M) × EAD(NS) × DF(NS). The calculation is performed via simulation, by reversing the direction of the original counterparty exposure.
+  ExtensionAttribute=dvaDisplay
+  GroupLabel=CVA
+  LabelList=DVA;DVA Display
+  Name=DVA Display
+
+
+  DVA Display (Netting Set) =
+  Description=CVA Display is calcualted as LGD(Counterparty) × PD(Counterparty,M) × EAD(NS) × DF(NS). The calculation is performed via simulation, by reversing the direction of the original counterparty exposure.
+  ExtensionAttribute=dvaDisplayNettingSet
+  GroupLabel=CVA
+  LabelList=DVA;DVA Display
+  Name=DVA Display (Netting Set)
+
+
+  DVA Display No Storage =
+  Description=DVA Display is calcualted as LGD(Bank) × PD(Bank,M) × EAD(NS) × DF(NS). The calculation is performed via simulation, by reversing the direction of the original counterparty exposure.
+  ExtensionAttribute=dvaDisplayNoStorage
+  GroupLabel=CVA
+  LabelList=DVA;DVA Display
+  Name=DVA Display No Storage
+
+
+}
+
+decls[FExtensionAttribute] {
+}
+
+clx FAggregateSubResults [FExtensionAttribute] {
+  cvaEAD = saccrCappedExposureAtDefault;
+}
+
+clx FCreditBalance [FExtensionAttribute] {
+  cvaLGD = py("Ps_CustomCva", context).getLgdPdForFTradeRow(object.Trades, valuationDate, 365).At(0);
+  cvaPD = py("Ps_CustomCva", context).getLgdPdForFTradeRow(object.Trades, valuationDate, 1 / 365).At(1);
+}
+
+clx FInstrument [FExtensionAttribute] {
+  cvaEffectiveMaturityM = saccrMaturityDisplay;
+  cvaLGD = nil;
+  cvaPD = nil;
+}
+
+clx FInstrumentAndTrades [FExtensionAttribute] {
+  cvaPFE = convertToCurrency(saccrPotentialFutureExposures, priceGreekFxRates, displayCurrency);
+  cvaSupervisorDF = (1 - exp(-0.05 * cvaWeightedEffectiveMaturity)) / (0.05 * cvaWeightedEffectiveMaturity);
+  cvaWeightedEffectiveMaturity = py("Ps_CustomCva", context).calculateCvaWeightedEffectiveMaturity(children, valuationParameters);
+}
+
+clx FLegAndTrades [FExtensionAttribute] {
+  cvaPFE = nil;
+}
+
+clx FMultiInstrumentAndTrades [FExtensionAttribute] {
+  cvaLGD = instrument:cvaLGD;
+}
+
+clx FPortfolioInstrumentAndTrades [FExtensionAttribute] {
+  cvaCounterparty = py("Ps_CustomCva", context).cvaGetCptyForFPortfolioInstrumentAndTrades(children);
+  cvaDisplay = cvaLGD * cvaPD * cvaEADTradeSheet * cvaSupervisorDF;
+  cvaDisplayNettingSet = convertToCurrency(cvaLGD * cvaPD * py("Ps_CustomCva", context).getCvaEadForNettingSet(children) * cvaSupervisorDF, profitAndLossEndFXRates, displayCurrency);
+  cvaEADTradeSheet = sumOf(convertToCurrency(children :* "cvaEADTradeSheet", profitAndLossEndFXRates, displayCurrency));
+  cvaLGD = py("Ps_CustomCva", context).getLgdPdPortfolioInstrumentAndTrades(children, valuationDate, cvaWeightedEffectiveMaturity).At(0);
+  cvaPD = py("Ps_CustomCva", context).getLgdPdPortfolioInstrumentAndTrades(children, valuationDate, cvaWeightedEffectiveMaturity).At(1);
+  dvaDisplayNettingSet = convertToCurrency(py("Ps_CustomDva", context).getDvaForNettingSet(children, valuationParameters), profitAndLossEndFXRates, displayCurrency);
+}
+
+clx FSingleInstrumentAndTrades [FExtensionAttribute] {
+  cvaEffectiveMaturityM = saccrMaturityDisplay;
+  cvaLGD = instrument:cvaLGD;
+  cvaPD = instrument:cvaPD;
+  cvaSupervisorDF = (1 - exp(-0.05 * cvaWeightedEffectiveMaturity)) / (0.05 * cvaWeightedEffectiveMaturity);
+  cvaWeightedEffectiveMaturity = cvaEffectiveMaturityM;
+}
+
+clx FTradeRow [FExtensionAttribute] {
+  cvaDisplay = cvaLGD * cvaPD * cvaEADTradeSheet * cvaSupervisorDF;
+  cvaEADTradeSheet = saccrAlpha * (saccrReplacementCost + cvaPFE);
+  cvaEffectiveMaturityM = saccrMaturityDisplay;
+  cvaLGD = select(instrument.InsType, 
+  "Credit Balance"->instrument:cvaLGD, 
+  default->py("Ps_CustomCva", context).getLgdPdForFTradeRow(object, valuationDate, cvaWeightedEffectiveMaturity).At(0));
+  cvaPD = select(instrument.InsType, 
+  "Credit Balance"->instrument:cvaPD, 
+  default->py("Ps_CustomCva", context).getLgdPdForFTradeRow(object, valuationDate, cvaWeightedEffectiveMaturity).At(1));
+  cvaPFE = instrument:saccrPotentialFutureExposuresPosition [displayCurrency, priceSource, isSplitAllGrouped, valuesOnSpotOverride, singleTradePosition, includeAllTrades, useMarkToMarketPriceToday, useFallbackToTheoreticalValues, profitAndLossParameters, filterUnit, groupingSpotDiscountDate, plSpotGroupingReference, profitAndLossFXRateDate := profitAndLossFXRateDateForForwardFxRateConversion, forwardFXConversionCurvesIgnoreDiscType, forwardFXConversionFXRatesIgnoreDiscType, taxLotPositionObject, positionObject, valueAtCostAdjustment, taxLotValuation := taxLotPnL];
+  cvaSupervisorDF = (1 - exp(-0.05 * cvaWeightedEffectiveMaturity)) / (0.05 * cvaWeightedEffectiveMaturity);
+  cvaWeightedEffectiveMaturity = cvaEffectiveMaturityM;
+  dvaDisplay = dvaDisplayNoStorage;
+  dvaDisplayNoStorage = py("Ps_CustomDva", context).getDvaForTradeObject(trade, valuationParameters);
+}
+
+decls[FNumFormatter] {
+}
+
+clx FObject [FNumFormatter] {
+  FourDecimalDetailed =
+  DenominatedValueDateTimeFormatter=
+  DigitGrouping=
+  DigitGroupingSymbol=
+  Epsilon=1e-06
+  Expression=
+  Format=
+  Fractions=
+  InputScaleFactor=
+  InputScaleFactorLimit=
+  Inverse=
+  MaximumSignificantDigits=15
+  MinimumSignificantDigits=
+  Mnemonic='B'=1000000000.0:Input;'G'=1000000000.0:Input;'K'=1000.0:Input;'M'=1000000.0:Input;''=0.0:Output;''=NotANumber:Output
+  NumDecimals=4
+  ScaleFactor=1.0
+  ShowInf=false
+  Tick=
+  TruncateTrailingZeros=false
+  USTreasuryInput=
+
+
+}
+
+decls[FPythonCode] {
+}
+
+clx FObject [FPythonCode] {
+  Ps_CustomCva
+
+"""
+Notes:
+
+
+Footprint:
+    [2024 01 31] richard.milford@fisglobal.com
+"""
+
+import acm
+import math
+import Ps_CustomCvaUtils
+
+from FLogger import FLogger
+
+logger = FLogger(level=2)
+log_levl_dict = {'INFO' : 1, 'DEBUG' : 2, 'WARN' : 3, 'ERROR' : 4}
+
+CVA_NOMINAL_CHOICE_SACCR_NOMINAL = "SA-CCR Adjusted Notional"
+CVA_DUMMY_NS_QUERY_FOLDER = "CVA_DummyQF_CpyTradesbyMA"
+
+"""
+"""
+
+class mappedCvaPdLgdCurve():
+
+    def __init__(self, _mappedValParams):
+        self.curve = _mappedValParams.BankCreditCurve()
+        self.name = _mappedValParams.BankCreditCurve().Name()
+        
+    def getCvaNotionalChoiceFromSaCcrNotional(self):
+        if hasattr(self.curve.AdditionalInfo(),'CvaNotionalChoiceSa'):
+            return str(getattr(self.curve.AdditionalInfo(),'CvaNotionalChoiceSa')())
+        else:
+            logger.WLOG("WARNING: CVA No value configured for SACCR Nominal choice. Using default %s" %CVA_NOMINAL_CHOICE_SACCR_NOMINAL)
+            return CVA_NOMINAL_CHOICE_SACCR_NOMINAL
+
+
+class mappedCreditInfo():
+
+    def __init__(self, counterparty):
+        self._counterparty = counterparty
+        self._counterpartyName = counterparty.Name()
+        self._CrBIns = self.setCreditBalanceInstrument(counterparty)
+        self._CrBTrade = self.setCreditBalanceTrade(self._CrBIns)
+        self._FIrCurveInformation = self.setFIrCurveInformation(self._CrBTrade)   
+
+    def setCreditBalanceInstrument(self, counterparty):
+        #logger.DLOG("Ps_CustomCva setCreditBalanceInstrument [counterparty.Name()] %s" %[counterparty.Name()])
+        if counterparty:
+            if hasattr(counterparty.AdditionalInfo(),'CVA_CreditBalance'):
+                cpyCvaCreditBalanceIns = getattr(counterparty.AdditionalInfo(),'CVA_CreditBalance')()
+                #logger.DLOG("Ps_CustomCva setCreditBalanceInstrument [cpyCvaCreditBalanceIns.Name()] %s" %[cpyCvaCreditBalanceIns.Name()])
+                return cpyCvaCreditBalanceIns
+            else:
+                return "Counterparty has no mapped Credit Balance instrument."
+        else:
+            return "Counterparty has no mapped Credit Balance instrument."
+        
+        return None
+        
+    def setCreditBalanceTrade(self, crBInstrument):
+        if crBInstrument:
+            crBTrade = crBInstrument.Trades()
+            if len(crBTrade)>0:
+                crBTrade = crBTrade[0]
+                return crBTrade
+            else:
+                return "Counterparty Credit Balance instrument %s has no simulated trade. Please book at least 1 simulated trade."
+        else:
+            return "Counterparty has no mapped Credit Balance instrument."
+        
+        return None
+    
+    def setFIrCurveInformation(self, CrBTrade):
+    
+        #logger.DLOG("Ps_CustomCva setFIrCurveInformation [CrBTrade.Oid()()] %s" %[CrBTrade.Oid()])
+        calcSpace = acm.FCalculationSpaceCollection().GetSpace('FTradeSheet', acm.GetDefaultContext())
+        localFIrCurveInformation = calcSpace.CalculateValue(CrBTrade,"CVA CrB Credit Curve")
+        #logger.DLOG("Ps_CustomCva setFIrCurveInformation [localFIrCurveInformation] %s" %[localFIrCurveInformation])
+        
+        return localFIrCurveInformation
+    
+    def getLGD(self):
+        recoveryRate = float(self._FIrCurveInformation.RecoveryRate() * 0.01)
+        LGD = 1 - recoveryRate
+        return LGD
+    
+    def getPD(self, _valuationDate, _effectiveMaturity):
+        survival_prob = self._FIrCurveInformation.SurvivalProbability(_valuationDate, _effectiveMaturity)
+        rate = math.fabs(math.log(survival_prob))
+        return rate
+        
+"""
+"""
+
+def cvaGetCptyForFPortfolioInstrumentAndTrades(sheetRows):
+
+    firstRow = sheetRows[0]
+    tradesInFirstRow = firstRow.Trades().AsList()  
+    if len(tradesInFirstRow) > 1: tradeCpyObject = tradesInFirstRow[0][0].Counterparty() #if insturment is FX Cash then there may be more than one trade
+    else: tradeCpyObject = tradesInFirstRow[0].Counterparty()
+    #logger.DLOG("Ps_CustomCva [cvaGetCptyForFPortfolioInstrumentAndTrades, tradeCpyObject] %s" %["cvaGetCptyForFPortfolioInstrumentAndTrades", tradeCpyObject.Name()])
+
+    return tradeCpyObject
+    
+def cvaGetMasterAgreementNameForFPortfolioInstrumentAndTrades(sheetRows):
+
+    firstRow = sheetRows[0]
+    tradesInFirstRow = firstRow.Trades().AsList()  
+    if len(tradesInFirstRow) > 1: tradeMasterAgreementName = tradesInFirstRow[0][0].AgreementLinks()[0].MasterAgreement().Name() #if insturment is FX Cash then there may be more than one trade
+    else: tradeMasterAgreementName = tradesInFirstRow[0].AgreementLinks()[0].MasterAgreement().Name()
+    #logger.DLOG("Ps_CustomCva [cvaGetCptyForFPortfolioInstrumentAndTrades, tradeCpyObject] %s" %["cvaGetCptyForFPortfolioInstrumentAndTrades", tradeCpyObject.Name()])
+
+    return tradeMasterAgreementName
+    
+
+def getCvaEadForNettingSet(openInstruments):
+    
+    #logger.DLOG("Ps_CustomCva getCvaEadForNettingSet [type(openInstruments), len(openInstruments)] %s" %[type(openInstruments), len(openInstruments)])
+    
+    cpyObj = cvaGetCptyForFPortfolioInstrumentAndTrades(openInstruments)
+    #logger.DLOG("Ps_CustomCva getCvaEadForNettingSet [cpyObj.Name()] %s" %[cpyObj.Name()])
+    
+    tradeNsMasterAgreementName = cvaGetMasterAgreementNameForFPortfolioInstrumentAndTrades(openInstruments)
+    #logger.DLOG("Ps_CustomCva getCvaEadForNettingSet [tradeNsMasterAgreementName] %s" %[tradeNsMasterAgreementName])
+    
+    nsAsAsqlQf = acm.FStoredASQLQuery[CVA_DUMMY_NS_QUERY_FOLDER]
+    qfTempNsBasedOnCpyAndMA = Ps_CustomCvaUtils.update_query_folder(nsAsAsqlQf.Clone(),cpyObj.Name(),tradeNsMasterAgreementName)
+    
+    calcSpace = acm.FCalculationSpaceCollection().GetSpace('FPortfolioSheet', acm.GetDefaultContext())
+    cvaEadNs = calcSpace.CalculateValue(qfTempNsBasedOnCpyAndMA,'CVA EAD')
+  
+    return cvaEadNs
+    
+    
+def getLgdPdForFTradeRow(tradeRow, valuationDate, effectiveMaturity):
+
+    calcSpace = acm.FCalculationSpaceCollection().GetSpace('FTradeSheet', acm.GetDefaultContext())
+    tradeCpyObject = calcSpace.CalculateValue(tradeRow,"Counterparty")
+    cpyCvaLgd = 1
+    cpyCvaPd = 0
+    
+    effectiveMaturity = float(effectiveMaturity) * 365
+    effectiveMaturityAsDate = acm.Time.DateAddDelta(valuationDate,0,0,effectiveMaturity)
+    
+    if tradeCpyObject:
+        creditInfo = mappedCreditInfo(tradeCpyObject)
+        cpyCvaLgd = creditInfo.getLGD()
+        cpyCvaPd = creditInfo.getPD(valuationDate,effectiveMaturityAsDate)
+        return [cpyCvaLgd,cpyCvaPd]
+    else:
+        "Trade %s has no counterparty." %tradeRow.Oid()
+        
+    return [cpyCvaLgd,cpyCvaPd]
+    
+    
+def getLgdPdPortfolioInstrumentAndTrades(sheetRows, valuationDate, effectiveMaturity):
+
+    tradeCpyObject = cvaGetCptyForFPortfolioInstrumentAndTrades(sheetRows)
+    creditInfo = mappedCreditInfo(tradeCpyObject)
+
+    effectiveMaturity = float(effectiveMaturity) * 365
+    effectiveMaturityAsDate = acm.Time.DateAddDelta(valuationDate,0,0,effectiveMaturity)
+    #logger.DLOG("Ps_CustomCva cvaGetForFPortfolioInstrumentAndTrades [effectiveMaturityAsDate] %s" %[effectiveMaturityAsDate])
+    
+    nettingSetLgd = creditInfo.getLGD()
+    nettingSetPd = creditInfo.getPD(valuationDate,effectiveMaturityAsDate)
+    #logger.DLOG("Ps_CustomCva cvaGetForFPortfolioInstrumentAndTrades [nettingSetPd] %s" %[nettingSetPd])
+    
+    return [nettingSetLgd,nettingSetPd]
+    
+    
+def calculateCvaWeightedEffectiveMaturity(tradesList,mappedValParams = None):
+    """
+    NOTES
+
+    """
+    #logger.DLOG("Ps_CustomCva [mappedValParams.Name()] %s" %[mappedValParams.Name()])
+    #logger.DLOG("Ps_CustomCva [tradesList] %s" %[tradesList])
+    
+    calcSpace = acm.FCalculationSpaceCollection().GetSpace('FTradeSheet', acm.GetDefaultContext())
+    
+    sumProductNumerator = 0
+    sumProductDenominator = 0
+    
+    cvaPdLgdCurve = mappedCvaPdLgdCurve(mappedValParams)
+    #logger.DLOG("Ps_CustomCva [cvaPdLgdCurve.name] %s" %[cvaPdLgdCurve.name])
+    CVA_NOMINAL_CHOICE_SACCR_NOMINAL = cvaPdLgdCurve.getCvaNotionalChoiceFromSaCcrNotional()
+    #logger.DLOG("Ps_CustomCva [CVA_NOMINAL_CHOICE_SACCR_NOMINAL] %s" %[CVA_NOMINAL_CHOICE_SACCR_NOMINAL])
+
+    for sheetRow in tradesList:
+        """
+        sheet row is of type() FSingleInstrumentAndTrades if called from Portfolio Sheet
+        sheet row is of type() FTradeRow if called from Trade Sheet
+        """
+        #logger.DLOG("Ps_CustomCva [sheetRow,sheetRow.OriginalInstrument().InsType()] %s" %[sheetRow, sheetRow.OriginalInstrument().InsType()])
+        #logger.DLOG("Ps_CustomCva [sheetRow,type(sheetRow)] %s" %[sheetRow, type(sheetRow)])
+        tradeCvaWeightedEffectiveMaturity = calcSpace.CalculateValue(sheetRow,"CVA Effective Maturity M")
+        tradeSaccrNotionalDisplay = calcSpace.CalculateValue(sheetRow,CVA_NOMINAL_CHOICE_SACCR_NOMINAL)
+        cemInsType = calcSpace.CalculateValue(sheetRow,"CEM InsType")
+        
+        #logger.DLOG("Ps_CustomCva [sheetRow,tradeCvaWeightedEffectiveMaturity, tradeSaccrEffectiveNotionalDisplay] %s" %[sheetRow,tradeCvaWeightedEffectiveMaturity, tradeSaccrEffectiveNotionalDisplay])
+        #logger.DLOG("Ps_CustomCva [sheetRow,type(tradeCvaWeightedEffectiveMaturity), tradeSaccrEffectiveNotionalDisplay] %s" %[sheetRow,type(tradeCvaWeightedEffectiveMaturity), tradeSaccrEffectiveNotionalDisplay])
+        
+        if cemInsType in ['Fx Rate'] and sheetRow.IsKindOf(acm.FSingleInstrumentAndTrades):
+        #if cemInsType in ['Fx Rate'] and type(tradeCvaWeightedEffectiveMaturity) != float:  
+            """
+            if the FTradeRow is a child form a PortfolioSheet, then the column is returned as an FRealArray
+            """
+            #logger.DLOG("Ps_CustomCva [cemInsType in ['Fx Rate'] and type(tradeCvaWeightedEffectiveMaturity) != float] %s" %[cemInsType in ['Fx Rate'] and type(tradeCvaWeightedEffectiveMaturity) != float])
+            #logger.DLOG("Ps_CustomCva [sheetRow,cemInsType,str(type(sheetRow))] %s" %[sheetRow, cemInsType,str(type(sheetRow))])
+            for x in range(0,len(tradeCvaWeightedEffectiveMaturity)):
+                #logger.DLOG("Ps_CustomCva [sheetRow,cemInsType,x] %s" %[sheetRow, cemInsType,x])
+                #logger.DLOG("Ps_CustomCva [sheetRow,tradeCvaWeightedEffectiveMaturity[x],tradeSaccrNotionalDisplay[x]] %s" %[sheetRow,tradeCvaWeightedEffectiveMaturity[x],tradeSaccrNotionalDisplay[x]])
+                sumProductNumerator = sumProductNumerator + tradeCvaWeightedEffectiveMaturity[x] * tradeSaccrNotionalDisplay[x]
+                sumProductDenominator = sumProductDenominator + tradeSaccrNotionalDisplay[x]
+        else:
+            """
+            assumption is that OTC products are 1 trade to 1 insturmnet, hence tradeCvaWeightedEffectiveMaturity and
+            tradeSaccrEffectiveNotionalDisplay are returned as float values
+            """
+            #logger.DLOG("Ps_CustomCva [sheetRow,tradeSaccrNotionalDisplay,tradeCvaWeightedEffectiveMaturity] %s" %[sheetRow,tradeSaccrNotionalDisplay,tradeCvaWeightedEffectiveMaturity])
+            sumProductNumerator = sumProductNumerator + tradeCvaWeightedEffectiveMaturity * tradeSaccrNotionalDisplay
+            sumProductDenominator = sumProductDenominator + tradeSaccrNotionalDisplay
+            
+        #logger.DLOG("Ps_CustomCva [sheetRow,sumProductNumerator, sumProductDenominator] %s" %[sheetRow, sumProductNumerator, sumProductDenominator])
+    
+    if sumProductDenominator == 0:
+        return 0
+    else:
+        return sumProductNumerator/float(sumProductDenominator)
+
+...
+
+  Ps_CustomCvaUtils
+
+"""
+Notes:
+
+
+Footprint:
+    [2024 01 31] richard.milford@fisglobal.com
+"""
+
+import acm
+
+
+def update_query_folder(_qfAsInfant, cpyName, masterAgreementName):
+    """
+    Update the Query Folder with the specified execution time.
+
+    Args:
+        _qfAsInfant (FStoredASQLQuery): The name of the Query Folder. Presumably this is supplied in infiant state.
+        cpyName (FParty.Name()): Counterparty to the Trade as string.
+        masterAgreementName (FMasterAgreement.Name()): Name of the Master Agreement as string.
+
+    Returns:
+        None
+    """
+    
+    existing_qf = _qfAsInfant
+
+    # Get the existing query structure
+    existing_query = existing_qf.Query()
+    
+    # Find the index of the element containing "TradeTime"
+    index = [i for i, elem in enumerate(existing_query.AsqlNodes()) if "Counterparty" in str(elem)][0]
+    # Update the AsqlValue of the relevant node
+    existing_query.AsqlNodes()[index].AsqlNodes()[0].AsqlValue(cpyName)
+
+    # Find the index of the element containing "TradeTime"
+    index = [i for i, elem in enumerate(existing_query.AsqlNodes()) if "MasterAgreement" in str(elem)][0]
+    # Update the AsqlValue of the relevant node
+    existing_query.AsqlNodes()[index].AsqlNodes()[0].AsqlValue(masterAgreementName)
+
+    # Update the existing Query Folder with the modified query structure
+    existing_qf.Query(existing_query)
+    return existing_qf
+
+...
+
+  Ps_CustomDva
+
+"""
+Notes:
+
+
+Footprint:
+    [2024 02 14] richard.milford@fisglobal.com
+"""
+
+import acm
+import Ps_CustomCvaUtils
+import time
+
+from FLogger import FLogger
+
+logger = FLogger(level=2)
+log_levl_dict = {'INFO' : 1, 'DEBUG' : 2, 'WARN' : 3, 'ERROR' : 4}
+
+DVA_COMMIT_MIRROR_TRADES_TO_STORAGE = False
+
+DVA_DUMMY_COUNTERPARTY = None
+DVA_DUMMY_PORTFOLIO = None
+DVA_DUMMY_MASTERAGREEMENT_NAME = None
+DVA_DUMMY_MARGINSET = None
+
+CVA_DUMMY_NS_QUERY_FOLDER = "CVA_DummyQF_CpyTradesbyMA"
+
+"""
+invite some kids to the party:
+"""
+
+class mappedDvaPdLgdCurve():
+
+    def __init__(self, _mappedValParams):
+        self.curve = _mappedValParams.BankCreditCurve()
+        self.name = _mappedValParams.BankCreditCurve().Name()
+        
+    def getDummyDvaCpy(self):
+        if hasattr(self.curve.AdditionalInfo(),'DvaDummyCpy'):
+            return getattr(self.curve.AdditionalInfo(),'DvaDummyCpy')() #as acm.FParty
+        else:
+            logger.WLOG("WARNING: DVA No dummy counterparty representing the Bank's own entity configured for DVA evaluation.")
+            return None
+            
+    def getDummyDvaPortfolio(self):
+        if hasattr(self.curve.AdditionalInfo(),'DvaDummyPortfolio'):
+            return getattr(self.curve.AdditionalInfo(),'DvaDummyPortfolio')() #as acm.FPortfolio
+        else:
+            logger.WLOG("WARNING: DVA No dummy portfolio for storing mirror trades for DVA evaluation.")
+            return None
+
+    def getDummyDvaMasterAgreementName(self): # as string
+        if hasattr(self.curve.AdditionalInfo(),'DvaDummyMasterAgree'):
+            return getattr(self.curve.AdditionalInfo(),'DvaDummyMasterAgree')() # as string
+        else:
+            logger.WLOG("WARNING: DVA No dummy master agreement configured for DVA evaluation.")
+            return None  
+            
+    def getDummyDvaMasterAgreementObj(self): # as acm.FTradeAgreement
+        #logger.DLOG("getDummyDvaMasterAgreementObj self.getDummyDvaMasterAgreementName %s" %[self.getDummyDvaMasterAgreementName()])
+        dummyDvaMasterAgreementObj = acm.FMasterAgreement[self.getDummyDvaMasterAgreementName()] 
+        #logger.DLOG("getDummyDvaMasterAgreementObj dummyDvaMasterAgreementObj.Name() %s" %[dummyDvaMasterAgreementObj.Name()])
+        if dummyDvaMasterAgreementObj:
+            return dummyDvaMasterAgreementObj # as acm.FTradeAgreement
+        else:
+            logger.WLOG("WARNING: DVA No dummy master agreement configured for DVA evaluation.")
+            return None  
+            
+    def getDefaultDummyDvaMarginingSet(self):  #as acm.FMarginSet
+        defaultDummyDvaMarginingSet = self.getDummyDvaMasterAgreementObj().CollateralAnnexes()[0].MarginingSets()[0]
+        if defaultDummyDvaMarginingSet:
+            return defaultDummyDvaMarginingSet
+        else:
+            logger.WLOG("WARNING: DVA No default dummy margining set configured on ddummy DVA master agremeent, for DVA evaluation.")
+            return None      
+
+"""
+get the party started:
+"""
+
+def commitSingleOrNsMirrorTrade(_originalSingleTradeOrTradesList,_singleOrListMirrorTrade,singleTradeOrNettingSet):  
+#singleTradeOrNettingSet as str of "single" or "nettingSet"
+
+    """
+    __nested functions__
+    """
+    def cleanMirrorTradeBeforeCommit(___mirrorTrade):
+        #to do
+        #clean up method to remove AddInfos
+        setattr(___mirrorTrade.AdditionalInfo(),'DVA_MirrorTrdOid',None)
+        setattr(___mirrorTrade.AdditionalInfo(),'LimitPartyTarget',None)
+        #END to do
+    
+    def hasMirrorTrade(___originalTrade):
+        addInfoVal = getattr(___originalTrade.AdditionalInfo(),'DVA_MirrorTrdOid')()
+        if addInfoVal:
+            return addInfoVal #as acm.FTrade
+        else:
+            logger.LOG("No existing mirror trade for [__originalTrade.Oid()] %s. Will clone and store new Trade." %[___originalTrade.Oid()])
+            return None
+            
+    def applyMirrorTradetoExistingStoredMirrorTrade(___mirrorTrade,_originalTradeMirrorTrade):
+        _originalTradeMirrorTrade.Apply(___mirrorTrade)
+        try:
+            _originalTradeMirrorTrade.Commit()
+     
+        except Exception as err:
+            logger.ELOG("Ps_CustomDva.commitSingleOrNsMirrorTrade.applyMirrorTradetoExistingStoredMirrorTrade can't apply infant mirror trade to stored mirror trade [_originalTradeMirrorTrade.Oid(),err,type(err)] %s " %[_originalTradeMirrorTrade.Oid(),err,type(err)])
+            raise
+            
+    def createNewStoredMirrorTrade(___mirrorTrade):
+        logger.DLOG("Ps_CustomDva enterring commitSingleOrNsMirrorTrade")
+        try:
+            ___mirrorTrade.Commit()
+            logger.LOG("Ps_CustomDva commitSingleOrNsMirrorTrade createNewStoredMirrorTrade successfully committed mirror trade with Oid %s" %___mirrorTrade.Oid())
+            return ___mirrorTrade
+            
+        except Exception as err:
+            logger.ELOG("Unable to commit new mirror trade to storage [_mirrorTrade.Oid(),err,type(err)] %s " %[___mirrorTrade.Oid(),err,type(err)])
+            raise
+    
+    def setMirrorTradeOidOnOriginalTrade(___originalTrade,___storedMirrorTrade):
+        setattr(___originalTrade.AdditionalInfo(),'DVA_MirrorTrdOid',___storedMirrorTrade)
+        try:
+            ___originalTrade.Commit()
+        except Exception as err:
+            logger.ELOG("Unable to save stored mirror trade ID to original trade [__originalTrade.Oid(),_storedMirrorTrade.Oid(),err,type(err)] %s " %[___originalTrade.Oid(),___storedMirrorTrade.Oid(),err,type(err)])
+            raise
+    
+    def innerCommitSingleOrNsMirrorTrade(__originalTrade,__mirrorTrade):
+        cleanMirrorTradeBeforeCommit(__mirrorTrade)
+        originalTradeMirrorTrade = hasMirrorTrade(__originalTrade) #return as acm.FTrade
+        if originalTradeMirrorTrade:
+            #logger.DLOG("commitSingleOrNsMirrorTrade has originalTradeMirrorTrade %s" %[originalTradeMirrorTrade.Oid()])
+            applyMirrorTradetoExistingStoredMirrorTrade(__mirrorTrade,originalTradeMirrorTrade)
+        else:
+            logger.LOG("Ps_CustomDva commitSingleOrNsMirrorTrade trade Oid %s does not have originalTradeMirrorTrade. Will create mirror trade." %__originalTrade.Oid())
+            storedMirrorTrade = createNewStoredMirrorTrade(__mirrorTrade)
+            if storedMirrorTrade: setMirrorTradeOidOnOriginalTrade(__originalTrade,storedMirrorTrade)
+    """
+    __main commitSingleOrNsMirrorTrade__
+    """
+    if singleTradeOrNettingSet == "single":
+        logger.DLOG("enterring singleTradeOrNettingSet as single")
+        _originalTrade = _originalSingleTradeOrTradesList
+        _mirrorTrade = _singleOrListMirrorTrade
+        
+        innerCommitSingleOrNsMirrorTrade(_originalTrade,_mirrorTrade)
+        """
+        originalTradeMirrorTrade = hasMirrorTrade(_originalTrade) #return as acm.FTrade
+        if originalTradeMirrorTrade:
+            logger.DLOG("commitSingleOrNsMirrorTrade has originalTradeMirrorTrade %s" %[originalTradeMirrorTrade.Oid()])
+            applyMirrorTradetoExistingStoredMirrorTrade(_mirrorTrade,originalTradeMirrorTrade)
+        else:
+            logger.DLOG("commitSingleOrNsMirrorTrade does not have originalTradeMirrorTrade")
+            storedMirrorTrade = createNewStoredMirrorTrade(_mirrorTrade)
+            if storedMirrorTrade: setMirrorTradeOidOnOriginalTrade(_originalTrade,storedMirrorTrade)
+        """
+    
+    
+    if singleTradeOrNettingSet == "nettingSet":
+    
+        logger.DLOG("enterring singleTradeOrNettingSet as nettingSet")
+        originalTradesList = _originalSingleTradeOrTradesList
+        mirrorTradesList = _singleOrListMirrorTrade
+        
+        for originalTradeIndex in range(0,len(originalTradesList)):
+            originalTrade = originalTradesList[originalTradeIndex]
+            mirrorTrade = mirrorTradesList[originalTradeIndex]
+            logger.DLOG("commitSingleOrNsMirrorTrade [originalTradeIndex,originalTrade.Oid()] %s" %[originalTradeIndex,originalTrade.Oid()])
+            
+            innerCommitSingleOrNsMirrorTrade(originalTrade,mirrorTrade)
+            """
+            originalTradeMirrorTrade = hasMirrorTrade(originalTrade) #return as acm.FTrade
+            if originalTradeMirrorTrade:
+                #logger.DLOG("commitSingleOrNsMirrorTrade has originalTradeMirrorTrade %s" %[originalTradeMirrorTrade.Oid()])
+                applyMirrorTradetoExistingStoredMirrorTrade(mirrorTrade,originalTradeMirrorTrade)
+            else:
+                logger.LOG("Ps_CustomDva commitSingleOrNsMirrorTrade trade Oid %s does not have originalTradeMirrorTrade. Will create mirror trade." %originalTrade.Oid())
+                storedMirrorTrade = createNewStoredMirrorTrade(mirrorTrade)
+                if storedMirrorTrade: setMirrorTradeOidOnOriginalTrade(originalTrade,storedMirrorTrade)
+            """
+
+    logger.DLOG("singleTradeOrNettingSet going to SLEEP 1 seconds")
+    time.sleep(1)
+    return 0
+
+def changeMirrorTradeDirection(_mirrorTrade):
+
+    if _mirrorTrade.Instrument().InsType() in ['Option','Curr']:
+        _mirrorTrade.Quantity(_mirrorTrade.Quantity() * -1)
+    elif _mirrorTrade.Instrument().InsType() in ['Swap','CurrSwap']:
+        _mirrorTrade.Quantity(_mirrorTrade.Quantity() * -1)
+
+    return _mirrorTrade
+
+def getDvaForTradeObject(tradeRowAsTradeObject,mappedValParams = None):
+
+    """
+    To keep the DVA calcualtions up-to-date with change on the originalTrade, the mirrorTrade will awalys be created on each call 
+    to this function.
+    if DVA_COMMIT_MIRROR_TRADES_TO_STORAGE then when commiting the mirror trade, the function commitSingleOrNsMirrorTrade will either 
+    .apply() to an existing stored version of the trade or otherwise clone and commit().
+    """
+
+    calcSpace = acm.FCalculationSpaceCollection().GetSpace('FTradeSheet', acm.GetDefaultContext())
+
+    dvaPdLgdCurve = mappedDvaPdLgdCurve(mappedValParams)
+    DVA_DUMMY_COUNTERPARTY = dvaPdLgdCurve.getDummyDvaCpy()
+    DVA_DUMMY_PORTFOLIO = dvaPdLgdCurve.getDummyDvaPortfolio()
+    
+    if DVA_DUMMY_COUNTERPARTY is None or DVA_DUMMY_PORTFOLIO is None:
+        logger.WLOG("WARNING: DVA No dummy counterparty and/or dummy portfolio configured. Please configure.")        
+        return str("No dummy counterparty and/or dummy portfolio configured")
+    
+    calcSpace = acm.FCalculationSpaceCollection().GetSpace('FTradeSheet', acm.GetDefaultContext())
+    if tradeRowAsTradeObject.Counterparty() == DVA_DUMMY_COUNTERPARTY:
+        """
+        Trade instered into the trading amnager is the DVA trade (mirror trade).
+        No result should be returned.
+        """
+        return 0
+    
+    originalTrade = tradeRowAsTradeObject
+
+    mirrorTrade = originalTrade.Clone()
+    mirrorTrade.Counterparty(DVA_DUMMY_COUNTERPARTY)
+    mirrorTrade.Portfolio(DVA_DUMMY_PORTFOLIO)
+    mirrorTrade = changeMirrorTradeDirection(mirrorTrade)
+    
+    DVA_DUMMY_MASTERAGREEMENT_NAME = dvaPdLgdCurve.getDummyDvaMasterAgreementName()
+    DVA_DUMMY_MARGINSET = dvaPdLgdCurve.getDefaultDummyDvaMarginingSet()
+    if len(mirrorTrade.AgreementLinks()) > 0:
+        mirrorTrade.AgreementLinks()[0].MasterAgreement(DVA_DUMMY_MASTERAGREEMENT_NAME)
+        mirrorTrade.AgreementLinks()[0].MarginingSet(DVA_DUMMY_MARGINSET)
+
+    if DVA_COMMIT_MIRROR_TRADES_TO_STORAGE: commitSingleOrNsMirrorTrade(originalTrade,mirrorTrade,"single")    
+
+    mirrorTradeCva = calcSpace.CalculateValue(mirrorTrade,'CVA Display')
+    originalTradeDva = mirrorTradeCva
+    
+    return originalTradeDva
+
+def detectOrCreateMarginingSet(_suggestMarginingSetName,_dvaPdLgdCurve):
+
+    defaultMasterAgreement = _dvaPdLgdCurve.getDummyDvaMasterAgreementObj()
+    existingMarginingAgreements = defaultMasterAgreement.CollateralAnnexes()[0].MarginingSets()
+    foundExistingMa = False
+    for existingMa in existingMarginingAgreements:
+        if existingMa.Name() == _suggestMarginingSetName: 
+            logger.DLOG("detectOrCreateMarginingSet existingMa identified %s " %existingMa.Name())
+            foundExistingMa = True
+            return existingMa
+            
+    if not foundExistingMa:
+        defaultDummyMarginingSet = dvaPdLgdCurve.getDefaultDummyDvaMarginingSet()
+        mirrorTradeMarginingSet = defaultDummyMarginingSet.Clone()
+        mirrorTradeMarginingSet.Name(_suggestMarginingSetName)
+        try:
+            logger.LOG("detectOrCreateMarginingSet attempt to commit new MS %s " %mirrorTradeMarginingSet.Name())
+            mirrorTradeMarginingSet.Commit()
+            logger.LOG("detectOrCreateMarginingSet successfully committed MS %s " %mirrorTradeMarginingSet.Name())
+            return mirrorTradeMarginingSet
+        except Exception as err:
+            logger.ELOG("detectOrCreateMarginingSet Unable to save mirror margining set [mirrorTradeMarginingSet.Name(),err,type(err)] %s " %[mirrorTradeMarginingSet.Name(),err,type(err)])
+            raise
+            
+    return None
+
+def getDvaForNettingSet(openInstruments,mappedValParams = None):
+    
+    calcSpace = acm.FCalculationSpaceCollection().GetSpace('FTradeSheet', acm.GetDefaultContext())
+    originalNettingSetTradesAsList = []
+    mirrorNettingSetTradesAsList = []
+    
+    for position in openInstruments:
+        cemInsType = calcSpace.CalculateValue(position,"CEM InsType")
+        if cemInsType in ['Fx Rate'] and position.IsKindOf(acm.FSingleInstrumentAndTrades):
+            #Fx traded with multiple trades per ccy pair
+            logger.DLOG("cemInsType in ['Fx Rate'] %s " %position.Trades().AsList())
+            for fxtrade in position.Trades().AsList():
+                #logger.DLOG("fxtrade in position %s " %[fxtrade.Oid(),position.Trades().AsList()])
+                thisTrade = fxtrade.Trades().AsList()[0]
+                originalNettingSetTradesAsList.append(thisTrade)
+                nextMirrorTrade = fxtrade.Trades().AsList()[0].Clone()
+                mirrorNettingSetTradesAsList.append(mirrorTrade)
+        else:
+            #OTC instruments traded with 1 trade per instrument
+            thisTrade = position.Trades().AsList()[0]
+            originalNettingSetTradesAsList.append(thisTrade)
+            nextMirrorTrade = position.Trades().AsList()[0].Clone()
+            mirrorNettingSetTradesAsList.append(nextMirrorTrade)
+            #logger.DLOG("cemInsType not in ['Fx Rate'] %s " %position.Trades().AsList()[0].Oid())
+    
+    dvaPdLgdCurve = mappedDvaPdLgdCurve(mappedValParams)
+    DVA_DUMMY_COUNTERPARTY = dvaPdLgdCurve.getDummyDvaCpy()
+    DVA_DUMMY_PORTFOLIO = dvaPdLgdCurve.getDummyDvaPortfolio()
+    
+    DVA_DUMMY_MASTERAGREEMENT_NAME = dvaPdLgdCurve.getDummyDvaMasterAgreementName()
+    firstOriginalTrade = originalNettingSetTradesAsList[0]
+    firstMirrorTrade = mirrorNettingSetTradesAsList[0]
+    suggestMarginingSetName = str(firstOriginalTrade.Counterparty().Name()) + "_" + str(firstMirrorTrade.AgreementLinks()[0].MarginingSet().Name())
+    #logger.DLOG("singleTradeOrNettingSet suggestMarginingSetName %s " %suggestMarginingSetName)
+    mirrorTradeMarginingSet = detectOrCreateMarginingSet(suggestMarginingSetName,dvaPdLgdCurve)
+    
+    for mirrorTrade in mirrorNettingSetTradesAsList:
+        mirrorTrade.Counterparty(DVA_DUMMY_COUNTERPARTY)
+        mirrorTrade.AgreementLinks()[0].MasterAgreement(DVA_DUMMY_MASTERAGREEMENT_NAME)
+        mirrorTrade.Portfolio(DVA_DUMMY_PORTFOLIO)
+        mirrorTrade = changeMirrorTradeDirection(mirrorTrade)
+        if suggestMarginingSetName: mirrorTrade.AgreementLinks()[0].MarginingSet(mirrorTradeMarginingSet)
+    
+    if DVA_COMMIT_MIRROR_TRADES_TO_STORAGE: commitSingleOrNsMirrorTrade(originalNettingSetTradesAsList,mirrorNettingSetTradesAsList,"nettingSet")    
+    
+    #logger.DLOG("getDvaForNettingSet mirrorNettingSetTradesAsList %s " %len(mirrorNettingSetTradesAsList))
+    calcSpace = acm.FCalculationSpaceCollection().GetSpace('FPortfolioSheet', acm.GetDefaultContext())
+    cvaEadNs = calcSpace.CalculateValue(mirrorNettingSetTradesAsList,'CVA Display (Netting Set)')
+  
+    return cvaEadNs
+
+...
+
+}
+

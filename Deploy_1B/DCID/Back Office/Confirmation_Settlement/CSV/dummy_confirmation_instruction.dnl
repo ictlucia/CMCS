@@ -1,0 +1,6 @@
+CONFINSTRUCTION,,,,CONFINSTRUCTIONRULE,,,,/CONFINSTRUCTIONRULE,FILTER_DETAILS,,,,/FILTER_DETAILS,/CONFINSTRUCTION
+COUNTERPARTY_PTYNBR.PTYID,TRANSPORT,ACTIVE,NAME,TYPE,TEMPLATE_CHLNBR.ENTRY,STP,TEMPLATE_CHLNBR.LIST,,Trade.Instrument.Otc,Trade.Instrument.ProductTypeChlItem.Name,Trade.Acquirer.Name,Trade.Instrument.InsType,,
+Client 1,Network,Yes,CL1_ALL_SWIFT,Default,SWIFT,,Conf Template,,,,,,,
+Counterparty 1,File,Yes,CP1_FILE_BOND,Default,BondMain,,Conf Template,,,,,Bond,,
+Counterparty 1,Network,Yes,CP1_SWIFT,Default,SWIFT,Yes,Conf Template,,,,,,,
+Counterparty 2,Network,Yes,CP2_ALL_SWIFT,Default,SWIFT,,Conf Template,,,,,,,

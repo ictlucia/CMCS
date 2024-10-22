@@ -1,0 +1,2 @@
+<?xml version='1.0' encoding='ISO-8859-1'?>
+<FAelTask><acm_version>2022.4.5, May 22 2023</acm_version><version>5 $Id$</version><update_time>2023-09-18 02:53:33</update_time><object_name>WEBEAI_GWMV_FI_TRANSACTION</object_name><owner>ARENASYS</owner><protection>3072</protection><module>GWMV_FI_TRANSACTION</module><context>Standard</context><parameter>file_path=C:\;query_folder=WEBEAI_GWMV_FI_TRANSACTION;</parameter><historylength /><description /><logfilename /><group>WEBEAI</group><groupstatus>None</groupstatus><historylengthunit>None</historylengthunit></FAelTask>

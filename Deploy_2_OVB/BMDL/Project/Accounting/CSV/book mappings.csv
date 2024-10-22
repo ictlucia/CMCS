@@ -1,0 +1,4 @@
+BOOKMAPPING,,,,,/BOOKMAPPING
+BOOK.NAME,ID,QUERY_SEQNBR.NAME,QUERY_SEQNBR.TYPE,TYPE,
+Treasury_DL,d1b72467-55cc-4ae8-90db-e09b4a6960c8,A_TD_Treasury,FASQL Query,Trade,
+Treasury_DL,1b5be0ec-3f11-402a-82e2-d6d1cd38b3d0,A_Sett_Treasury,FASQL Query,Settlement,

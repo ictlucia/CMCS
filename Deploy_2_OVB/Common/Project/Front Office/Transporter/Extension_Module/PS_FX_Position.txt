@@ -1,0 +1,167 @@
+#
+# Front Arena exported extension module.
+# source          ""
+# timestamp (utc) "2024-01-29 08:16:21.8"
+# ***** DO NOT EDIT! *****
+#
+name        "PS_FX_Position"
+description ""
+
+groups {
+}
+
+decls[FColumnDefinition] {
+  "EOD FX Rate" ( "sheet columns.portfoliosheet" ) "";
+  "FX Position" ( "sheet columns.portfoliosheet" ) "";
+  "Weighted Average Rate" ( "sheet columns.portfoliosheet" ) "";
+}
+
+clx FTradingSheet [FColumnDefinition] {
+  EOD FX Rate =
+  Description=EOD FX Rate
+  ExtensionAttribute=eodFXRate
+  GroupLabel=Mandiri FX Position
+  LabelList=Mandiri FX Position
+  Name=EOD FX Rate
+
+
+  FX Position =
+  Description=Sum of all payments connected to the position with
+  ExtensionAttribute=fxPosition
+  GroupLabel=Mandiri FX Position
+  LabelList=Mandiri FX Position
+  Name=Mandiri FX Position
+  Parameters=TimeApportionmentType
+  Vector=currencyOneAndTwo
+
+
+  Weighted Average Rate =
+  Description=Average price for the position Mandiri.
+  ExtensionAttribute=averageWeightedRate
+  Format=Price
+  GroupLabel=Mandiri FX Position
+  LabelList=Weighted Average Rate
+  Name=Weighted Average Rate
+
+
+}
+
+decls[FExtensionAttribute] {
+}
+
+clx FInstrumentAndTrades [FExtensionAttribute] {
+  averageWeightedRate = select(instrumentPair == nil, 
+  true->nil, 
+  false->py("AverageFXRate", context).getAverageRate(object.Trades.AsArray, nil, eodFXRate));
+  eodFXRate = select(instrumentPair == nil, 
+  true->nil, 
+  false->py("AverageFXRate", context).getEODFXRate(object.Trades.AsArray.First, accountingParameters.MtmMarket, valuationDate));
+  fxPosition = shunt(grouper, 
+  "Currency Pair"->sumOf(children :* "fxPosition"), 
+  default->[nil, nil]);
+}
+
+clx FSingleInstrumentAndTrades [FExtensionAttribute] {
+  averageWeightedRate = py("AverageFXRate", context).getAverageRate(tradesInPosition, instrument, eodFXRate);
+  eodFXRate = py("AverageFXRate", context).getEODFXRate(tradesInPosition.Elements.First, accountingParameters.MtmMarket, valuationDate);
+  fxPosition = shunt(currenciesForVectorColumn == nil, 
+  true->instrumentsForVectorColumnNil, 
+  false->shunt(instrumentsSetExternally, 
+    nil->shunt(instrument.InsType, 
+      "FxSwap"->object :* "projectedCashInventoryCurrencies" [currenciesForVectorColumn], 
+      "CurrSwap"->object :* "presentValueCurrencies" [currenciesForVectorColumn] + object :* "cashPerCurrency" [currenciesForVectorColumn], 
+      "Option"->[(object :* "priceDeltaCurrencyVector" [currenciesForVectorColumn = currency1]), denominatedvalue((object :* "priceDeltaCurrencyVector" [currenciesForVectorColumn = currency1] * eodFXRate), currency2, , )], 
+      "Future/Forward"->object :* "projectedRiskflowsCurrencyPair" [currenciesForVectorColumn], 
+      default->object :* "projectedCashInventoryCurrencies" [currenciesForVectorColumn])));
+}
+
+decls[FPythonCode] {
+}
+
+clx FObject [FPythonCode] {
+  AverageFXRate
+
+import acm
+import ael
+import datetime
+
+space = acm.FCalculationMethods().CreateStandardCalculationsSpaceCollection()
+
+def getAverageRate(tradesInPosition, ins, eod_rate):
+    """ Calculate weighted average rate """
+    
+    tradesInPosition = list(tradesInPosition)
+    avg_rate = None
+    premium = 0
+    quantity = 0
+    for trade in list(tradesInPosition):
+        if trade.Status() not in ["BO-BO Confirmed", "BO Confirmed", "FO Confirmed"]:
+            continue
+            
+        curr = trade.Currency()
+        instype = trade.Instrument().InsType()
+        
+        trade_time = ael.date_from_string(trade.TradeTime()[:10])
+        date_today = ael.date_today()
+        
+        if trade_time == date_today:
+            premium += trade.Quantity() * trade.Price()
+        elif eod_rate:
+            premium += trade.Quantity() * eod_rate
+        quantity += trade.Quantity()
+        if trade.Instrument().InsType() in ['FxRate', 'Curr', 'Future/Forward']:
+            
+            if premium and quantity:
+                avg_rate = premium/quantity
+                
+        elif trade.Instrument().InsType() in ['CurrSwap', 'Option']:
+            avg_rate = eod_rate
+    return avg_rate
+
+
+
+def getLatestPrice(cur1, cur2, date):
+    """ Get the latest FX price """
+    if acm.Time().DateDifference(date, acm.Time().DateToday()) < 0:
+        date = acm.Time().DateToday()
+        
+    val = cur1.Calculation().FXRate(space, cur2, date)
+    if val: 
+        return val.Number()
+        
+def iterateEodMarket(curr1Oid, curr2Oid, marketOid):
+    """ iterate to find last EOD rate for this pair """
+    """ using loop is calendar agnostic """
+    """ assumes to look no longer than 10 days backward """
+    """ alternatively could use calendary on the currency (either curr1 or curr 2 or untion) and use DateAdjustPeriod method """
+    
+    for x in range(1,11):
+        price_date = acm.Time.DateAddDelta(acm.Time.DateToday(), 0, 0, -1*x)
+        query = ('instrument={0} and currency={1} and market={2} and day={3}'.format(curr1Oid, curr2Oid, marketOid, price_date))
+        price_local = acm.FPrice.Select01(query, "")
+        if price_local:
+            return price_local
+    
+    return None
+    
+def getEODFXRate(trade, mtm_market, valuation_date):
+    """ Get eod rate from mtm market """
+    eod_price = None
+    market = mtm_market
+    if trade:
+        currency1 = trade.CurrencyPair().Currency1()
+        currency2 = trade.CurrencyPair().Currency2()
+    
+        price = iterateEodMarket(currency1.Oid(), currency2.Oid(), market.Oid())
+        
+        if not price:
+            eod_price = getLatestPrice(currency1, currency2, valuation_date)
+        else:
+            eod_price = price.Settle()
+            
+    return eod_price
+
+...
+
+}
+
