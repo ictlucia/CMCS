@@ -1,7 +1,7 @@
 #
 # Front Arena exported extension module.
 # source          ""
-# timestamp (utc) "2024-09-13 11:44:49"
+# timestamp (utc) "2024-03-08 06:58:10.6"
 # ***** DO NOT EDIT! *****
 #
 name        "PS_NOP"
@@ -12,10 +12,9 @@ groups {
 
 decls[FColumnDefinition] {
   "Final NOP Portfolio (Notional)" ( "sheet columns.portfoliosheet" ) "";
-  "Final NOP Portfolio(old)" ( "sheet columns.portfoliosheet" ) "";
+  "Final NOP Portfolio(old)" ( "sheet columns.portfoliosheet" "sheet columns.tradesheet" ) "";
   "Final NOP Portfolio(PV)" ( "sheet columns.portfoliosheet" ) "";
-  "Final NOP USD" ( "sheet columns" ) "";
-  "NOPExclusionCurrency" ( "sheet columns.portfoliosheet" ) "";
+  "Final NOP USD" ( "sheet columns.portfoliosheet" "sheet columns.tradesheet" ) "";
 }
 
 clx FTradingSheet [FColumnDefinition] {
@@ -28,7 +27,6 @@ clx FTradingSheet [FColumnDefinition] {
   InheritsFrom=Portfolio Profit and Loss Base
   LabelList=Final NOP Portfolio(Notional);Net Open Position Portfolio(Notional)
   Name=Final NOP Portfolio(Notional)
-  Parameters=NOPExclusionCurrencyParam;PortfolioProfitLossStartDate;PortfolioProfitLossStartDateCustom;PortfolioProfitLossEndDate;PortfolioProfitLossEndDateCustom;PosCurrChoice;AggCurrChoice;FixedCurr;
 
 
   Final NOP Portfolio(old) =
@@ -40,7 +38,6 @@ clx FTradingSheet [FColumnDefinition] {
   InheritsFrom=Portfolio Profit and Loss Base
   LabelList=Final NOP Portfolio(old);Net Open Position Portfolio (old)
   Name=Final NOP Portfolio (old)
-  Parameters=NOPExclusionCurrencyParam;PortfolioProfitLossStartDate;PortfolioProfitLossStartDateCustom;PortfolioProfitLossEndDate;PortfolioProfitLossEndDateCustom;PosCurrChoice;AggCurrChoice;FixedCurr;
 
 
   Final NOP Portfolio(PV) =
@@ -52,7 +49,6 @@ clx FTradingSheet [FColumnDefinition] {
   InheritsFrom=Portfolio Profit and Loss Base
   LabelList=Final NOP Portfolio(PV);Net Open Position Portfolio (PV)
   Name=Final NOP Portfolio (PV)
-  Parameters=NOPExclusionCurrencyParam;PortfolioProfitLossStartDate;PortfolioProfitLossStartDateCustom;PortfolioProfitLossEndDate;PortfolioProfitLossEndDateCustom;PosCurrChoice;AggCurrChoice;FixedCurr;
 
 
   Final NOP USD =
@@ -65,272 +61,160 @@ clx FTradingSheet [FColumnDefinition] {
   Name=Final NOP USD
 
 
-  NOPExclusionCurrency =
-  Description=Currency to exclude when calculating NOP.
-  ExtensionAttribute=exclusionCurrency
-  LabelList=NOP Exclusion Currency
-  Name=NOP Exclusion Currency
-
-
-}
-
-decls[FColumnParameterDefinition] {
-}
-
-clx FObject [FColumnParameterDefinition] {
-  NOPExclusionCurrencyParam =
-  ColumnId=NOPExclusionCurrency
-  Domain=FCurrency
-  GroupLabel=NOP
-
-
-}
-
-decls[FCustomFunction] {
-}
-
-clx FObject [FCustomFunction] {
-  EnsureCollection =
-  Definition=ensureCollection(FObject obj): FCollection
-  Function=CustomFunctions.EnsureCollection
-
-
 }
 
 decls[FExtensionAttribute] {
 }
 
-clx FAssetMortgageBackedSecurity [FExtensionAttribute] {
-  nopOtherInstype1 = singleInstrumentGenerator :* "bondMtMPortfolioType1";
-  nopOtherInstype2 = singleInstrumentGenerator :* "mbsOutstandingNotional2";
-  nopOtherInstype3 = singleInstrumentGenerator :* "endNominalEnd";
-}
-
-clx FBasketRepo [FExtensionAttribute] {
-  nopOtherInstype1 = singleInstrumentGenerator :* "riskPositionOrNil";
-}
-
-clx FBill [FExtensionAttribute] {
-  nopOtherInstype1 = singleInstrumentGenerator :* "bondMtMPortfolioType1";
-  nopOtherInstype2 = singleInstrumentGenerator :* "bondMtMPortfolioType2";
-  nopOtherInstype3 = singleInstrumentGenerator :* "riskPositionOrNil";
-}
-
-clx FBond [FExtensionAttribute] {
-  nopOtherInstype1 = singleInstrumentGenerator :* "bondMtMPortfolioType1";
-  nopOtherInstype2 = singleInstrumentGenerator :* "bondMtMPortfolioType2";
-  nopOtherInstype3 = singleInstrumentGenerator :* "riskPositionOrNil";
-}
-
-clx FCurrencySwap [FExtensionAttribute] {
-  nopOtherInstype1 = singleInstrumentGenerator :* "markToMarketPeriodValue";
-  nopOtherInstype2 = singleInstrumentGenerator :* "markToMarketPeriodValue";
-  nopOtherInstype3 = singleInstrumentGenerator :* "currSwapNominal3Final";
-}
-
-clx FDealPackageInstrumentAndTrades [FExtensionAttribute] {
-  fxNOP1 = sumOf(flattenAndRemoveNil(liveInstruments :* "fxNOP1" [positionObject, theoreticalValueCurrencies]));
-  fxNOP2 = sumOf(flattenAndRemoveNil(liveInstruments :* "fxNOP2" [positionObject, theoreticalValueCurrencies]));
-  fxNOP3 = sumOf(flattenAndRemoveNil(liveInstruments :* "fxNOP3" [positionObject, theoreticalValueCurrencies]));
-  nopOtherInstype1 = openInstruments :* "flattenAndRemoveNil(nopOtherInstype1)" [positionObject];
-}
-
-clx FDeposit [FExtensionAttribute] {
-  mmldAndFilter = simpleAndQuery("FTrade", ["Instrument.InsType", "OptKey3"], , ["Deposit", "SP"]);
-  mmldOrFilter = simpleOrQuery("FTrade", ["OptKey4", "OptKey4"], , ["MLDR", "MMLD"]);
-  mmldTradeFilter = compositeAndQuery("FTrade", mmldAndFilter, mmldOrFilter);
-  nopOtherInstype1 = object :* "riskPositionDisplay" [tradesInPosition = tradesInPositionExceptMMLD];
-  tradesInPositionExceptMMLD = tradesInPosition.InverseFilter(mmldTradeFilter);
-}
-
-clx FFra [FExtensionAttribute] {
-  nopOtherInstype1 = singleInstrumentGenerator :* "markToMarketPeriodValue";
-  nopOtherInstype2 = singleInstrumentGenerator :* "markToMarketPeriodValue";
-  nopOtherInstype3 = singleInstrumentGenerator :* "riskPositionOrNil";
-}
-
-clx FFrn [FExtensionAttribute] {
-  nopOtherInstype1 = singleInstrumentGenerator :* "bondMtMPortfolioType1";
-  nopOtherInstype2 = singleInstrumentGenerator :* "bondMtMPortfolioType2";
-  nopOtherInstype3 = singleInstrumentGenerator :* "riskPositionOrNil";
-}
-
-clx FFund [FExtensionAttribute] {
-  nopOtherInstype1 = singleInstrumentGenerator :* "abs(cash)";
-  nopOtherInstype2 = singleInstrumentGenerator :* "markToMarketPeriodValue";
-  nopOtherInstype3 = singleInstrumentGenerator :* "riskPositionOrNil";
-}
-
-clx FFuture [FExtensionAttribute] {
-  futureForwardNOP1 = shunt(underlyingType, 
-  "Bill"->rowObject :* "markToMarketPeriodValue", 
-  "Bond"->rowObject :* "markToMarketPeriodValue", 
-  "Curr"->rowObject :* "markToMarketPeriodValue", 
-  default->nil);
-  fxNOP2 = projectedNDFNotional;
-  fxNOP3 = projectedNDFNotional;
-  nopOtherInstype1 = singleInstrumentGenerator :* "futureForwardNOP1";
-  nopOtherInstype2 = singleInstrumentGenerator :* "futureForwardNOP2";
-  nopOtherInstype3 = singleInstrumentGenerator :* "futureForwardNOP3";
-  projectedNDFNotional = select(underlyingType, 
-  "Curr"->(sumOf(singleInstrumentGenerator :* "projectedRiskflowsCurrencyPair" [currenciesForVectorColumn := theoreticalValueCurrencies, useFxBaseCurrency := false])), 
-  default->nil);
-}
-
-clx FFxRate [FExtensionAttribute] {
-  fxNOP2 = projectedFXNotional;
-  fxNOP3 = projectedFXNotional;
-  nopOtherInstype1 = singleInstrumentGenerator :* "markToMarketPeriodValue";
-  projectedFXNotional = sumOf(singleInstrumentGenerator :* "projectedRiskflowsCurrencyPair" [currenciesForVectorColumn := theoreticalValueCurrencies, useFxBaseCurrency := false]);
-}
-
-clx FInstrument [FExtensionAttribute] {
-  futureForwardNOP1 = nil;
-  fxNOP1 = nil;
-  fxNOP2 = nil;
-  fxNOP3 = nil;
-  nopOtherInstype2 = nil;
-  nopOtherInstype3 = nil;
-  projectedFXNotional = nil;
-  projectedFXOption = nil;
-  projectedNDFNotional = nil;
-  singleInstrumentGenerator = acm.Risk.CreateSingleInstrumentAndTradesBuilder(portfolio, object).GetTargetInstrumentAndTrades;
-}
-
 clx FInstrumentAndTrades [FExtensionAttribute] {
   bondNoPTrades = flattenAndRemoveNil(tradesInPosition :* "switch(includeTradeStatus, true->object, false->nil)");
   currSwapNominal3Final = sumOf(convertToCurrency(children :* "currSwapNominal3Final", profitAndLossEndFXRates, displayCurrency, filterUnit));
-  greaterThanZeroDenomninatedFilter = simpleAndQuery("FDenominatedValue", ["Number"], ["GREATER"], [0]);
-  lessEqualThanZeroDenomninatedFilter = simpleAndQuery("FDenominatedValue", ["Number"], ["LESS_EQUAL"], [0]);
-  nopOtherInstype1 = openInstruments :* "flattenAndRemoveNil(nopOtherInstype1)" [positionObject];
-  nopOtherInstype2 = openInstruments :* "flattenAndRemoveNil(nopOtherInstype2)" [positionObject];
-  nopOtherInstype3 = openInstruments :* "flattenAndRemoveNil(nopOtherInstype3)" [positionObject];
-  nopOtherInstypeDisplay1 = sumOf(convertToCurrency(flattenAndRemoveNil(nopOtherInstype1), profitAndLossEndFXRates, displayCurrency, filterUnit));
-  nopOtherInstypeDisplay2 = sumOf(convertToCurrency(flattenAndRemoveNil(nopOtherInstype2), profitAndLossEndFXRates, displayCurrency, filterUnit));
-  nopOtherInstypeDisplay3 = sumOf(convertToCurrency(flattenAndRemoveNil(nopOtherInstype3), profitAndLossEndFXRates, displayCurrency, filterUnit));
+  nopOtherInstype1 = sumOf(convertToCurrency(children :* "nopOtherInstype1", profitAndLossEndFXRates, displayCurrency, filterUnit));
+  nopOtherInstype2 = sumOf(convertToCurrency(children :* "nopOtherInstype2", profitAndLossEndFXRates, displayCurrency, filterUnit));
+  nopOtherInstype3 = sumOf(convertToCurrency(children :* "nopOtherInstype3", profitAndLossEndFXRates, displayCurrency, filterUnit));
 }
 
 clx FMultiInstrumentAndTrades [FExtensionAttribute] {
-  brokerFeePayment = sumOf(object :* "paymentsPerTypeEndValue" [paymentType := "Broker Fee", profitAndLossEndDate := bigDate]);
-  brokerFeePaymentDisplay = convertToCurrency(brokerFeePayment, profitAndLossEndFXRates, displayCurrency, filterUnit);
-  finalNOP1 = (max(abs(fxNOPLong1), abs(fxNOPShort1))) + nopOtherInstypeDisplay1;
-  finalNOP2 = (max(abs(fxNOPLong2), abs(fxNOPShort2))) + nopOtherInstypeDisplay2;
-  finalNOP3 = (max(abs(fxNOPLong3), abs(fxNOPShort3))) + nopOtherInstypeDisplay3;
-  fxNOP1 = sumOf(flattenAndRemoveNil(openInstruments :* "fxNOP1" [positionObject, theoreticalValueCurrencies]));
-  fxNOP2 = sumOf(flattenAndRemoveNil(openInstruments :* "fxNOP2" [positionObject, theoreticalValueCurrencies]));
-  fxNOP3 = sumOf(flattenAndRemoveNil(openInstruments :* "fxNOP3" [positionObject, theoreticalValueCurrencies]));
-  fxNOPFilterIDR1 = ensureCollection(fxNOP1).Filter(exclusionCurrencyFilter);
-  fxNOPFilterIDR2 = ensureCollection(fxNOP2).Filter(exclusionCurrencyFilter);
-  fxNOPFilterIDR3 = fxNOP3.Filter(exclusionCurrencyFilter);
-  fxNOPLong1 = shunt(fxNOPFilterIDR1.IsEmpty, 
+  finalNOP1 = (max(abs(fxNOPLong1), abs(fxNOPShort1))) + nopOtherInstype1;
+  finalNOP2 = (max(abs(fxNOPLong2), abs(fxNOPShort2))) + nopOtherInstype2;
+  finalNOP3 = (max(abs(fxNOPLong3), abs(fxNOPShort3))) + nopOtherInstype3;
+  fxNOP1 = sumOf(children :* "fxNOP1");
+  fxNOP2 = sumOf(children :* "fxNOP2");
+  fxNOP3 = sumOf(children :* "fxNOP3");
+  fxNOPFilterIDR1 = switch(fxNOP1 == denominatedvalue(0, displayCurrency, , ), 
   true->denominatedvalue(0, displayCurrency, , ), 
-  false->sumOf(convertToCurrency(fxNOPFilterIDR1.Filter(greaterThanZeroDenomninatedFilter), markToMarketValueFxRates, displayCurrency, filterUnit)));
-  fxNOPLong2 = shunt(fxNOPFilterIDR2.IsEmpty, 
+  false->fxNOP1.Filter(simpleAndQuery("FDenominatedValue", ["Unit"], ["NOT_EQUAL"], ["IDR"])));
+  fxNOPFilterIDR2 = switch(fxNOP2 == denominatedvalue(0, displayCurrency, , ), 
   true->denominatedvalue(0, displayCurrency, , ), 
-  false->sumOf(convertToCurrency(fxNOPFilterIDR2.Filter(greaterThanZeroDenomninatedFilter), markToMarketValueFxRates, displayCurrency, filterUnit)));
-  fxNOPLong3 = switch(fxNOPFilterIDR3.IsEmpty, 
+  false->fxNOP2.Filter(simpleAndQuery("FDenominatedValue", ["Unit"], ["NOT_EQUAL"], ["IDR"])));
+  fxNOPFilterIDR3 = switch(fxNOP3 == denominatedvalue(0, displayCurrency, , ), 
   true->denominatedvalue(0, displayCurrency, , ), 
-  false->sumOf(convertToCurrency(fxNOPFilterIDR3.Filter(greaterThanZeroDenomninatedFilter), markToMarketValueFxRates, displayCurrency, filterUnit)));
-  fxNOPShort1 = shunt(fxNOPFilterIDR1.IsEmpty, 
+  false->fxNOP3.Filter(simpleAndQuery("FDenominatedValue", ["Unit"], ["NOT_EQUAL"], ["IDR"])));
+  fxNOPLong1 = switch(fxNOPFilterIDR1 == denominatedvalue(0, displayCurrency, , ), 
   true->denominatedvalue(0, displayCurrency, , ), 
-  false->sumOf(convertToCurrency(fxNOPFilterIDR1.Filter(lessEqualThanZeroDenomninatedFilter), markToMarketValueFxRates, displayCurrency, filterUnit)));
-  fxNOPShort2 = shunt(fxNOPFilterIDR2.IsEmpty, 
+  false->sumOf(convertToCurrency(fxNOPFilterIDR1.Filter(simpleAndQuery("FDenominatedValue", ["Number"], ["GREATER"], [0])), markToMarketValueFxRates, displayCurrency, filterUnit)));
+  fxNOPLong2 = switch(fxNOPFilterIDR2 == denominatedvalue(0, displayCurrency, , ), 
   true->denominatedvalue(0, displayCurrency, , ), 
-  false->sumOf(convertToCurrency(fxNOPFilterIDR2.Filter(lessEqualThanZeroDenomninatedFilter), markToMarketValueFxRates, displayCurrency, filterUnit)));
-  fxNOPShort3 = switch(fxNOPFilterIDR3.IsEmpty, 
+  false->sumOf(convertToCurrency(fxNOPFilterIDR2.Filter(simpleAndQuery("FDenominatedValue", ["Number"], ["GREATER"], [0])), markToMarketValueFxRates, displayCurrency, filterUnit)));
+  fxNOPLong3 = switch(fxNOPFilterIDR3 == denominatedvalue(0, displayCurrency, , ), 
   true->denominatedvalue(0, displayCurrency, , ), 
-  false->sumOf(convertToCurrency(fxNOPFilterIDR3.Filter(lessEqualThanZeroDenomninatedFilter), markToMarketValueFxRates, displayCurrency, filterUnit)));
-}
-
-clx FObject [FExtensionAttribute] {
-  adHocPortfolio = acm.FAdhocPortfolio;
-  exclusionCurrency = currency("IDR");
-  exclusionCurrencyFilter = simpleAndQuery("FDenominatedValue", ["Unit"], ["NOT_EQUAL"], [exclusionCurrency]);
-}
-
-clx FOption [FExtensionAttribute] {
-  fxNOP1 = projectedFXOption;
-  fxNOP2 = projectedFXOption;
-  nopOtherInstype1 = singleInstrumentGenerator :* "bondOption";
-  nopOtherInstype2 = singleInstrumentGenerator :* "bondOption";
-  nopOtherInstype3 = nil;
-  projectedFXOption = sumOf(singleInstrumentGenerator :* "interestRateDelta");
+  false->sumOf(convertToCurrency(fxNOPFilterIDR3.Filter(simpleAndQuery("FDenominatedValue", ["Number"], ["GREATER"], [0])), markToMarketValueFxRates, displayCurrency, filterUnit)));
+  fxNOPShort1 = switch(fxNOPFilterIDR1 == denominatedvalue(0, displayCurrency, , ), 
+  true->denominatedvalue(0, displayCurrency, , ), 
+  false->sumOf(convertToCurrency(fxNOPFilterIDR1.Filter(simpleAndQuery("FDenominatedValue", ["Number"], ["LESS_EQUAL"], [0])), markToMarketValueFxRates, displayCurrency, filterUnit)));
+  fxNOPShort2 = switch(fxNOPFilterIDR2 == denominatedvalue(0, displayCurrency, , ), 
+  true->denominatedvalue(0, displayCurrency, , ), 
+  false->sumOf(convertToCurrency(fxNOPFilterIDR2.Filter(simpleAndQuery("FDenominatedValue", ["Number"], ["LESS_EQUAL"], [0])), markToMarketValueFxRates, displayCurrency, filterUnit)));
+  fxNOPShort3 = switch(fxNOPFilterIDR3 == denominatedvalue(0, displayCurrency, , ), 
+  true->denominatedvalue(0, displayCurrency, , ), 
+  false->sumOf(convertToCurrency(fxNOPFilterIDR3.Filter(simpleAndQuery("FDenominatedValue", ["Number"], ["LESS_EQUAL"], [0])), markToMarketValueFxRates, displayCurrency, filterUnit)));
 }
 
 clx FSingleInstrumentAndTrades [FExtensionAttribute] {
-  bondMtMPortfolioType1 = shunt(tradesInPosition.IsEmpty, 
-  true->nil, 
-  default->shunt((tradesInPosition.First) :* "object.Portfolio.TypeChlItem", 
-    "FVTPL"->convertToCurrency(denominatedvalue(instrument :* "abs(originalPremiumAccounting)" [positionObject, displayCurrency, profitAndLossEndDate], displayCurrency, nil, nil), profitAndLossEndFXRates, displayCurrency), 
-    "FVOCI"->riskPositionDisplay + sumOf(convertToCurrency((bondNoPTrades :* "originalPremiumDiscount"), profitAndLossEndFXRates, displayCurrency)) + deprecRPLColumn + pureRPLColumn, 
-    "Amortised Cost"->riskPositionDisplay + sumOf(convertToCurrency((bondNoPTrades :* "originalPremiumDiscount"), profitAndLossEndFXRates, displayCurrency)) + deprecRPLColumn + pureRPLColumn, 
-    default->denominatedvalue(instrument :* "abs(originalPremiumAccounting)" [positionObject, displayCurrency, profitAndLossEndDate], displayCurrency, nil, nil)));
-  bondMtMPortfolioType2 = shunt(tradesInPosition.IsEmpty, 
-  true->nil, 
-  default->shunt((tradesInPosition[0]) :* "object.Portfolio.TypeChlItem", 
-    "FVTPL"->markToMarketPeriodValue, 
-    "FVOCI"->markToMarketPeriodValue, 
-    "Amortised Cost"->faceNominalDisplay, 
-    default->markToMarketPeriodValue));
+  bondMtMPortfolioType1 = switch((tradesInPosition[0]) :* "object.Portfolio.TypeChlItem", 
+  "FVTPL"->convertToCurrency(denominatedvalue(instrument :* "abs(originalPremiumAccounting)" [positionObject, displayCurrency, profitAndLossEndDate], displayCurrency, nil, nil), profitAndLossEndFXRates, displayCurrency), 
+  "FVOCI"->riskPositionDisplay + sumOf(convertToCurrency((bondNoPTrades :* "originalPremiumDiscount"), profitAndLossEndFXRates, displayCurrency)) + deprecRPLColumn + pureRPLColumn, 
+  "Amortised Cost"->riskPositionDisplay + sumOf(convertToCurrency((bondNoPTrades :* "originalPremiumDiscount"), profitAndLossEndFXRates, displayCurrency)) + deprecRPLColumn + pureRPLColumn, 
+  default->denominatedvalue(instrument :* "abs(originalPremiumAccounting)" [positionObject, displayCurrency, profitAndLossEndDate], displayCurrency, nil, nil));
+  bondMtMPortfolioType2 = switch((tradesInPosition[0]) :* "object.Portfolio.TypeChlItem", 
+  "FVTPL"->markToMarketPeriodValue, 
+  "FVOCI"->markToMarketPeriodValue, 
+  "Amortised Cost"->faceNominalDisplay, 
+  default->markToMarketPeriodValue);
   bondOption = shunt(instrument.UnderlyingType, 
-  "Bond"->priceDeltaInstrument * riskPositionDisplay.Number / 100.0, 
-  default->nil);
+  "Bond"->priceDelta, 
+  default->denominatedvalue(0, displayCurrency, , ));
   currSwapNominal3 = switch((instrument.FirstPayLeg.Currency == "USD"), 
   true->instrument:ccrCurrSwapPayNominal * riskPosition * (-1), 
   false->switch((instrument.FirstReceiveLeg.Currency == "USD"), 
     true->instrument:ccrCurrSwapRecNominal * riskPosition, 
-    default->nil), 
-  default->nil);
+    default->denominatedvalue(0, displayCurrency, , )), 
+  default->denominatedvalue(0, displayCurrency, , ));
   currSwapNominal3Final = shunt(instrument.InsType, 
   "CurrSwap"->shunt((instrument.MainLeg.NominalAtStart) or (instrument.MainLeg.NominalAtEnd), 
     true->shunt((instrument.MainLeg.NominalAtStart) and (instrument.MainLeg.NominalAtEnd), 
-      true->nil, 
+      true->denominatedvalue(0, displayCurrency, , ), 
       false->currSwapNominal3, 
-      default->nil), 
-    default->nil), 
-  default->nil);
-  futureForwardNOP1 = shunt(instrument:underlyingType, 
-  "Bill"->markToMarketPeriodValue, 
+      default->denominatedvalue(0, displayCurrency, , )), 
+    default->denominatedvalue(0, displayCurrency, , )), 
+  default->denominatedvalue(0, displayCurrency, , ));
+  futureForwardNOP1 = shunt(instrument.UnderlyingType, 
   "Bond"->markToMarketPeriodValue, 
   "Curr"->markToMarketPeriodValue, 
-  default->nil);
-  futureForwardNOP2 = shunt(instrument:underlyingType, 
-  "Bill"->markToMarketPeriodValue, 
+  default->denominatedvalue(0, displayCurrency, , ));
+  futureForwardNOP2 = shunt(instrument.UnderlyingType, 
   "Bond"->markToMarketPeriodValue, 
-  default->nil);
-  futureForwardNOP3 = shunt(instrument:underlyingType, 
-  "Bill"->denominatedvalue(riskPosition, instrument.Currency, , ), 
+  default->denominatedvalue(0, displayCurrency, , ));
+  futureForwardNOP3 = shunt(instrument.UnderlyingType, 
   "Bond"->denominatedvalue(riskPosition, instrument.Currency, , ), 
-  default->nil);
-  isMMLD = instrument :* "isMMLD" [positionObject];
+  default->denominatedvalue(0, displayCurrency, , ));
+  fxNOP1 = switch(instrument.InsType, 
+  "Option"->projectedFXOption, 
+  default->denominatedvalue(0, displayCurrency, , ));
+  fxNOP2 = switch(instrument.InsType, 
+  "Fx Rate"->projectedFXNotional, 
+  "Future/Forward"->projectedNDFNotional, 
+  "Option"->projectedFXOption, 
+  default->denominatedvalue(0, displayCurrency, , ));
+  fxNOP3 = switch(instrument.InsType, 
+  "Fx Rate"->projectedFXNotional, 
+  "Future/Forward"->projectedNDFNotional, 
+  default->denominatedvalue(0, displayCurrency, , ));
   mbsOutstandingNotional2 = select((tradesInPosition[0]) :* "object.Portfolio.TypeChlItem", 
   "FVTPL"->markToMarketPeriodValue, 
   "FVOCI"->markToMarketPeriodValue, 
   "Amortised Cost"->endNominalEnd, 
   default->endNominalEnd);
-  riskPositionOrNil = shunt(riskPositionDisplay == 0, 
-  true->nil, 
-  default->select(riskPositionDisplay.ClassName, 
-    "FReal"->denominatedvalue(riskPositionDisplay.Number, displayCurrency, , ), 
-    "FInteger32"->denominatedvalue(riskPositionDisplay.Number, displayCurrency, , ), 
-    default->riskPositionDisplay));
+  nopOtherInstype1 = select(instrument.InsType, 
+  "Future/Forward"->futureForwardNOP1, 
+  "Fx Rate"->markToMarketPeriodValue, 
+  "Bond"->bondMtMPortfolioType1, 
+  "Swap"->markToMarketPeriodValue, 
+  "CurrSwap"->markToMarketPeriodValue, 
+  "FRN"->bondMtMPortfolioType1, 
+  "Bill"->bondMtMPortfolioType1, 
+  "MBS/ABS"->bondMtMPortfolioType1, 
+  "FRA"->markToMarketPeriodValue, 
+  "Fund"->abs(cash), 
+  "Deposit"->riskPositionDisplay, 
+  "Option"->bondOption, 
+  "BasketRepo/Reverse"->riskPositionDisplay, 
+  default->denominatedvalue(0, displayCurrency, , ));
+  nopOtherInstype2 = select(instrument.InsType, 
+  "Future/Forward"->futureForwardNOP2, 
+  "Bond"->bondMtMPortfolioType2, 
+  "Swap"->markToMarketPeriodValue, 
+  "CurrSwap"->markToMarketPeriodValue, 
+  "FRN"->bondMtMPortfolioType2, 
+  "Bill"->bondMtMPortfolioType2, 
+  "MBS/ABS"->mbsOutstandingNotional2, 
+  "FRA"->markToMarketPeriodValue, 
+  "Fund"->markToMarketPeriodValue, 
+  "Option"->bondOption, 
+  default->denominatedvalue(0, displayCurrency, , ));
+  nopOtherInstype3 = select(instrument.InsType, 
+  "Future/Forward"->futureForwardNOP3, 
+  "Bond"->riskPositionOrZero, 
+  "Swap"->swapNominal3, 
+  "CurrSwap"->currSwapNominal3Final, 
+  "FRN"->riskPositionOrZero, 
+  "Bill"->riskPositionOrZero, 
+  "MBS/ABS"->endNominalEnd, 
+  "FRA"->riskPositionOrZero, 
+  "Fund"->convertToCurrency(denominatedvalue(riskPositionDisplay, instrument.Currency, , ), profitAndLossEndFXRates, displayCurrency), 
+  default->denominatedvalue(0, displayCurrency, , ));
+  projectedFXNotional = (sumOf(object :* "projectedRiskflowsCurrencyPair" [currenciesForVectorColumn := theoreticalValueCurrencies, useFxBaseCurrency := false]));
+  projectedFXOption = (sumOf(object :* "priceDeltaCurrencyVector" [currenciesForVectorColumn := theoreticalValueCurrencies, useFxBaseCurrency := false]));
+  projectedNDFNotional = select(instrument.UnderlyingType, 
+  "Curr"->(sumOf(object :* "projectedRiskflowsCurrencyPair" [currenciesForVectorColumn := theoreticalValueCurrencies, useFxBaseCurrency := false])), 
+  default->denominatedvalue(0, displayCurrency, , ));
   riskPositionOrZero = shunt(riskPositionDisplay == 0, 
   true->denominatedvalue(0, displayCurrency, , ), 
   default->riskPositionDisplay);
-  swapNominal3 = select(instrument.MainLeg.LegType, 
-  "Fixed"->(-riskPositionOrNil), 
-  "Float"->riskPositionOrNil, 
-  default->nil);
-}
-
-clx FSwap [FExtensionAttribute] {
-  nopOtherInstype1 = select(isMMLD, 
-  true->singleInstrumentGenerator :* "interestRateDelta", 
-  default->singleInstrumentGenerator :* "markToMarketPeriodValue");
-  nopOtherInstype2 = select(isMMLD, 
-  true->singleInstrumentGenerator :* "interestRateDelta", 
-  default->singleInstrumentGenerator :* "markToMarketPeriodValue");
-  nopOtherInstype3 = singleInstrumentGenerator :* "swapNominal3";
+  swapNominal3 = switch(instrument.MainLeg.LegType, 
+  "Fixed"->(-riskPositionOrZero), 
+  "Float"->riskPositionOrZero, 
+  default->denominatedvalue(0, displayCurrency, , ));
 }
 
 decls[FPythonCode] {
@@ -338,18 +222,8 @@ decls[FPythonCode] {
 
 clx FObject [FPythonCode] {
   CustomFunctions
+
 import acm
-
-
-def EnsureCollection(obj):
-    if obj is None:
-        return acm.FArray()
-    
-    if obj.IsKindOf(acm.FCollection):
-        return obj
-    
-    return acm.FArray().AddAll([obj])
-
 
 #*******************NOT USED*******************************
 calcSpace = acm.Calculations().CreateCalculationSpace(acm.GetDefaultContext(),'FPortfolioSheet')

@@ -1,7 +1,7 @@
 #
 # Front Arena exported extension module.
 # source          ""
-# timestamp (utc) "2024-10-16 08:10:48.9"
+# timestamp (utc) "2024-10-22 05:02:23.1"
 # ***** DO NOT EDIT! *****
 #
 name        "FLongformTradeConfirmationCustom"
@@ -1144,6 +1144,16 @@ clx FTradingSheet [FColumnDefinition] {
   Name=LongFormPayCurrencyP
 
 
+  LongFormPayDateMMLD =
+  Description=The pay date for this confirmation trade.
+  ExtensionAttribute=LongFormPayDateMMLD
+  GroupLabel=LongformTradeConfirmation
+  LabelList=LongFormPayDateMMLD
+  Name=LongFormPayDateMMLD
+  ShowSimulItalic=Disabled
+  ShowSimulState=Disabled
+
+
   LongFormPayNominal =
   Description=The pay amount for CCS in this confirmation trade.
   ExtensionAttribute=LongFormPayNominal
@@ -2088,19 +2098,24 @@ clx FConfirmation [FExtensionAttribute] {
     default->nil));
   LongFormDomesticCurrency = select(object.Trade.OptKey4, 
   "MLDR"->py("FLongFormCustomUtils", context).MLDRtrade(object.Trade.DealPackage, "Non Deposit").Currency, 
+  "MMLD"->py("FLongFormCustomUtils", context).get_premiumMMLD(object.Trade.DealPackage, "curr"), 
   default->object.Trade.Nominal * object.Trade.Instrument.StrikePrice);
   LongFormEndCashRepo = object.Trade.FaceValue + (object.Trade.FaceValue * object.Instrument.FirstFixedLeg.FixedRate / 100);
   LongFormEndDate = select(object.ConfTemplateChlItem, 
   "IRSPA"->py("FLongFormCustomUtils", context).date_formatter(py("FLongFormCustomUtils", context).pairs_enddate(object.Trade.MoneyFlows)), 
-  default->py("FLongFormCustomUtils", context).date_formatter(object.Trade.Instrument.EndDate));
+  default->select(object.Trade.OptKey4, 
+    "MMLD"->py("FLongFormCustomUtils", context).get_date_py(object.Trade.Instrument.ExpiryDateOnly), 
+    default->py("FLongFormCustomUtils", context).date_formatter(object.Trade.Instrument.EndDate)));
   LongFormEndDate_Eng = select(object.ConfTemplateChlItem, 
   "IRSPA"->py("FLongFormCustomUtils", context).date_formatter_eng(py("FLongFormCustomUtils", context).pairs_enddate(object.Trade.MoneyFlows)), 
   default->py("FLongFormCustomUtils", context).date_formatter_eng(py("FLongFormCustomUtils", context).get_longform_end_date(object.Trade)));
   LongFormEndInterest = select(object.Trade.OptKey4, 
   "MLDR"->abs(py("FLongFormCustomUtils", context).select_settlement1(py("FLongFormCustomUtils", context).MLDRtrade(object.Trade.DealPackage, "Non Deposit").Settlements, "None", "Authorised", object.Reset.CashFlow.EndDate).Amount), 
+  "MMLD"->py("FLongFormCustomUtils", context).get_grossIntMMLD(object.Trade.DealPackage), 
   default->abs(object.Trade.EndCash - object.Trade.Nominal));
   LongFormExpiryDayExtAttr = select(object.Trade.OptKey4, 
   "MLDR"->py("FLongFormCustomUtils", context).date_formatter(py("FLongFormCustomUtils", context).MLDRtrade(object.Trade.DealPackage, "Deposit").Instrument.ExpiryDate), 
+  "MMLD"->py("FLongFormCustomUtils", context).get_date_py(object.Trade.Instrument.ExpiryDateOnly), 
   default->py("FLongFormCustomUtils", context).date_formatter(object.Trade.Instrument.ExpiryDate));
   LongFormFaceValue = abs(object.Trade.FaceValue);
   LongFormFarSellAmount = tradeConf :* "tradeFXAttrFarSellAmount";
@@ -2182,7 +2197,9 @@ clx FConfirmation [FExtensionAttribute] {
     "Future/Forward"->py("FLongFormCustomUtils", context).get_longform_netting_dndf(object.Trade.InstrumentPackageOrInstrument.Trades.Last.MoneyFlows), 
     default->py("FLongFormCustomUtils", context).get_longform_netting_amount(object.Trade)));
   LongFormNettingAmountDNDF = LongFormDNDF1 - LongFormDNDF2;
-  LongFormNextCouponDate = py("FLongFormCustomUtils", context).date_formatter(py("FLongFormCustomUtils", context).get_Next_Coupon_Date(object));
+  LongFormNextCouponDate = select(object.Trade.OptKey4, 
+  "MMLD"->py("FLongFormCustomUtils", context).get_PayDateMMLD(object), 
+  default->py("FLongFormCustomUtils", context).date_formatter(py("FLongFormCustomUtils", context).get_Next_Coupon_Date(object)));
   LongFormNextCouponDate1 = py("FLongFormCustomUtils", context).date_formatter(py("FLongFormCustomUtils", context).get_Next_Coupon_Date1(object.Trade));
   LongFormNominalAmount = abs(object.Trade.FaceValue);
   LongFormNominalEqvCCS1 = abs(py("FLongFormCustomUtils", context).get_nominal_eqv_ccs_1(object.Trade));
@@ -2297,8 +2314,11 @@ clx FConfirmation [FExtensionAttribute] {
   false->"Pay");
   LongFormPremium = select(object.Trade.OptKey4, 
   "MLDR"->py("FLongFormCustomUtils", context).select_settlement(py("FLongFormCustomUtils", context).MLDRtrade(object.Trade.DealPackage, "Non Deposit").Settlements, "Fixed Rate", py("FLongFormCustomUtils", context).get_Next_Coupon_Date(object)).Amount, 
+  "MMLD"->py("FLongFormCustomUtils", context).get_premiumMMLD(object.Trade.DealPackage, "amount"), 
   default->abs(py("FLongFormCustomUtils", context).get_premium(object)));
-  LongFormPremiumCurrency = py("FLongFormCustomUtils", context).select_settlement(py("FLongFormCustomUtils", context).MLDRtrade(object.Trade.DealPackage, "Non Deposit").Settlements, "Fixed Rate", py("FLongFormCustomUtils", context).get_Next_Coupon_Date(object)).Currency;
+  LongFormPremiumCurrency = select(object.Trade.OptKey4, 
+  "MMLD"->py("FLongFormCustomUtils", context).get_premiumMMLD(object.Trade.DealPackage, "curr"), 
+  default->py("FLongFormCustomUtils", context).select_settlement(py("FLongFormCustomUtils", context).MLDRtrade(object.Trade.DealPackage, "Non Deposit").Settlements, "Fixed Rate", py("FLongFormCustomUtils", context).get_Next_Coupon_Date(object)).Currency);
   LongFormPrice = select(object.Trade.Instrument.InsType, 
   "BasketRepo/Reverse"->abs(py("FLongFormCustomUtils", context).get_Collateral_Trade_Price(object.Trade)), 
   "Bill"->select(abs(object.Trade.Price) > abs(object.Trade.Premium / object.Trade.Nominal * 100), 
@@ -2594,6 +2614,17 @@ class GenerateLongFormControl(FLongFormConfirmationHooksBase.GenerateLongFormCon
         """
         return super().generate_message()
         
+class GenerateLongFormControl(FLongFormConfirmationHooksBase.GenerateLongFormControlBase):
+    """ Class to control generation of confirmation reports """
+    def generate_message(self):
+        """
+        This function decides whether the message is generated or not.
+        Return True to generate the message from LongformTradeConfirmation, False to generate
+        message from Adaptive.
+        @return: boolean
+        """
+        return super().generate_message()
+        
     def generate_report_from_acm(self):
         """
         This function decides whether the report is to be generated using PRIME sheets configured
@@ -2606,6 +2637,12 @@ class GenerateLongFormControl(FLongFormConfirmationHooksBase.GenerateLongFormCon
             dp_type = deal_package.Definition().Name()
             if "SP_MarketLinkedDepositIR" == dp_type:
                 return True
+                
+        def deal_package_is_mmld(deal_package):
+            deal_package = self.confirmation_obj.Trade().DealPackage()
+            dp_type = deal_package.Definition().Name()
+            if "SP_MarketLinkedDeposit" == dp_type:
+                return True
         
         deal_package = self.confirmation_obj.Trade().DealPackage()
         print('****** 1 Inside generate_report_from_acm')
@@ -2613,10 +2650,16 @@ class GenerateLongFormControl(FLongFormConfirmationHooksBase.GenerateLongFormCon
         if self.confirmation_obj.EventType() == 'Rate Fixing':
             print('****** 2 Inside generate_report_from_acm')
             return False
+        if self.confirmation_obj.EventType() == 'Payment Advice':
+            print('****** 2 Inside generate_report_from_acm')
+            return False
         elif deal_package and deal_package_is_mmldr(deal_package) and self.confirmation_obj.EventType() == "Rate Fixing":
+            return False
+        elif deal_package and deal_package_is_mmldr(deal_package) and self.confirmation_obj.EventType() == "Payment Advice":
             return False
         else:
             return True
+
 
 class LongformChecksumControl(FLongFormConfirmationHooksBase.LongformChecksumControlBase):
     """ Class to control and calculate the checksum for the confirmation """
@@ -3295,9 +3338,9 @@ class LongFormDealPackageDataExtPoint(FLongFormConfirmationHooksBase.\
                                 'premium_date': str(add_premium_date),
                                 }
                             )
-                        if payment.Type() == "MMLD Payment":
-                            pay_date = payment.PayDay()
-                            mmld_curr = payment.Currency().Name()
+                        if payment.Oid() == "MMLD Payment":
+                            pay_date = setts.ValueDay()
+                            mmld_curr = setts.Currency().Name()
                             non_loop_dict.update({
                                 'pay_date': str(pay_date),
                                 'mmld_curr': str(mmld_curr),
@@ -3399,6 +3442,36 @@ def get_Last_Coupon_Date(trade):
             return list[0]
         else:
             return list[list.index(next)-1]
+
+def get_PayDateMMLD(obj):
+    if obj.ReferencedRecordAddress() > 0:
+        for p in obj.Trade().Payments():
+            if p.Oid() == obj.ReferencedRecordAddress():
+                return p.PayDay()
+
+def get_premiumMMLD(acm_obj,select):
+    for trade in acm_obj.Trades():
+        for payment in trade.Payments():
+            if payment.Type() == "Premium":
+                add_premium_amount = payment.Amount()
+                add_premium_date = payment.PayDay()
+                add_premium_curr = payment.Currency().Name()
+    if select == "amount":
+        return add_premium_amount
+    elif select == "curr":
+        return add_premium_curr
+
+def get_date_py(date):
+    return date
+
+def get_grossIntMMLD(acm_obj):
+    for trade in acm_obj.Trades():
+        if trade.Instrument().Cid() == "Option":
+            option_trade = trade.ConnectedTrade()    
+    for setts in option_trade.Settlements():
+        if setts.Type() == "None": #and setts.Status() == "Authorised":
+            gross_interest = abs(setts.Amount())
+    return gross_interest
 
 def get_Next_Coupon_Date(obj):
     reset = obj.Reset()

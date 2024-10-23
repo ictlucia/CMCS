@@ -1,20 +1,42 @@
 #
 # Front Arena exported extension module.
 # source          ""
-# timestamp (utc) "2024-04-05 08:55:16.7"
+# timestamp (utc) "2024-10-02 06:58:22.2"
 # ***** DO NOT EDIT! *****
 #
 name        "ICT_MarginRatio"
-description ""
+description "$Id$"
 
 groups {
 }
 
 decls[FColumnDefinition] {
+  "LimitMasterAgreement" ( "sheet columns.tradesheet" ) "";
+  "LimitMasterAgreement1" ( "sheet columns.tradesheet" ) "";
   "MarginRatio" ( "sheet columns.portfoliosheet" "sheet columns.tradesheet" ) "";
 }
 
 clx FTradingSheet [FColumnDefinition] {
+  LimitMasterAgreement =
+  Access=ReadOnly
+  Description=Limit for Master Agreement (took from Hierarchy Editor)
+  ExtensionAttribute=LimitMasterAgreement
+  Format=
+  GroupLabel=FieldCustom
+  LabelList=Limit Master Agreement Level 1
+  Name=Limit Master Agreement Level 1
+
+
+  LimitMasterAgreement1 =
+  Access=ReadOnly
+  Description=Limit for Master Agreement (took from Hierarchy Editor)
+  ExtensionAttribute=LimitMasterAgreement1
+  Format=
+  GroupLabel=FieldCustom
+  LabelList=Limit Master Agreement Level 2
+  Name=Limit Master Agreement Level 2
+
+
   MarginRatio =
   Access=ReadOnly
   Description=suggested call amount / collateral mtm in percentage.
@@ -31,16 +53,22 @@ decls[FExtensionAttribute] {
 }
 
 clx FMarginingSetInstrumentAndTrades [FExtensionAttribute] {
+  LimitMasterAgreement = py("GMRA_Python", context).get_Target_MS(object.Trades.First.Trade.MasterAgreement.Name);
+  LimitMasterAgreement1 = py("GMRA_Python", context).get_Target_MS1(object.Trades.First.Trade.MasterAgreement.Name);
   MarginRatio = activeMarginCallSuggestedAmount / marginingSetExposureDisplay * 100;
 }
 
 clx FSingleInstrumentAndTrades [FExtensionAttribute] {
+  LimitMasterAgreement = object.Trade.MasterAgreement.Name;
+  LimitMasterAgreement1 = object.Trade.MasterAgreement.Name;
   MarginRatio = select(object.Instrument.InsType, 
   "Bond"->nil, 
   default->parent:activeMarginCallSuggestedAmount / parent:marginingSetExposureDisplay * 100);
 }
 
 clx FTradeRow [FExtensionAttribute] {
+  LimitMasterAgreement = py("GMRA_Python", context).get_Target_MS(object.Trade.MasterAgreement.Name);
+  LimitMasterAgreement1 = py("GMRA_Python", context).get_Target_MS1(object.Trade.MasterAgreement.Name);
   MarginRatio = select(object.Instrument.InsType, 
   "Bond"->nil, 
   default->parent:activeMarginCallSuggestedAmount / parent:marginingSetExposureDisplay * 100);
@@ -50,6 +78,28 @@ decls[FPythonCode] {
 }
 
 clx FObject [FPythonCode] {
+  GMRA_Python
+
+
+import acm
+
+def get_Target_MS(ms_name):
+    hierarchy = acm.FHierarchy['Master Agreement']
+    for node in hierarchy.HierarchyNodes():
+        if len(node.HierarchyDataValues())>0:
+            if node.HierarchyDataValues()[0].DataValue() == ms_name:
+                return node.HierarchyDataValues()[1].DataValue()
+
+
+def get_Target_MS1(ms_name):
+    hierarchy = acm.FHierarchy['Master Agreement']
+    for node in hierarchy.HierarchyNodes():
+        if len(node.HierarchyDataValues())>0:
+            if node.HierarchyDataValues()[0].DataValue() == ms_name:
+                return node.HierarchyDataValues()[2].DataValue()
+
+...
+
   GMRAEmailTransfer
 import re
 import acm
@@ -238,82 +288,6 @@ def send_GMRA_to_email(reportObj, params, ReportXML):
         print("Email transfer successful for", reportObj.params.fileName)
     except Exception as e:
         print("Email Transfer failed:", e)                
-
-...
-
-}
-
-decls[FXSLTemplate] {
-  "FCSVTemplate" ( "aef reporting.secondary templates txt" ) "";
-}
-
-clx FObject [FXSLTemplate] {
-  FCSVTemplate
-<?xml version='1.0'?>
-<!DOCTYPE xsl:stylesheet [
-  <!ENTITY comma "<xsl:text>,</xsl:text>">
-  <!ENTITY lf "<xsl:text>&#10;</xsl:text>">
-]>
-
-<xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
-<xsl:output method="text" encoding="UTF-8"/>
-<xsl:strip-space elements="*"/>
-
-<xsl:template match="/">
-        
-<!-- Reports -->
-    <xsl:for-each select="//PRIMEReport">                         
-            Type:&comma;<xsl:value-of select="current()/Type"/>&lf;
-            Name:&comma;<xsl:value-of select="current()/Name"/>&lf;
-            Time:&comma;<xsl:value-of select="concat(substring(LocalTime,1,10),' ',substring(LocalTime,12,8),' (UTC', substring(LocalTime,20,6),')')"/>&lf;
-            <xsl:apply-templates select="current()/ReportContents"/>             
-     </xsl:for-each>     
-</xsl:template>
-
-<xsl:template match="Table">
-Table name:&comma;<xsl:value-of select="Name"/>&lf;
-&comma;
-<xsl:for-each select="Columns/Column">
-    <xsl:value-of select="Label"/>&comma;
-</xsl:for-each>
-&lf;
-<xsl:apply-templates select="Rows/Row"/>
-</xsl:template>
-
-<xsl:template match="Row">
-    <xsl:value-of select="Label"/>&comma;
-    <xsl:for-each select="Cells/Cell">
-        <xsl:call-template name="CellData" />&comma; 
-    </xsl:for-each>
-    &lf;
-    <xsl:apply-templates select="Rows/Row"/>
-</xsl:template>
-
-<xsl:template name="CellData">
-        <xsl:choose>
-            <xsl:when test="RawData">
-                <xsl:value-of select="RawData"/>
-            </xsl:when>
-            <xsl:when test="FormattedData">
-                <xsl:value-of select="FormattedData"/>
-            </xsl:when>
-            <xsl:when test="DefaultData">
-                <xsl:choose>
-                        <xsl:when test="ValueType">
-                                <xsl:text>#</xsl:text>
-                        </xsl:when>
-                        <xsl:otherwise>
-                                <xsl:value-of select="DefaultData"/>
-                        </xsl:otherwise>
-                </xsl:choose>
-            </xsl:when>
-            <xsl:otherwise>
-                  <xsl:message terminate="yes"><xsl:text>No dataformat turned on</xsl:text></xsl:message>
-            </xsl:otherwise>
-        </xsl:choose>
-</xsl:template>
-
-</xsl:stylesheet>
 
 ...
 

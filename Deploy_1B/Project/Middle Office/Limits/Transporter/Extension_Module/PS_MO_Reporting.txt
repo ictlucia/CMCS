@@ -1,7 +1,7 @@
 #
 # Front Arena exported extension module.
 # source          ""
-# timestamp (utc) "2024-08-15 07:34:10"
+# timestamp (utc) "2024-07-30 05:50:13.7"
 # ***** DO NOT EDIT! *****
 #
 name        "PS_MO_Reporting"
@@ -291,7 +291,7 @@ class MO5_Report_Formatter_HTML(MO_Report_Formatter_HTML):
             if i == 0:
                 span = len(fieldnames)
             else:
-                span = len(fieldnames) + 1
+                span = len(fieldnames) - 1
             self.base_table = self.base_table.replace('<th>'+col_name+'</th>', '<th colspan="'+str(span)+'" style="background-color: #66ccff;">'+col_name+'</th>')
             i+=1
             
@@ -342,7 +342,7 @@ class MO5_Report_Formatter_XSL(MO_Report_Formatter_XSL):
             if i == 0:
                 span = len(fieldnames)
             else:
-                span = len(fieldnames) + 1
+                span = len(fieldnames) - 1
             self.base_table = self.base_table.replace('<fo:table-cell padding="8pt" border-width="1px" border-style="solid"><fo:block>{}</fo:block></fo:table-cell>'.format(col_name), 
         f'<fo:table-cell padding="8pt" border-width="1px" border-style="solid" background-color="#66ccff" text-align="center" number-columns-spanned="{span}"><fo:block>{col_name}</fo:block></fo:table-cell>')
             i+=1
@@ -815,17 +815,19 @@ class MO_Report_Transformer(object):
         
         self.all_line_items = list(set(self.all_line_items))
         
-        for col_name, col_dict in self.horizontal_dicts.items():
-            for line_item in self.all_line_items:
+        for line_item in self.all_line_items:
+            for col_name, col_dict in self.horizontal_dicts.items():
                 try:
                     line_item_col_dict = col_dict[line_item]
                 except KeyError:
-                    line_item_col_dict = {}
-
-                    line_item_col_dict['Name'] = line_item
+                    line_item_col_dict = list(col_dict.values())[0]
                 
+                    for k, v in line_item_col_dict.items():
+                        line_item_col_dict[k] = ''
+                    
+                    line_item_col_dict['Name'] = line_item
                 col_dict[line_item] = line_item_col_dict
-            self.horizontal_dicts[col_name] = col_dict
+                self.horizontal_dicts[col_name] = col_dict
         
     def write_horizontal_dicts_to_json(self):
         json_path = os.path.join(self.working_folder, '{}_columns.json'.format(self.report_name))
@@ -850,14 +852,14 @@ class MO_Report_Transformer(object):
                             #new_k = '{} {}'.format(col_name_report, 'Status')
                             if line_dict['Breach Type'] == 'Warning':
                                 if line_dict['State'] == 'Active':
-                                    new_row['Status'] = 'Yellow'
+                                    new_row['Status Limit'] = 'Yellow'
                                 else:
-                                    new_row['Status'] = 'Green'
+                                    new_row['Status Limit'] = 'Green'
                             elif line_dict['Breach Type'] == 'Violation':
                                 if line_dict['State'] == 'Active':
-                                    new_row['Status'] = 'Red'
+                                    new_row['Status Limit'] = 'Red'
                                 else:
-                                    new_row['Status'] = 'Green'
+                                    new_row['Status Limit'] = 'Green'
                             else:
                                 new_row['Status'] = 'Green'
                         elif k == 'Utilization %':
@@ -881,7 +883,7 @@ class MO_Report_Transformer(object):
                             #new_k = '{} {}'.format(col_name_report, 'One Day Change')
                             new_row['1 Day Change'] = format_float(calculateOneDayChange(line_dict))
                         elif k == 'Days to Expiry':
-                            #new_k = '{} {}'.format(col_name_report, 'Status')
+                            #new_k = '{} {}'.format(col_name_report, 'Status Limit')
                             new_row['Status Limit Expiry'] = calculateLimitStatusColor(line_dict['Days to Expiry'])
                         else:
                             #new_k = k
@@ -896,7 +898,7 @@ class MO_Report_Transformer(object):
             
     
     def build_report_rows(self):
-        for line_item in sorted(self.all_line_items):
+        for line_item in self.all_line_items:
             row = [line_item]
             for col_name, col_dict in self.report_data.items():
                 col_fields = ['Name']
@@ -959,69 +961,6 @@ class MO5_Report_Transformer(MO_Report_Transformer):
     
     ignore_keys = ['Total_Aggregated', 'Column', 'Group ID', 'State', 'Current Value', 'End', 'Days to Expiry', 'Yesterday']
     
-    title_order = ['NOP Operational', 'NOP IR Related']
-    column_order = {
-        'NOP Operational' : ['Name', 'Plain Vanilla', 'CCS', 'Par FWD', 'Other Structured Products', 'Total', 'Limit', '%', 'Status'], 
-        'NOP IR Related' : ['Surat Berharga/Fixed Income', 'IRS', 'Bond Forward', 'Bond Option', 'Forward Rate Agreement', 'Total', 'Limit', '%', 'Status']
-    }
-    
-    def extract_report_data(self):        
-        for col_name, col_dict in self.horizontal_dicts.items():
-            col_dict_extracted = {}
-            col_name_report = self.col_name_mappings[col_name]
-            for line_item, line_dict in col_dict.items():
-                new_row = {}
-                #new_row['{} {}'.format(col_name_report, 'Name')] = line_item
-                for k in line_dict.keys():
-                    if k not in self.ignore_keys:
-                        if k == 'Total':
-                            #new_k = '{} {}'.format(col_name_report, k)
-                            new_row['Total'] = get_portfolio_dict_value(line_dict, k, fallback=0.0)
-                        elif k == 'Limit':
-                            new_row[k] = get_portfolio_dict_value(line_dict, k, fallback=0.0)
-                        elif k == 'Breach Type':
-                            #new_k = '{} {}'.format(col_name_report, 'Status')
-                            if line_dict['Breach Type'] == 'Warning':
-                                if line_dict['State'] == 'Active':
-                                    new_row['Status'] = 'Yellow'
-                                else:
-                                    new_row['Status'] = 'Green'
-                            elif line_dict['Breach Type'] == 'Violation':
-                                if line_dict['State'] == 'Active':
-                                    new_row['Status'] = 'Red'
-                                else:
-                                    new_row['Status'] = 'Green'
-                            else:
-                                new_row['Status'] = 'Green'
-                        elif k == 'Utilization %':
-                            #new_k = '{} {}'.format(col_name_report, '%')
-                            if not line_dict['Total']:
-                                tot = 0.0
-                            else:
-                                tot = get_portfolio_dict_value(line_dict, 'Total', fallback=0.0, format=False)
-                            lim = get_portfolio_dict_value(line_dict, 'Limit', fallback=0.0, format=False)
-                            if lim:
-                                new_row['%'] = format_float(tot / lim * 100.0)
-                            else:
-                                new_row['%'] = 0.0
-                        elif k == 'Group ID':
-                            new_row[k] = line_dict[k]
-                        elif k == 'End':
-                            #new_k = '{} {}'.format(col_name_report, 'End')
-                            new_row['Limit Expiry'] = line_dict[k]
-
-                        elif k == 'Yesterday':
-                            #new_k = '{} {}'.format(col_name_report, 'One Day Change')
-                            new_row['1 Day Change'] = format_float(calculateOneDayChange(line_dict))
-                        elif k == 'Days to Expiry':
-                            #new_k = '{} {}'.format(col_name_report, 'Status')
-                            new_row['Status Limit Expiry'] = calculateLimitStatusColor(line_dict['Days to Expiry'])
-                        else:
-                            #new_k = k
-                            new_row[k] = format_float(line_dict[k])
-                    col_dict_extracted[line_item] = new_row
-                self.report_data[col_name_report] = col_dict_extracted
-    
     def horizontal_split(self):
         for rule_name, rule_dict in self.combined_dicts.items():
             for target_name, target_dict in rule_dict.items():
@@ -1034,21 +973,8 @@ class MO5_Report_Transformer(MO_Report_Transformer):
                     col_dict[subject_name] = subject_dict
                     self.horizontal_dicts[rule_name] = col_dict
     
-    def build_report_rows(self):
-        for line_item in sorted(self.all_line_items):
-            row = []
-            for title in self.title_order:
-                col_dict = self.report_data[title]
-                line_dict = col_dict[line_item]
-                col_order = self.column_order[title]
-                for k in col_order:
-                    try:
-                        v = line_dict[k]
-                    except KeyError:
-                        v = ''
-                    row.append(v)
-                self.headers[title] = col_order
-            self.rows.append(row)
+    '''def align_line_items_for_report(self):
+        pass'''
     
 
 class MO12_Report_Transformer(MO_Report_Transformer):
@@ -1064,14 +990,7 @@ class MO12_Report_Transformer(MO_Report_Transformer):
     }
     ignore_keys = ['Total_Aggregated', 'Column', 'Group ID', 'State', 'Current Value']
     fieldnames = {
-        "Counterparty CEM Limit" : ['Name', 'Limit', 'Total', 'One Day Change', '%', 'Status', 'End', 'Status']
-    }
-    
-    title_order_default = ['Notional', 'Credit Equivalent']
-    
-    column_order_default = {
-        'Notional' : ['Limit', 'Utilization', '1 Day Change', '% Utilization', 'Status', 'Limit Expiry', 'Status Limit Expiry'], 
-        'Credit Equivalent' : ['Limit', 'Utilization', '1 Day Change', '% Utilization', 'Status', 'Limit Expiry', 'Status Limit Expiry']
+        "Counterparty CEM Limit" : ['Name', 'Limit', 'Total', 'One Day Change', '%', 'Status', 'End', 'Status Limit']
     }
     
     def horizontal_split(self):
@@ -1086,39 +1005,6 @@ class MO12_Report_Transformer(MO_Report_Transformer):
                     
                     col_dict[subject_name] = subject_dict
                     self.horizontal_dicts[col] = col_dict
-    
-    '''def adjust_column_order(self):
-        new_col_order = {}
-        new_title_order = []
-        for title in self.title_order_default:
-            try:
-                col_dict = self.report_data[title]
-                new_title_order.append(title)
-                this_title_order = ['Name']
-                for k in self.column_order_default[title]:
-                    this_title_order.append(k)
-                new_col_order[title] = this_title_order
-            except KeyError:
-                pass
-        self.column_order = new_col_order
-        self.title_order = new_title_order
-    
-    def build_report_rows(self):
-        self.adjust_column_order()
-        for line_item in sorted(self.all_line_items):
-            row = []
-            for title in self.title_order:
-                col_dict = self.report_data[title]
-                line_dict = col_dict[line_item]
-                col_order = self.column_order[title]
-                for k in col_order:
-                    try:
-                        v = line_dict[k]
-                    except KeyError:
-                        v = ''
-                    row.append(v)
-                self.headers[title] = col_order
-            self.rows.append(row)'''
 
 ...
 
@@ -1324,7 +1210,7 @@ import csv
 from FLogger import FLogger
 from MO_Report_Transformers import MO12_Report_Transformer
 from MO_Report_Formatters import MO12_Report_Formatter_HTML, MO12_Report_Formatter_XSL
-from ICTMODULES_FOR_HTML_AND_XSLFO_GENERATOR import create_html_file, get_current_date, get_current_hour, generate_pdf_from_fo_file, generate_file_for_other_extension
+from ICTMODULES_FOR_HTML_AND_XSLFO_GENERATOR import create_html_file, get_current_date, get_current_hour, generate_pdf_from_fo_file
 from datetime import datetime
 from MO_Report_Transformers import MO_Report_Transformer, get_portfolio_dict_value, format_float
 from MO_Report_Formatters import MO_Report_Formatter_HTML, MO_Report_Formatter_XSL
@@ -1449,8 +1335,6 @@ def ael_main(params):
     current_date = get_current_date("")    
 
     html_file = create_html_file(mo12_formatter_html.report_name + " " +current_date+current_hour, working_folder, [mo12_formatter_html.base_table], mo12_formatter_html.report_name , current_date)
-    
-    generate_file_for_other_extension( html_file, '.xls' )
 
     xsl_fo_file = create_xsl_fo_file(mo12_formatter_xsl.report_name + " " +current_date+current_hour, working_folder, mo12_formatter_xsl.fo_content, mo12_formatter_xsl.report_name, current_date)
     generate_pdf_from_fo_file(xsl_fo_file)
