@@ -1,7 +1,7 @@
 #
 # Front Arena exported extension module.
 # source          ""
-# timestamp (utc) "2024-10-22 05:02:23.1"
+# timestamp (utc) "2024-10-24 04:38:53.8"
 # ***** DO NOT EDIT! *****
 #
 name        "FLongformTradeConfirmationCustom"
@@ -2098,7 +2098,7 @@ clx FConfirmation [FExtensionAttribute] {
     default->nil));
   LongFormDomesticCurrency = select(object.Trade.OptKey4, 
   "MLDR"->py("FLongFormCustomUtils", context).MLDRtrade(object.Trade.DealPackage, "Non Deposit").Currency, 
-  "MMLD"->py("FLongFormCustomUtils", context).get_premiumMMLD(object.Trade.DealPackage, "curr"), 
+  "MMLD"->py("FLongFormCustomUtils", context).get_premiumMMLD(object.Trade.DealPackage, "curr", LongFormNextCouponDate), 
   default->object.Trade.Nominal * object.Trade.Instrument.StrikePrice);
   LongFormEndCashRepo = object.Trade.FaceValue + (object.Trade.FaceValue * object.Instrument.FirstFixedLeg.FixedRate / 100);
   LongFormEndDate = select(object.ConfTemplateChlItem, 
@@ -2111,7 +2111,7 @@ clx FConfirmation [FExtensionAttribute] {
   default->py("FLongFormCustomUtils", context).date_formatter_eng(py("FLongFormCustomUtils", context).get_longform_end_date(object.Trade)));
   LongFormEndInterest = select(object.Trade.OptKey4, 
   "MLDR"->abs(py("FLongFormCustomUtils", context).select_settlement1(py("FLongFormCustomUtils", context).MLDRtrade(object.Trade.DealPackage, "Non Deposit").Settlements, "None", "Authorised", object.Reset.CashFlow.EndDate).Amount), 
-  "MMLD"->py("FLongFormCustomUtils", context).get_grossIntMMLD(object.Trade.DealPackage), 
+  "MMLD"->py("FLongFormCustomUtils", context).get_grossIntMMLD(object.Trade.DealPackage, LongFormNextCouponDate), 
   default->abs(object.Trade.EndCash - object.Trade.Nominal));
   LongFormExpiryDayExtAttr = select(object.Trade.OptKey4, 
   "MLDR"->py("FLongFormCustomUtils", context).date_formatter(py("FLongFormCustomUtils", context).MLDRtrade(object.Trade.DealPackage, "Deposit").Instrument.ExpiryDate), 
@@ -2314,10 +2314,10 @@ clx FConfirmation [FExtensionAttribute] {
   false->"Pay");
   LongFormPremium = select(object.Trade.OptKey4, 
   "MLDR"->py("FLongFormCustomUtils", context).select_settlement(py("FLongFormCustomUtils", context).MLDRtrade(object.Trade.DealPackage, "Non Deposit").Settlements, "Fixed Rate", py("FLongFormCustomUtils", context).get_Next_Coupon_Date(object)).Amount, 
-  "MMLD"->py("FLongFormCustomUtils", context).get_premiumMMLD(object.Trade.DealPackage, "amount"), 
+  "MMLD"->py("FLongFormCustomUtils", context).get_premiumMMLD(object.Trade.DealPackage, "amount", LongFormNextCouponDate), 
   default->abs(py("FLongFormCustomUtils", context).get_premium(object)));
   LongFormPremiumCurrency = select(object.Trade.OptKey4, 
-  "MMLD"->py("FLongFormCustomUtils", context).get_premiumMMLD(object.Trade.DealPackage, "curr"), 
+  "MMLD"->py("FLongFormCustomUtils", context).get_premiumMMLD(object.Trade.DealPackage, "curr", LongFormNextCouponDate), 
   default->py("FLongFormCustomUtils", context).select_settlement(py("FLongFormCustomUtils", context).MLDRtrade(object.Trade.DealPackage, "Non Deposit").Settlements, "Fixed Rate", py("FLongFormCustomUtils", context).get_Next_Coupon_Date(object)).Currency);
   LongFormPrice = select(object.Trade.Instrument.InsType, 
   "BasketRepo/Reverse"->abs(py("FLongFormCustomUtils", context).get_Collateral_Trade_Price(object.Trade)), 
@@ -3449,30 +3449,32 @@ def get_PayDateMMLD(obj):
             if p.Oid() == obj.ReferencedRecordAddress():
                 return p.PayDay()
 
-def get_premiumMMLD(acm_obj,select):
-    for trade in acm_obj.Trades():
-        for payment in trade.Payments():
-            if payment.Type() == "Premium":
-                add_premium_amount = payment.Amount()
-                add_premium_date = payment.PayDay()
-                add_premium_curr = payment.Currency().Name()
-    if select == "amount":
-        return add_premium_amount
-    elif select == "curr":
-        return add_premium_curr
+def get_premiumMMLD(acm_obj,select, date):
+    if date:
+        for trade in acm_obj.Trades():
+            for payment in trade.Payments():
+                if payment.Type() == "Premium" and payment.PayDay() == date:
+                    add_premium_amount = abs(payment.Amount())
+                    add_premium_date = payment.PayDay()
+                    add_premium_curr = payment.Currency().Name()
+        if select == "amount":
+            return add_premium_amount
+        elif select == "curr":
+            return add_premium_curr
 
 def get_date_py(date):
     return date
 
-def get_grossIntMMLD(acm_obj):
-    for trade in acm_obj.Trades():
-        if trade.Instrument().Cid() == "Option":
-            option_trade = trade.ConnectedTrade()    
-    for setts in option_trade.Settlements():
-        if setts.Type() == "None": #and setts.Status() == "Authorised":
-            gross_interest = abs(setts.Amount())
-    return gross_interest
-
+def get_grossIntMMLD(acm_obj, date):
+    if date:
+        for trade in acm_obj.Trades():
+            if trade.Instrument().Cid() == "Option":
+                option_trade = trade.ConnectedTrade()    
+        for setts in option_trade.Settlements():
+            if setts.Type() == "None" and setts.ValueDay() == date: #and setts.Status() == "Authorised":
+                gross_interest = abs(setts.Amount())
+        return gross_interest
+        
 def get_Next_Coupon_Date(obj):
     reset = obj.Reset()
     if reset:

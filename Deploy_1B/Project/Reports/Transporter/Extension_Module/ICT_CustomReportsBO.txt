@@ -1,7 +1,7 @@
 #
 # Front Arena exported extension module.
 # source          ""
-# timestamp (utc) "2024-10-09 03:03:33.3"
+# timestamp (utc) "2024-10-25 08:02:44.0"
 # ***** DO NOT EDIT! *****
 #
 name        "ICT_CustomReportsBO"
@@ -84,6 +84,7 @@ decls[FColumnDefinition] {
   "CurrUsePerProduct2" ( "sheet columns.tradesheet" ) "";
   "CustomerFullNameCashFlow" ( "sheet columns.moneyflowsheet" ) "";
   "customerRank" ( "sheet columns.tradesheet" ) "";
+  "dateHoldPos" ( "sheet columns.portfoliosheet" ) "";
   "DatesPosition" ( "sheet columns.journalsheet" "sheet columns.settlementsheet" ) "";
   "dateTransactionLLD" ( "sheet columns.journalsheet" "sheet columns.settlementsheet" ) "";
   "DateTransaksi" ( "sheet columns.tradesheet" ) "";
@@ -128,8 +129,9 @@ decls[FColumnDefinition] {
   "grandTotal" ( "sheet columns.tradesheet" ) "";
   "hargJualSBI" ( "sheet columns.tradesheet" ) "";
   "Hari2" ( "sheet columns.journalsheet" "sheet columns.portfoliosheet" "sheet columns.tradesheet" ) "";
-  "HoldPosBIS4" ( "sheet columns.tradesheet" ) "";
+  "HoldPosBIS4" ( "sheet columns.portfoliosheet" "sheet columns.tradesheet" ) "";
   "HoldPosCustody" ( "sheet columns.portfoliosheet" "sheet columns.tradesheet" ) "";
+  "HoldPosEuroClear" ( "sheet columns.portfoliosheet" ) "";
   "HTMQuantity" ( "sheet columns.portfoliosheet" ) "";
   "hubunganKeuanganLLD" ( "sheet columns.settlementsheet" ) "";
   "hubunganKeuanganLLD2" ( "sheet columns.journalsheet" "sheet columns.settlementsheet" ) "";
@@ -228,6 +230,7 @@ decls[FColumnDefinition] {
   "Pemeringkat" ( "sheet columns.portfoliosheet" "sheet columns.tradesheet" ) "";
   "Peringkat" ( "sheet columns.portfoliosheet" "sheet columns.tradesheet" ) "";
   "period" ( "sheet columns.tradesheet" ) "";
+  "periodePembayaranBungaTSD" ( "sheet columns.tradesheet" ) "";
   "pledge" ( "sheet columns.portfoliosheet" "sheet columns.tradesheet" ) "";
   "PortfolioNameInstrument" ( "sheet columns.portfoliosheet" ) "";
   "PortfolioTypeInstrument" ( "sheet columns.portfoliosheet" ) "";
@@ -293,6 +296,7 @@ decls[FColumnDefinition] {
   "Tenor2" ( "sheet columns.journalsheet" "sheet columns.tradesheet" ) "";
   "TenorFarNear" ( "sheet columns.tradesheet" ) "";
   "TenorFX" ( "sheet columns.tradesheet" ) "";
+  "TenorSukuBungaAcuanTSD" ( "sheet columns.tradesheet" ) "";
   "TodayEffDateCollateral" ( "sheet columns.portfoliosheet" "sheet columns.tradesheet" ) "";
   "TodayEffDateCollateral2" ( "sheet columns.tradesheet" ) "";
   "TodayPriceCollateral" ( "sheet columns.portfoliosheet" "sheet columns.tradesheet" ) "";
@@ -328,7 +332,17 @@ decls[FColumnDefinition] {
   "valueDateDerivatives" ( "sheet columns.tradesheet" ) "";
   "ValueDateSell" ( "sheet columns.tradesheet" ) "";
   "valutaDasarApolo" ( "sheet columns.tradesheet" ) "";
+  "valutaDasarJnsSukuBungaAcuanTSD" ( "sheet columns.tradesheet" ) "";
+  "valutaDasarJnsSukuBungaTSD" ( "sheet columns.tradesheet" ) "";
+  "valutaDasarPremiumSukuBungaAcuanTSD" ( "sheet columns.tradesheet" ) "";
+  "valutaDasarSukuBungaTetapTSD" ( "sheet columns.tradesheet" ) "";
   "valutaDokumenUnderlying" ( "sheet columns.tradesheet" ) "";
+  "valutaLawanJnsSukuBungaAcuanTSD" ( "sheet columns.tradesheet" ) "";
+  "valutaLawanJnsSukuBungaTSD" ( "sheet columns.tradesheet" ) "";
+  "valutaLawanPremiumSukuBungaAcuanTSD" ( "sheet columns.tradesheet" ) "";
+  "valutaLawanSukuBungaTetapTSD" ( "sheet columns.tradesheet" ) "";
+  "valutaLawanTenorSukuBungaAcuanTSD" ( "sheet columns.tradesheet" ) "";
+  "VariabelMendasariTSD" ( "sheet columns.tradesheet" ) "";
   "variableDasarForward" ( "sheet columns.tradesheet" ) "";
   "variableDasarOption" ( "sheet columns.tradesheet" ) "";
   "variableDasarSwap" ( "sheet columns.tradesheet" ) "";
@@ -1040,6 +1054,16 @@ clx FTradingSheet [FColumnDefinition] {
   Name=customerRank
 
 
+  dateHoldPos =
+  Access=ReadOnly
+  Description=hold post date in Instrument Additional Info
+  ExtensionAttribute=dateHoldPos
+  Format=
+  GroupLabel=FieldCustom
+  LabelList=dateHoldPos
+  Name=dateHoldPos
+
+
   DatesPosition =
   Access=ReadOnly
   Description=Dates using position Val.
@@ -1509,6 +1533,16 @@ clx FTradingSheet [FColumnDefinition] {
   GroupLabel=FieldCustom
   LabelList=HoldPosCustody
   Name=HoldPosCustody
+
+
+  HoldPosEuroClear =
+  Access=ReadOnly
+  Description=HoldPosEuroClear in Instrument Additional Info
+  ExtensionAttribute=HoldPosEuroClear
+  Format=
+  GroupLabel=FieldCustom
+  LabelList=HoldPosEuroClear
+  Name=HoldPosEuroClear
 
 
   HTMQuantity =
@@ -2463,8 +2497,7 @@ clx FTradingSheet [FColumnDefinition] {
 
 
   periodePembayaranBungaTSD =
-  Access=ReadOnly
-  Description=
+  Description=periodePembayaranBunga
   ExtensionAttribute=periodePembayaranBungaTSD
   Format=
   GroupLabel=FieldCustom
@@ -3125,6 +3158,15 @@ clx FTradingSheet [FColumnDefinition] {
   Name=TenorFX
 
 
+  TenorSukuBungaAcuanTSD =
+  Description=TenorSukuBungaAcuanTSD
+  ExtensionAttribute=TenorSukuBungaAcuanTSD
+  Format=
+  GroupLabel=FieldCustom
+  LabelList=TenorSukuBungaAcuanTSD
+  Name=TenorSukuBungaAcuanTSD
+
+
   TodayEffDateCollateral =
   ColumnAppearance=Total_background
   Description=Price on yesterday. Calculation: Price(Value Day).
@@ -3456,12 +3498,150 @@ clx FTradingSheet [FColumnDefinition] {
   Name=valutaDasarApolo
 
 
+  valutaDasarJnsSukuBungaAcuanTSD =
+  Description=valutaDasarJnsSukuBungaAcuanTSD
+  ExtensionAttribute=valutaDasarJnsSukuBungaAcuanTSD
+  Format=
+  GroupLabel=FieldCustom
+  LabelList=valutaDasarJnsSukuBungaAcuanTSD
+  Name=valutaDasarJnsSukuBungaAcuanTSD
+
+
+  valutaDasarJnsSukuBungaTSD =
+  Access=ReadOnly
+  Description=valutaDasarJnsSukuBungaTSD
+  ExtensionAttribute=valutaDasarJnsSukuBungaTSD
+  Format=
+  GroupLabel=FieldCustom
+  LabelList=valutaDasarJnsSukuBungaTSD
+  Name=valutaDasarJnsSukuBungaTSD
+
+
+  valutaDasarPremiumSukuBungaAcuan =
+  Description=valutaDasarPremiumSukuBungaAcuan
+  ExtensionAttribute=valutaDasarPremiumSukuBungaAcuan
+  Format=
+  GroupLabel=FieldCustom
+  LabelList=valutaDasarPremiumSukuBungaAcuan
+  Name=valutaDasarPremiumSukuBungaAcuan
+
+
+  valutaDasarPremiumSukuBungaAcuanTSD =
+  Description=valutaDasarPremiumSukuBungaAcuanTSD
+  ExtensionAttribute=valutaDasarPremiumSukuBungaAcuanTSD
+  Format=
+  GroupLabel=FieldCustom
+  LabelList=valutaDasarPremiumSukuBungaAcuanTSD
+  Name=valutaDasarPremiumSukuBungaAcuanTSD
+
+
+  valutaDasarSukuBungaTetap =
+  Description=valutaDasarSukuBungaTetap
+  ExtensionAttribute=valutaDasarSukuBungaTetap
+  Format=
+  GroupLabel=FieldCustom
+  LabelList=valutaDasarSukuBungaTetap
+  Name=valutaDasarSukuBungaTetap
+
+
+  valutaDasarSukuBungaTetapTSD =
+  Description=valutaDasarSukuBungaTetapTSD
+  ExtensionAttribute=valutaDasarSukuBungaTetapTSD
+  Format=
+  GroupLabel=FieldCustom
+  LabelList=valutaDasarSukuBungaTetapTSD
+  Name=valutaDasarSukuBungaTetapTSD
+
+
   valutaDokumenUnderlying =
   Description=BO30 Currency
   ExtensionAttribute=valutaDokumenUnderlying
   GroupLabel=FieldCustom
   LabelList=valutaDokumenUnderlying
   Name=valutaDokumenUnderlying
+
+
+  valutaLawanJnsSukuBunga =
+  Description=valutaLawanJnsSukuBunga
+  ExtensionAttribute=valutaLawanJnsSukuBunga
+  Format=
+  GroupLabel=FieldCustom
+  LabelList=valutaLawanJnsSukuBunga
+  Name=valutaLawanJnsSukuBunga
+
+
+  valutaLawanJnsSukuBungaAcuan =
+  Description=valutaLawanJnsSukuBungaAcuan
+  ExtensionAttribute=valutaLawanJnsSukuBungaAcuan
+  Format=
+  GroupLabel=FieldCustom
+  LabelList=valutaLawanJnsSukuBungaAcuan
+  Name=valutaLawanJnsSukuBungaAcuan
+
+
+  valutaLawanJnsSukuBungaAcuanTSD =
+  Description=valutaLawanJnsSukuBungaAcuanTSD
+  ExtensionAttribute=valutaLawanJnsSukuBungaAcuanTSD
+  Format=
+  GroupLabel=FieldCustom
+  LabelList=valutaLawanJnsSukuBungaAcuanTSD
+  Name=valutaLawanJnsSukuBungaAcuanTSD
+
+
+  valutaLawanJnsSukuBungaTSD =
+  Access=ReadOnly
+  Description=valutaLawanJnsSukuBungaTSD
+  ExtensionAttribute=valutaLawanJnsSukuBungaTSD
+  Format=
+  GroupLabel=FieldCustom
+  LabelList=valutaLawanJnsSukuBungaTSD
+  Name=valutaLawanJnsSukuBungaTSD
+
+
+  valutaLawanPremiumSukuBungaAcuanTSD =
+  Description=valutaLawanPremiumSukuBungaAcuanTSD
+  ExtensionAttribute=valutaLawanPremiumSukuBungaAcuanTSD
+  Format=
+  GroupLabel=FieldCustom
+  LabelList=valutaLawanPremiumSukuBungaAcuanTSD
+  Name=valutaLawanPremiumSukuBungaAcuanTSD
+
+
+  valutaLawanSukuBungaTetap =
+  Description=valutaLawanSukuBungaTetap
+  ExtensionAttribute=valutaLawanSukuBungaTetap
+  Format=
+  GroupLabel=FieldCustom
+  LabelList=valutaLawanSukuBungaTetap
+  Name=valutaLawanSukuBungaTetap
+
+
+  valutaLawanSukuBungaTetapTSD =
+  Description=valutaLawanSukuBungaTetapTSD
+  ExtensionAttribute=valutaLawanSukuBungaTetapTSD
+  Format=
+  GroupLabel=FieldCustom
+  LabelList=valutaLawanSukuBungaTetapTSD
+  Name=valutaLawanSukuBungaTetapTSD
+
+
+  valutaLawanTenorSukuBungaAcuanTSD =
+  Description=valutaLawanTenorSukuBungaAcuanTSD
+  ExtensionAttribute=valutaLawanTenorSukuBungaAcuanTSD
+  Format=
+  GroupLabel=FieldCustom
+  LabelList=valutaLawanTenorSukuBungaAcuanTSD
+  Name=valutaLawanTenorSukuBungaAcuanTSD
+
+
+  VariabelMendasariTSD =
+  Access=ReadOnly
+  Description=
+  ExtensionAttribute=VariabelMendasariTSD
+  Format=
+  GroupLabel=FieldCustom
+  LabelList=VariabelMendasariTSD
+  Name=VariabelMendasariTSD
 
 
   variableDasarForward =
@@ -3661,10 +3841,7 @@ clx FJournal [FExtensionAttribute] {
   informasiDokumenPendukungLLD = "99";
   InterestAmountVal = py("Report_Python_BO", context).ceilingAmount(object.JournalTrade);
   jenisRekeningLLD2 = py("Report_Python_BO", context).jenisRekeningLLDJournal(object);
-  jenisTransaksiLLD2 = select(jenisRekeningLLD2, 
-  "3Z"->"1705", 
-  nil->nil, 
-  default->"1710");
+  jenisTransaksiLLD2 = "1710";
   JournalAmountAbs = abs(object.Amount);
   monthTransactionLLD = py("Report_Python_BO", context).formattingDate(object.EventDate, 1);
   Movement = abs(object.BaseAmount - AmountClosingYesterday);
@@ -3730,13 +3907,15 @@ clx FMultiInstrumentAndTrades [FExtensionAttribute] {
   buyPremium = sumOf(children :* "buyPremium");
   childrenFreq = object.Children.Size;
   CurrBuyAudit = py("Report_Python_BO", context).currencyBaseOnCategory(true, object.Trades.AsArray.First);
+  dateHoldPos = py("Report_Python_BO", context).additional_info_ins(object.Instruments.First, "DateHoldPos");
   differenceRo = abs((RepoRo + pledge + balanceNTCS)) - abs(HoldPosCustody);
   EquivalentAmountIDR = sumOf(children :* "EquivalentAmountIDR");
   EquivalentAmountIDRLastMonth = sumOf(children :* "EquivalentAmountIDRLastMonth");
   GLNOAmount2 = sumOf(children :* "GLNOAmount2");
   grandTotal = buyPremium + sellPremium;
-  HoldPosBIS4 = py("Report_Python_BO", context).additional_info_ins(object.Instruments.First, "HoldPosBIS4");
+  HoldPosBIS4 = py("Report_Python_BO", context).additional_info_ins(object.Instruments.First, "HoldPosCustody");
   HoldPosCustody = py("Report_Python_BO", context).all_additional_info_ins(object.Instruments.First);
+  HoldPosEuroClear = py("Report_Python_BO", context).additional_info_ins(object.Instruments.First, "HoldPosEuroClear");
   HTMQuantity = sumOf(children :* "HTMQuantity");
   InsAmountInIdr = py("Report_Python_BO", context).InsAmountOrgCurrency(object.Trades.AsArray) * py("Report_Python_BO", context).idr_price_mtm_curr(object.Instruments.First.Currency.Name);
   InsAmountOrgCurrency = py("Report_Python_BO", context).InsAmountOrgCurrency(object.Trades.AsArray);
@@ -3990,6 +4169,7 @@ clx FSingleInstrumentAndTrades [FExtensionAttribute] {
   BookCostAmort = py("Report_Python_BO", context).BookCostMarketValue(object.Instrument.Name, object.Trades.AsArray.First.Portfolio, true);
   BookCostAmortIdr = py("Report_Python_BO", context).BookCostMarketValue(object.Instrument.Name, object.Trades.AsArray.First.Portfolio, true) * py("Report_Python_BO", context).idr_price_mtm_curr(object.Instruments.First.Currency.Name);
   Bulan2 = int(Tenor2 / 30);
+  dateHoldPos = py("Report_Python_BO", context).additional_info_ins(object.Instruments.First, "DateHoldPos");
   differenceRo = abs((RepoRo + pledge + balanceNTCS)) - abs(HoldPosCustody);
   effectiveDatedbY = py("Report_Python_BO", context).effectiveDatedbY(object.Instrument);
   EndDayPayment = py("Report_Python_BO", context).DayPayment(object.Instrument, "end");
@@ -3997,7 +4177,9 @@ clx FSingleInstrumentAndTrades [FExtensionAttribute] {
   GLNOAmount2 = sumOf((object.Trades.AsArray) :* "GLNOAmount2");
   GLNOInstrument = string(py("Report_Python_BO", context).BookCostMarketValue(object.Instrument.Name, object.Trades.AsArray.First.Portfolio, false, true));
   Hari2 = int(dateDifference(object.Instrument.EndDate, object.Instrument.StartDate) - 30 * Bulan2);
+  HoldPosBIS4 = py("Report_Python_BO", context).additional_info_ins(object.Instruments.First, "HoldPosCustody");
   HoldPosCustody = py("Report_Python_BO", context).all_additional_info_ins(object.Instrument);
+  HoldPosEuroClear = py("Report_Python_BO", context).additional_info_ins(object.Instruments.First, "HoldPosEuroClear");
   HTMQuantity = sumOf((object.Trades) :* "HTMQuantity");
   InsAmountInIdr = py("Report_Python_BO", context).InsAmountOrgCurrency(object.Trades.AsArray) * py("Report_Python_BO", context).idr_price_mtm_curr(object.Instruments.First.Currency.Name);
   InsAmountOrgCurrency = py("Report_Python_BO", context).InsAmountOrgCurrency(object.Trades.AsArray);
@@ -4272,6 +4454,7 @@ clx FTradeRow [FExtensionAttribute] {
   CurrUsePerProduct1 = py("Report_Python_BO", context).CurrUsePerProduct(object.Trade, true);
   CurrUsePerProduct2 = py("Report_Python_BO", context).CurrUsePerProduct(object.Trade, false);
   customerRank = py("CustomizedGrouperBO", context).getRank(object.Parent);
+  dateHoldPos = py("Report_Python_BO", context).additional_info_ins(object.Trade.Instrument, "DateHoldPos");
   DateTransaksi = py("Report_Python_BO", context).tradeTimeLocal(object.Trade.TradeTime, "date");
   deltaMain = (priceDeltaCash / AmountBuyAudit) * 100;
   deltaMainAmountCcy = (py("Report_Python_BO", context).roundingNominal(deltaMain, 2) / 100) * py("Report_Python_BO", context).roundingNominal(AmountBuyAudit, 2);
@@ -4330,8 +4513,9 @@ clx FTradeRow [FExtensionAttribute] {
     default->object.Trade.Nominal * object.Trade.Price / 100), 
   default->object.Trade.Nominal * object.Trade.Price / 100);
   Hari2 = int(dateDifference(object.Instrument.EndDate, object.Instrument.StartDate) - 30 * Bulan2);
-  HoldPosBIS4 = py("Report_Python_BO", context).additional_info_ins(object.Trade.Instrument, "HoldPosBIS4");
+  HoldPosBIS4 = py("Report_Python_BO", context).additional_info_ins(object.Trade.Instrument, "HoldPosCustody");
   HoldPosCustody = py("Report_Python_BO", context).all_additional_info_ins(object.Trade.Instrument);
+  HoldPosEuroClear = py("Report_Python_BO", context).additional_info_ins(object.Trade.Instrument, "HoldPosEuroClear");
   HTMQuantity = select(object.Trade.Portfolio.TypeChlItem.Name == "Amortised Cost", 
   true->object.Trade.Quantity, 
   false->0.0);
@@ -4466,6 +4650,18 @@ clx FTradeRow [FExtensionAttribute] {
     "MPF"->object.Trade.ValueDay - object.Trade.TradeTimeDateOnly, 
     "MDS"->object.Trade.ValueDay - object.Trade.TradeTimeDateOnly), 
   "SWAP"->acm.Time.AsDate(object.Trade.Instrument.EndDate) - object.Trade.TradeTimeDateOnly));
+  periodePembayaranBungaTSD = select(object.Instrument.Underlying, 
+  nil->nil, 
+  default->select(object.Instrument.Underlying.RecLeg.RollingPeriod, 
+    "1d"->"D", 
+    "7d"->"W", 
+    "1w"->"W", 
+    "1m"->"M", 
+    "3m"->"Q", 
+    "6m"->"S", 
+    "12m"->"A", 
+    "1y"->"A", 
+    default->"X"));
   pledge = py("Report_Python_BO", context).getAmountCollateralAndNone(object.Trades.AsArray, false, "collateral");
   Posisi = py("Report_Python_BO", context).today_date;
   PosisiYst = py("Report_Python_BO", context).today_date(false);
@@ -4542,10 +4738,8 @@ clx FTradeRow [FExtensionAttribute] {
   tanggalEfektifTSD = select(object.Trade.OptKey4.Name, 
   "FWD"->select(object.Trade.OptKey3.Name, 
     "BOND"->py("Report_Python_BO", context).tanggalJatuhTempoDokumenUnderlying(object.Trade.TradeTimeDateOnly, "%Y-%m-%d")), 
-  "CCS"->py("Report_Python_BO", context).tanggalJatuhTempoDokumenUnderlying(object.Trade.ValueDay, "%Y-%m-%d"), 
-  "IRS"->py("Report_Python_BO", context).tanggalJatuhTempoDokumenUnderlying(object.Trade.ValueDay, "%Y-%m-%d"), 
-  "OIS"->py("Report_Python_BO", context).tanggalJatuhTempoDokumenUnderlying(object.Trade.ValueDay, "%Y-%m-%d"), 
-  "MLDR"->py("Report_Python_BO", context).tanggalJatuhTempoDokumenUnderlying(object.Trade.ValueDay, "%Y-%m-%d"));
+  "IRS"->py("Report_Python_BO", context).tanggalJatuhTempoDokumenUnderlying(object.Instrument.StartDate, "%Y-%m-%d"), 
+  "OIS"->py("Report_Python_BO", context).tanggalJatuhTempoDokumenUnderlying(object.Instrument.StartDate, "%Y-%m-%d"));
   tanggalJatuhTempoDokumenUnderlying = select(object.Trade.AdditionalInfo.LCS, 
   "Yes"->py("Report_Python_BO", context).tanggalJatuhTempoDokumenUnderlying(object.Trade.AdditionalInfo.UnderlyingMatDate), 
   default->nil);
@@ -4577,6 +4771,8 @@ clx FTradeRow [FExtensionAttribute] {
   Tenor2 = int(object.Instrument.EndDate - object.Instrument.StartDate);
   TenorFarNear = int(object.Trade.FxSwapFarLeg.ValueDay - object.Trade.ValueDay);
   TenorFX = int(object.Trade.ValueDay - object.TradeTime) + 1;
+  TenorSukuBungaAcuanTSD = select(object.Trade.OptKey3.Name, 
+  "SWAP"->py("Report_Python_BO", context).TenorSukuBungaAcuanTSD(object.Instrument, false));
   TodayEffDateCollateral = py("Report_Python_BO", context).idr_price_mtm_yesterday_coll(object.Trade, true, "Today", false);
   TodayEffDateCollateral2 = py("Report_Python_BO", context).idr_price_mtm_yesterday_coll(object.Trade, false, "Today", false);
   TodayPriceCollateral = py("Report_Python_BO", context).idr_price_mtm_yesterday_coll(object.Trade, true, "Today");
@@ -4630,11 +4826,107 @@ clx FTradeRow [FExtensionAttribute] {
   valutaDasarApolo = select(object.Trade.CurrencyPair <> nil, 
   true->object.Trade.CurrencyPair.Currency1.Name, 
   false->object.Trade.Instrument.Currency.Name);
+  valutaDasarJnsSukuBungaAcuanTSD = select(object.Trade.OptKey3.Name, 
+  "SWAP"->py("Report_Python_BO", context).JnsSukuBungaAcuanTSD(object.Instrument, false));
+  valutaDasarJnsSukuBungaTSD = select(object.Trade.OptKey3.Name, 
+  "SWAP"->select(object.Instrument.RecLeg.LegType, 
+    "Float"->select(object.Instrument.PayLeg.LegType, 
+      "Float"->"2", 
+      "Fixed"->"1"), 
+    "Fixed"->"1"), 
+  "BOND"->select(object.Trade.OptKey4.Name, 
+    "FWD"->"1"));
+  valutaDasarPremiumSukuBungaAcuan = select(object.Trade.OptKey3.Name, 
+  "SWAP"->select(object.instrument.RecLeg, 
+    "Float"->select(object.instrument.PayLeg, 
+      "Float"->select(object.Instrument.RecLeg.FirstRate < object.Instrument.PayLeg.FirstRate, 
+        true->object.Instrument.RecLeg.Spread, 
+        false->object.Instrument.PayLeg.Spread))));
+  valutaDasarPremiumSukuBungaAcuanTSD = select(object.Trade.OptKey3.Name, 
+  "SWAP"->select(object.Instrument.RecLeg.LegType, 
+    "Float"->select(object.Instrument.PayLeg.LegType, 
+      "Float"->select(object.Instrument.RecLeg.FirstRate < object.Instrument.PayLeg.FirstRate, 
+        true->object.Instrument.RecLeg.Spread, 
+        false->object.Instrument.PayLeg.Spread))));
+  valutaDasarSukuBungaTetap = select(object.Trade.OptKey3.Name, 
+  "SWAP"->select(object.instrument.RecLeg, 
+    "Float"->nil, 
+    default->select(object.instrument.PayLeg, 
+      "Float"->nil, 
+      default->select(object.Instrument.RecLeg.FirstRate < object.Instrument.PayLeg.FirstRate, 
+        true->object.Instrument.RecLeg.FixedRate, 
+        false->object.Instrument.PayLeg.FixedRate))));
+  valutaDasarSukuBungaTetapTSD = select(object.Trade.OptKey3.Name, 
+  "SWAP"->select(object.Instrument.RecLeg.LegType, 
+    "Float"->select(object.Instrument.PayLeg.LegType, 
+      "Float"->nil, 
+      "Fixed"->object.Instrument.PayLeg.FixedRate), 
+    "Fixed"->select(object.Instrument.PayLeg.LegType, 
+      "Float"->object.Instrument.RecLeg.FixedRate, 
+      "Fixed"->select(object.Instrument.RecLeg.FirstRate < object.Instrument.PayLeg.FirstRate, 
+        true->object.Instrument.RecLeg.FixedRate, 
+        false->object.Instrument.PayLeg.FixedRate))), 
+  "BOND"->select(object.Trade.OptKey4.Name, 
+    "FWD"->0));
   valutaDokumenUnderlying = select(object.Trade.AdditionalInfo.LCS, 
   "Yes"->select(object.Trade.Instrument.InsType, 
     "Curr"->object.Trade.Instrument.Name, 
     default->object.Trade.Currency.Name), 
   default->nil);
+  valutaLawanJnsSukuBunga = select(object.Trade.OptKey3.Name, 
+  "SWAP"->select(object.Instrument.RecLeg.LegType, 
+    "Float"->select(object.Instrument.PayLeg.LegType, 
+      "Float"->"2", 
+      "Fixed"->"2"), 
+    "Fixed"->select(object.Instrument.PayLeg.LegType, 
+      "Float"->"2", 
+      "Fixed"->"1")));
+  valutaLawanJnsSukuBungaAcuan = py("Report_Python_BO", context).valutaLawanJnsSukuBungaAcuan(object.Instrument);
+  valutaLawanJnsSukuBungaAcuanTSD = select(object.Trade.OptKey3.Name, 
+  "SWAP"->py("Report_Python_BO", context).JnsSukuBungaAcuanTSD(object.Instrument));
+  valutaLawanJnsSukuBungaTSD = select(object.Trade.OptKey3.Name, 
+  "SWAP"->select(object.Instrument.RecLeg.LegType, 
+    "Fixed"->select(object.Instrument.PayLeg.LegType, 
+      "Fixed"->"1", 
+      "Float"->"2"), 
+    "Float"->"2"), 
+  "BOND"->select(object.Trade.OptKey4.Name, 
+    "FWD"->"1"));
+  valutaLawanPremiumSukuBungaAcuanTSD = select(object.Trade.OptKey3.Name, 
+  "SWAP"->select(object.Instrument.RecLeg.LegType, 
+    "Float"->select(object.Instrument.PayLeg.LegType, 
+      "Float"->select(object.Instrument.RecLeg.FirstRate > object.Instrument.PayLeg.FirstRate, 
+        true->object.Instrument.RecLeg.Spread, 
+        false->object.Instrument.PayLeg.Spread))));
+  valutaLawanSukuBungaTetap = select(object.Trade.OptKey3.Name, 
+  "SWAP"->select(object.Instrument.RecLeg.LegType, 
+    "Float"->nil, 
+    default->select(object.Instrument.PayLeg.LegType, 
+      "Float"->nil, 
+      default->select(object.Instrument.RecLeg.FirstRate > object.Instrument.PayLeg.FirstRate, 
+        true->object.Instrument.RecLeg.FixedRate, 
+        false->object.Instrument.PayLeg.FixedRate))));
+  valutaLawanSukuBungaTetapTSD = select(object.Trade.OptKey3.Name, 
+  "SWAP"->select(object.Instrument.RecLeg.LegType, 
+    "Float"->nil, 
+    default->select(object.Instrument.PayLeg.LegType, 
+      "Float"->nil, 
+      default->select(object.Instrument.RecLeg.FirstRate > object.Instrument.PayLeg.FirstRate, 
+        true->object.Instrument.RecLeg.FixedRate, 
+        false->object.Instrument.PayLeg.FixedRate))), 
+  "BOND"->select(object.Trade.OptKey4.Name, 
+    "FWD"->0));
+  valutaLawanTenorSukuBungaAcuanTSD = select(object.Trade.OptKey3.Name, 
+  "SWAP"->py("Report_Python_BO", context).TenorSukuBungaAcuanTSD(object.Instrument));
+  VariabelMendasariTSD = select(object.Trade.OptKey3.Name, 
+  "BOND"->select(object.Trade.OptKey4.Name, 
+    "OPT"->"X", 
+    "FWD"->"X"), 
+  default->select(object.Trade.OptKey4.Name, 
+    "CCS"->"CI", 
+    "IRS"->"I", 
+    "OIS"->"I", 
+    "MCS"->"C"));
   WeekNumber = py("Total_Trade", context).weeknumber(object.Trade.TradeTimeDateOnly);
   WITHGAINAMTAFS = py("Report_Python_BO", context).getJournalAmountTradeAfsTrd(object.Trade, "AFS");
   WITHGAINAMTTRD = py("Report_Python_BO", context).getJournalAmountTradeAfsTrd(object.Trade, "TRD");
@@ -4950,123 +5242,6 @@ def majorCurrGrouper(trade):
     else :
         return trade.Instrument().Currency().Name()
 
-
-...
-
-  jenisTransaksiLLD
-import acm, ael, re, os
-import FParameterUtils
-
-from datetime import date, datetime
-from ICTMODULES_FOR_HTML_AND_XSLFO_GENERATOR import *
-from ICTCustomFEmailTransfer import ICTCustomFEmailTransfer
-
-def jenisTransaksi3c(obj):
-    trade = obj.Trade()
-    optkey3 = trade.OptKey3().Name()
-    optkey4 = trade.OptKey4().Name()
-    
-    if optkey3 == "FX" and optkey4 in ["TOD", "TOM", "SPOT"]:
-        currUsed = [trade.CurrencyPair().Currency1().Name(), trade.CurrencyPair().Currency2().Name()]
-        return "261" if "IDR" in currUsed else "262"
-        
-    elif optkey3 == "FX" and optkey4 in ["FWD"]:
-        currUsed = [trade.CurrencyPair().Currency1().Name(), trade.CurrencyPair().Currency2().Name()]
-        return "263" if "IDR" in currUsed else "264"
-        
-    elif optkey3 == "FX" and optkey4 in ["SWAP"]:
-        currUsed = [trade.CurrencyPair().Currency1().Name(), trade.CurrencyPair().Currency2().Name()]
-        if "Near" in trade.TradeProcessesToString():
-            return "261" if "IDR" in currUsed else "262"
-        else :
-            return "263" if "IDR" in currUsed else "264"
-            
-    elif optkey3 == "SWAP":
-        return "273" if "Rate" in obj.SettlementType() else "278"
-        
-    elif optkey3 in ["TD", "DL"]:
-        tenor = acm.Time().DateDifference(obj.Instrument().EndDate(), obj.Instrument().StartDate())
-
-        if "Rate" in obj.SettlementType() : 
-            return "705" if optkey4 not in ["CMT", "OVT", "BL"] else "710"
-        else :
-            if optkey3 == "TD" and optkey4 not in ["BI", "DHE"] : optkey4 = "other"
-            elif optkey3 == "DL" and optkey4 in ["CMP", "OVP"] : optkey4 = "CL"
-            elif optkey3 == "DL" and optkey4 in ["OVT", "BLT"] : optkey4 = "CMT"
-            optkey3 += "Premium" if "Premium" in obj.SettlementType() else "Amount" if "Amount" in obj.SettlementType() else ""
-        
-        if tenor <= 90 : 
-            listKey = {
-                "TDPremium" : {"BI" : "240", "DHE" : "291", "other" : "241"}, "TDAmount" : {"BI" : "244", "DHE" : "295", "other" : "245"},
-                "DLPremium" : {"CL" : "251", "CMT" : "221"}, "DLAmount" : {"CL" : "255", "CMT" : "231"}
-            }
-        elif tenor <= 180 : 
-            listKey = {
-                "TDPremium" : {"DHE" : "291", "other" : "242"}, "TDAmount" : {"DHE" : "295", "other" : "246"},
-                "DLPremium" : {"CL" : "252", "CMT" : "221"}, "DLAmount" : {"CL" : "256", "CMT" : "221"}
-            }
-        elif tenor <= 365  : 
-            listKey = {
-                "TDPremium" : {"DHE" : "291", "other" : "243"}, "TDAmount" : {"DHE" : "295", "other" : "247"},
-                "DLPremium" : {"CL" : "252", "CMT" : "221"}, "DLAmount" : {"CL" : "256", "CMT" : "231"}
-        }
-        elif tenor > 365  : 
-            listKey = {
-                "TDPremium" : {"DHE" : "291", "other" : "243"}, "TDAmount" : {"DHE" : "295", "other" : "247"},
-                "DLPremium" : {"CL" : "252", "CMT" : "222"}, "DLAmount" : {"CL" : "256", "CMT" : "232"},
-            }
-        
-        try : return listKey[optkey3][optkey4]
-        except : return None
-    
-    elif optkey3 in ["REPO", "REVREPO"] : 
-        if "Rate" in obj.SettlementType() : 
-            return "705" if obj.Amount() >= 0 else "710"
-            
-        tenor = acm.Time().DateDifference(obj.Instrument().EndDate(), obj.Instrument().StartDate())
-        type = "Premium" if "Premium" in obj.SettlementType() else "Amount" if "Amount" in obj.SettlementType() else ""
-        issuerCountry = "indonesia"
-        
-        if tenor <= 360 : 
-            listKeyRepo = {"indonesia" : {"Premium" : "375", "Amount" : "379"}, "foreign" : {"Premium" : "821", "Amount" : "825"}} 
-            listKeyRevrepo = {"indonesia" : {"Premium" : "381", "Amount" : "377"}, "foreign" : {"Premium" : "827", "Amount" : "823"}}
-        else :
-            listKeyRepo = {"indonesia" : {"Premium" : "376", "Amount" : "380"}, "foreign" : {"Premium" : "822", "Amount" : "826"}} 
-            listKeyRevrepo = {"indonesia" : {"Premium" : "382", "Amount" : "378"}, "foreign" : {"Premium" : "828", "Amount" : "824"}}
-        
-        return listKeyRepo[issuerCountry][type] if optkey3.lower() == "repo" else listKeyRevrepo[issuerCountry][type]
-    
-    elif optkey3 == "BOND":
-        tenor = acm.Time().DateDifference(obj.Instrument().EndDate(), obj.Instrument().StartDate())
-        issuer = trade.Instrument().Issuer()
-        issuerCountry = issuer.AdditionalInfo().LLD_SANDI_NEGARA().lower() if issuer.AdditionalInfo().LLD_SANDI_NEGARA() else ""
-        idIssuerList = ["ROIGOV", "INDOIDJA_BANK INDONESIA", "DEPKUIDR1"]
-        premiumCond = obj.SettlementType() in ["Premium", "Redemption"]
-        
-        if "Coupon" in obj.SettlementType():
-            if tenor <= 365 : 
-                return '716' if issuerCountry == "indonesia" else '701'
-            else :
-                return '717' if issuerCountry == "indonesia" else '702'
-        elif premiumCond and issuerCountry != "indonesia": 
-            optkey4 = "MF" if "mf" in trade.Instrument().Name().lower() else optkey4
-            if optkey4 not in ["ORI", "FR", "VR", "INDON", "BILLS", "UST", "SRBI", "SPN", "MF"]:
-                return None
-                
-            listKey = {"ORI":"321", "FR":"323", "VR":"323", "INDON":"323", "BILLS":"324", "UST":"324", "SRBI":"333", "SPN":"333", "MF":"322"}
-            return listKey[optkey4]
-        elif premiumCond and issuerCountry == "indonesia" : 
-            listKey = {"SRBI":"361", "SVBI":"361", "SPN":"362", "SPNS":"362", "NCD":"364"}
-            if optkey4 in ["SRBI", "SVBI", "SPN", "SPNS", "NCD"]:
-                return listKey[optkey4]
-            elif "bill" in trade.Instrument().InsType().lower() :
-                return "365"
-        elif premiumCond and any(x in issuer.Name() for x in idIssuerList) and optkey4 == "ORI":
-            return "351"
-        elif premiumCond and any(x not in issuer.Name() for x in idIssuerList) and optkey4 == "CB" and issuerCountry == "indonesia":
-            return "352"
-        elif "fund" in trade.Instrument().InsType().lower() :
-            return "371" if premiumCond else "725"
 
 ...
 
@@ -7591,9 +7766,31 @@ def MaturityDate(trade, default=True):
         
 def additional_info_ins(ins, type):
     if type == "HoldPosBIS4":
-        result_str = ins.AdditionalInfo().HoldPosBIS4()
+        try : result_str = ins.AdditionalInfo().HoldPosBIS4() 
+        except : return 0
     elif type == "HoldPosCustody":
-        result_str = ins.AdditionalInfo().HoldPosCustody()
+        try : result_str = ins.AdditionalInfo().HoldPosCustody()
+        except : return 0
+    elif type == "HoldPosEuroClear":
+        try : result_str = ins.AdditionalInfo().HoldPosEuroClear()
+        except : return 0
+    elif type == "DateHoldPos":
+        try : date1 = ins.AdditionalInfo().HoldPosBIS4().split("_")[0]
+        except : date1 = 0
+        
+        try : date2 = ins.AdditionalInfo().HoldPosCustody().split("_")[0]
+        except : date2 = 0
+        
+        try : date3 = ins.AdditionalInfo().HoldPosEuroClear().split("_")[0]
+        except : date3 = 0
+       
+        dateList = [date1, date2, date3]
+        dateList = [int(str(x)[2:].replace("-", "")) if "-" in str(x) else int(x) for x in dateList]
+        
+        dateList.sort(reverse=True)
+        dateUpdate = str(dateList[0])
+        year, month, day = [dateUpdate[:2], dateUpdate[2:4], dateUpdate[4:6]]
+        return f"20{year}-{month}-{day}" if dateUpdate != "0" else None
         
     try :
         result = result_str.split("_")[1]
@@ -8627,8 +8824,8 @@ def acquisitionAmount(trade):
         return None, None
 
 def tanggalJatuhTempoDokumenUnderlying(dateUse, formatTime = "%Y-%m-%d"):
-    year, month, day = [str(x) for x in acm.Time.DateToYMD(dateUse)]
     try :
+        year, month, day = [str(x) for x in acm.Time.DateToYMD(dateUse)]
         return datetime.strptime("/".join([day, month, year]), "%d/%m/%Y").strftime(formatTime)
     except :
         return None
@@ -8781,7 +8978,7 @@ def jenisRekeningLLD2(obj):
     elif "redemption net" in settType.lower() or "security" in obj.Type().lower():
         insType = obj.Instrument().InsType()
         issuer = obj.Instrument().Issuer()
-        insIssuerCountry, insIssuerName = issuer.Country(), issuer.Name()
+        insIssuerCountry, insIssuerName = issuer.AdditionalInfo().LLD_SANDI_NEGARA(), issuer.Name()
         
         if not(insIssuerCountry.lower() in ["id", "indonesia"]):
             return "3F" if insType.lower() == "bill" else "3E"
@@ -8816,34 +9013,28 @@ def jenisTransaksi3c(obj):
     optkey3 = trade.OptKey3().Name()
     optkey4 = trade.OptKey4().Name()
     insType = trade.Instrument().InsType()
-    
     if insType.lower() == "option":
         return "276" if "premium" in obj.SettlementType().lower() else "299"
-    
     elif optkey3 == "FX" and optkey4 in ["TOD", "TOM", "SPOT"]:
         currUsed = [trade.CurrencyPair().Currency1().Name(), trade.CurrencyPair().Currency2().Name()]
         return "261" if "IDR" in currUsed else "262"
-        
     elif optkey3 == "FX" and optkey4 in ["FWD"]:
         currUsed = [trade.CurrencyPair().Currency1().Name(), trade.CurrencyPair().Currency2().Name()]
         return "263" if "IDR" in currUsed else "264"
-        
     elif optkey3 == "FX" and optkey4 in ["SWAP"]:
         currUsed = [trade.CurrencyPair().Currency1().Name(), trade.CurrencyPair().Currency2().Name()]
         if "Near" in trade.TradeProcessesToString():
             return "261" if "IDR" in currUsed else "262"
         else :
             return "263" if "IDR" in currUsed else "264"
-            
     elif optkey3 == "SWAP":
         if "Rate" in obj.SettlementType():
             return "273" 
         else :
             return "277" if obj.ValueDay() == obj.Instrument().StartDate() else "278"
-        
     elif optkey3 in ["TD", "DL"]:
         tenor = acm.Time().DateDifference(obj.Instrument().EndDate(), obj.Instrument().StartDate())
-
+ 
         if "Rate" in obj.SettlementType() : 
             return "705" if optkey4 not in ["CMT", "OVT", "BL"] else "710"
         else :
@@ -8851,7 +9042,6 @@ def jenisTransaksi3c(obj):
             elif optkey3 == "DL" and optkey4 in ["CMP", "OVP"] : optkey4 = "CL"
             elif optkey3 == "DL" and optkey4 in ["OVT", "BLT"] : optkey4 = "CMT"
             optkey3 += "Premium" if "Premium" in obj.SettlementType() else "Amount" if "Amount" in obj.SettlementType() else ""
-        
         if tenor <= 90 : 
             listKey = {
                 "TDPremium" : {"BI" : "240", "DHE" : "291", "other" : "241"}, "TDAmount" : {"BI" : "244", "DHE" : "295", "other" : "245"},
@@ -8872,61 +9062,65 @@ def jenisTransaksi3c(obj):
                 "TDPremium" : {"DHE" : "291", "other" : "243"}, "TDAmount" : {"DHE" : "295", "other" : "247"},
                 "DLPremium" : {"CL" : "252", "CMT" : "222"}, "DLAmount" : {"CL" : "256", "CMT" : "232"},
             }
-        
         try : return listKey[optkey3][optkey4]
         except : return None
-    
     elif optkey3 in ["REPO", "REVREPO"] : 
         if "Rate" in obj.SettlementType() : 
             return "705" if obj.Amount() >= 0 else "710"
-            
         tenor = acm.Time().DateDifference(obj.Instrument().EndDate(), obj.Instrument().StartDate())
         type = "Premium" if "Premium" in obj.SettlementType() else "Amount" if "Amount" in obj.SettlementType() else ""
         issuerCountry = "indonesia"
-        
         if tenor <= 360 : 
             listKeyRepo = {"indonesia" : {"Premium" : "375", "Amount" : "379"}, "foreign" : {"Premium" : "821", "Amount" : "825"}} 
             listKeyRevrepo = {"indonesia" : {"Premium" : "381", "Amount" : "377"}, "foreign" : {"Premium" : "827", "Amount" : "823"}}
         else :
             listKeyRepo = {"indonesia" : {"Premium" : "376", "Amount" : "380"}, "foreign" : {"Premium" : "822", "Amount" : "826"}} 
             listKeyRevrepo = {"indonesia" : {"Premium" : "382", "Amount" : "378"}, "foreign" : {"Premium" : "828", "Amount" : "824"}}
-        
         return listKeyRepo[issuerCountry][type] if optkey3.lower() == "repo" else listKeyRevrepo[issuerCountry][type]
-    
-    elif optkey3 == "BOND":
+    elif optkey3 in ["BOND", "SBI"]:
         tenor = acm.Time().DateDifference(obj.Instrument().EndDate(), obj.Instrument().StartDate())
         issuer = trade.Instrument().Issuer()
         issuerCountry = issuer.AdditionalInfo().LLD_SANDI_NEGARA().lower() if issuer.AdditionalInfo().LLD_SANDI_NEGARA() else ""
         idIssuerList = ["ROIGOV", "INDOIDJA_BANK INDONESIA", "DEPKUIDR1"]
         premiumCond = obj.SettlementType() in ["Premium", "Redemption"]
-        
         if "Coupon" in obj.SettlementType():
             if tenor <= 365 : 
                 return '716' if issuerCountry == "indonesia" else '701'
             else :
                 return '717' if issuerCountry == "indonesia" else '702'
-        elif premiumCond and issuerCountry != "indonesia": 
-            optkey4 = "MF" if "mf" in trade.Instrument().Name().lower() else optkey4
-            if optkey4 not in ["ORI", "FR", "VR", "INDON", "BILLS", "UST", "SRBI", "SPN", "MF"]:
-                return None
-                
-            listKey = {
-                "ORI":"351", "INDOIS" : "351", "FR":"323", "VR":"323", 
-                "INDON":"323", "BILLS":"324", "UST":"324", "SRBI":"333", "SPN":"333", "MF":"322"
-            }
-            return listKey[optkey4]
-        elif premiumCond and issuerCountry == "indonesia" : 
-            listKey = {"SRBI":"361", "SVBI":"361", "SPN":"362", "SPNS":"362", "NCD":"364"}
-            if optkey4 in ["SRBI", "SVBI", "SPN", "SPNS", "NCD"]:
-                return listKey[optkey4]
-            elif "bill" in trade.Instrument().InsType().lower() :
-                return "365"
-        elif premiumCond and any(x in issuer.Name() for x in idIssuerList) and optkey4 == "ORI":
-            return "351"
-        elif premiumCond and any(x not in issuer.Name() for x in idIssuerList) and optkey4 == "CB" and issuerCountry == "indonesia":
-            return "352"
-        elif "fund" in trade.Instrument().InsType().lower() :
-            return "371" if premiumCond else "725"
+        elif insType.lower() == "fund":
+            return "371"
+        elif premiumCond:
+            lbut_jenis_sb = trade.Instrument().AdditionalInfo().LBUT_JENIS_SB()
+            if issuerCountry == "indonesia":
+                if tenor > 365:
+                    obligasiPemerintah = ["Obligasi Negara (ON)", "Obligasi Ritel Indonesia (ORI)", "Obligasi rekapitulasi bank umum"]
+                    obligasiPerusahaan = ["Obligasi Korporasi", "Obligasi Korporasi - Subordinasi", "Obligasi Korporasi - Non Subordinasi"]
+                    mtn = ["Medium Term Notes (MTN)", "Medium Term Notes (MTN) Syariah"]
+                    if lbut_jenis_sb in obligasiPemerintah : return "351"
+                    elif lbut_jenis_sb in obligasiPerusahaan : return "352"
+                    elif lbut_jenis_sb in mtn : return "353"
+                    else : return "354"
+                else :
+                    sertifikatBI = ["SBI", "IDBI", "SRBI","SVBI"]
+                    suratPembendaharaanNegara = ["SPN", "SPNS"]
+                    ncd = ["NCD"]
+                    depositoBI = ["IDSD"]
+                    if optkey4 in sertifikatBI : return "361"
+                    elif optkey4 in suratPembendaharaanNegara : return "362"
+                    elif optkey4 in ncd : return "364"
+                    elif optkey4 in depositoBI : return "366"
+                    else : return "365"
+            else :
+                if tenor > 365:
+                    obligasi = ["Obligasi Korporasi", "Obligasi Korporasi - Subordinasi", "Obligasi Korporasi - Non Subordinasi"]
+                    mtn = ["Medium Term Notes (MTN)", "Medium Term Notes (MTN) Syariah"]
+                    if lbut_jenis_sb in obligasi : return "321"
+                    elif lbut_jenis_sb in mtn : return "322"
+                    else : return "323"
+                else :
+                    if optkey4 in ["UST"] : return "331"
+                    else : return "333"
 
 
 def jenisTransaksiLLD(obj):
@@ -8985,6 +9179,42 @@ def detailTransaksiLLD(obj):
     textMT = getMt.Data().Text()
     getInfo = re.findall(re_form, textMT)
     return getInfo[0] if getInfo else ""
+
+def JnsSukuBungaAcuanTSD(ins, isLawan=True):
+    indexNameDict = {
+        "JIBOR" : "JIBOR", "LIBOR" : "LIBOR", "SHIBOR" : "SHIBOR", "SOFR" : "X", "INDONIA" : "indONIA", "SIBOR" : "SIBOR", 
+        "TIBOR" : "TIBOR", "EURIBOR" : "EURIBOR", "KLIBOR" : "KLIBOR", "BIBOR" : "BIBOR", "PHIBOR" : "PHIBOR", "NONE" : None
+    }
+        
+    recLeg = [ins.RecLeg().FirstRate(), str(ins.RecLeg().FloatPriceReference().Name()).split("/")[1]] if ins.RecLeg().LegType() == "Float" else [0, "NONE"]
+    payLeg = [ins.PayLeg().FirstRate(), str(ins.PayLeg().FloatPriceReference().Name()).split("/")[1]] if ins.PayLeg().LegType() == "Float" else [0, "NONE"]
+    
+    if isLawan:
+        try :
+            return indexNameDict[recLeg[1]] if recLeg[0] >= payLeg[0] else indexNameDict[payLeg[1]]
+        except :
+            return recLeg[1] if recLeg[0] >= payLeg[0] else payLeg[1]
+    else :
+        try :
+            return indexNameDict[recLeg[1]] if recLeg[0] <= payLeg[0] else indexNameDict[payLeg[1]]
+        except :
+            return recLeg[1] if recLeg[0] <= payLeg[0] else payLeg[1]
+
+def TenorSukuBungaAcuanTSD(ins, isLawan=True):
+    indexTenorDict ={
+        "1d" : "HO", "7d" : "M1", "1w" : "M1", "14d" : "M2", "2w" : "M2", "1m" : "B01", "2m" : "B02", "3m" : "B03", "4m" : "B04", "5m" : "B05", "6m" : 
+        "B06", "7m" : "B07", "8m" : "B08", "9m" : "B09", "10m" : "B10", "11m" : "B11", "12m" : "B12", "1y" : "B12", "NONE" : None
+    }
+    
+    recLeg = [ins.RecLeg().FirstRate(), str(ins.RecLeg().FloatRateReference().ActualUnderlyingMaturityPeriod())] if ins.RecLeg().LegType() == "Float" else [0, "NONE"]
+    payLeg = [ins.PayLeg().FirstRate(), str(ins.PayLeg().FloatRateReference().ActualUnderlyingMaturityPeriod())] if ins.PayLeg().LegType() == "Float" else [0, "NONE"]
+    
+    if isLawan:
+        return indexTenorDict[recLeg[1]] if recLeg[0] >= payLeg[0] else indexTenorDict[payLeg[1]]
+    else :
+        return indexTenorDict[recLeg[1]] if recLeg[0] <= payLeg[0] else indexTenorDict[payLeg[1]]
+    
+
 
 ...
 
@@ -9346,19 +9576,78 @@ def post_process_6869(reportObj, params, ReportXML):
 }
 
 decls[FXSLTemplate] {
+  "csvTemplate_BOa31" ( "aef reporting.secondary templates" "aef reporting.secondary templates txt" ) "";
   "FTABTemplate_Custom_ICT_Apolo" ( "aef reporting.secondary templates" "aef reporting.secondary templates txt" ) "";
   "FTABTemplate_Custom_ICT_asql" ( "aef reporting.secondary templates" "aef reporting.secondary templates txt" ) "";
   "FTABTemplate_Custom_ICT_Regulatory" ( "aef reporting.secondary templates" "aef reporting.secondary templates txt" ) "";
   "XlsTemplateBO07" ( "aef reporting.secondary templates" "aef reporting.secondary templates xls" ) "";
   "XlsTemplateBO19" ( "aef reporting.secondary templates" "aef reporting.secondary templates xls" ) "";
   "XlsTemplateBO30" ( "aef reporting.secondary templates" "aef reporting.secondary templates xls" ) "";
-  "XlsTemplateBO37" ( "aef reporting.secondary templates" "aef reporting.secondary templates xls" ) "";
+  "XlsTemplateBO37" ( "aef reporting.secondary templates" "aef reporting.secondary templates csv" "aef reporting.secondary templates xls" ) "";
   "XlsTemplateBO60" ( "aef reporting.secondary templates" "aef reporting.secondary templates xls" ) "";
   "XlsTemplateBO6869" ( "aef reporting.secondary templates" "aef reporting.secondary templates xls" ) "";
   "XlsTemplateBO71" ( "aef reporting.secondary templates" "aef reporting.secondary templates xls" ) "";
 }
 
 clx FObject [FXSLTemplate] {
+  csvTemplate_BOa31
+<?xml version='1.0'?>
+<!DOCTYPE xsl:stylesheet [
+  <!ENTITY tab "<xsl:text>&#9;</xsl:text>">
+  <!ENTITY lf "<xsl:text>&#10;</xsl:text>">
+]>
+
+<xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
+<xsl:output method="text" encoding="UTF-8"/>
+<xsl:strip-space elements="*"/>
+
+<xsl:template match="/">
+        
+<!-- Reports -->
+    <xsl:for-each select="//PRIMEReport">                         
+            <xsl:apply-templates select="current()/ReportContents"/>             
+     </xsl:for-each>     
+</xsl:template>
+
+<xsl:template match="Table"><xsl:for-each select="Columns/Column"><xsl:value-of select="Label"/><xsl:if test="position() != last()">|</xsl:if></xsl:for-each>
+&lf;
+<xsl:apply-templates select="Rows/Row"/>
+</xsl:template>
+
+<xsl:template match="Row">
+    <!-- Process Cells if this Row is a top-level Row -->
+    <xsl:if test="count(ancestor::Row) = 2">
+        <xsl:for-each select="Cells/Cell"><xsl:call-template name="CellData" /><xsl:if test="position() != last()">|</xsl:if></xsl:for-each>
+    </xsl:if>
+    <!-- Add newline after the entire row is processed -->
+    <xsl:if test="count(ancestor::Row) = 2">&lf;</xsl:if>
+    <!-- Apply templates to child Rows -->
+    <xsl:apply-templates select="Rows/Row"/>
+    
+</xsl:template>
+
+<xsl:template name="CellData">
+    <xsl:choose>
+        <xsl:when test="FormattedData">
+            <xsl:value-of select="translate(translate(translate(FormattedData, ',', '{XxX}'), '.', ','), '{XxX}', '.')"/>
+        </xsl:when>
+        <xsl:when test="RawData">
+            <xsl:value-of select="RawData"/>
+        </xsl:when>
+        <xsl:when test="DefaultData">
+            <xsl:value-of select="DefaultData"/>
+        </xsl:when>
+        <xsl:otherwise>
+            <xsl:message terminate="yes"><xsl:text>No dataformat turned on</xsl:text></xsl:message>
+        </xsl:otherwise>
+    </xsl:choose>
+</xsl:template>
+
+
+</xsl:stylesheet>
+
+...
+
   FTABTemplate_Custom_ICT_Apolo
 <?xml version='1.0'?>
 <!DOCTYPE xsl:stylesheet [

@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding='ISO-8859-1'?>
-<FStoredASQLQuery><acm_version>2022.4.7, Aug 18 2023</acm_version><acm_unicode>True</acm_unicode><py2_ads>False</py2_ads><version>0 $Id$</version><update_time>2024-09-30 12:08:20</update_time><object_name>RO01</object_name><owner>ICT_USER</owner><protection>3072</protection><shared>True</shared><subtype>FInstrument</subtype><data>&lt;?xml version='1.0' encoding='UTF-8'?&gt;
+<FStoredASQLQuery><acm_version>2022.4.15, May 18 2024</acm_version><acm_unicode>True</acm_unicode><py2_ads>False</py2_ads><version>0 $Id$</version><update_time>2024-09-30 12:08:20</update_time><object_name>RO01</object_name><owner>ICT_USER</owner><protection>3072</protection><shared>True</shared><subtype>FInstrument</subtype><data>&lt;?xml version='1.0' encoding='UTF-8'?&gt;
 &lt;FDictionary type ="AcmDomain"&gt;
   &lt;Element&gt;
   &lt;FAssociation type ="AcmDomain"&gt;
