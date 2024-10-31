@@ -1,0 +1,2 @@
+<?xml version='1.0' encoding='ISO-8859-1'?>
+<FTradeFilter><acm_version>2022.4.15, May 18 2024</acm_version><version>0 $Id$</version><update_time>2024-07-22 08:28:03</update_time><object_name>BO43_query</object_name><owner>YUDHI</owner><protection>W:R,O:RWD,G:RWD,U:RWD</protection><asql_query>BO43_query</asql_query></FTradeFilter>
